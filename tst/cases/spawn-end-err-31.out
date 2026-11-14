@@ -1,1 +1,1 @@
-spawn-end-err-31.atm : line 7 : near 'spawn' : invalid spawn : the task is aborted at the end of its block
+spawn-end-err-31.atm : line 7 : near 'spawn' : invalid spawn : task aborted at end of block

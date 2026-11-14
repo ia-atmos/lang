@@ -477,7 +477,7 @@ static void chk_spawns (void) {
         }
         if (awaits(blk)) {
             err(e->tk,
-                "invalid spawn : the task is aborted at the end of its block");
+                "invalid spawn : task aborted at end of block");
         }
     }
 }

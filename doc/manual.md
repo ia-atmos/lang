@@ -1032,7 +1032,7 @@ Since a block aborts its tasks when it terminates, a `spawn` that is the last
 statement of its block starts a task that is aborted right after its first
 reaction, before it awakes from any [await](#await).
 This is the compile error
-`invalid spawn : the task is aborted at the end of its block`, when all of
+`invalid spawn : task aborted at end of block`, when all of
 the following hold:
 
 - The `spawn` has no pool, and its value is not used.
