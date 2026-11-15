@@ -8,9 +8,10 @@ Alternative titles:
 - Structured Memory: Values that Live and Die with their Blocks
 - Lexical Memory Management for Structured Concurrency
 
-> Status: outline. The rules in Section 4 are the ones approved by the
-> author on 2026-11-15 ("Pin rules discussion"). They are not implemented
-> yet: the compiler and `doc/manual.md` still have the previous rules.
+> Status: outline. The rules in Section 4 were approved by the author on
+> 2026-11-15 and are implemented in `main` since `98ad03a` (compiler,
+> runtime, tests, manual). See `.claude/plans/261115-pin.md` and
+> `.claude/plans/261115-pin-migration.md`.
 
 ## Abstract
 
@@ -108,6 +109,12 @@ case studies from six ports of libraries and games to Atmos.
     - the work block: `pin r = do { pin tmp = ... ; pin x = ... ; x }`
     - a work block as an argument: `spawn @ts H(do { pin c = accept() ; c })`
     - natives: a child holds its parent, by rule 3
+- Refinements found in the implementation
+    - an emitted event: owned by the emit, at its floor, by no block
+    - a task holds its `pub` and its final value
+    - a task is pinned from birth by the block that owns it
+    - declarations of functions and tasks pin their prototypes
+    - parameters and loop variables may hold fresh values
 - Semantics sketch: block depth as the lifetime order
 
 ## 5. Why It Matters as a Memory Mechanism
@@ -171,16 +178,19 @@ case studies from six ports of libraries and games to Atmos.
 ## 8. Implementation
 
 - Compilation to C, no collector in the runtime
-- Current runtime implements the previous rules; delta to the new ones
-- Fresh state: a floor depth in the header, before the pin
-- Header of a value: reference count, pinned bit, block depth
-- `a_pin`: pin at the current depth, requires a fresh value
-- `a_pdepth`: effective depth of a value, tasks and pools included
-- `a_chk_store`, `a_chk_tab`: one comparison per store
-- `a_blk_xfer`: transfer of a result, deep, all or nothing
-- `a_pin_end`, `a_pin_clr`: abort tasks first, then release data
+- Header of a value: reference count, state, block depth, line of the pin
+- States in the header: fresh, fresh with a floor, pinned by declaration,
+  pinned by a holder, owned by the runtime
+- Rule 1: constructors and `++` raise the floor at birth
+- Rule 2: `a_pin`, and the deep pin on a store into a pinned value
+- Rule 3: `a_chk_store`, one comparison of depths per store
+- Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
+- Rule 5: `a_blk_xfer`, transfer of a result, deep, all or nothing
 - A block that waits for a task that is unwinding
-- Functions that capture pinned values; tasks that receive them
+- A dropped task that is running: ends with the trail that spawned it
+- Tasks held by pinned data: aborted with the block of the holder
+- Natives from C: `a_nat_holds(child, parent)`, `a_own`
+- Errors: the type of the value and the line of its pin
 
 ## 9. Evaluation
 
@@ -191,7 +201,12 @@ case studies from six ports of libraries and games to Atmos.
     - Lessmilk: variables captured by functions
     - SNKRX: many short-lived entities and pools
     - libuv: accepted connections pinned in a loop, living in a pool
-- Friction found, and how the rules answer each case
+- Friction found under the first rules, and how the new rules answer it
+- Workarounds removed in each port after the migration
+- Cost of the migration
+    - test suite: about 230 of 830 programs changed
+    - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
+- What remains strange or needs a workaround, from the reports of the ports
 - Quality of errors: what escaped, from where, to where
 - Cost
     - time: the store check, the transfer of results
@@ -205,6 +220,10 @@ case studies from six ports of libraries and games to Atmos.
 - The check is dynamic: errors appear when the program executes
 - Shared structures must be owned by a common enclosing block
 - No weak references
+- A variable does not own: `var x` cannot receive a fresh value later
+- A value sometimes fresh and sometimes owned fits neither `val` nor `pin`
+- An event is shared: a receiver cannot pin it
+- `pin` on every first declaration: more annotations than `val`
 - A value that leaves is transferred deep: cost proportional to its size
 - Long-lived blocks keep what they pin until the end
 - Requires a language with structured tasks and abortion
