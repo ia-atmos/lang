@@ -4,11 +4,11 @@ false	invalid escape : pinned value
 false	invalid escape : pinned value
 2	true
 false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+true	table: 0x?
+true	table: 0x?
+true	table: 0x?
+true	table: 0x?
+true	table: 0x?
+true	table: 0x?
 1	2	false
 1	1

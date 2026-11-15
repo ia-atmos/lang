@@ -8,7 +8,7 @@ false	invalid escape : pinned value
 false	invalid escape : pinned value
 1
 false	invalid escape : pinned value
-false	invalid escape : pinned value
+true	table: 0x?
 1
 6
 false	invalid escape : pinned value

@@ -1,0 +1,27 @@
+;; an event that holds a pinned handle is awaited and emitted with no
+;; pin: the constructors are born with their floor in its block
+pin dlg = io.open("/dev/null", "w")
+spawn {
+    await :close [h=dlg]
+    print(:closed, 1)
+}
+spawn {
+    watching :close [h=dlg] {
+        await(false)
+    }
+    print(:closed, 2)
+}
+emit :close [h=dlg]
+
+;; it only reaches the tasks inside the block of the handle
+spawn {
+    await(:go)
+    pin h = io.open("/dev/null", "w")
+    pin t = spawn {
+        await :close [h=h]
+        print(:closed, 3)
+    }
+    emit @t :close [h=h]
+    print(catch true { emit @:global :close [h=h] })
+}
+emit(:go)

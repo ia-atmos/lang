@@ -24,6 +24,7 @@ func main () {
     }
     print(out())
     print(catch true { set u.f = f })
+    ;; a fresh table takes the floor of the closure
     print(catch true { [f] })
     set t.f = f
     print(t.f())

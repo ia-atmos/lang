@@ -380,6 +380,7 @@ AStatus a_tab_fill (AVal t, int i, int n) {
     AStatus st = A_OK;
     for (int j=0; j<n && st==A_OK; j++) {
         AVal v = a_stk[a_top-n+j];
+        a_born(t, v);
         st = a_chk_tab(A_TAB_OF(t), v);
         if (st == A_OK) {
             a_tab_set(A_TAB_OF(t), a_int(i+j), v);

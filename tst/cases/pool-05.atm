@@ -8,5 +8,6 @@ print(X.xin(x, xs), X.xin(y, xs), X.xin(y, ys))
 pin ts = [x]
 set ts@+ = y
 print(#ts, ts@0 == x, ts@1 == y)
+;; a concatenation is born with its floor in the block of the pools
 print(catch true { xs ++ ys })
 print(catch true { [1] ++ xs })

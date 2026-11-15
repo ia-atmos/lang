@@ -1,0 +1,54 @@
+;; Birth: a fresh value has its floor in the innermost block of the
+;; pinned values it is born with. It cannot leave the floor, but may
+;; be pinned there or deeper.
+
+;; an argument that holds a pinned value
+func f (t) { t.x@0 }
+pin a = [10]
+print(f([x=a]))
+
+;; a store into a fresh value is checked against its floor
+func g (t, v) {
+    set t.y = v
+    #t
+}
+do {
+    pin b = [20]
+    print(g([a], a))                    ;; floor of `a`: accepts `a`
+    print(catch true { g([a], b) })     ;; and not `b`, which is deeper
+    print(g([b], a), g([b], b))         ;; floor of `b`: accepts both
+}
+
+;; it cannot be stored outside its floor
+var out
+do {
+    pin c = [30]
+    print(catch true { set out = [c] })
+    print(catch true { set a.c = [c] })
+    print(catch true { set a.c = [1] ++ [c] })
+    ;; and may be pinned at its floor or deeper
+    pin d = [c]
+    do {
+        pin e = [c, [d]]
+        print(e@0@0, e@1@0@0@0)
+    }
+}
+
+;; the tasks of two pools, collected
+task T (v) {
+    set pub = v
+    await(false)
+}
+pin ships = tasks()
+pin shots = tasks()
+spawn @ships T(1)
+spawn @shots T(2)
+spawn @shots T(3)
+func sum (ts) {
+    var n = 0
+    loop _,t in ts {
+        set n = n + t.pub
+    }
+    n
+}
+print(sum([] ++ ships ++ shots))

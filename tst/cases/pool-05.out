@@ -1,4 +1,4 @@
 true	false	true
 2	true	true
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+true	table: 0x?
+true	table: 0x?

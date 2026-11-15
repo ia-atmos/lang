@@ -676,11 +676,14 @@ static Opnd gen_table (Unit* u, Expr* e) {
             out_try(u, "a_tab_fill(%s, %d, %s)", d.c, n, m.n);
         } else if (key == NULL) {
             Opnd v = gen_expr(u, val);
+            out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, a_int(%d), %s)", d.c, n++, v.c);
             opnd_rel(u, v);
         } else {
             Opnd k = gen_expr(u, key);
             Opnd v = gen_expr(u, val);
+            out(u, "a_born(%s, %s);", d.c, k.c);
+            out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, %s, %s)", d.c, k.c, v.c);
             opnd_rel(u, k);
             opnd_rel(u, v);

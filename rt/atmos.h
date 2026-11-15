@@ -476,8 +476,9 @@ AStatus a_setindex_next (AVal t, AVal v);
 // :X [...]  (sets the `tag` key of a table)
 AStatus a_tag (AVal t, AVal tag);
 
-// Moves the top `n` values of the stack into the keys `i, i+1, ...`.
-// Fails on a pinned value that the table cannot hold.
+// Moves the top `n` values of the stack into the keys `i, i+1, ...`,
+// in a constructor: a fresh table takes its floor from them, and a
+// pinned one fails on a value that it cannot hold.
 AStatus a_tab_fill (AVal t, int i, int n);
 
 // Arguments that wait in a table: those of a task spawned by an
@@ -968,6 +969,18 @@ static inline AStatus a_chk_store (AVal v, int d) {
 // its pin block, or of its floor while it is fresh.
 static inline AStatus a_chk_tab (ATab* t, AVal v) {
     return a_chk_store(v, (int)t->hdr.depth);
+}
+
+// Birth: a fresh value that is being constructed takes its floor from
+// the values it is born with (the fields of a constructor, the
+// operands of a concatenation). A pinned one is checked by the store.
+static inline void a_born (AVal x, AVal v) {
+    if (v.type>=A_TAB && !x.u.o->pinned) {
+        int p = a_pdepth(v);
+        if (p > (int)x.u.o->depth) {
+            x.u.o->depth = p;
+        }
+    }
 }
 
 // A block with pins is being left, with status `st`. What it gives to
