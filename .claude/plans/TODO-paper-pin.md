@@ -18,9 +18,11 @@ by that session.
    pools" is a guess: item 40 of `TODO.md` names no friction for SNKRX.
    To confirm with the plan of the port, or to remove.
 
-2. **Sections 7 and 8 against the implementation.** The rules of
-   Section 4 are not in the compiler yet. To review the examples and the
-   implementation section when they are.
+2. ~~Sections 7 and 8 against the implementation.~~ Done on
+   2026-11-15, from `261115-pin.md` and `261115-pin-migration.md`.
+3. **Section 9, the reports of the ports.** The ports are migrating to
+   the new rules. To add their numbers and strange cases when the
+   reports arrive (through the session of the rules).
 
 ## C. Next steps, not started
 
