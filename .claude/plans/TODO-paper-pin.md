@@ -6,9 +6,9 @@ by that session.
 
 ## A. Decisions waiting for the author
 
-1. **Name and title.** Proposed: the mechanism is "lexical pinning"; the
-   title is "Every Value Has a Block: Lexical Pinning for Structured
-   Concurrent Programs". Three alternatives are in `papers/pin.md`.
+1. ~~Name and title.~~ Decided by the author on 2026-11-15: "Dynamic
+   Values Deserve a Home: Structured Memory with Lexical Pins". The
+   mechanism is "structured memory"; the construct is the "lexical pin".
 2. ~~Section 4, the rules.~~ Done on 2026-11-15: the author approved
    the rules in "Pin rules discussion", and Section 4 follows them.
 
