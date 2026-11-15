@@ -271,7 +271,7 @@ representing states (e.g., `:pending`, `:done`).
 The next example uses tags as table keys:
 
 ```
-val pos = []           ;; a new table
+pin pos = []           ;; a new table
 set pos@:x = 10
 set pos.y = 20          ;; equivalent to pos@:y=20
 print(pos.x, pos@:y)    ;; -> 10, 20
@@ -298,20 +298,20 @@ The operator `??` also works with tagged tables.
 Therefore, tags, tables, and `??` can be combined as follows:
 
 ```
-val t = :T.A [ a=10 ]      ;; [ tag=:T.A, a=10 ]
+pin t = :T.A [ a=10 ]      ;; [ tag=:T.A, a=10 ]
 print(t ?? :T)              ;; --> true
 ```
 
 ## Lexical Memory Management
 
 Atmos has no garbage collector.
-Dynamic values, such as tables and functions, are reclaimed by counting
-references, as soon as the last reference to them goes away.
+Every dynamic value (a table, a function, a native value, a task, or a pool
+of tasks) belongs to a block of the program, which reclaims the value when
+it terminates.
+A value may only be stored where its block lasts at least as long as the
+place that stores it, so that no reference outlives the value it refers to.
 
-Reference counting alone has two limitations:
-it does not reclaim cycles, and it does not tell when a value is reclaimed.
-A [`pin` declaration](#pin) addresses both by attaching a value to its
-enclosing block:
+A [`pin` declaration](#pin) attaches a value to its enclosing block:
 
 - The value is reclaimed when the block terminates, even if it is part of a
   cycle.
@@ -330,7 +330,7 @@ do {
 }                           ;; a and b are reclaimed here
 ```
 
-The rules for tasks are the same:
+The rules are the same for all dynamic values:
 a pinned task is aborted when its block terminates, and cannot be referred
 from outside.
 Therefore, a task, the data it uses, and the block that holds them all live
@@ -833,7 +833,7 @@ Examples:
 
 ```
 val k = "idx"
-val t = [      ;; all 3 formats:
+pin t = [      ;; all 3 formats:
     @k = 10,   ;; same as [ @(k)=10, @("v")="x", @(0)=20, @(1)=30 ]
     v = "x",
     20, 30
@@ -845,7 +845,7 @@ print(t.idx, t@("v"), t@1)  ;; --> 10, x, 30
 <!-- exs/val-02-vector.atm -->
 
 ```
-val vs = [1, 2, 3]      ;; a vector of numbers
+pin vs = [1, 2, 3]      ;; a vector of numbers
 print(vs@1)             ;; --> 2
 print(vs ?? :table)     ;; --> true
 set vs@(#vs) = 4        ;; [1, 2, 3, 4]
@@ -870,7 +870,7 @@ Examples:
 <!-- exs/val-04-users.atm -->
 
 ```
-val p = :Pos [         ;; a tagged table:
+pin p = :Pos [         ;; a tagged table:
     x = 10,             ;; same as [ @("tag")="Pos", @("x")=10, @("y")=20 ]
     y = 20,
 ]
@@ -903,7 +903,7 @@ Examples:
 <!-- exs/val-05-function.atm -->
 
 ```
-val f = func (x, y) {     ;; function to add arguments
+pin f = func (x, y) {     ;; function to add arguments
     x + y
 }
 print(type(f))      ;; --> 'function'
@@ -938,7 +938,7 @@ Examples:
 <!-- exs/val-05-function.atm -->
 
 ```
-val g = \{ it + 1 }     ;; function to increment argument
+pin g = \{ it + 1 }     ;; function to increment argument
 print(g ?? :function)   ;; --> true
 print(g(f(1,2)))        ;; --> 4
 ```
@@ -995,7 +995,7 @@ Examples:
 <!-- exs/val-06-tasks.atm -->
 
 ```
-val T = task (n) {          ;; task to await n seconds
+pin T = task (n) {          ;; task to await n seconds
     print(task ?? :xtask)   ;; --> true
     await(n * 1s)
     print "timeout"
@@ -1151,6 +1151,21 @@ print(t.pub)            ;; --> 20
 A task also has the field `ret`, which can only be read, and holds the value
 that the task terminated with.
 
+A task owns what it keeps in `pub` and in `ret`: a fresh value that is stored
+there is [pinned](#pin) with the task, in the block that the task is attached
+to, and is reclaimed with the task.
+Since the `pub` is visible wherever the task is, it cannot hold a value that
+is pinned in the body of the task.
+A task creates what it publishes in the `pub` itself, and refers to it:
+
+```
+task Ship () {
+    set pub = [ rect=[x=0, y=0, w=10, h=10] ]
+    val rect = pub.rect     ;; an alias of what the task publishes
+    <...>
+}
+```
+
 ## Native
 
 The `native` reference type represents a resource of C, such as an open file.
@@ -1160,6 +1175,14 @@ referenced, or when its [pin](#pin) block terminates.
 
 Native values are created by libraries written in C.
 In the [standard libraries](#standard-libraries), files are native values.
+
+A native value follows the [rules](#pin) of all dynamic values: it is fresh
+when it is created, and is declared with `pin`.
+A library may declare that a native value holds another value, as a child
+resource holds its parent, with the C function `a_nat_holds(nat, v)`, called
+right after the native value is created.
+The native value is then born with its floor in the block of the other
+value: it cannot leave that block, and is finalized before the value.
 
 Examples:
 
@@ -1331,7 +1354,7 @@ Examples:
 <!-- exs/exp-03-escape.atm -->
 
 ```
-val v = do :X {
+pin v = do :X {
     escape :X [x=10]
     print('never executes')
 }
@@ -1436,6 +1459,9 @@ A `val` is immutable, while a `var` is mutable.
 A [`pin`](#pin) is immutable and attaches its value to the enclosing block,
 which reclaims the value when it terminates or aborts.
 
+A [dynamic value](#pin) that was just created must be declared with `pin`:
+a `val` or a `var` only refers to a value that already belongs to a block.
+
 A declaration may specify a list of identifiers, which supports multiple
 declarations with the same modifier.
 
@@ -1470,6 +1496,12 @@ do {
 }                       ;; `t` is aborted
 
 do {
+    pin p = [1, 2]      ;; `p` owns the table
+    val q = p           ;; `q` refers to it
+    val r = [3, 4]      ;; ERROR: invalid assignment : expected pinned value
+}
+
+do {
     val y = 10
     set y = 20          ;; ERROR: `y` is immutable
 }
@@ -1477,17 +1509,48 @@ do {
 
 #### Pin
 
-A `pin` declaration attaches its value to the enclosing block.
-It applies to all [reference types](#types--values): tasks, pools, tables,
-functions, and native values.
+Every dynamic value belongs to a block: tasks, pools, tables, functions, and
+native values.
 Values of other types, such as numbers and strings, are not affected.
+
+A dynamic value is in one of two states:
+
+- *Pinned*: it is owned by a block, which reclaims it on termination.
+- *Fresh*: it is not owned yet.
+  It is the result of a constructor, of a call, or of a block, before it is
+  declared or stored.
+
+A fresh value becomes pinned in two ways:
+
+- When it is declared with `pin`, in the enclosing block.
+- When it is stored in a pinned value, such as in a field of a pinned table
+  or in the [`pub`](#pub) of a pinned task.
+  It is then pinned in the block of the value that holds it.
+
+The pin is deep: the fresh values that the value holds are pinned with it.
+
+A `val`, a `var`, or an assignment to a variable does not own a value:
+it only refers to a value that is already pinned.
+Therefore, the first declaration of a dynamic value is always a `pin`, and
+the error `invalid assignment : expected pinned value` is raised otherwise.
+There are exceptions for places that receive values from elsewhere:
+a parameter, a loop variable, and the declarations of a [`where`](#where)
+may hold fresh values.
+A function may pin a fresh value that it receives as an argument.
+
+The declaration of a [prototype](#prototypes) pins it: `func f () {...}`,
+`task T () {...}`, and the assignment of a function to a variable, as in
+`set f = func () {...}`, pin the prototype in the block of the variable.
 
 When the block terminates or aborts, its pinned values are reclaimed:
 
 - First, tasks and pools are aborted, in the reverse order in which they were
   declared, and interleaved with the [defer](#defer) blocks.
+  The tasks and pools that are held by pinned data, and have no declaration
+  of their own, are aborted before them.
 - Then, tables and functions release what they hold, even if they are part of a
   cycle, and native values release their resources.
+  So do the values that they hold and that were pinned with them.
 
 A task of the block may be the one that makes the block terminate, e.g., by
 emitting the event that the enclosing task awaits.
@@ -1499,57 +1562,98 @@ Therefore, finalization always goes from the inside out: a `defer` of a task
 executes before the `defer` blocks that its enclosing block declares before
 it.
 
-The value to pin must be new, with no other references to it.
-The exception is a task or a pool, since tasks may refer to themselves.
-Tasks and pools must always be pinned:
-it is an error to assign a running task to a `val` or `var` if it is not
-pinned somewhere else.
-An unassigned `spawn` is implicitly pinned in the enclosing block, and
-[cannot be the last statement](#tasks) of that block, where the task would
-be aborted at once.
+A fresh value that is dropped is reclaimed at once: a table is released, a
+native value releases its resource, and a task or pool is aborted.
+A task is dropped when nobody pinned it and no value refers to it any
+longer, such as a `spawn` in the middle of an expression whose value is not
+used, or the result of a function that its caller ignores.
+An unassigned `spawn` that is a statement is implicitly pinned in the
+enclosing block, and [cannot be the last statement](#tasks) of that block,
+where the task would be aborted at once.
 
-A pinned value cannot escape its block, which would leave a dangling
-reference after the block reclaims it.
-The following operations raise the error `invalid escape : pinned value`:
+A value cannot escape its block, which would leave a dangling reference after
+the block reclaims it.
+A place only accepts a value whose block is the same as the block of the
+place, or encloses it.
+The following operations raise an error such as
+`invalid escape : table pinned at prog.atm:10`, with the type of the value
+and the line of its pin:
 
-- to assign the value to a variable of an outer block, or to a variable that
-  is captured by a function;
-- to store the value in a table that is not pinned in the same block or in a
-  nested one, or in the `pub` of a task attached outside the block;
+- to assign the value to a variable of an outer block;
+- to store the value in a table that is pinned in an outer block, or in the
+  `pub` of a task attached outside the block;
 - to pass the value in a `throw`, or to `emit` it to tasks that live outside
   the block;
 - to spawn a task with the value in a pool that lives outside the block.
 
-A function that captures a pinned value is also restricted to the block of
-that value, and so is a task that receives it as an argument.
+A variable that is captured by a function belongs to the block that declares
+it, as any other variable.
+
+A fresh value may hold pinned values: a constructor with a pinned value as a
+field, a concatenation of tables that hold pinned values, a function that
+captures a pinned value or a variable, a task that receives a pinned value as
+an argument.
+Such a fresh value is born with a *floor*, which is the innermost block of
+the pinned values it is born with.
+It cannot leave its floor, but may be pinned there or in any block inside.
+Therefore, a pinned value may be passed inside a constructor to a function,
+to a pattern of an [await](#await), or to an [emit](#emit), with no
+declaration:
+
+```
+pin dlg = <...>
+await :close [h=dlg]        ;; the pattern holds `dlg`, with no pin
+```
+
+The floor is set when the value is born: a value that is stored later in a
+fresh value must belong to the floor, or to a block that encloses it.
 
 Finally, a block may give away what it pins.
 If a pinned value is the final value of its block, or goes out through a
-`return`, `break`, or `escape`, then it leaves the block as a new unpinned
-value, along with the pinned values it holds.
-The destination may pin it again.
-A task or pool that leaves its block this way must be pinned again.
+`return`, `break`, or `escape`, then it leaves the block as a fresh value,
+along with the values it holds from the block, including tasks and pools.
+The destination must pin it again.
+It is an error if the value holds something that cannot leave: a task of a
+pool that stays in the block, or a task that received an argument that is
+pinned in the block.
+This is the only way to undo a pin, and the way to build a value with the
+help of temporary ones:
+
+```
+pin r = do {
+    pin tmp = [...]         ;; temporary, reclaimed here
+    pin x   = [...]
+    <...>
+    x                       ;; leaves the block, and is pinned outside
+}
+```
 
 Examples:
 
 ```
 do {
     pin t = [1, 2, 3]       ;; `t` is attached to the block
-    pin u = [t]             ;; OK: `u` is in the same block
+    pin u = [t, []]         ;; OK: `u` is in the same block, and owns `[]`
     val x = t               ;; OK: an alias in the same block
 }                           ;; `t` and `u` are reclaimed
 
-var out
+pin out = []
 do {
     pin t = [1, 2, 3]
-    set out = t             ;; ERROR: invalid escape : pinned value
+    set out.t = t           ;; ERROR: invalid escape : table pinned at ...
 }
 
 func new () {
     pin t = [1, 2, 3]
     t                       ;; `t` leaves the block
 }
-val v = new()               ;; `v` is a regular table
+pin v = new()               ;; `v` is pinned again
+
+func f (t) {
+    pin u = t               ;; a function may pin what it receives
+    #u
+}
+f([1, 2, 3])
 ```
 
 #### Where
@@ -1564,6 +1668,8 @@ Decl : ID* `=´ Expr
 
 A `where` initializes a list of immutable locals, which are only visible within
 the prefix expression and the clause itself.
+The declarations have no modifier: the clause [owns](#pin) a value that is
+fresh, and refers to a value that is already pinned.
 
 Examples:
 
@@ -1593,7 +1699,13 @@ The first format supports functions and tasks:
 - `func f (<pars>) { <body> }`:
     equivalent to `set f = func (<pars>) { <body> }`
 - `val func f (<pars>) { <body> }`:
-    equivalent to `val f = func (<pars>) { <body> }`
+    equivalent to `pin f = func (<pars>) { <body> }`
+
+The declaration of a prototype [pins](#pin) it, in the block of its variable:
+in the block of the declaration in the `val` form, and in the outermost block
+of the program for a variable of the program.
+Therefore, a prototype that captures a value or a variable of an inner block
+cannot be declared as a variable of the program.
 
 In the `val` form, `f` is visible in its own body, such that the function may
 call itself.
@@ -1646,7 +1758,7 @@ val task T (x) {
 ```
 
 ```
-val o = [ v=1 ]
+pin o = [ v=1 ]
 func o::inc () {
     set self.v = self.v + 1
 }
@@ -1722,7 +1834,7 @@ Examples:
 var x
 set x = 20              ;; OK
 
-val y = [10]
+pin y = [10]
 set y@0 = 20            ;; OK
 set y = 0               ;; ERROR: cannot reassign `y`
 
@@ -1884,9 +1996,9 @@ Examples:
 [x=10] ++ [x=1,y=2]       ;; [x=1, y=2]
 ```
 
-The result is a new table, which is not pinned.
-Therefore, it is an error to concatenate tables that hold
-[pinned values](#pin), such as the tasks of a pool.
+The result is a fresh table.
+If the operands hold [pinned values](#pin), such as the tasks of a pool, the
+result is born with its floor in their block.
 
 ## Indexing
 
@@ -1922,7 +2034,7 @@ Examples:
 <!-- exs/exp-12-indexing.atm -->
 
 ```
-val t = [ x=1 ]
+pin t = [ x=1 ]
 print(t@('x'))      ;; --> 1
 print(t@:x)         ;; --> 1
 print(t.x)          ;; --> 1
@@ -1930,7 +2042,7 @@ print(t.y)          ;; --> nil
 ```
 
 ```
-val v = [ 1 ]
+pin v = [ 1 ]
 set v@0 = 10        ;; [ 10 ]
 set v@+ = 20        ;; [ 10, 20 ]
 print(v@#)          ;; --> 20
@@ -2305,7 +2417,7 @@ loop i,v in [10,20,30] {
 ```
 
 ```
-val f = func (s,e) {
+pin f = func (s,e) {
     var nxt = s
     \{
         val cur = nxt
@@ -2496,7 +2608,7 @@ print(ok, v)        ;; --> true, 42
 ```
 
 ```
-val ok, x = catch :X {
+pin ok, x = catch :X {
     throw :X [v=10, msg="error"]
     print("unreachable")
 }
@@ -2694,7 +2806,7 @@ A bare call (e.g., `await T()`, or as an operand `await<T() || :X>`)
 [spawns](#tasks) the given task and awaits its termination, evaluating to the
 task final value.
 The task gives its final value away, as a function call does: the value comes
-out with no other reference, and may be [pinned](#pin), as in
+out fresh, and is [pinned](#pin) by who awaits, as in
 `pin f = await Open()`.
 The task that comes as the second result no longer holds the value.
 A task that is awaited by its reference (`await(t)`) keeps its final value,
@@ -2776,11 +2888,19 @@ The optional target between brackets determines the scope of the broadcast:
 - `t: task`: the given task
 - `n: number`: `n`th level up in the task hierarchy (`0` = current task)
 
-An event that is a [pinned value](#pin) can only reach tasks that live inside
-the block of the value.
+An event that is a [pinned value](#pin), or that holds one, can only reach
+tasks that live inside the block of the value.
 Otherwise, a task could keep the event after the block reclaims it.
-Therefore, it is an error to emit a pinned value to `:global`, to `:parent`,
+Therefore, it is an error to emit such a value to `:global`, to `:parent`,
 or to a task attached outside its block.
+The exception is a value pinned in the outermost block of the program, in
+which all tasks live.
+
+An event is shared by the tasks that receive it, which may keep it after the
+`emit` returns.
+Therefore, no block owns a fresh value that is emitted: it is reclaimed when
+no task refers to it any longer, and a task that receives it cannot pin it.
+A task keeps the event in a `val`, as in `val e = await(:X)`.
 
 Examples:
 
@@ -2788,7 +2908,7 @@ Examples:
 
 ```
 task T () {
-    val x = spawn X()
+    pin x = spawn X()
     val e = <...>
     emit @:global (e)   ;; global broadcast
     emit @:task (e)     ;; restricted to `T`
@@ -3057,7 +3177,7 @@ A vector is a [table](#table) with the keys `0` to `#t-1`.
 Examples:
 
 ```
-val t = [3, 1, 2]
+pin t = [3, 1, 2]
 vector.sort(t)                      ;; [1, 2, 3]
 vector.insert(t, 0, 0)              ;; [0, 1, 2, 3]
 vector.remove(t)                    ;; 3
@@ -3166,7 +3286,7 @@ Examples:
 ```
 
 ```
-val f = io.open("config.atm")
+pin f = io.open("config.atm")
 val c = X.load(io.read(f, :all))
 print(c ?? :Config, c.title, c.size@0)      ;; --> true, Rocks, 640
 print(X.load("[1, [2, 3]]")@1@0)            ;; --> 2
