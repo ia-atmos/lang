@@ -1,14 +1,14 @@
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-05.atm:10
 1
 2
 1
 2
 0
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-05.atm:24
 2
 true
 true
 true	function: 0x?
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-05.atm:7
+false	invalid escape : table pinned at store-05.atm:7
 false	X	1

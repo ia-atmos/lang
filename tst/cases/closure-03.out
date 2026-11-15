@@ -1,4 +1,4 @@
-false	invalid escape : pinned value
+false	invalid escape : function pinned at closure-03.atm:12
 0	1	2	21
 0	2
 6

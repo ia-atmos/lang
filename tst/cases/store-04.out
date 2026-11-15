@@ -3,13 +3,13 @@ true
 x	1
 x	1
 y	2
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-04.atm:16
+false	invalid escape : table pinned at store-04.atm:16
+false	invalid escape : table pinned at store-04.atm:16
 x	1
 z	3
 z	3
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-04.atm:24
+false	invalid escape : table pinned at store-04.atm:24
+false	invalid escape : table pinned at store-04.atm:31
+false	invalid escape : table pinned at store-04.atm:31

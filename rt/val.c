@@ -28,6 +28,25 @@ static int TRACE_CALLS[TRACE_MAX];
 static int TRACE_N = 0;
 static int TRACE_MORE = 0;
 
+// "invalid escape : table pinned at f:10": the type of the value, and
+// the line of the pin that confines it, if known.
+static AVal err_pinned (AVal v) {
+    char buf[512];
+    const char* type = (v.type == A_XTASK) ? "task" :
+                       (v.type == A_TASKS) ? "pool" :
+                       (v.type == A_BOX)   ? "variable" : a_typename(v);
+    uint32_t lin = (v.type >= A_TAB) ? v.u.o->lin : 0;
+    if (v.type < A_TAB) {
+        snprintf(buf, sizeof(buf), "invalid escape : pinned value");
+    } else if (lin == 0) {
+        snprintf(buf, sizeof(buf), "invalid escape : pinned %s", type);
+    } else {
+        snprintf(buf, sizeof(buf), "invalid escape : %s pinned at %s:%d",
+            type, atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
+    }
+    return a_strz(buf);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STATUS
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,16 +58,20 @@ AStatus a_throw (void) {
     // an error unwinds the pin blocks before it is caught
     for (int i=0; i<a_pay_n; i++) {
         if (a_pay[i].type>=A_TAB && a_pdepth(a_pay[i])>0) {
+            AVal msg = err_pinned(a_pay[i]);
             a_pay_clear();
-            a_pay_add(a_strz("invalid escape : pinned value"));
+            a_pay_add(msg);
             break;
         }
     }
     return A_ERROR;
 }
 
-AStatus a_err_pinned (void) {
-    return a_error("invalid escape : pinned value");
+AStatus a_err_pinned (AVal v) {
+    AVal msg = err_pinned(v);
+    AStatus st = a_error("%s", A_STR_OF(msg)->s);
+    a_dec(msg);
+    return st;
 }
 
 AStatus a_escape (void) {
@@ -295,6 +318,7 @@ AVal a_func (AFn fn, int ncap) {
     f->hdr.type   = A_FUNC;
     f->hdr.pinned = 0;
     f->hdr.depth  = 0;
+    f->hdr.lin    = 0;
     f->fn   = fn;
     f->task = NULL;
     f->ncap = ncap;
@@ -317,6 +341,7 @@ AVal a_box (void) {
     // it belongs to the block that declares its variable
     b->hdr.pinned = 1;
     b->hdr.depth  = a_depth;
+    b->hdr.lin    = a_lin;
     b->v = a_nil();
     return a_obj(&b->hdr);
 }
@@ -327,6 +352,7 @@ AVal a_nat (void* ptr, void (*fin)(void*), const char* kind) {
     n->hdr.type   = A_NAT;
     n->hdr.pinned = 0;
     n->hdr.depth  = 0;
+    n->hdr.lin    = 0;
     n->ptr  = ptr;
     n->fin  = fin;
     n->kind = kind;

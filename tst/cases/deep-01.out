@@ -5,10 +5,10 @@ end	2
 true
 3
 false	invalid assignment : unexpected pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at deep-01.atm:47
 false	invalid assignment : unexpected pinned value
 in
 end	3
 end	4
 out
-false	invalid escape : pinned value
+false	invalid escape : native pinned at deep-01.atm:64

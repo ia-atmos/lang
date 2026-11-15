@@ -11,15 +11,15 @@ dead	c
 dead	d
 4
 dead	1
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : task pinned at xfer-02.atm:46
+false	invalid escape : task pinned at xfer-02.atm:53
 dead
 5
 1	suspended
 dead	e
 6
 dead	f
-false	invalid escape : pinned value
+false	invalid escape : pool pinned at xfer-02.atm:79
 1	suspended
 dead	g
 7

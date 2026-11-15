@@ -3,7 +3,7 @@ dead	b	1
 false	invalid assignment : expected pinned value
 dead	c	2
 dead	d	3
-false	invalid escape : pinned value
+false	invalid escape : pinned task
 1
 2
 3

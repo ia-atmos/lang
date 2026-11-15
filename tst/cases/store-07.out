@@ -1,7 +1,7 @@
-false	invalid escape : pinned value
+false	invalid escape : task pinned at store-07.atm:13
 1	1
 T	1
 U	2	us
 U	2	blk
 U	2	pin
-false	invalid escape : pinned value
+false	invalid escape : task pinned at store-07.atm:5

@@ -14,6 +14,6 @@ false	invalid argument to 'insert' : position out of bounds
 false	invalid argument to 'remove' : position out of bounds
 false	invalid argument to 'join' : expected string or number : got table
 false	invalid argument to 'insert' : expected table : got number
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at vector-01.atm:41
+false	invalid escape : table pinned at vector-01.atm:41
 0	2

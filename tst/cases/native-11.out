@@ -1,5 +1,5 @@
 close	b
-false	invalid escape : pinned value
+false	invalid escape : native pinned at native-11.atm:27
 in
 close	c
 out

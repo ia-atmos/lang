@@ -1539,7 +1539,7 @@ static AStatus emit_chk (ANode* n, AVal evt) {
         }
     }
     if (t == NULL) {
-        return a_err_pinned();
+        return a_err_pinned(evt);
     }
     // all tasks live inside the main task
     if (n==&ROOT.node && t->node.up==&ROOT.node) {
@@ -1548,7 +1548,7 @@ static AStatus emit_chk (ANode* n, AVal evt) {
     // the owner itself: only if pinned in the outermost block of the
     // task
     if (n == &t->node) {
-        return (i==0 && t->depth==p) ? A_OK : a_err_pinned();
+        return (i==0 && t->depth==p) ? A_OK : a_err_pinned(evt);
     }
     // otherwise, a subtree attached inside the pin block
     ANode* c = n;
@@ -1556,19 +1556,19 @@ static AStatus emit_chk (ANode* n, AVal evt) {
         c = c->up;
     }
     if (c == NULL) {
-        return a_err_pinned();
+        return a_err_pinned(evt);
     }
     // it is attached to the owner, or to a trail nested in the owner
     // that starts inside the pin block
     int j = c->trail;
     if (j == i) {
-        return (node_adepth(c) >= p) ? A_OK : a_err_pinned();
+        return (node_adepth(c) >= p) ? A_OK : a_err_pinned(evt);
     }
     while (j>0 && t->desc->trails[j].up!=i) {
         j = t->desc->trails[j].up;
     }
     if (j<=0 || trail_bdepth(t,j)-1<p) {
-        return a_err_pinned();
+        return a_err_pinned(evt);
     }
     return A_OK;
 }
@@ -1928,6 +1928,7 @@ static void pin_deep (AVal v, int d, int how) {
         case A_TAB: {
             o->pinned = how;
             o->depth  = d;
+            o->lin    = a_lin;
             uint32_t pos = 0;
             AVal k, x;
             while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
@@ -1940,6 +1941,7 @@ static void pin_deep (AVal v, int d, int how) {
         case A_TASK: {
             o->pinned = how;
             o->depth  = d;
+            o->lin    = a_lin;
             AFunc* f = A_FUNC_OF(v);
             for (int i=0; i<f->ncap; i++) {
                 pin_deep(f->caps[i], d, 2);
@@ -1955,6 +1957,7 @@ static void pin_deep (AVal v, int d, int how) {
             }
             o->pinned = how;
             o->depth  = d;
+            o->lin    = a_lin;
             if (v.type == A_XTASK) {
                 pin_deep(A_TASK_OF(v)->pub, d, 2);
                 pin_deep(A_TASK_OF(v)->ret, d, 2);
@@ -1976,13 +1979,14 @@ static void pin_deep (AVal v, int d, int how) {
         default:
             o->pinned = how;
             o->depth  = d;
+            o->lin    = a_lin;
             break;
     }
 }
 
 AStatus a_hold (AObj* h, AVal v) {
     if (a_pdepth(v) > (int)h->depth) {
-        return a_err_pinned();
+        return a_err_pinned(v);
     }
     if (h->pinned) {
         pin_deep(v, h->depth, 2);
@@ -1993,14 +1997,17 @@ AStatus a_hold (AObj* h, AVal v) {
 void a_func_scope (AVal f) {
     AFunc* fn = A_FUNC_OF(f);
     int d = 0;
+    uint32_t lin = 0;
     for (int i=0; i<fn->ncap; i++) {
         int p = a_pdepth(fn->caps[i]);
         if (p > d) {
             d = p;
+            lin = fn->caps[i].u.o->lin;
         }
     }
     // fresh, with its floor at the deepest block of its captures
     fn->hdr.depth = d;
+    fn->hdr.lin   = lin;
 }
 
 int a_pdepth (AVal v) {
@@ -2051,7 +2058,7 @@ AStatus a_pin (AVal* slot) {
     }
     // a fresh value is pinned at its floor or deeper
     if (a_pdepth(v) > a_depth) {
-        return a_err_pinned();
+        return a_err_pinned(v);
     }
     pin_deep(v, a_depth, 1);
     return A_OK;
@@ -2072,6 +2079,7 @@ AStatus a_pin (AVal* slot) {
 // Something held by what leaves cannot leave: a task with arguments
 // pinned in the block, or a task of a pool that stays.
 static int XFER_OK;
+static AVal XFER_BAD;
 
 // Pools of the block with a task that leaves: they must leave too.
 static ATasks** XFER_PS = NULL;
@@ -2116,7 +2124,8 @@ static int xfer_mark (AVal v, int d) {
         }
         // fresh, or pinned in the block
         if (live && t->mindepth>d) {
-            XFER_OK = 0;
+            XFER_OK  = 0;
+            XFER_BAD = v;
             return 0;
         }
         // it remains attached to the trail that spawned it
@@ -2141,7 +2150,8 @@ static int xfer_mark (AVal v, int d) {
     if (v.type == A_TASKS) {
         for (ATask* t=A_TASKS_OF(v)->all; t!=NULL; t=t->znext) {
             if (!t->node.dead && t->status!=T_DONE && t->mindepth>d) {
-                XFER_OK = 0;
+                XFER_OK  = 0;
+                XFER_BAD = a_obj(&t->node.hdr);
             }
             int mt = xfer_mark_task(t, d);
             m = (mt > m) ? mt : m;
@@ -2241,6 +2251,7 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n) {
     }
     // all or nothing
     XFER_OK  = 1;
+    XFER_BAD = a_nil();
     XFER_NPS = 0;
     int m = 0;
     for (int i=0; i<n; i++) {
@@ -2249,14 +2260,15 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n) {
     }
     for (int i=0; i<XFER_NPS; i++) {
         if (XFER_PS[i]->node.hdr.depth != XFER) {
-            XFER_OK = 0;
+            XFER_OK  = 0;
+            XFER_BAD = a_obj(&XFER_PS[i]->node.hdr);
         }
     }
     for (int i=0; i<n; i++) {
         xfer_set(vs[i], XFER_OK, m, d);
     }
     if (!XFER_OK) {
-        st = a_err_pinned();
+        st = a_err_pinned(XFER_BAD);
     }
     return st;
 }
@@ -2340,7 +2352,7 @@ AStatus a_pin_at (AVal* slot, int d) {
         return A_OK;
     }
     if (a_pdepth(v) > d) {
-        return a_err_pinned();
+        return a_err_pinned(v);
     }
     pin_deep(v, d, 1);
     return A_OK;

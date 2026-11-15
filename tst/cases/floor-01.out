@@ -1,9 +1,9 @@
 10
 1
-false	invalid escape : pinned value
+false	invalid escape : table pinned at floor-01.atm:16
 1	1
-false	invalid escape : pinned value
-false	invalid escape : pinned value
-false	invalid escape : pinned value
+false	invalid escape : table pinned at floor-01.atm:25
+false	invalid escape : table pinned at floor-01.atm:25
+false	invalid escape : table pinned at floor-01.atm:25
 30	30
 6

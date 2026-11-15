@@ -26,6 +26,9 @@ typedef struct AObj {
     uint8_t  type;
     uint8_t  pinned;
     uint32_t depth;
+    // line of the pin that gives the value its depth (0 if none), for
+    // the message of an escape
+    uint32_t lin;
 } AObj;
 
 typedef struct AVal {
@@ -993,14 +996,15 @@ void a_tab_clear (ATab* t);
 // the value is free to go anywhere.
 int a_pdepth (AVal v);
 
-// Raises "invalid escape : pinned value".
-AStatus a_err_pinned (void);
+// Raises the escape of `v`: "invalid escape : table pinned at f:10",
+// with its type and the line of the pin that confines it.
+AStatus a_err_pinned (AVal v);
 
 // A pinned value may only be stored where it cannot outlive its pin
 // block: here, into something that lives at depth `d`.
 static inline AStatus a_chk_store (AVal v, int d) {
     if (v.type>=A_TAB && a_pdepth(v)>d) {
-        return a_err_pinned();
+        return a_err_pinned(v);
     }
     return A_OK;
 }
@@ -1023,6 +1027,7 @@ static inline void a_born (AVal x, AVal v) {
         int p = a_pdepth(v);
         if (p > (int)x.u.o->depth) {
             x.u.o->depth = p;
+            x.u.o->lin   = v.u.o->lin;
         }
     }
 }

@@ -1,6 +1,6 @@
 10
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-03.atm:15
 20
 10
-false	invalid escape : pinned value
+false	invalid escape : table pinned at store-03.atm:6
 30
