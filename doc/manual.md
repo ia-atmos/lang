@@ -3171,9 +3171,10 @@ string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
 
 A vector is a [table](#table) with the keys `0` to `#t-1`.
 
-- `vector.insert(t, v)`: appends `v` to `t`
+- `vector.insert(t, v)`: appends `v` to `t`, and evaluates to `v`
 - `vector.insert(t, i, v)`: inserts `v` at position `i`, shifting up the
-  elements from `i` on
+  elements from `i` on, and evaluates to `v`
+- `vector.clear(t)`: removes all elements of `t`, and keeps its other keys
 - `vector.remove(t [, i])`: removes and evaluates to the element at position
   `i`, which defaults to the last, shifting down the elements after it
 - `vector.sort(t [, f])`: sorts `t` in place; `f(a,b)` tells if `a` comes
@@ -3189,6 +3190,10 @@ vector.sort(t)                      ;; [1, 2, 3]
 vector.insert(t, 0, 0)              ;; [0, 1, 2, 3]
 vector.remove(t)                    ;; 3
 vector.join(t, "-")                 ;; 0-1-2
+
+pin cs = []
+val c = vector.insert(cs, [x=1])    ;; `cs` owns the table, `c` refers to it
+vector.clear(cs)                    ;; []
 ```
 
 ## Input and Output

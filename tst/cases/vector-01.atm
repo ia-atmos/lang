@@ -46,3 +46,10 @@ do {
     vector.insert(q, 0, p)
     print(#u, #q)
 }
+;; insert gives the element, which the vector owns; clear
+pin cs = [tag=:T]
+val c = vector.insert(cs, [x=1])
+val d = vector.insert(cs, 0, [x=2])
+print(c.x, d.x, #cs, cs@1 == c)
+vector.clear(cs)
+print(#cs, cs.tag)

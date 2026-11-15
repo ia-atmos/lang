@@ -1,0 +1,26 @@
+;; An event that C builds may hold a value that is pinned in the
+;; program: its fields are those of a constructor.
+```:prelude
+static AStatus evt_emit (AVal h, int born) {
+    AVal evt = a_tab();
+    AVal k   = a_strz("h");
+    AVal tag = a_strz("action");
+    a_tag(evt, tag);
+    AStatus st = born ? a_tab_field(evt, k, h) : a_setindex(evt, k, h);
+    if (st == A_OK) {
+        st = atm_emit(evt);
+    }
+    a_dec(k);
+    a_dec(tag);
+    a_dec(evt);
+    return st;
+}
+```
+pin but = [id=1]
+spawn {
+    loop e on :action [h=but] {
+        print(:action, e.h.id)
+    }
+}
+`st = evt_emit($but, 1);`
+print(catch true { `st = evt_emit($but, 0);` })

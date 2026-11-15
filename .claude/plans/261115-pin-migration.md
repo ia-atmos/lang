@@ -74,6 +74,8 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
 | `pin e = [...] ; emit(e)` to tasks outside the block; `pin e = await(:X)` | `emit(:X [...])` with the event built in the emit; `val e = await(:X)` | An event is shared by who receives it: no block owns it, and a receiver cannot pin it |
 | `keep(spawn T())`, `(spawn T())`, a function that spawns and whose result is ignored | `pin t = spawn T()`, a pool, or a field of a pinned table | A fresh task that is dropped is aborted at once |
 | `pin tmp = [] ; <fill tmp> ; set outer.list@+ = [x=tmp]` (a value that is built and then given to a table of an outer block) | `set outer.list@+ = do { pin tmp = [] ; <fill tmp> ; [x=tmp] }` | A pinned value does not leave its block, except as the result of the block: the store then pins it outside |
+| `var shown = []` ... `set shown = []` (to empty a vector) | `pin shown = []` ... `vector.clear(shown)` | A variable does not own a fresh value |
+| `val new = [...] ; vector.insert(cs, new)` with `cs` of an outer block | `val new = vector.insert(cs, [...])` | The insert pins the fresh value in `cs` and gives it back |
 | `x or []` assigned to a `val` or a `pin` | decide: `pin y = if x { X.copy(x) } else { [] }`, or keep it as a field | A value that is sometimes fresh and sometimes owned fits neither |
 
 ## C in an environment
@@ -85,7 +87,14 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
   many times (a default font, a table of constants) must have an
   owner: call `a_own(v)` once, when it is created.
 - An event that C emits (`atm_emit`, `atm_emit_to`) is owned by the
-  emit: nothing to do.
+  emit: nothing to do, unless it holds a value of the program.
+- **An event built in C that holds a value pinned in the program**
+  (the handle of a control, in `[h=btn]`): a plain `a_setindex` into
+  the fresh table of the event now fails, and the field is not set.
+  Build the event with `a_tab_field(evt, key, v)`, which is a field
+  of a constructor (the table takes its floor from the value), and
+  do not drop its status. Found by `env-iup`: the symptom was an
+  `await :action [h=but]` that never matched.
 - `a_nat_holds(child, parent)`, right after the child is created,
   declares that a native holds another value: the child is born with
   its floor in the block of the parent, and is finalized before it.

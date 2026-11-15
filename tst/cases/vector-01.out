@@ -17,3 +17,5 @@ false	invalid argument to 'insert' : expected table : got number
 false	invalid escape : table pinned at vector-01.atm:41
 false	invalid escape : table pinned at vector-01.atm:41
 0	2
+1	2	2	true
+0	T

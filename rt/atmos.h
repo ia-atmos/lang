@@ -1038,6 +1038,17 @@ static inline void a_born (AVal x, AVal v) {
     }
 }
 
+// A field of a table that C is constructing, as a field of a
+// constructor: a fresh table takes its floor from the key and the
+// value, so that it may hold values that are pinned in the program
+// (an event with the handle of a control). A plain `a_setindex` into
+// a fresh table refuses them.
+static inline AStatus a_tab_field (AVal t, AVal k, AVal v) {
+    a_born(t, k);
+    a_born(t, v);
+    return a_setindex(t, k, v);
+}
+
 // A native holds another value, as a child resource holds its parent:
 // the value must last at least as long as the native. A binding
 // declares it right after it creates the native, which is then born

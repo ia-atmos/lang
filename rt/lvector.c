@@ -23,6 +23,7 @@ static AStatus arg_vec (int argc, AVal* argv, const char* f, int64_t* n) {
 // vector.insert(t, v): appends `v`.
 // vector.insert(t, i, v): inserts `v` at position `i`, shifting up
 // the elements from `i` on.
+// Both give `v`, which the vector may have just pinned.
 static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
     (void) self;
     int64_t n;
@@ -31,7 +32,11 @@ static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
     }
     AVal t = argv[0];
     if (argc < 3) {
-        return a_setindex(t, a_int(n), arg(argc,argv,1));
+        if (a_setindex(t, a_int(n), arg(argc,argv,1)) != A_OK) {
+            return A_ERROR;
+        }
+        a_pushc(arg(argc,argv,1));
+        return A_OK;
     }
     int64_t i;
     if (arg_int(argc, argv, 1, "insert", 0, 0, &i) != A_OK) {
@@ -48,6 +53,21 @@ static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
         a_tab_set(A_TAB_OF(t), a_int(j), a_tab_get(A_TAB_OF(t),a_int(j-1)));
     }
     a_tab_set(A_TAB_OF(t), a_int(i), argv[2]);
+    a_pushc(argv[2]);
+    return A_OK;
+}
+
+// vector.clear(t): removes all elements, and keeps the other keys.
+static AStatus vec_clear (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    int64_t n;
+    if (arg_vec(argc, argv, "clear", &n) != A_OK) {
+        return A_ERROR;
+    }
+    ATab* t = A_TAB_OF(argv[0]);
+    for (int64_t j=n-1; j>=0; j--) {
+        a_tab_set(t, a_int(j), a_nil());
+    }
     return A_OK;
 }
 
@@ -204,6 +224,7 @@ void atm_lib_vector_init (void) {
     atm_g_vector = a_tab();
     field(atm_g_vector, "insert", vec_insert);
     field(atm_g_vector, "remove", vec_remove);
+    field(atm_g_vector, "clear",  vec_clear);
     field(atm_g_vector, "sort",   vec_sort);
     field(atm_g_vector, "join",   vec_join);
 }
