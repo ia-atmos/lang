@@ -41,11 +41,14 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
    (traces, screenshots): the migration must not change them.
 2. Move your checkout of the compiler to `main` (`98ad03a` or later),
    and the commit that your setup script fixes.
-3. Run. For each `invalid assignment : expected pinned value` at
-   `file:N`, change `val` or `var` to `pin` in that line, and repeat.
-   The error only shows on the paths that execute: read the rest of
-   the code for the same patterns (`val x = [...]`, `val x = f()`
-   where `f` builds a value, `val f = func ...`, `val ok, e = catch`).
+3. Compile and run. Since `612af83` a constructor or a function
+   declared with `val` or `var` is a compile error (`invalid
+   declaration : expected 'pin'`), also on paths that never execute.
+   For the rest, each `invalid assignment : expected pinned value` at
+   `file:N` at run time: change `val` or `var` to `pin` in that line,
+   and repeat. The run-time error only shows on the paths that
+   execute: read the rest of the code for `val x = f()` where `f`
+   builds a value, and `val ok, e = catch`.
 4. Rewrite what a change of keyword does not solve (next section).
 5. Remove the workarounds that the old rules forced (item 40 of the
    list of the compiler): pins added only to pass a value in a
