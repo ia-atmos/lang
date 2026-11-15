@@ -46,9 +46,11 @@ Each item has the recommended option.
     - `paper-games` (session_011eECogKyRYMVJJfbmpHYv9): asked on
       2026-11-15 who takes the saved game of Doom, and what it claims
       on determinism and test modes. Not answered.
-    - `paper-pin` (session_011eECofALi31oSimzbLxYZp): asked on
-      2026-11-15 for the names of the rules to cite, and for overlap.
-      Not answered.
+    - ~~`paper-pin`~~ (session_011eECofALi31oSimzbLxYZp): answered
+      on 2026-11-15. Cite the rules by name ("store", "end", "result",
+      "pin"), not only by section. No overlap. Its request: not to
+      restate the rules, nor the comparison with GC, RC, Rust, and
+      regions. It may cite this paper as a case study in its Section 9.
     - `flare` (session_011eECoegYsZr7nSPxcugGtt): asked on 2026-11-15
       what the port does with saved games. Not answered.
     - `pico-1oom` (session_011eECoiEGgQ6ZBFHUCoxt77): not asked, the

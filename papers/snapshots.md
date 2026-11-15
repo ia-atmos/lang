@@ -121,12 +121,15 @@ state, and case studies.
     - animations come back; raw input does not
 - Structured abortion: a restart is the end of a block
     - one path for "die", "load", and "go back"
-    - by the rules of pin (`papers/pin.md`, Section 4), the block
-      finalizes all that it pinned, in reverse order, with its `defer`s
-    - tasks hold rows: free, a row belongs to an outer block
-    - rows hold tasks: an error, so the table cannot keep a task alive
-    - the only door out of a level: a fresh value stored in the table,
-      which is, by definition, state that persists
+    - by the rules of pin (`papers/pin.md`, Section 4), cited by name
+      and not restated here
+    - rule "end": the block finalizes all that it pinned, in reverse
+      order, with its `defer`s
+    - rule "store": tasks hold rows, since a row belongs to an outer
+      block; rows cannot hold tasks, so the table keeps no task alive
+    - rules "result" and "pin": the only door out of a level is a fresh
+      value stored in the table, which is, by definition, state that
+      persists
     - what the rules do not see: global state inside a C binding
 - Hierarchical tags: one await on `:cmd` sees every command
 
