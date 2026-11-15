@@ -120,8 +120,14 @@ state, and case studies.
     - a faithful replay re-emits time between commands
     - animations come back; raw input does not
 - Structured abortion: a restart is the end of a block
-    - nothing disposable survives it
     - one path for "die", "load", and "go back"
+    - by the rules of pin (`papers/pin.md`, Section 4), the block
+      finalizes all that it pinned, in reverse order, with its `defer`s
+    - tasks hold rows: free, a row belongs to an outer block
+    - rows hold tasks: an error, so the table cannot keep a task alive
+    - the only door out of a level: a fresh value stored in the table,
+      which is, by definition, state that persists
+    - what the rules do not see: global state inside a C binding
 - Hierarchical tags: one await on `:cmd` sees every command
 
 ## 6. Time, Randomness, and the Outside
@@ -143,6 +149,12 @@ state, and case studies.
 
 - The hard case: state that persists changes at every tick
 - The restriction: a save happens only at a checkpoint
+- Not a new kind of restriction: Doom already forbids a save outside a
+  level
+    - the port keeps the screen wipe and the intermission in tasks, with
+      state in locals and in the `await` where each task is suspended
+    - no save covers them, and none has to
+    - checkpoints widen the same window to the level itself
 - Consequences
     - the snapshot is small: level, checkpoint, inventory, seed
     - commands are few: checkpoint, death, level, lasting pickups
@@ -180,11 +192,27 @@ state, and case studies.
 ## 10. Case Studies
 
 - To be chosen with the author; none follows the architecture yet
-- Doom
+- Doom (`ia-atmos/doom`; facts reported by its session on 2026-11-15)
     - the saved game as the origin of the idea
-    - the demos of the original as the oracle
-    - after the faithful port: checkpoints, and things as tasks instead of
-      rows of the state table
+        - the simulation stays in C because a save must cover it: 967
+          rows of states, 448 with an action, 137 types of object
+        - Atmos has the control around it: frames, wipe, intermission
+    - the oracle: ten runs, 34,770 frames, compared frame by frame
+        - three demos of the original (10,996 tics), seven runs with
+          scripted input
+        - per frame: a checksum of the simulation and one of the screen
+        - identical between the engine in C and the program in Atmos
+    - state in tasks where no save can happen
+        - the intermission: counters local to a task, the phase is an
+          `await` (C: `static` variables and a state from 1 to 10)
+        - the wipe: one task per column, its position a local (C: an
+          array)
+    - state that had to be global: what C kept from one intermission to
+      the next
+    - planned, not started: one door and one monster as tasks, with no
+      saved games
+    - after the faithful port: checkpoints, and things as tasks instead
+      of rows of the state table
 - A game with checkpoints or by turns, among the ports
 - An application that is not a game: an editor
 - Measures: size of the snapshot, commands per minute, time to resume,
@@ -197,6 +225,10 @@ state, and case studies.
 - Rule R4 is not checked by the compiler
 - Journals and changes of code
 - State in memory: the table must fit
+- Determinism ends at native code
+    - in Doom the screen differed between runs at first: the engine
+      reads beyond the end of sprite columns, and pointers of the
+      allocator reached the screen as pixels
 
 ## 12. Related Work
 

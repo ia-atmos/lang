@@ -33,10 +33,13 @@ Each item has the recommended option.
 1. **Answers from other sessions.** Asked on 2026-11-15:
     - `ceu-atmos` (the parent): rules for the papers, which sessions
       write papers, which sessions hold evidence.
-    - `doom`: the demos as oracle, the saved game, the state table,
-      hidden state.
-    - `pin`: what a restart finalizes under the approved rules, and
-      which section to cite.
+    - ~~`doom`~~: answered on 2026-11-15, in Sections 7, 10 and 11.
+      The numbers of the state table are from its plan, not recounted.
+    - ~~`pin`~~: answered on 2026-11-15, in Section 5. The rules are
+      approved but not in the compiler: the paper says "by the rules
+      of pin". Exact anchors of the rules of store, end of block, and
+      result: to ask the `paper-pin` session
+      (session_011eECofALi31oSimzbLxYZp) when the text is written.
     - The session of `papers/games.md`: not reached (`src-games` is
       inactive). To ask the parent which session writes it now.
 2. **Related work from sources.** Prevayler, record and replay, and
