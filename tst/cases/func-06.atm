@@ -17,12 +17,12 @@ func outer () {
 print(outer(), inner())
 loop v in (func () { nil }) { print(:no) }
 var n = 0
-val it = func () {
+pin it = func () {
     set n = n + 1
     if n > 3 => nil => (n, n * n)
 }
 loop a, b in it { print(a, b) }
-val gen = func (s, e) {
+pin gen = func (s, e) {
     var nxt = s
     \{
         val cur = nxt

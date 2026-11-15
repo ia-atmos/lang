@@ -1,10 +1,10 @@
-val _,x = catch :X {
+pin _,x = catch :X {
     catch :Y {
         throw <- :X [10]
     }
 }
 X.print(x)
-val _,y = catch :Y {
+pin _,y = catch :Y {
     catch :Z {
         (func() { throw (:Y.X [10]) })()
     }

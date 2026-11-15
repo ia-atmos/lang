@@ -9,7 +9,7 @@
                     return(g)
                 }
             }
-            var gg = f()
+            pin gg = f()
             print(gg())
         }
     

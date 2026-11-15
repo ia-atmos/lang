@@ -1,4 +1,4 @@
-        val t = task () {
+        pin t = task () {
         }
         pin co = if true => spawn t() => nil
         print(co ?? :xtask)

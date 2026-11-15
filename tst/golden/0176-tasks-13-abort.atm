@@ -1,4 +1,4 @@
-        val T = task (i) {
+        pin T = task (i) {
             loop on :X {
                 print(:X, i)
             }

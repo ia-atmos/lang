@@ -1,4 +1,4 @@
-        val _,x = catch :X {
+        pin _,x = catch :X {
             catch :Y {
                 throw <- :X [10]
             }

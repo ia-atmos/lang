@@ -27,7 +27,7 @@ loop i,v in [10,20,30] {
     if v == 20 { skip }
     print(:table, i, v)
 }
-val f = func () {
+pin f = func () {
     var x = 0
     \{
         set x = x + 1

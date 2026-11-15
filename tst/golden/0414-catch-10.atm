@@ -1,4 +1,4 @@
-        var tk = task (v) {
+        pin tk = task (v) {
             await(true)
             val v = await(true)
             throw(:1)

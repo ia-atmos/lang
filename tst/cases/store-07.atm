@@ -3,14 +3,14 @@ var Bad
 func main () {
     pin ts = tasks()
     pin t = [1]
-    val T = task () {
+    pin T = task () {
         await(:X)
         print(:T, t@0)
     }
     spawn @ts T()
     do {
         pin a = [2]
-        val U = task (v) {
+        pin U = task (v) {
             await(:X)
             print(:U, a@0, v)
         }

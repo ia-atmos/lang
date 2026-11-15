@@ -4,9 +4,8 @@ val x = do :X {
     }
 }
 X.print(x)
-val y = do :X {
-    var x
-    set x = [0]
+pin y = do :X {
+    pin x = [0]
     escape(:X,x)
 }
 X.print(y)

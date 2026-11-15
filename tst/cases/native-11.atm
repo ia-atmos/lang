@@ -22,13 +22,13 @@ func layer (name, parent) {
 }
 
 pin win = window()
-var out
+pin out = []
 do {
     pin inner = window()
     ;; a child of a parent of an outer block
     pin a = layer("a", win)
     ;; it cannot leave the block of its parent
-    print(catch true { set out = layer("b", inner) })
+    print(catch true { set out.b = layer("b", inner) })
     ;; a fresh child is pinned in the block of the parent, or deeper
     do {
         pin c = layer("c", inner)

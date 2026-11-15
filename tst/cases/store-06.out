@@ -7,7 +7,7 @@ false	invalid escape : pinned value
 20
 false	invalid escape : pinned value
 1
-false	invalid escape : pinned value
+true
 true	table: 0x?
 1
 6

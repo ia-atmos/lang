@@ -1,4 +1,4 @@
-val t = []
+pin t = []
 loop i in 3 {
     loop j in 3 {
         if j > i { break() }

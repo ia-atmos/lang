@@ -18,7 +18,7 @@ do {
 print(#ts)
 func f () {
     var x = 1
-    val g = func () { set x = x + 1 ; x }
+    pin g = func () { set x = x + 1 ; x }
     ;; a captured variable belongs to the block that declares it
     do {
         pin c = [3]

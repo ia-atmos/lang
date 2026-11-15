@@ -1,4 +1,4 @@
-        val f = func () {
+        pin f = func () {
             do {
                 defer {
                     print(:4)    ;; TODO: aborted func' should execute defer

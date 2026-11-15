@@ -1,4 +1,4 @@
-        val F = func () { }
+        pin F = func () { }
         spawn { await F() }
         nil
     

@@ -1,6 +1,6 @@
 val path = "/tmp/atmos-tst-io-01.txt"
 do {
-    val f = io.open(path, "w")
+    pin f = io.open(path, "w")
     print(type(f))
     io.write(f, "one\n", 2, "\n", "\n", "last")
     io.close(f)
@@ -8,7 +8,7 @@ do {
     print(catch true { io.close(f) })
 }
 do {
-    val f = io.open(path)
+    pin f = io.open(path)
     print(io.read(f), io.read(f), "[" ++ io.read(f) ++ "]", io.read(f), io.read(f))
 }
 loop l in io.lines(path) {
@@ -19,7 +19,7 @@ io.write("\n")
 var keep
 do {
     pin f = io.open(path)
-    val it = io.lines(f)
+    pin it = io.lines(f)
     print(it())
     print(catch true { set keep = f })
     print(catch true { set keep = it })
@@ -30,7 +30,7 @@ func open () {
     io.read(f)
     f
 }
-val g = open()
+pin g = open()
 print(io.read(g))
 set keep = g
 print(io.open("/nonexistent/file"))

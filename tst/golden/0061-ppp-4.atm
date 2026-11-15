@@ -1,4 +1,4 @@
-        val t = []
+        pin t = []
         set t@(#t) = 10
         set t@(#t-1) = nil
         set t@(#t) = 10

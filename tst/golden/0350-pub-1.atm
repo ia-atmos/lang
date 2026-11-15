@@ -1,4 +1,4 @@
-        val t = task () {
+        pin t = task () {
             set pub = []
             return (pub)
         }

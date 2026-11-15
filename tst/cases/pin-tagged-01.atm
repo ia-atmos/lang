@@ -25,5 +25,5 @@ emit(e)
 ;; a fresh constructor may hold it too: it is born with its floor in
 ;; the block of what it holds
 print(catch true {
-    val x = :close [h=d]
+    pin x = :close [h=d]
 })

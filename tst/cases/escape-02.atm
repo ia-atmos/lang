@@ -1,4 +1,4 @@
-val x = do :X {
+pin x = do :X {
     escape <- :X [10]
 }
 X.print(x)
@@ -11,7 +11,7 @@ do :X.Z {
 }
 print(10)
 print(do :X { escape(:X) }, do :X { escape(:X.Y) })
-val v = do :X {
+pin v = do :X {
     escape(:X [x=10])
     print("never executes")
 }

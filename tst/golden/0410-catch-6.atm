@@ -1,4 +1,4 @@
-        val T = task () {
+        pin T = task () {
             catch :e1 {
                 spawn {
                     await(true)

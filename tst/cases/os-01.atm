@@ -1,4 +1,4 @@
-val t = [10, 20, x=1, y=2]
+pin t = [10, 20, x=1, y=2]
 var k, v = next(t)
 loop {
     until(k == nil)

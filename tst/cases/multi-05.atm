@@ -1,7 +1,7 @@
-val t = [1, 2]
+pin t = [1, 2]
 set t@0, t@1 = (t@1, t@0)
 X.print(t)
-val u = []
+pin u = []
 set u@+, u.x, u@+ = (10, 20, 30)
 X.print(u)
 var x, y = (1, 2)

@@ -6,8 +6,7 @@
             X.print(x)
         }) ()
         do {
-            val e = [10]
-            emit(:t [e])
+            emit(:t [[10]])
         }
         emit(:ok)
     

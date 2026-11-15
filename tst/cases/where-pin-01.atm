@@ -1,0 +1,14 @@
+;; A `where` has no modifier: its block owns a value that is fresh, and
+;; refers to one that has an owner.
+pin t = [1, 2]
+val n = (#u + #v + f()) where {
+    u = [3, 4, 5]           ;; fresh: owned by the clause
+    v = t                   ;; has an owner: an alias
+    f = func () { 10 }
+}
+print(n)
+;; what the clause owns may be the result
+pin r = w where {
+    w = [x=[1]]
+}
+print(r.x@0)

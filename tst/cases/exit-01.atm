@@ -51,8 +51,7 @@ print(do :X { escape :X, 1, 2 })
 print(do :X { escape :X })
 print(catch :E { throw :E, "msg" })
 print(catch true { throw })
-val e = :T [10]
-val ok, err = catch :T { throw e }
+pin ok, err = catch :T { throw :T [10] }
 print(ok, err@0)
 
 ;; abort and emit

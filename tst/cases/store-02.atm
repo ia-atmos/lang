@@ -13,7 +13,7 @@ do {
     pin d = [c, x=c, (c)]
     print(#d, d.x == c)
 }
-val u = []
+pin u = []
 print(catch true { set u.a = a })
 ;; a fresh table is born with its floor in the block of what it holds
 print(catch true { [a] })
@@ -22,7 +22,7 @@ print(catch true { [1, (a,b)] })
 print(catch true { u ++ a })
 print(catch true { a ++ u })
 print(catch true { X.copy([a]) })
-val v = X.copy(a)
+pin v = X.copy(a)
 print(v@0, v.b@0, v.b == b)
 set u@+ = v
 print(#u, #a)

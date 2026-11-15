@@ -1,6 +1,6 @@
-        val F = func () {
+        pin F = func () {
             val v = 10
-            val f = func () {
+            pin f = func () {
                 return(v)
             }
             return(f())

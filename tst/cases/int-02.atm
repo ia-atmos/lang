@@ -1,8 +1,8 @@
-val t = [10, 20, 30]
+pin t = [10, 20, 30]
 print(t@1, t@(1.0), t@(2 // 1), t@(4 / 2))
 set t@(3.0) = 40
 print(#t, t@3)
-val u = []
+pin u = []
 set u@1 = :int
 set u@(1.0) = :real
 set u@(1.5) = :frac

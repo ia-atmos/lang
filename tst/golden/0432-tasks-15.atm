@@ -1,5 +1,5 @@
-        val tup = []
-        val T = task () {
+        pin tup = []
+        pin T = task () {
             set ;;;task.;;;pub = tup
             await(true)
         }

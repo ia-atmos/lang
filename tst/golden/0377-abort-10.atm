@@ -1,5 +1,5 @@
         spawn (task () {
-            val T = task () {
+            pin T = task () {
                 await(true)
                 await(true)
             }

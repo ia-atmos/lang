@@ -1,4 +1,4 @@
-        val f = func (x, y) {
+        pin f = func (x, y) {
             print(:1)
             return <- (x, y)
             print(:2)

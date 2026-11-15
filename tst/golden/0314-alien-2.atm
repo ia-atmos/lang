@@ -1,11 +1,10 @@
-        val T = task () {
+        pin T = task () {
             val x = await(true)
             X.print(x@0)
         }
         spawn T()
         do {
-            val e = []
-            (func () { emit(:t [e]) })()
+            (func () { emit(:t [[]]) })()
         }
         print(:ok)
     

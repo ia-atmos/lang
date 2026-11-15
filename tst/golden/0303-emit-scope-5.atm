@@ -1,4 +1,4 @@
-        val T = task () {
+        pin T = task () {
             val e =
                 (func (x) {
                     type(x)

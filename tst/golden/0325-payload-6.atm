@@ -1,4 +1,4 @@
-        val fff = func (x) { return (x) }
+        pin fff = func (x) { return (x) }
         spawn (task () {
             print(1)
             var evt

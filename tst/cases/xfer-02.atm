@@ -6,8 +6,8 @@ func counter () {
         st.n
     }
 }
-val f = counter()
-val fs = [f]
+pin f = counter()
+pin fs = [f]
 print(f(), f(), fs@0())
 
 task T (v) {
@@ -49,7 +49,7 @@ func bad () {
 print(catch true { pin t = bad() })
 func bad2 () {
     pin a = [1]
-    val U = task () { await(false) ; a }
+    pin U = task () { await(false) ; a }
     pin u = spawn U()
     u
 }
@@ -57,7 +57,7 @@ print(catch true { pin t = bad2() })
 ;; unless it has terminated
 func done () {
     pin a = [1]
-    val U = task () { a@0 }
+    pin U = task () { a@0 }
     spawn U()
 }
 pin dn = done()

@@ -1,4 +1,4 @@
-val t = [1, 2, v=[x=10]]
+pin t = [1, 2, v=[x=10]]
 var n = 0
 func idx () { set n += 1 ; 0 }
 set t@(idx()) += 10

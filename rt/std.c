@@ -677,6 +677,21 @@ void atm_std_init (void) {
     atm_lib_vector_init();
     atm_lib_os_init();
     atm_lib_io_init();
+
+    // the values of the libraries are owned by the runtime
+    a_own(atm_g_print);
+    a_own(atm_g_type);
+    a_own(atm_g_tostring);
+    a_own(atm_g_tonumber);
+    a_own(atm_g_assert);
+    a_own(atm_g_next);
+    a_own(atm_g_X);
+    a_own(atm_g_math);
+    a_own(atm_g_atmos);
+    a_own(atm_g_string);
+    a_own(atm_g_vector);
+    a_own(atm_g_os);
+    a_own(atm_g_io);
 }
 
 void atm_std_quit (void) {

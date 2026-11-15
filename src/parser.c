@@ -1520,6 +1520,7 @@ static Expr* parser_7_out (Expr* pre) {
         while (!check_str("}")) {
             Expr* dcl = mk(E_DCL, TK0);
             dcl->tk.str = "val";
+            dcl->u.dcl.opt = 1;
             dcl->u.dcl.n = parser_ids(&dcl->u.dcl.ids);
             accept_str_err("=");
             dcl->u.dcl.set = parser();

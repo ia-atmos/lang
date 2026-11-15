@@ -1,4 +1,4 @@
-val T = task (n) {
+pin T = task (n) {
     print(task ?? :xtask)
     await(:X)
     print("done", n)

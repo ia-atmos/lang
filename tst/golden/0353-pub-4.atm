@@ -1,7 +1,6 @@
-        val T = task () {
+        pin T = task () {
             do {
-                val x = []
-                set pub = x
+                set pub = []
                 return(pub)
             }
         }

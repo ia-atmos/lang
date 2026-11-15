@@ -1,8 +1,8 @@
-        val U = task () {
+        pin U = task () {
             defer { print(:U_gone) }
             await(false)
         }
-        val T = task () {
+        pin T = task () {
             pin u = spawn U()
             u
         }

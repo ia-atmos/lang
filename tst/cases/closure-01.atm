@@ -1,4 +1,4 @@
-val f = func (x) {
+pin f = func (x) {
     (func (y) {
         (x + y)
     })
@@ -24,6 +24,6 @@ do {
             return(hh)
         }
     }
-    var x = h()
+    pin x = h()
     print(x())
 }

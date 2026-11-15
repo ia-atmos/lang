@@ -1,9 +1,9 @@
 ;; a task that cannot await ends in its start
 task Quick (v) { print(v) }
-val Q2 = task (v) { print(v) }
+pin Q2 = task (v) { print(v) }
 task Other () {
     ;; these do not await in `Other`
-    val f = func () { print(:f) }
+    pin f = func () { print(:f) }
     val task U () { await(:x) }
     spawn { await(:x) }
     f()

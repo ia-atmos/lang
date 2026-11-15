@@ -1,4 +1,4 @@
-        val T = task (v) {
+        pin T = task (v) {
             await(true)
             X.print(v)
         }

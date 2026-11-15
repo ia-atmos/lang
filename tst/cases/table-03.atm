@@ -1,4 +1,4 @@
-val stk = [1,2,3]
+pin stk = [1,2,3]
 print(stk@#)
 set stk@# = 30
 print(stk@0, stk@1, stk@2)
@@ -7,6 +7,6 @@ set stk@# = nil
 print(x, #stk)
 set stk@+ = 3
 print(#stk, stk@#, stk@+)
-val e = []
+pin e = []
 set e@# = nil
 print(#e, e@#)

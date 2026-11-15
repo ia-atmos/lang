@@ -1,4 +1,4 @@
-        var T = task () {
+        pin T = task () {
             val v = await(true)
             X.print(v@0)
         }
@@ -8,8 +8,7 @@
             do {
                 val b
                 do {
-                    var e = []
-                    emit(:t [e])
+                    emit(:t [[]])
                 }
             }
         }

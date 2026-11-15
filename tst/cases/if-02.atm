@@ -1,4 +1,4 @@
-val f = [v=10]
+pin f = [v=10]
 if f.v => \{
     print("f.v is " ++ it)
 } else {

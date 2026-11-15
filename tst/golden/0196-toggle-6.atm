@@ -1,4 +1,4 @@
-        val T = task () {
+        pin T = task () {
             nil
         }
         pin t = spawn T()

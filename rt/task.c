@@ -43,6 +43,7 @@ static RFrame* RSTK = NULL;
 
 static AStatus node_abort (ANode* n);
 static void    pin_deep (AVal v, int d, int how);
+static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
 static void    wait_set (ATrail* tr, AStatus st);
@@ -1588,6 +1589,7 @@ AStatus a_emit (AVal to, AVal evt) {
     if (emit_chk(n,evt) != A_OK) {
         return A_ERROR;
     }
+    evt_own(evt);
     return chk_aborted(emit_top(n, evt));
 }
 
@@ -2318,16 +2320,44 @@ static void a_drop_quit (void) {
     a_ndrop = 0;
 }
 
-AStatus a_chk_task (AVal v) {
-    // the running task and its ancestors outlive the current scope,
-    // and a terminated task needs no owner
-    if (v.u.o->pinned || is_up((ANode*)v.u.o)) {
-        return A_OK;
-    }
-    if (v.type==A_XTASK && A_TASK_OF(v)->status==T_DONE) {
-        return A_OK;
+AStatus a_chk_fresh (AVal v) {
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        // the running task and its ancestors outlive the current
+        // scope, and a terminated task needs no owner
+        if (is_up((ANode*)v.u.o)) {
+            return A_OK;
+        }
+        if (v.type==A_XTASK && A_TASK_OF(v)->status==T_DONE) {
+            return A_OK;
+        }
     }
     return a_error("invalid assignment : expected pinned value");
+}
+
+AStatus a_pin_at (AVal* slot, int d) {
+    AVal v = *slot;
+    if (v.type<A_TAB || v.u.o->pinned) {
+        return A_OK;
+    }
+    if (a_pdepth(v) > d) {
+        return a_err_pinned();
+    }
+    pin_deep(v, d, 1);
+    return A_OK;
+}
+
+void a_own (AVal v) {
+    pin_deep(v, 0, 1);
+}
+
+// An event that is emitted is shared by the tasks that receive it,
+// which may keep it after the emit: no block can own it. A fresh one
+// becomes owned by the runtime, at its floor, and is released when
+// nobody refers to it.
+static void evt_own (AVal evt) {
+    if (evt.type>=A_TAB && evt.type!=A_XTASK && evt.type!=A_TASKS) {
+        pin_deep(evt, a_pdepth(evt), 1);
+    }
 }
 
 // A value held by the one that is being released, and pinned with it.
@@ -2815,6 +2845,7 @@ AStatus atm_emit (AVal evt) {
     if (a_isnum(evt)) {
         return emit_tick(a_dbl(evt));
     }
+    evt_own(evt);
     return emit_top(&ROOT.node, evt);
 }
 
@@ -2837,6 +2868,7 @@ AStatus atm_emit_to (AVal to, AVal evt) {
         return a_error("invalid emit : expected global");
     }
     ANode* n = (ANode*) to.u.o;
+    evt_own(evt);
 
     // who holds the target, taken before the emit: a task that ends
     // leaves the tree

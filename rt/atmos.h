@@ -919,15 +919,32 @@ AStatus a_pub (AVal** ref);
 //  - 2: pinned by the value that holds it, in the block `depth`
 AStatus a_pin (AVal* slot);
 
-// val x = v: a task or pool must be pinned somewhere.
-AStatus a_chk_task (AVal v);
+// val x = v: a variable only refers to a value that has an owner. A
+// fresh value must be declared with `pin`.
+AStatus a_chk_fresh (AVal v);
 
 static inline AStatus a_chk (AVal v) {
-    if (v.type!=A_XTASK && v.type!=A_TASKS) {
+    if (v.type<A_TAB || v.u.o->pinned) {
         return A_OK;
     }
-    return a_chk_task(v);
+    return a_chk_fresh(v);
 }
+
+// x = v, in a `where`: pins the value if it is fresh.
+static inline AStatus a_pin_opt (AVal* slot) {
+    if (slot->type<A_TAB || slot->u.o->pinned) {
+        return A_OK;
+    }
+    return a_pin(slot);
+}
+
+// A prototype that is assigned to a variable by its declaration
+// (`func f () {...}`) is pinned in the block `d` of the variable.
+AStatus a_pin_at (AVal* slot, int d);
+
+// The value becomes owned by the runtime, outside all blocks, along
+// with what it holds: a function or a table of a library.
+void a_own (AVal v);
 
 // End of the block of a pin, if the value is still pinned there.
 // First, tasks and pools are aborted, along with the defers of the

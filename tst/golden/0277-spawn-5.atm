@@ -1,4 +1,4 @@
-        val t = task () {
+        pin t = task () {
         }
         var co = if true => spawn t() => nil
         print(type(co))

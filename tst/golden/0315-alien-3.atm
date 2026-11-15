@@ -1,6 +1,6 @@
         spawn (task () {
             val evt = await(true)
-            val x = [nil]
+            pin x = [nil]
             set x@0 = evt@(0)
             X.print(x)
         }) ()

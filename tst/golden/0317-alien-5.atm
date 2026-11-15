@@ -4,8 +4,6 @@
             X.print(x)
         }) ()
         do {
-            val e = [[10]]
-            set e.tag = :t
-            emit(e)
+            emit(:t [[10]])
         }
     

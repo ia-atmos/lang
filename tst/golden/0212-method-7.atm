@@ -2,6 +2,6 @@
             print(v)
             self
         }
-        val o = [f=f]
+        pin o = [f=f]
         print(o::f'v'::f\{})
     

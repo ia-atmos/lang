@@ -1,5 +1,5 @@
         pin ts = tasks(1)
-        var T = task () { await(true) }
+        pin T = task () { await(true) }
         val t1 = spawn @ts T()
         val t2 = spawn @ts T()
         emit @ts (:)

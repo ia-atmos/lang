@@ -1,5 +1,4 @@
-        var x
-        set x = []
+        pin x = []
         emit(:t [x])
         X.print(x)
     

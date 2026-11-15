@@ -1,5 +1,5 @@
         pin ts = tasks(2)
-        val T = task (v) {
+        pin T = task (v) {
             print(10)
             defer {
                 print(20)

@@ -1,4 +1,4 @@
-val t = [10, 20, 30]
+pin t = [10, 20, 30]
 set t@1 = nil
 print(#t, t@0, t@1, t@2)
 set t@2 = nil

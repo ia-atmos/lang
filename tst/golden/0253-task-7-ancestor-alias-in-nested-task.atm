@@ -1,8 +1,8 @@
-        val T = task (t) {
+        pin T = task (t) {
             val x = t
             print(x ?? :xtask)
         }
-        val U = task () {
+        pin U = task () {
             spawn T(task)
             await(false)
         }

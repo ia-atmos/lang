@@ -1,9 +1,9 @@
         var g = nil
-        val S = task () {
+        pin S = task () {
             await(:go)
             val x = g
         }
-        val T = task () {
+        pin T = task () {
             set g = task
             emit @(:global) (:go)
             await(false)

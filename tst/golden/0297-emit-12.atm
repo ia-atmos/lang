@@ -1,7 +1,7 @@
-        var fff = func (...) {
+        pin fff = func (...) {
             X.print(...)
         }
-        var T = task () {
+        pin T = task () {
             val e = await(true)
             fff(e.tag, e@0)
         }

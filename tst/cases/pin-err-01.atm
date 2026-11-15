@@ -1,2 +1,2 @@
+;; a fresh value must be declared with `pin`
 val a = []
-pin b = a

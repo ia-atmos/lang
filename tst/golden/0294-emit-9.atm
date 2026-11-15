@@ -1,4 +1,4 @@
-        var T = task () {
+        pin T = task () {
             do {
                 val v =
                     await(true)
@@ -7,7 +7,7 @@
         }
         spawn T()
         ;;print(:1111)
-        var e = []
+        pin e = []
         emit(:t [e])
         ;;print(:2222)
     

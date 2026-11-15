@@ -1,8 +1,8 @@
         spawn (task () {
-            val fff = func () {
+            pin fff = func () {
                 print(:ok)
             }
-            val T = task () {
+            pin T = task () {
                 fff()
             }
             await(true)

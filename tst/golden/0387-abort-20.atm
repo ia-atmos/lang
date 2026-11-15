@@ -1,4 +1,4 @@
-        val f = func (t) {
+        pin f = func (t) {
             defer {
                 print(:ok)
             }
@@ -7,7 +7,7 @@
             print(:no)
         }
         spawn (task () {
-            val T = task () {
+            pin T = task () {
                 await(true)
                 await(true)
                 print(:2)

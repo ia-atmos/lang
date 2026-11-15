@@ -1,4 +1,4 @@
-        val f = func (op, x, y) {
+        pin f = func (op, x, y) {
             op(x, y)
         }
         print(f(\+, 10, 20))

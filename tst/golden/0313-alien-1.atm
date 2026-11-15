@@ -4,8 +4,7 @@
             await(false)
         }) (nil)
         do {
-            val e = []
-            emit(:t [e])
+            emit(:t [[]])
         }
         print(:ok)
     

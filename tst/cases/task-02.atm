@@ -1,4 +1,4 @@
-val T = task (a) {
+pin T = task (a) {
     print(a)
     val b = await(:X)
     print(b)

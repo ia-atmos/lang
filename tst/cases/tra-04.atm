@@ -1,4 +1,4 @@
-val T = task () {
+pin T = task () {
     val v = loop {
         spawn {
             break(10)
@@ -9,7 +9,7 @@ val T = task () {
 }
 spawn T()
 print(:end)
-val U = task () {
+pin U = task () {
     val v = loop {
         spawn {
             await(:go)

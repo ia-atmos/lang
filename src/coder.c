@@ -1144,6 +1144,11 @@ static void gen_dcl_chk (Unit* u, Expr* e) {
         const char* v = var_c(u, e->vars[i]);
         if (e->vars[i]->kind == V_PIN) {
             gen_pin(u, v);
+        } else if (e->u.dcl.opt) {
+            // a `where` has no modifier: its block owns a value that
+            // is fresh, and refers to one that has an owner
+            out_try(u, "a_pin_opt(&%s)", v);
+            gen_pin_end(u, v, 1);
         } else {
             out_try(u, "a_chk(%s)", v);
             // a captured variable belongs to the block that declares it
@@ -1174,10 +1179,17 @@ static void gen_dcl (Unit* u, Expr* e) {
             u->born = tab;
         }
         Opnd o = gen_expr(u, e->u.dcl.set);
+        // the initialization may span lines: an error of the
+        // declaration is in its own line
+        out(u, "a_lin = %d;", lin_of(e->tk));
         gen_boxes(u, e);
         opnd_mov(u, o, var_c(u,e->vars[0]));
         if (born) {
             gen_pin_end(u, var_c(u,e->vars[0]), 1);
+        } else if (e->u.dcl.rec) {
+            // val func f () {...}: the declaration of a prototype
+            // pins it
+            gen_pin(u, var_c(u,e->vars[0]));
         } else {
             gen_dcl_chk(u, e);
         }
@@ -1185,6 +1197,7 @@ static void gen_dcl (Unit* u, Expr* e) {
     } else {
         Dst m = dst_multi(u);
         gen(u, e->u.dcl.set, m);
+        out(u, "a_lin = %d;", lin_of(e->tk));
         out(u, "a_adj(%s, %d);", m.n, k);
         gen_boxes(u, e);
         for (int i=0; i<k; i++) {
@@ -1223,7 +1236,29 @@ static Loc gen_loc (Unit* u, Expr* dst) {
 }
 
 // Assigns an operand to a destination, consuming both.
-static void gen_assign (Unit* u, Loc l, Opnd v) {
+static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
+    if (proto && l.e->tag==E_ACC) {
+        // func f () {...}: the declaration of a prototype pins it, in
+        // the block of its variable
+        Var* x = l.e->var;
+        const char* dst = var_c(u, x);
+        opnd_mov(u, v, dst);
+        if (x->boxed) {
+            out_try(u, "a_pin_at(&%s, (int)%s.u.o->depth)", dst,
+                var_raw(u,x));
+        } else if (x->global) {
+            out_try(u, "a_pin_at(&%s, 1)", dst);
+            if (u->proto==PROTO_MAIN && u->trail==0 && u->level==0) {
+                gen_pin_end(u, dst, 1);
+            }
+        } else {
+            out_try(u, "a_pin_at(&%s, D + %d)", dst, x->level);
+            if (x->level == u->level) {
+                gen_pin_end(u, dst, 1);
+            }
+        }
+        return;
+    }
     if (l.e->tag == E_ACC) {
         // a variable only refers to a task or pool that has an owner
         out_try(u, "a_chk(%s)", v.c);
@@ -1262,6 +1297,10 @@ static void gen_assign (Unit* u, Loc l, Opnd v) {
     }
     opnd_rel(u, v);
     opnd_rel(u, l.t);
+}
+
+static void gen_assign (Unit* u, Loc l, Opnd v) {
+    gen_assign_x(u, l, v, 0);
 }
 
 // Reads the current value of a destination into a temporary.
@@ -1331,10 +1370,15 @@ static void gen_set (Unit* u, Expr* e) {
         ls[i] = gen_loc(u, e->u.set.dsts.v[i]);
     }
     if (k == 1) {
-        gen_assign(u, ls[0], gen_expr(u,e->u.set.src));
+        Opnd v = gen_expr(u, e->u.set.src);
+        out(u, "a_lin = %d;", lin_of(e->tk));
+        // set f = func () {...}: as the declaration of a prototype
+        int proto = e->u.set.proto || e->u.set.src->tag==E_PROTO;
+        gen_assign_x(u, ls[0], v, proto);
     } else {
         Dst m = dst_multi(u);
         gen(u, e->u.set.src, m);
+        out(u, "a_lin = %d;", lin_of(e->tk));
         out(u, "a_adj(%s, %d);", m.n, k);
         // all values are taken before the first assignment
         Opnd* vs = xalloc(k * sizeof(Opnd));

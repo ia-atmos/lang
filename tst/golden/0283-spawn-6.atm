@@ -1,5 +1,5 @@
-        val t = task () { print(:ok) }
-        val f = func () {
+        pin t = task () { print(:ok) }
+        pin f = func () {
             spawn t()
         }
         f()

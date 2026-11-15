@@ -1,4 +1,4 @@
-        val T = task () {
+        pin T = task () {
             spawn (task () {
                 loop on :Draw { print(:draw) }
             }) ()

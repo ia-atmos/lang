@@ -1,4 +1,4 @@
-        val T = task (v) { }
+        pin T = task (v) { }
         pin ts = tasks()
         var x = 0
         do :X {

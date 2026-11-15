@@ -23,7 +23,7 @@ do {
 var out
 do {
     pin c = [30]
-    print(catch true { set out = [c] })
+    print(catch true { set a.d = [[c]] })
     print(catch true { set a.c = [c] })
     print(catch true { set a.c = [1] ++ [c] })
     ;; and may be pinned at its floor or deeper

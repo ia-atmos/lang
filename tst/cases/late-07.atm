@@ -60,7 +60,7 @@ task W () {
     return(t)
 }
 spawn {
-    val r = await W()
+    pin r = await W()
     print(#r, r@1)
 }
 emit(:D)

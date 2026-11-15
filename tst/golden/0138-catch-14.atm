@@ -1,4 +1,4 @@
-        val _,x = catch :Y {
+        pin _,x = catch :Y {
             catch :Z {
                 (func() { throw (:Y.X [10]) })()
             }

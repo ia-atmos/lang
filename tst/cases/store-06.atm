@@ -2,14 +2,14 @@
 var bad, good
 func main () {
     pin t = [1]
-    val u = []
+    pin u = []
     var out
-    val f = func () { t@0 }
+    pin f = func () { t@0 }
     print(f())
     do {
         pin a = [2]
-        val g = func () { a@0 + t@0 }
-        val h = func () { g() + 1 }
+        pin g = func () { a@0 + t@0 }
+        pin h = func () { g() + 1 }
         print(g(), h())
         set out = f
         print(catch true { set out = g })
@@ -30,7 +30,7 @@ func main () {
     print(t.f())
     ;; no captures of pinned values: free
     val k = 5
-    val n = func () { k + 1 }
+    pin n = func () { k + 1 }
     set u.n = n
     print(u.n())
     ;; a function assigned to a top-level variable
@@ -41,5 +41,5 @@ main()
 print(good())
 ;; top-level variables are not captured
 pin g = [7]
-val gs = [func () { g@0 }]
+pin gs = [func () { g@0 }]
 print(gs@0())

@@ -6,7 +6,7 @@ val ok2,v2 = catch true {
     (10)
 }
 print(ok2,v2)
-val ok3, x = catch :X {
+pin ok3, x = catch :X {
     throw(:X [v=10, msg="error"])
     print("unreachable")
 }

@@ -1,4 +1,4 @@
-        val t = []
+        pin t = []
         print(#t)
         set t@(#t) = 1
         print(#t)

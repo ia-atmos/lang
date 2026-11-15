@@ -3,8 +3,8 @@
             X.print((await(true)).tag)
         }
         pin co = spawn tk()
-        var f = func () {
-            var g = func () {
+        pin f = func () {
+            pin g = func () {
                 emit :x []
             }
             g()

@@ -1,5 +1,5 @@
-        val f = func () {
-            val x = []
+        pin f = func () {
+            pin x = []
             emit @(:global)(:)
         }
         spawn (task () {

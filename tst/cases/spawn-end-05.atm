@@ -5,7 +5,7 @@ task T (id) {
     print(:boom, id)
 }
 func f () { T }
-val t = [T=T]
+pin t = [T=T]
 var V = T
 task W (id) { await(:tick) }
 set W = T

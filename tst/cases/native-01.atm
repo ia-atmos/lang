@@ -27,7 +27,7 @@ print(`puts("stmt");`)
 ;; variables: locals, captures, boxes, tasks
 func f (a) {
     var b = 1
-    val g = func () {
+    pin g = func () {
         `$b = a_int($b.u.i + $a.u.i);`
         `:number $b.u.i * 100`
     }

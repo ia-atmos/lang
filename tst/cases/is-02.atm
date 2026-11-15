@@ -1,9 +1,9 @@
-val e = :Key.Down [:escape, mod=1]
+pin e = :Key.Down [:escape, mod=1]
 print(e ?? :Key [:escape], e ?? :Key [:enter], e ?? [mod=1], e ?? [mod=2])
 print(e ?? :Key.Down.x [], e ?? [], [] ?? [x=1], [x=[y=1,z=2]] ?? [x=[y=1]])
 print(e ?? [mod=:number], e ?? [:string], e ?? [mod=:string], e !? :Key [:escape])
 print([p=:Pos [x=1]] ?? [p=:Pos], [1,2,3] ?? [1,2], [1,2] ?? [1,2,3])
-val p = :Pos [x=0, y=5]
+pin p = :Pos [x=0, y=5]
 print(match p { :Pos [x=1] => :one ; :Pos [x=0] => \{ it.y } ; else => :no })
 print(match p { [y=:number] => :num })
 X.print(catch :Err [code=404] { throw(:Err.Http [code=404, url="x"]) })

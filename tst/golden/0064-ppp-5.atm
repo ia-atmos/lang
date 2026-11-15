@@ -1,4 +1,4 @@
-        val stk = [1,2,3]
+        pin stk = [1,2,3]
         print(stk@#)        ;; --> 3
         set stk@# = 30
         X.print(stk)         ;; --> [1, 2, 30]

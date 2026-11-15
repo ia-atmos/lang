@@ -1,4 +1,4 @@
-        var T = task () {
+        pin T = task () {
             var v =
                 (func (it) {return(it)}) (await(true))
             X.print(v@0)
@@ -9,8 +9,7 @@
             val a
             do {
                 val b
-                var e = []
-                emit(:t [e])
+                emit(:t [[]])
             }
         }
         ;;print(:2222)

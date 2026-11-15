@@ -5,7 +5,7 @@ task T () {
     [1, 2, 3]
 }
 task U () {
-    val t = [4, 5, 6]       ;; ends at once
+    pin t = [4, 5, 6]       ;; ends at once
     t
 }
 task F () {
@@ -26,7 +26,7 @@ spawn {
     pin c = await <T() || :never>
     print(:c, #c)
     ;; the task comes second, with its value gone
-    val v, t = await T()
+    pin v, t = await T()
     print(:v, #v, t.ret)
 }
 emit(:go) ; emit(:go) ; emit(:go) ; emit(:go)
