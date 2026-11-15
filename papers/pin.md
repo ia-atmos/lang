@@ -1,12 +1,7 @@
-# Every Value Has a Block: Lexical Pinning for Structured Concurrent Programs
+# Dynamic Values Deserve a Home: Structured Memory with Lexical Pins
 
-Proposed name of the mechanism: **lexical pinning** (`pin`).
-
-Alternative titles:
-
-- Pin: Block-Owned Memory without a Garbage Collector
-- Structured Memory: Values that Live and Die with their Blocks
-- Lexical Memory Management for Structured Concurrency
+Name of the mechanism: **structured memory**. Its construct is the
+**lexical pin** (`pin`), which gives a dynamic value a home: a block.
 
 > Status: outline. The rules in Section 4 were approved by the author on
 > 2026-11-15 and are implemented in `main` since `98ad03a` (compiler,
@@ -17,16 +12,19 @@ Alternative titles:
 
 Structured concurrency ties the lifetime of a task to a lexical block: the
 task cannot outlive the block, and is aborted when the block terminates.
-We extend this discipline from tasks to all dynamic values.
-In Atmos, a `pin` declaration attaches a table, function, native resource,
-task, or pool to its enclosing block.
+Tasks have a home; the data and resources they use do not.
+We extend this discipline from tasks to all dynamic values, and call it
+structured memory.
+In Atmos, a lexical pin (`pin`) gives a table, function, native resource,
+task, or pool a home: its enclosing block.
 The block finalizes what it pins when it terminates or aborts, in reverse
 order and interleaved with `defer`, which reclaims cycles and releases
 resources at a known point of the program.
 A dynamic check, a block depth per value compared on every store, guarantees
 that no reference to a pinned value outlives its block, and a block may still
 give a value away as its result.
-The mechanism needs no tracing collector, no static lifetime annotations, and
+Reference counting remains underneath, but the mechanism needs no tracing
+collector, no static lifetime annotations, and
 no separate region or arena abstraction: the blocks of the program are the
 regions.
 We argue that it is only sound and useful under structured programming, in
@@ -41,12 +39,12 @@ case studies from six ports of libraries and games to Atmos.
 - Tasks hold data, data holds tasks: lifetimes are entangled
 - Structured concurrency solved it for tasks only
 - Gap: data and resources still depend on GC, RC, or manual discipline
-- Thesis: one lexical rule for tasks, data, and resources
+- Thesis: one lexical rule for tasks, data, and resources: every value has a home
 - Contributions
-    - the mechanism: lexical pinning
+    - the mechanism: structured memory, with lexical pins
     - a small set of rules, uniform for all dynamic values
     - a cheap dynamic check: one depth per value, one comparison per store
-    - an implementation with no collector
+    - an implementation with no tracing collector
     - an evaluation with six real ports
 
 ## 2. Background
@@ -59,7 +57,7 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 3. The Idea
 
-- Every dynamic value belongs to a block
+- Every dynamic value has a home: a block
 - `pin x = e`: the enclosing block owns the value
 - The block finalizes its values when it terminates or aborts
 - No reference to a value outlives its block
@@ -146,7 +144,7 @@ case studies from six ports of libraries and games to Atmos.
     - per value, not per allocator; values may leave
 - vs. nurseries and scopes (Trio, Kotlin, Swift, Java)
     - they own tasks only; data still relies on GC
-    - pinning owns tasks and what tasks use
+    - structured memory owns tasks and what tasks use
 - Summary table: mechanism x criterion
 
 ## 6. Why It Requires Structured Programming
@@ -161,7 +159,7 @@ case studies from six ports of libraries and games to Atmos.
     - detached threads and `go` statements
     - callbacks and promises that outlive the caller
     - global registries, unstructured `goto` and early exits
-- Claim: structured concurrency is necessary, and pinning completes it
+- Claim: structured concurrency is necessary, and structured memory completes it
 
 ## 7. Examples
 
@@ -177,7 +175,8 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 8. Implementation
 
-- Compilation to C, no collector in the runtime
+- Compilation to C, no tracing collector in the runtime
+- What reference counting still does: dropped fresh values, events, early release
 - Header of a value: reference count, state, block depth, line of the pin
 - States in the header: fresh, fresh with a floor, pinned by declaration,
   pinned by a holder, owned by the runtime
@@ -220,6 +219,7 @@ case studies from six ports of libraries and games to Atmos.
 - The check is dynamic: errors appear when the program executes
 - Shared structures must be owned by a common enclosing block
 - No weak references
+- Reference counting is still required: not "no GC", but no tracing GC
 - A variable does not own: `var x` cannot receive a fresh value later
 - A value sometimes fresh and sometimes owned fits neither `val` nor `pin`
 - An event is shared: a receiver cannot pin it
