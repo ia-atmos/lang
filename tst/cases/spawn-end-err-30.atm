@@ -1,5 +1,5 @@
-;; val T = task
-val T = task (id) {
+;; pin T = task
+pin T = task (id) {
     await(:tick)
     print(:boom, id)
 }

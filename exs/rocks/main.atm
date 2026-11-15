@@ -101,8 +101,8 @@ loop {
             spawn {
                 pin tex = sdl.image("imgs/pause.png") --> assert
                 val w, h = sdl.size(tex)
-                val pt = PP(50, 50)
-                val r = [
+                pin pt = PP(50, 50)
+                pin r = [
                     x = pt.x - (w/2),
                     y = pt.y - (h/2),
                     w = w,

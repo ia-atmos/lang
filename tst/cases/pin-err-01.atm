@@ -1,2 +1,2 @@
-;; a fresh value must be declared with `pin`
+;; a constructor is a fresh value for sure: a compile error
 val a = []

@@ -1,0 +1,3 @@
+==> ERROR:
+ v  pin-err-06.atm:3 (throw)
+==> invalid assignment : expected pinned value

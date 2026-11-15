@@ -1499,7 +1499,7 @@ do {
 do {
     pin p = [1, 2]      ;; `p` owns the table
     val q = p           ;; `q` refers to it
-    val r = [3, 4]      ;; ERROR: invalid assignment : expected pinned value
+    val r = [3, 4]      ;; ERROR: invalid declaration : expected 'pin'
 }
 
 do {
@@ -1534,6 +1534,8 @@ A `val`, a `var`, or an assignment to a variable does not own a value:
 it only refers to a value that is already pinned.
 Therefore, the first declaration of a dynamic value is always a `pin`, and
 the error `invalid assignment : expected pinned value` is raised otherwise.
+When the value is a constructor or a function, which are fresh for sure, it
+is the compile error `invalid declaration : expected 'pin'`.
 There are exceptions for places that receive values from elsewhere:
 a parameter, a loop variable, and the declarations of a [`where`](#where)
 may hold fresh values.

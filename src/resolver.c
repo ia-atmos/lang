@@ -325,6 +325,18 @@ static int STMT = 0;
 static int VOID = 0;
 static int TAIL = 0;
 
+// A constructor, tagged or not, or a function: a value that is fresh
+// for sure when it is evaluated.
+static int is_fresh (Expr* e) {
+    if (e == NULL) {
+        return 0;
+    }
+    if (e->tag == E_TAGGED) {
+        e = e->u.tagged.e;
+    }
+    return e->tag==E_TABLE || e->tag==E_PROTO;
+}
+
 static void res_in (Expr* e, int isvoid, int tail) {
     VOID = isvoid;
     TAIL = tail;
@@ -672,6 +684,13 @@ static void res (Expr* e) {
             {
                 e->vars[0]->def = e->u.dcl.set;
             }
+            // val x = [...]: a constructor is a fresh value for sure,
+            // which only a `pin` may declare (a `where` owns it)
+            if (kind!=V_PIN && !e->u.dcl.opt && e->u.dcl.n==1 &&
+                is_fresh(e->u.dcl.set))
+            {
+                err(e->u.dcl.ids[0], "invalid declaration : expected 'pin'");
+            }
             break;
         }
 
@@ -692,6 +711,14 @@ static void res (Expr* e) {
                 }
                 if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
                     err(dst->tk, "invalid set : expected mutable variable");
+                }
+                // set x = [...]: a variable does not own a fresh value
+                // (a function is the declaration of a prototype)
+                if (dst->tag==E_ACC && e->u.set.dsts.n==1 &&
+                    e->u.set.op==NULL && e->u.set.src->tag!=E_PROTO &&
+                    is_fresh(e->u.set.src))
+                {
+                    err(dst->tk, "invalid set : expected pinned value");
                 }
                 // `task T () {...}` defines `T`, if nothing else sets it
                 if (dst->tag == E_ACC) {

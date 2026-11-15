@@ -1,0 +1,3 @@
+;; a result that is fresh, at run time
+func mk () { [1] }
+val a = mk()

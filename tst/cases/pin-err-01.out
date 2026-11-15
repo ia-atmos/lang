@@ -1,3 +1,1 @@
-==> ERROR:
- v  pin-err-01.atm:2 (throw)
-==> invalid assignment : expected pinned value
+pin-err-01.atm : line 2 : near 'a' : invalid declaration : expected 'pin'

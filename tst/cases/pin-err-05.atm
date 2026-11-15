@@ -1,0 +1,4 @@
+;; a variable does not own a fresh value: a constructor, at compile
+;; time
+var f
+set f = [1]

@@ -1,3 +1,4 @@
-;; a variable does not own a fresh value
+;; a variable does not own a fresh value: a result, at run time
+func mk () { [1] }
 var f
-set f = [1]
+set f = mk()
