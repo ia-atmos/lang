@@ -2055,35 +2055,96 @@ AStatus a_pin (AVal* slot) {
     return A_OK;
 }
 
-// Transfer of `v` out of the blocks deeper than `d`. The pinned data
-// (tables, closures, natives) reachable from `v` that is pinned deeper
-// than `d` leaves with it. Only pinned objects are visited: unpinned
-// ones hold no pinned values. Tasks and pools held by the data do not
-// leave: they are aborted with their block.
+// Transfer of `v` out of the block being left, to the block `d` that
+// encloses it. What `v` holds from the block leaves with it: data
+// (tables, closures with their captured variables, natives), tasks,
+// and pools. What leaves becomes fresh in the outer block, which may
+// pin it again.
+//
+// A value belongs to the block being left if its depth is greater
+// than `d`: it is pinned there, or it is fresh with its floor there.
+// It cannot be deeper, since the blocks inside have ended.
 
-#define XFER UINT32_MAX     // depth of an object being transferred
+#define XFER UINT32_MAX     // depth of a value being transferred
 
-// Marks what leaves. Returns the deepest pin block among the values
-// that stay but are still held by what leaves.
+// Something held by what leaves cannot leave: a task with arguments
+// pinned in the block, or a task of a pool that stays.
+static int XFER_OK;
+
+// Pools of the block with a task that leaves: they must leave too.
+static ATasks** XFER_PS = NULL;
+static int      XFER_NPS = 0;
+
+static int xfer_mark (AVal v, int d);
+
+static int xfer_mark_task (ATask* t, int d) {
+    int m1 = xfer_mark(t->pub, d);
+    int m2 = xfer_mark(t->ret, d);
+    return (m1 > m2) ? m1 : m2;
+}
+
+// Marks what leaves. Returns the deepest block among the values that
+// stay but are still held by what leaves.
 static int xfer_mark (AVal v, int d) {
     if (v.type < A_TAB) {
         return 0;
     }
     AObj* o = v.u.o;
-    if (v.type==A_XTASK || v.type==A_TASKS) {
-        int p = a_pdepth(v);
-        return (p <= d) ? p : 0;
-    }
     if (o->depth == XFER) {
         return 0;
     }
-    // it stays: pinned outside, or fresh with a floor outside
+    if (v.type == A_XTASK) {
+        ATask* t = A_TASK_OF(v);
+        int live = (!t->node.dead && t->status!=T_DONE);
+        if (t->pool != NULL) {
+            // it stays with its pool, which must not end before what
+            // leaves
+            AObj* p = &t->pool->node.hdr;
+            if ((int)p->depth <= d) {
+                return p->depth;
+            }
+            if (live && p->depth!=XFER) {
+                XFER_PS = realloc(XFER_PS, (XFER_NPS+1) * sizeof(ATasks*));
+                XFER_PS[XFER_NPS++] = t->pool;
+            }
+            return 0;
+        }
+        if (o->pinned && (int)o->depth<=d) {
+            return o->depth;
+        }
+        // fresh, or pinned in the block
+        if (live && t->mindepth>d) {
+            XFER_OK = 0;
+            return 0;
+        }
+        // it remains attached to the trail that spawned it
+        int m = 0;
+        ANode* up = t->node.up;
+        if (live && up!=NULL && up->hdr.type==A_XTASK) {
+            m = trail_bdepth((ATask*)up, t->node.trail);
+            if (m > d) {
+                m = 0;
+            }
+        }
+        o->depth = XFER;
+        int mt = xfer_mark_task(t, d);
+        return (mt > m) ? mt : m;
+    }
     if ((int)o->depth <= d) {
+        // it stays: pinned outside, or fresh with a floor outside
         return o->depth;
     }
     o->depth = XFER;
     int m = 0;
-    if (v.type == A_TAB) {
+    if (v.type == A_TASKS) {
+        for (ATask* t=A_TASKS_OF(v)->all; t!=NULL; t=t->znext) {
+            if (!t->node.dead && t->status!=T_DONE && t->mindepth>d) {
+                XFER_OK = 0;
+            }
+            int mt = xfer_mark_task(t, d);
+            m = (mt > m) ? mt : m;
+        }
+    } else if (v.type == A_TAB) {
         uint32_t pos = 0;
         AVal k, x;
         while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
@@ -2105,88 +2166,53 @@ static int xfer_mark (AVal v, int d) {
     return m;
 }
 
-// What leaves becomes fresh, with its floor at the block `m` of what
-// it still holds.
-static void xfer_set (AVal v, int m) {
+// What was marked either leaves (`ok`), fresh and with its floor at
+// the block `m` of what it still holds, or goes back to the block.
+static void xfer_set (AVal v, int ok, int m, int d) {
     if (v.type<A_TAB || v.u.o->depth!=XFER) {
         return;
     }
     AObj* o = v.u.o;
-    // a captured variable keeps belonging to a block: the floor
-    o->pinned = (v.type == A_BOX);
-    o->depth  = m;
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        // the destination must pin it again
+        if (ok) {
+            o->pinned = 0;
+            o->depth  = 0;
+        } else {
+            o->depth = o->pinned ? d+1 : 0;
+        }
+        if (v.type == A_XTASK) {
+            xfer_set(A_TASK_OF(v)->pub, ok, m, d);
+            xfer_set(A_TASK_OF(v)->ret, ok, m, d);
+        } else {
+            for (ATask* t=A_TASKS_OF(v)->all; t!=NULL; t=t->znext) {
+                xfer_set(t->pub, ok, m, d);
+                xfer_set(t->ret, ok, m, d);
+            }
+        }
+        return;
+    }
+    if (ok) {
+        // a captured variable keeps belonging to a block: the floor
+        o->pinned = (v.type == A_BOX);
+        o->depth  = m;
+    } else {
+        o->depth = d+1;
+    }
     if (v.type == A_BOX) {
-        xfer_set(A_BOX_OF(v)->v, m);
+        xfer_set(A_BOX_OF(v)->v, ok, m, d);
     } else if (v.type == A_TAB) {
         uint32_t pos = 0;
         AVal k, x;
         while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-            xfer_set(k, m);
-            xfer_set(x, m);
+            xfer_set(k, ok, m, d);
+            xfer_set(x, ok, m, d);
         }
     } else if (v.type==A_FUNC || v.type==A_TASK) {
         AFunc* f = A_FUNC_OF(v);
         for (int i=0; i<f->ncap; i++) {
-            xfer_set(f->caps[i], m);
+            xfer_set(f->caps[i], ok, m, d);
         }
-    }
-}
-
-// Pinned arguments confine a task to their blocks: it cannot leave.
-static int xfer_chk (AVal v, int d) {
-    if (v.type == A_XTASK) {
-        ATask* t = A_TASK_OF(v);
-        int live = (!t->node.dead && t->status!=T_DONE);
-        return (t->pool!=NULL || !live || t->mindepth<=d);
-    } else if (v.type==A_TASKS && v.u.o->pinned && (int)v.u.o->depth>d) {
-        int pos = 0;
-        ATask* t;
-        while ((t = a_tasks_next(A_TASKS_OF(v),&pos)) != NULL) {
-            if (t->mindepth > d) {
-                return 0;
-            }
-        }
-    }
-    return 1;
-}
-
-static void xfer (AVal v, int d) {
-    if (v.type < A_TAB) {
-        return;
-    }
-    AObj* o = v.u.o;
-    int deep = (o->pinned && (int)o->depth>d);
-    switch (v.type) {
-        case A_XTASK: {
-            ATask* t = A_TASK_OF(v);
-            // a task in a pool stays with the pool
-            if (t->pool!=NULL || t->node.dead || t->status==T_DONE) {
-                return;
-            }
-            // the destination must pin it again
-            if (deep) {
-                o->pinned = 0;
-                o->depth  = 0;
-            }
-            xfer(t->pub, d);
-            break;
-        }
-        case A_TASKS: {
-            if (!deep) {
-                return;
-            }
-            int pos = 0;
-            ATask* t;
-            while ((t = a_tasks_next(A_TASKS_OF(v),&pos)) != NULL) {
-                xfer(t->pub, d);
-            }
-            o->pinned = 0;
-            o->depth  = 0;
-            break;
-        }
-        default:
-            xfer_set(v, xfer_mark(v,d));
-            break;
     }
 }
 
@@ -2212,18 +2238,24 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n) {
         n  = a_pay_n;
     }
     // all or nothing
-    int ok = 1;
+    XFER_OK  = 1;
+    XFER_NPS = 0;
+    int m = 0;
     for (int i=0; i<n; i++) {
-        ok = ok && xfer_chk(vs[i], d);
+        int mi = xfer_mark(vs[i], d);
+        m = (mi > m) ? mi : m;
     }
-    if (ok) {
-        for (int i=0; i<n; i++) {
-            xfer(vs[i], d);
+    for (int i=0; i<XFER_NPS; i++) {
+        if (XFER_PS[i]->node.hdr.depth != XFER) {
+            XFER_OK = 0;
         }
-    } else {
+    }
+    for (int i=0; i<n; i++) {
+        xfer_set(vs[i], XFER_OK, m, d);
+    }
+    if (!XFER_OK) {
         st = a_err_pinned();
     }
-
     return st;
 }
 

@@ -62,13 +62,43 @@ func done () {
 pin dn = done()
 print(atmos.status(dn))
 print(:5)
-;; tasks held by data do not leave: they end with their block
+;; tasks held by data leave with it, and are pinned with it again
 func held () {
     pin t = spawn T(:e)
     pin r = [t]
     r
 }
-val h = held()
-print(#h, atmos.status(h@0))
-val hs = [h@0]
+do {
+    pin h = held()
+    print(#h, atmos.status(h@0))
+}
 print(:6)
+;; but not a task of a pool that stays
+func held2 () {
+    pin ts = tasks()
+    pin r = [spawn @ts T(:f)]
+    r
+}
+print(catch true { pin h = held2() })
+;; unless the pool leaves too
+func held3 () {
+    pin ts = tasks()
+    pin r = [ts, spawn @ts T(:g)]
+    r
+}
+do {
+    pin h = held3()
+    print(#h@0, atmos.status(h@1))
+}
+print(:7)
+;; a pool held by data
+func held4 () {
+    pin r = [ts=tasks()]
+    spawn @(r.ts) T(:h)
+    r
+}
+do {
+    pin h = held4()
+    print(#h.ts)
+}
+print(:8)

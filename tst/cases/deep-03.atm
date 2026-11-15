@@ -1,0 +1,44 @@
+;; cases met by the ports
+
+;; a task of a pool, assigned to a variable that a function captures
+task T (v) {
+    defer { print(:end, v) }
+    await(false)
+}
+do {
+    pin ts = tasks()
+    var r
+    pin f = func () { set r = spawn @ts T(1) }
+    f()
+    print(r ?? :xtask, #ts)
+}
+
+;; a resource that is accepted in a loop and lives in a task of a pool
+;; outside: the task pins what it receives
+var n = 0
+func accept () {
+    set n = n + 1
+    [id=n]
+}
+task H (c0) {
+    pin c = c0
+    defer { print(:close, c.id) }
+    await(:go)
+    print(:serve, c.id)
+}
+do {
+    pin hs = tasks()
+    loop i in 2 {
+        spawn @hs H(accept())
+    }
+    emit(:go)
+    spawn @hs H(accept())
+    print(#hs)
+}
+
+;; a table of a module cannot refer to a pool of an inner block
+pin play = []
+do {
+    pin ts = tasks()
+    print(catch true { set play.enemies = ts })
+}
