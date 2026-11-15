@@ -312,7 +312,7 @@ int main (int argc, char** argv) {
 }
 ```
 
-val sdl = [
+pin sdl = [
     ;; sdl.window [title=, width=, height=]
     window = func (t) {
         `sdl_window($t);`

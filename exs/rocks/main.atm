@@ -18,7 +18,7 @@ sdl.window [
 
 val PP = sdl.pct_to_pos
 val rect_vs_rect = sdl.rect_vs_rect
-val FNT = sdl.font("tiny.ttf", H//15) --> assert
+pin FNT = sdl.font("tiny.ttf", H//15) --> assert
 
 math.randomseed(os.time())
 
@@ -38,7 +38,7 @@ spawn {    ;; BACKGROUND
     }
 }
 
-val points = [ L=0, R=0 ]
+pin points = [ L=0, R=0 ]
 
 spawn {    ;; POINTS
     ;;;
@@ -48,8 +48,8 @@ spawn {    ;; POINTS
     ;; Since points must outlive each individual battle, we spawn them here,
     ;; outside the main game loop.
     ;;;
-    val l = PP(10, 90)
-    val r = PP(90, 90)
+    pin l = PP(10, 90)
+    pin r = PP(90, 90)
     loop on :sdl.draw {
         sdl.color(0xFFFFFF)
         sdl.write(FNT, tostring(points.L), l)
@@ -73,7 +73,7 @@ loop {
         loop {
             ;; 500ms on
             watching 500ms {
-                val pt = PP(50, 50)
+                pin pt = PP(50, 50)
                 loop on :sdl.draw {
                     sdl.color(0xFFFFFF)
                     sdl.write(FNT, "= PRESS ENTER TO START =", pt)

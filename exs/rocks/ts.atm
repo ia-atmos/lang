@@ -1,7 +1,7 @@
 val SHIP_FRAMES     = 4
 val SHIP_ACC_DIV    = 10
-val SHIP_VEL_MAX    = [ x=W/2.5, y=H/2.5 ]
-val SHOT_DIM        = [ w=W/50, h=H/100 ]
+pin SHIP_VEL_MAX    = [ x=W/2.5, y=H/2.5 ]
+pin SHOT_DIM        = [ w=W/50, h=H/100 ]
 val SHOT_COLOR      = 0xFFFF88
 val METEOR_FRAMES   = 6
 val METEOR_AWAIT    = 5000
@@ -54,14 +54,14 @@ task Meteor () {
     val w = ww / METEOR_FRAMES
     var dx = 0
 
-    val rect = [ x=x, y=y, w=w, h=h ] where {
-        x = math.random(0,W)
-        y = if y_sig==1 => 0 => H
-    }
     set pub = [
         tag  = :M,
-        rect = rect,
+        rect = [ x=x, y=y, w=w, h=h ] where {
+            x = math.random(0,W)
+            y = if y_sig==1 => 0 => H
+        },
     ]
+    val rect = pub.rect
 
     par :any {
         val dt = math.random(1, METEOR_AWAIT)
@@ -74,7 +74,7 @@ task Meteor () {
         }
     } with {
         loop on :sdl.draw {
-            val crop = [ x=dx, y=0, w=w, h=h ]
+            pin crop = [ x=dx, y=0, w=w, h=h ]
             sdl.copy(tex, crop, rect)
         }
     } with {
@@ -89,11 +89,11 @@ task Meteor () {
 
 task Shot (V, pos, vy) {
     sdl.play "snds/shot.wav"
-    val rect = [ x=pos.x+((V.x*SHOT_DIM.w)/2), y=(pos.y-(SHOT_DIM.h/2)), w=SHOT_DIM.w, h=SHOT_DIM.h ]
     set pub = [
         tag  = V.tag,
-        rect = rect,
+        rect = [ x=pos.x+((V.x*SHOT_DIM.w)/2), y=(pos.y-(SHOT_DIM.h/2)), w=SHOT_DIM.w, h=SHOT_DIM.h ],
     ]
+    val rect = pub.rect
     par :any {
         await :collided
     } with {
@@ -109,16 +109,17 @@ task Shot (V, pos, vy) {
 task Ship (V, shots) {
     pin tex = sdl.image(V.img) --> assert
     val w,h = sdl.size(tex)
-    val vel = [x=0,y=0]
+    pin vel = [x=0,y=0]
     val dy = h / SHIP_FRAMES
-    val rect = [ x=V.pos.x-(w/2), y=V.pos.y-(dy/2), w=w, h=dy ]
-
+    ;; what a task publishes is owned by the task: it is created in
+    ;; the `pub`, and the body refers to it
     set pub = [
         tag  = V.tag,
-        rect = rect,
+        rect = [ x=V.pos.x-(w/2), y=V.pos.y-(dy/2), w=w, h=dy ],
     ]
+    val rect = pub.rect
 
-    var acc = [x=0,y=0]
+    pin acc = [x=0,y=0]
     var key
     spawn {
         par {
@@ -135,7 +136,8 @@ task Ship (V, shots) {
         } with {
             loop on :sdl.key.up {
                 set key = nil
-                set acc = [x=0,y=0]
+                set acc.x = 0
+                set acc.y = 0
             }
         }
     }
@@ -150,7 +152,7 @@ task Ship (V, shots) {
                     V.ctl.move.d => V.ctl.frame.d
                     else => 0
                 }
-                val crop = [ x=0, y=frame*dy, w=rect.w, h=dy ]
+                pin crop = [ x=0, y=frame*dy, w=rect.w, h=dy ]
                 sdl.copy(tex, crop, rect)
             }
         } with {
