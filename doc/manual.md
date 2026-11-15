@@ -1078,9 +1078,10 @@ emit(:tick)                 ;; --> b, 0, 1, 2
 ```
 
 A task that is not attached to any block, such as one that a function spawns
-and its caller ignores, lives as long as the task that spawned it.
-It is aborted when the outermost block of that task terminates, after all of
-its [defer](#defer) blocks.
+and its caller ignores, is [dropped](#pin): it is aborted at once, at the end
+of the statement that ignores it.
+A task that a function spawns and returns lives if the caller pins it, as in
+`pin t = make()`.
 
 A transparent task has no own identity and is owned by its enclosing
 non-transparent task.
