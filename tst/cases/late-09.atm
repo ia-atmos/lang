@@ -1,6 +1,8 @@
-;; A task that nobody pinned ends with the outermost block of the task
-;; that spawned it, after its defers, and that task only terminates
-;; after it: also when the orphan is the one that is running.
+;; A task that nobody pinned, but that is still referred to (here, by a
+;; fresh table that is the parameter of another task), ends with the
+;; outermost block of the task that spawned it, after its defers, and
+;; that task only terminates after it: also when the orphan is the one
+;; that is running.
 task O (id, late) {
     defer { print(id, "defer orphan") }
     await(:X)
@@ -8,12 +10,15 @@ task O (id, late) {
     print(id, "never")
     await(false)
 }
+task K (keep) {
+    await(false)
+}
 func start (id, late) {
     spawn O(id, late)
 }
 task U (id, late) {
     defer { print(id, "defer U") }
-    start(id, late)
+    spawn K([start(id, late)])
     await(:Y)
     print(id, "U ends")
 }
@@ -30,7 +35,7 @@ spawn {
 emit(:X)
 print(atmos.status(b))
 
-;; the main chunk too
+;; one that nobody refers to is aborted at once
 start(:M, false)
 defer { print("defer main") }
 print("-- end")

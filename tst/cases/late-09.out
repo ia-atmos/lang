@@ -9,6 +9,6 @@ B	defer U
 B	defer orphan
 B terminated
 dead
+M	defer orphan
 -- end
 defer main
-M	defer orphan

@@ -6,8 +6,8 @@ task T (id) {
         print(:task, id)
     }
 }
-func keep (t) { nil }
 spawn {
+    pin keep = []
     var i = 0
     loop {
         set i += 1
@@ -17,7 +17,7 @@ spawn {
                 print(:block, j)
             }
         }
-        keep(spawn T(j))
+        set keep@+ = spawn T(j)
         await(:next)
         while i < 3
     }

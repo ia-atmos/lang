@@ -175,10 +175,16 @@ static inline void a_inc (AVal v) {
     }
 }
 
+// The last reference to a task or pool, besides that of the tree of
+// tasks, went away.
+void a_dropped (AObj* o);
+
 static inline void a_dec (AVal v) {
     if (v.type >= A_STR) {
         if (--v.u.o->rc == 0) {
             a_free(v.u.o);
+        } else if (v.u.o->rc==1 && (v.type==A_XTASK || v.type==A_TASKS)) {
+            a_dropped(v.u.o);
         }
     }
 }
@@ -660,6 +666,8 @@ typedef struct ANode {
     int    nfilt;
     // trail of the parent task that spawned the node
     uint16_t trail;
+    // in the list of the nodes that were dropped
+    uint8_t  dropq;
 } ANode;
 
 typedef enum {
@@ -1014,6 +1022,13 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n);
 // they hold values pinned in it. It comes before the finalizers of
 // the block, and waits like `a_pin_end`.
 int a_conf_end (ATrail* me, AStatus* st, int base);
+
+// A fresh task or pool that is dropped is aborted: one that nobody
+// pinned and that no value refers to any longer. The generated code
+// calls it at the end of a statement and of a block, with the pending
+// exit of the block, if any. Returns the status to go on with.
+extern int a_ndrop;
+AStatus a_drop_flush (AStatus st);
 
 // Sets the pub of a task, or of the running task if NULL.
 AStatus a_pub_set (ATask* t, AVal v);

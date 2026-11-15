@@ -961,6 +961,8 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     }
     u->level--;
     out(u, "a_depth = D + %d;", u->level);
+    // so is one that the block dropped
+    out(u, "if (a_ndrop) st = a_drop_flush(st);");
     if (h.brk > 0) {
         out(u, "if (st == A_BREAK) {");
         u->ind++;
@@ -1033,6 +1035,11 @@ static void gen_block_x (Unit* u, List* es, Dst d, Hnd h) {
         out(u, "a_lin = %d;", lin_of(tk));
         u->lin = lin_of(tk);
         gen(u, es->v[i], (i == es->n-1) ? d : dst_none());
+        if (i < es->n-1) {
+            // a fresh task that the statement dropped is aborted
+            out(u, "if (a_ndrop && (st = a_drop_flush(A_OK)) != A_OK) "
+                   "goto CL_%d;", u->cleanup);
+        }
     }
     if (es->n == 0) {
         store_void(u, d);

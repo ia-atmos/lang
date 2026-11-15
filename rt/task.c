@@ -2259,6 +2259,65 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n) {
     return st;
 }
 
+// DROP
+
+int a_ndrop = 0;
+static ANode** DROPS = NULL;
+static int     CDROPS = 0;
+
+// The tree has the only reference left to the node.
+static int node_dropped (ANode* n) {
+    if (n->up==NULL || n->dead) {
+        return 0;
+    }
+    // a declaration owns it, or its pool does
+    if (n->hdr.pinned==1 || n->hdr.pinned==3) {
+        return 0;
+    }
+    return 1;
+}
+
+void a_dropped (AObj* o) {
+    ANode* n = (ANode*) o;
+    if (n->dropq || !node_dropped(n)) {
+        return;
+    }
+    if (a_ndrop == CDROPS) {
+        CDROPS = (CDROPS == 0) ? 8 : CDROPS*2;
+        DROPS  = realloc(DROPS, CDROPS * sizeof(ANode*));
+    }
+    n->dropq = 1;
+    n->hdr.rc++;
+    DROPS[a_ndrop++] = n;
+}
+
+AStatus a_drop_flush (AStatus st) {
+    while (a_ndrop > 0) {
+        ANode* n = DROPS[--a_ndrop];
+        n->dropq = 0;
+        // somebody may have taken it meanwhile
+        if (n->hdr.rc==2 && node_dropped(n)) {
+            st = blk_abort(n, st);
+            if (n->hdr.type==A_TASKS && !n->dead) {
+                node_died(n);
+            }
+            st = chk_aborted(st);
+        }
+        // the reference of the list: it does not count as a drop
+        if (--n->hdr.rc == 0) {
+            a_free(&n->hdr);
+        }
+    }
+    return st;
+}
+
+static void a_drop_quit (void) {
+    free(DROPS);
+    DROPS  = NULL;
+    CDROPS = 0;
+    a_ndrop = 0;
+}
+
 AStatus a_chk_task (AVal v) {
     // the running task and its ancestors outlive the current scope,
     // and a terminated task needs no owner
@@ -2727,6 +2786,7 @@ void a_task_init (int argc, char** argv) {
 }
 
 void a_task_quit (void) {
+    a_drop_flush(A_OK);
     if (MAIN != NULL) {
         // what it holds may refer to it
         clr_task(MAIN, 0);
@@ -2736,6 +2796,8 @@ void a_task_quit (void) {
         free(ROOT.node.dns);
         ROOT.node.dns = NULL;
     }
+    a_drop_flush(A_OK);
+    a_drop_quit();
 }
 
 int atm_alive (void) {

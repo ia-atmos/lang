@@ -1,0 +1,54 @@
+;; A fresh task that is dropped is aborted at once: one that nobody
+;; pinned and that no value refers to any longer.
+task T (id) {
+    defer { print(:end, id) }
+    await(false)
+}
+func mk (id) {
+    spawn T(id)
+}
+
+;; the value of a spawn that is not used
+do {
+    (spawn T(1))
+    print(:a)
+}
+
+;; the result of a call that is ignored
+mk(2)
+print(:b)
+
+;; an argument that the function does not keep
+func ign (t) { nil }
+ign(mk(3))
+print(:c)
+
+;; a fresh table that holds it
+func tab (id) {
+    [mk(id)]
+}
+tab(4)
+print(:d)
+
+;; it lives if somebody pins it, in time
+do {
+    pin t = mk(5)
+    pin u = tab(6)
+    print(:e)
+}
+print(:f)
+
+;; a spawn that is a statement is pinned by its block
+do {
+    spawn T(7)
+    print(:g)
+}
+
+;; a pool
+func pool () {
+    pin ts = tasks()
+    spawn @ts T(8)
+    ts
+}
+pool()
+print(:h)

@@ -1,4 +1,5 @@
-;; a task confined to a block ends with it, even if nobody pinned it
+;; a fresh task that is dropped is aborted at once; one that is still
+;; referred to, and confined to a block, ends with the block
 task T (id, v) {
     defer { print(:dead, id, v@0) }
     await(:X)
@@ -32,7 +33,19 @@ do {
     print(:3)
 }
 print(:4)
-;; a free task lives with its parent
+;; with no pinned argument either
 sp(:e, [5])
+;; one that is still referred to, by a fresh table that is the
+;; parameter of another task: it ends with the block of the values it
+;; is confined to
+task K (keep) {
+    await(false)
+}
+do {
+    pin f = [6]
+    spawn K([sp(:f, f)])
+    emit(:X)
+    print(:6)
+}
 emit(:X)
 print(:5)

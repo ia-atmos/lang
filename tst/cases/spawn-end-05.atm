@@ -18,6 +18,7 @@ if true { spawn (f())(:call) }
 if true { spawn t.T(:field) }
 if true { spawn V(:var) }
 if true { spawn W(:set) }
+;; the task is the result of `g`, which the call drops: aborted at once
 g(T)
 emit(:tick)
 print(:end)
