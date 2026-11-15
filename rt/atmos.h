@@ -1010,6 +1010,17 @@ static inline void a_born (AVal x, AVal v) {
     }
 }
 
+// A native holds another value, as a child resource holds its parent:
+// the value must last at least as long as the native. A binding
+// declares it right after it creates the native, which is then born
+// with its floor in the block of the value, and so is finalized
+// before it. Fails for a native that is already pinned outside the
+// block of the value.
+static inline AStatus a_nat_holds (AVal nat, AVal v) {
+    a_born(nat, v);
+    return a_chk_store(v, (int)nat.u.o->depth);
+}
+
 // A block with pins is being left, with status `st`. What it gives to
 // the outer block is transferred: values pinned in the block are
 // unpinned and flow out as fresh values, along with what they hold.

@@ -1,0 +1,40 @@
+;; A binding declares that a native holds another value, as a child
+;; resource holds its parent: the child is born with its floor in the
+;; block of the parent, and is finalized before it.
+```:prelude
+static void res_fin (void* p) {
+    printf("close\t%s\n", (char*) p);
+    free(p);
+}
+static AVal res_new (const char* name, AVal parent) {
+    AVal v = a_nat(strdup(name), res_fin, "res");
+    if (parent.type != A_NIL) {
+        a_nat_holds(v, parent);
+    }
+    return v;
+}
+```
+func window () {
+    `:value res_new("window", a_nil())`
+}
+func layer (name, parent) {
+    `:value res_new(A_STR_OF($name)->s, $parent)`
+}
+
+pin win = window()
+var out
+do {
+    pin inner = window()
+    ;; a child of a parent of an outer block
+    pin a = layer("a", win)
+    ;; it cannot leave the block of its parent
+    print(catch true { set out = layer("b", inner) })
+    ;; a fresh child is pinned in the block of the parent, or deeper
+    do {
+        pin c = layer("c", inner)
+        print(:in)
+    }
+    pin d = [layer("d", inner)]
+    print(:out)
+}
+print(:end)
