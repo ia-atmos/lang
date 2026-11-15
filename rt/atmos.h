@@ -820,6 +820,12 @@ AStatus a_chk_aborted (AStatus st);
 // a full pool gives nil.
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base);
 
+// The same, with no pool, for a spawn whose task is pinned by the
+// block of the spawn: a statement, or the value of a `pin`. The task
+// is pinned from birth, so that it owns what it stores in its `pub`
+// already in its first run.
+AStatus a_spawn_pin (AVal* dst, AVal proto, int base);
+
 // spawn {...}, a branch of a par: starts trail `i` of the task, a
 // transparent block.
 AStatus a_trail_spawn (struct ATask* t, int i);

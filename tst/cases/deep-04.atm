@@ -1,0 +1,22 @@
+;; A task whose block pins it (a spawn that is a statement, or the
+;; value of a `pin`) is pinned from birth: it owns what it stores in
+;; its `pub` already in its first run, and may refer to it.
+task Ship (id) {
+    set pub = [ rect=[x=0, y=0, w=10, h=id] ]
+    val rect = pub.rect
+    await(:go)
+    print(id, rect.h)
+}
+pin a = spawn Ship(1)
+spawn Ship(2)
+pin ts = tasks()
+spawn @ts Ship(3)
+print(a.pub.rect.h)
+emit(:go)
+
+;; a value pinned in the body of the task cannot be published
+task Bad () {
+    pin rect = [x=0]
+    set pub = [rect=rect]
+}
+print(catch true { spawn Bad() ; nil })

@@ -1701,6 +1701,16 @@ static ATask* task_new (AFunc* f, ANode* up, int base) {
     return t;
 }
 
+// The task being spawned is pinned by its block from birth.
+static int SPAWN_PIN = 0;
+
+AStatus a_spawn_pin (AVal* dst, AVal proto, int base) {
+    SPAWN_PIN = 1;
+    AStatus st = a_spawn(dst, proto, a_nil(), base);
+    SPAWN_PIN = 0;
+    return st;
+}
+
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
     if (proto.type != A_TASK) {
         a_settop(base);
@@ -1739,6 +1749,13 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
     }
     // the body is one deeper than the block the task is attached to
     t->depth = a_depth + 1;
+    if (SPAWN_PIN) {
+        // pinned from birth, in the block of the spawn
+        SPAWN_PIN = 0;
+        t->node.hdr.pinned = 1;
+        t->node.hdr.depth  = a_depth;
+        t->node.hdr.lin    = a_lin;
+    }
     // a task in a pool is owned by the pool
     if (pool.type == A_TASKS) {
         t->node.hdr.pinned = 1;

@@ -1175,6 +1175,12 @@ static void gen_dcl (Unit* u, Expr* e) {
             tab = tab->u.tagged.e;
         }
         int born = (e->vars[0]->kind==V_PIN && tab->tag==E_TABLE);
+        // pin x = spawn T(...)
+        if (e->vars[0]->kind==V_PIN && tab->tag==E_SPAWN &&
+            tab->u.spawn.pool==NULL)
+        {
+            born = 1;
+        }
         if (born) {
             u->born = tab;
         }
@@ -2071,12 +2077,23 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
 
     Opnd t = opnd_tmp(u);
     out(u, "a_lin = %d;", lin_of(e->tk));
-    out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
+    // a statement, or the value of a `pin`: the block of the spawn
+    // pins the task from birth
+    int stmt = (d.kind==D_NONE && e->u.spawn.pool==NULL);
+    int born = (u->born == e);
+    if (born) {
+        u->born = NULL;
+    }
+    if (stmt || born) {
+        out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
+    } else {
+        out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
+    }
     opnd_rel(u, f);
     opnd_rel(u, pool);
 
-    if (d.kind==D_NONE && e->u.spawn.pool==NULL) {
-        gen_pin(u, t.c);
+    if (stmt) {
+        gen_pin_end(u, t.c, 1);
     } else {
         store(u, t, d);
     }
