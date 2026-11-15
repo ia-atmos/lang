@@ -1540,6 +1540,10 @@ There are exceptions for places that receive values from elsewhere:
 a parameter, a loop variable, and the declarations of a [`where`](#where)
 may hold fresh values.
 A function may pin a fresh value that it receives as an argument.
+If it does not, the value stays fresh, and is reclaimed when the last
+reference to it goes away, which is the end of the function or task that
+received it, at the latest.
+The `pin` makes it explicit, and also reclaims cycles.
 
 The declaration of a [prototype](#prototypes) pins it: `func f () {...}`,
 `task T () {...}`, and the assignment of a function to a variable, as in
