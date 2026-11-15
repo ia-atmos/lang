@@ -73,6 +73,7 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
 | `val ok, e = catch :X {...}` with a table thrown | `pin ok, e = catch :X {...}` | The thrown value arrives fresh |
 | `pin e = [...] ; emit(e)` to tasks outside the block; `pin e = await(:X)` | `emit(:X [...])` with the event built in the emit; `val e = await(:X)` | An event is shared by who receives it: no block owns it, and a receiver cannot pin it |
 | `keep(spawn T())`, `(spawn T())`, a function that spawns and whose result is ignored | `pin t = spawn T()`, a pool, or a field of a pinned table | A fresh task that is dropped is aborted at once |
+| `pin tmp = [] ; <fill tmp> ; set outer.list@+ = [x=tmp]` (a value that is built and then given to a table of an outer block) | `set outer.list@+ = do { pin tmp = [] ; <fill tmp> ; [x=tmp] }` | A pinned value does not leave its block, except as the result of the block: the store then pins it outside |
 | `x or []` assigned to a `val` or a `pin` | decide: `pin y = if x { X.copy(x) } else { [] }`, or keep it as a field | A value that is sometimes fresh and sometimes owned fits neither |
 
 ## C in an environment
