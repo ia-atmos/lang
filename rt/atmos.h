@@ -774,6 +774,9 @@ typedef struct ATask {
     AVal     ret;
     // pool it was spawned in, for identification only
     struct ATasks* pool;
+    // the tasks of a pool that were not freed yet, alive or not
+    struct ATask*  zprev;
+    struct ATask*  znext;
 } ATask;
 
 // The task of a trail.
@@ -786,6 +789,9 @@ typedef struct ATasks {
     int   max;
     // `seq` of the next task
     uint32_t seq;
+    // its tasks that were not freed yet, alive or not: what they hold
+    // in `pub` is released with the pool
+    struct ATask* all;
 } ATasks;
 
 #define A_TASK_OF(v)  ((ATask*)(v).u.o)
@@ -895,8 +901,14 @@ AVal a_me (void);
 AStatus a_pub (AVal** ref);
 
 // pin x = v: the value becomes owned by the block being executed,
-// which frees it on exit. It must be unique (tasks and pools aside).
-// Numbers, strings, and the like are not pinned.
+// which finalizes it on exit, along with the fresh values it holds.
+// It must be fresh: not pinned yet. Numbers, strings, and the like
+// are not pinned.
+//
+// `pinned` in the header of a value:
+//  - 0: fresh, with its floor in `depth` (0 if it has none)
+//  - 1: pinned by a declaration, in the block `depth`
+//  - 2: pinned by the value that holds it, in the block `depth`
 AStatus a_pin (AVal* slot);
 
 // val x = v: a task or pool must be pinned somewhere.
@@ -943,6 +955,9 @@ void a_pin_doom (AVal* slot);
 //  - table: entries released
 //  - function: captures released
 //  - native: finalizer called
+//  - task, pool: `pub` released
+// So is, before it, each value that it holds and that was pinned with
+// it.
 void a_pin_clr (AVal* slot);
 
 // Releases all entries of a table.
@@ -965,10 +980,14 @@ static inline AStatus a_chk_store (AVal v, int d) {
     return A_OK;
 }
 
-// A table only holds a value of its own block or of an outer one: of
-// its pin block, or of its floor while it is fresh.
+// A value is stored in the holder `h`, which only accepts a value of
+// its own block or of an outer one: of its pin block, or of its floor
+// while it is fresh. A fresh value stored in a pinned holder is pinned
+// with it, in the same block, along with the fresh values it holds.
+AStatus a_hold (AObj* h, AVal v);
+
 static inline AStatus a_chk_tab (ATab* t, AVal v) {
-    return a_chk_store(v, (int)t->hdr.depth);
+    return (v.type < A_TAB) ? A_OK : a_hold(&t->hdr, v);
 }
 
 // Birth: a fresh value that is being constructed takes its floor from

@@ -1,0 +1,67 @@
+;; The pin is deep: the fresh values that a pinned value holds are
+;; pinned with it, when it is declared and when they are stored.
+
+task T (v) {
+    defer { print(:end, v) }
+    await(false)
+}
+
+;; a nested constructor holds tasks of a pool of the same block
+do {
+    pin ts = tasks()
+    pin w = [ts=[]]
+    set w.ts@+ = spawn @ts T(1)
+    set w.ts@+ = spawn @ts T(2)
+    print(#w.ts)
+    ;; so does one that is stored later
+    set w.more = [[]]
+    set w.more@0@+ = w.ts@0
+    print(#w.more@0)
+}
+
+;; cycles between the nested values are reclaimed with the block
+do {
+    pin a = [x=[], y=[]]
+    set a.x.y = a.y
+    set a.y.x = a.x
+    set a.x.a = a
+    print(a.x.y == a.y)
+}
+
+;; a parameter may be pinned by the function that receives it
+func f (t) {
+    pin u = t
+    set u.x = u         ;; a cycle, reclaimed here
+    #u
+}
+print(f([1,2,3]))
+do {
+    pin k = [1]
+    ;; and not what is pinned by somebody else
+    print(catch true { f(k) })
+}
+
+;; a value that is held does not leave the block of its holder
+var out
+do {
+    pin h = [[1]]
+    val i = h@0
+    print(catch true { set out = i })
+    print(catch true { pin j = i })
+}
+
+;; a task held by pinned data is aborted with the block of the data
+do {
+    pin w = []
+    set w.t = spawn T(3)
+    set w.u = [spawn T(4)]
+    print(:in)
+}
+print(:out)
+
+;; a native held by pinned data is closed with it
+do {
+    pin w = [f=io.open("/dev/null", "w")]
+    print(catch true { set out = w.f })
+    set w.g = [w.f]
+}

@@ -1,0 +1,48 @@
+;; What a task keeps in `pub`, and its final value, are pinned with
+;; the task and released with it: a task may publish itself.
+
+task U (n) {
+    set pub = [task=task, v=n]
+    await(:go)
+    [task=task, n=n]
+}
+
+;; tasks of a pool, which end before it and still refer to themselves
+do {
+    pin us = tasks()
+    spawn @us U(1)
+    spawn @us U(2)
+    loop _, u in us {
+        print(u.pub.task == u, u.pub.v)
+    }
+    emit(:go)
+    print(#us)
+}
+
+;; a pinned task, and one of a spawn that is a statement
+do {
+    pin u = spawn U(3)
+    spawn U(4)
+    print(u.pub.task == u, u.pub.v)
+    emit(:go)
+    val r = await(u)
+    print(r.task == u, r.n)
+}
+
+;; tasks that publish each other
+task V () {
+    set pub = []
+    await(false)
+}
+do {
+    pin vs = tasks()
+    val a = spawn @vs V()
+    val b = spawn @vs V()
+    set a.pub.other = b
+    set b.pub.other = a
+    print(a.pub.other == b)
+}
+
+;; the main task
+set pub = [task=task]
+print(pub.task == task)

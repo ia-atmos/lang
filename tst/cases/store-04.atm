@@ -7,6 +7,7 @@ task T (id) {
 }
 pin x = spawn T(:x)
 pin a = [tag=:E, v=1]
+;; pinned in the outermost block of the program: all tasks live in it
 print(catch true { emit @:global (a) })
 emit @:task (a)
 emit @x (a)

@@ -4,4 +4,4 @@ f	native
 c	3
 v	3	nil
 shared	true	3
-false	invalid pin : shared value
+false	invalid assignment : unexpected pinned value

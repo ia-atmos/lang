@@ -940,7 +940,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     }
     // pinned data is released after all code of the block has run
     for (int i=nmine-1; i>=0; i--) {
-        if (mine[i].pin!=NULL && mine[i].user) {
+        if (mine[i].pin != NULL) {
             out(u, "a_pin_clr(&%s);", mine[i].pin);
         }
     }
@@ -1207,8 +1207,9 @@ static Loc gen_loc (Unit* u, Expr* dst) {
 
 // Assigns an operand to a destination, consuming both.
 static void gen_assign (Unit* u, Loc l, Opnd v) {
-    out_try(u, "a_chk(%s)", v.c);
     if (l.e->tag == E_ACC) {
+        // a variable only refers to a task or pool that has an owner
+        out_try(u, "a_chk(%s)", v.c);
         // a pinned value cannot go to a variable that outlives its
         // pin block: a box, a top-level variable, or an outer block
         Var* x = l.e->var;

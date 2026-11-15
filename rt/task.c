@@ -42,6 +42,7 @@ typedef struct RFrame {
 static RFrame* RSTK = NULL;
 
 static AStatus node_abort (ANode* n);
+static void    pin_deep (AVal v, int d, int how);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
 static void    wait_set (ATrail* tr, AStatus st);
@@ -876,6 +877,27 @@ void a_node_free (ANode* n) {
         }
         a_dec(t->pub);
         a_dec(t->ret);
+        if (t->pool != NULL) {
+            // leaves the list of the pool
+            if (t->zprev != NULL) {
+                t->zprev->znext = t->znext;
+            } else {
+                t->pool->all = t->znext;
+            }
+            if (t->znext != NULL) {
+                t->znext->zprev = t->zprev;
+            }
+        }
+    } else if (n->hdr.type == A_TASKS) {
+        // the tasks that outlive the pool no longer refer to it
+        ATask* t = ((ATasks*)n)->all;
+        while (t != NULL) {
+            ATask* nxt = t->znext;
+            t->pool  = NULL;
+            t->zprev = NULL;
+            t->znext = NULL;
+            t = nxt;
+        }
     }
     free(n->dns);
 }
@@ -1025,6 +1047,14 @@ static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
         // the task itself: the frame goes, the header stays
         t->status = T_DONE;
         frame_free(t);
+        // its final value is kept by the task: pinned with it, if fresh
+        {
+            ANode* o = (t->pool != NULL) ? &t->pool->node : &t->node;
+            int d = node_adepth(&t->node);
+            if (o->hdr.pinned && a_pdepth(t->ret)<=d) {
+                pin_deep(t->ret, d, 2);
+            }
+        }
         a_dec(a_obj(&t->proto->hdr));
         t->proto = NULL;
 
@@ -1510,6 +1540,10 @@ static AStatus emit_chk (ANode* n, AVal evt) {
     if (t == NULL) {
         return a_err_pinned();
     }
+    // all tasks live inside the main task
+    if (n==&ROOT.node && t->node.up==&ROOT.node) {
+        n = &t->node;
+    }
     // the owner itself: only if pinned in the outermost block of the
     // task
     if (n == &t->node) {
@@ -1708,6 +1742,11 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
         t->node.hdr.pinned = 1;
         t->node.hdr.depth  = pool.u.o->depth;
         t->pool = A_TASKS_OF(pool);
+        t->znext = t->pool->all;
+        if (t->znext != NULL) {
+            t->znext->zprev = t;
+        }
+        t->pool->all = t;
         if (pool.u.o->pinned) {
             t->depth = pool.u.o->depth + 1;
         }
@@ -1862,10 +1901,90 @@ AStatus a_pub_set (ATask* t, AVal v) {
         }
     }
     // the pub is visible wherever the task is
-    if (a_chk_store(v, node_adepth(&t->node)) != A_OK) {
+    int d = node_adepth(&t->node);
+    if (a_chk_store(v, d) != A_OK) {
         return A_ERROR;
     }
+    // a fresh value is pinned with the task, if it is pinned
+    ANode* own = (t->pool != NULL) ? &t->pool->node : &t->node;
+    if (own->hdr.pinned) {
+        pin_deep(v, d, 2);
+    }
     a_cpy(&t->pub, v);
+    return A_OK;
+}
+
+// A fresh value becomes pinned in the block `d`, along with the fresh
+// values it holds: by a declaration (`how` is 1) or by the value that
+// holds it (2).
+static void pin_deep (AVal v, int d, int how) {
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+        return;
+    }
+    AObj* o = v.u.o;
+    switch (v.type) {
+        case A_TAB: {
+            o->pinned = how;
+            o->depth  = d;
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                pin_deep(k, d, 2);
+                pin_deep(x, d, 2);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            o->pinned = how;
+            o->depth  = d;
+            AFunc* f = A_FUNC_OF(v);
+            for (int i=0; i<f->ncap; i++) {
+                pin_deep(f->caps[i], d, 2);
+            }
+            break;
+        }
+        case A_XTASK:
+        case A_TASKS: {
+            ANode* n = (ANode*) o;
+            // the running task and its ancestors outlive the block
+            if (is_up(n)) {
+                return;
+            }
+            o->pinned = how;
+            o->depth  = d;
+            if (v.type == A_XTASK) {
+                pin_deep(A_TASK_OF(v)->pub, d, 2);
+                pin_deep(A_TASK_OF(v)->ret, d, 2);
+            } else {
+                for (ATask* t=A_TASKS_OF(v)->all; t!=NULL; t=t->znext) {
+                    pin_deep(t->pub, d, 2);
+                    pin_deep(t->ret, d, 2);
+                }
+            }
+            // held by data: the block of the holder aborts it
+            if (how==2 && n->up!=NULL && n->up->hdr.type==A_XTASK) {
+                ATask* up = (ATask*) n->up;
+                if (up->trs!=NULL && up->trs[n->trail].conf<d) {
+                    up->trs[n->trail].conf = d;
+                }
+            }
+            break;
+        }
+        default:
+            o->pinned = how;
+            o->depth  = d;
+            break;
+    }
+}
+
+AStatus a_hold (AObj* h, AVal v) {
+    if (a_pdepth(v) > (int)h->depth) {
+        return a_err_pinned();
+    }
+    if (h->pinned) {
+        pin_deep(v, h->depth, 2);
+    }
     return A_OK;
 }
 
@@ -1897,6 +2016,15 @@ int a_pdepth (AVal v) {
         // a task in a pool follows the pin of the pool
         if (t->pool != NULL) {
             d = node_adepth(&t->pool->node);
+        } else if (!v.u.o->pinned) {
+            // A fresh task has its floor from birth: the outermost
+            // block of the trail that spawned it, which aborts it at
+            // its end if nobody pins it.
+            ANode* up = t->node.up;
+            d = 0;
+            if (up!=NULL && up->hdr.type==A_XTASK) {
+                d = trail_bdepth((ATask*)up, t->node.trail);
+            }
         }
         if (t->mindepth > d) {
             d = t->mindepth;
@@ -1907,41 +2035,23 @@ int a_pdepth (AVal v) {
 
 AStatus a_pin (AVal* slot) {
     AVal v = *slot;
-    switch (v.type) {
-        case A_XTASK:
-        case A_TASKS:
-            if (v.u.o->pinned) {
-                return a_error("invalid assignment : unexpected pinned value");
-            }
-            // taking the running task or an ancestor would abort upwards
-            if (is_up((ANode*)v.u.o)) {
-                return a_error("invalid assignment : unexpected parent task");
-            }
-            if (a_pdepth(v) > a_depth) {
-                return a_err_pinned();
-            }
-            break;
-        case A_TAB:
-        case A_FUNC:
-        case A_TASK:
-        case A_NAT:
-            // The block must hold the only reference. A fresh value
-            // may have a floor, from what it holds (a closure, or a
-            // value that left its block): it is pinned there or deeper.
-            if (v.u.o->rc != 1) {
-                return a_error(v.u.o->pinned ?
-                    "invalid assignment : unexpected pinned value" :
-                    "invalid pin : shared value");
-            }
-            if ((int)v.u.o->depth > a_depth) {
-                return a_err_pinned();
-            }
-            break;
-        default:
-            return A_OK;
+    if (v.type < A_TAB) {
+        return A_OK;
     }
-    v.u.o->pinned = 1;
-    v.u.o->depth  = a_depth;
+    // taking the running task or an ancestor would abort upwards
+    if ((v.type==A_XTASK || v.type==A_TASKS) && !v.u.o->pinned &&
+        is_up((ANode*)v.u.o))
+    {
+        return a_error("invalid assignment : unexpected parent task");
+    }
+    if (v.u.o->pinned) {
+        return a_error("invalid assignment : unexpected pinned value");
+    }
+    // a fresh value is pinned at its floor or deeper
+    if (a_pdepth(v) > a_depth) {
+        return a_err_pinned();
+    }
+    pin_deep(v, a_depth, 1);
     return A_OK;
 }
 
@@ -2123,19 +2233,97 @@ AStatus a_chk_task (AVal v) {
     return a_error("invalid assignment : expected pinned value");
 }
 
+// A value held by the one that is being released, and pinned with it.
+static int clr_held (AVal x, uint32_t d) {
+    return x.type>=A_TAB && x.u.o->pinned==2 && x.u.o->depth==d;
+}
+
+static void clr_deep (AVal v, uint32_t d);
+
+// What a task that ended holds: its `pub` and its final value.
+static void clr_task (ATask* t, uint32_t d) {
+    if (clr_held(t->pub, d)) {
+        clr_deep(t->pub, d);
+    }
+    if (clr_held(t->ret, d)) {
+        clr_deep(t->ret, d);
+    }
+    a_clr(&t->pub);
+    a_clr(&t->ret);
+}
+
+static void clr_deep (AVal v, uint32_t d) {
+    AObj* o = v.u.o;
+    // each value once: what is left of data is fresh, and a task or
+    // pool stays as finalized (3), not to be pinned again
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        o->pinned = 3;
+    } else {
+        o->pinned = 0;
+        o->depth  = 0;
+    }
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                if (clr_held(k, d)) {
+                    clr_deep(k, d);
+                }
+                if (clr_held(x, d)) {
+                    clr_deep(x, d);
+                }
+            }
+            a_tab_clear(A_TAB_OF(v));
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* f = A_FUNC_OF(v);
+            for (int i=0; i<f->ncap; i++) {
+                if (clr_held(f->caps[i], d)) {
+                    clr_deep(f->caps[i], d);
+                }
+            }
+            a_clrs(f->caps, f->ncap);
+            break;
+        }
+        case A_NAT:
+            a_nat_close(v);
+            break;
+        case A_XTASK: {
+            // only after it ended
+            ATask* t = A_TASK_OF(v);
+            if (t->trs == NULL) {
+                clr_task(t, d);
+            }
+            break;
+        }
+        case A_TASKS: {
+            ATask* t = A_TASKS_OF(v)->all;
+            while (t != NULL) {
+                // the release may free the next ones: one at a time
+                AVal ref = a_obj(&t->node.hdr);
+                a_inc(ref);
+                if (t->trs == NULL) {
+                    clr_task(t, d);
+                }
+                ATask* nxt = (t->pool != NULL) ? t->znext : NULL;
+                a_dec(ref);
+                t = nxt;
+            }
+            break;
+        }
+    }
+}
+
 void a_pin_clr (AVal* slot) {
     AVal v = *slot;
     // only what is still pinned in this very block
-    if (v.type<A_STR || !v.u.o->pinned || v.u.o->depth!=(uint32_t)a_depth) {
+    if (v.type<A_TAB || v.u.o->pinned!=1 || v.u.o->depth!=(uint32_t)a_depth) {
         return;
     }
-    if (v.type == A_TAB) {
-        a_tab_clear(A_TAB_OF(v));
-    } else if (v.type==A_FUNC || v.type==A_TASK) {
-        a_clrs(A_FUNC_OF(v)->caps, A_FUNC_OF(v)->ncap);
-    } else if (v.type == A_NAT) {
-        a_nat_close(v);
-    }
+    clr_deep(v, a_depth);
 }
 
 // A child exits to a trail that is running. The trail is below in the
@@ -2302,14 +2490,23 @@ int a_conf_end (ATrail* me, AStatus* st, int base) {
     int any = 0;
     for (int i=0; i<t->node.ndns; i++) {
         ANode* c = t->node.dns[i];
-        if (c->hdr.type!=A_XTASK || c->dead || c->hdr.pinned ||
-            c->trail!=tr->idx)
-        {
+        if (c->dead || c->trail!=tr->idx || c->hdr.pinned==1) {
             continue;
         }
-        ATask* x = (ATask*) c;
-        if (x->status==T_DONE || x->mindepth<a_depth) {
-            continue;
+        if (c->hdr.pinned == 2) {
+            // held by data that is pinned in this block
+            if (c->hdr.depth != (uint32_t)a_depth) {
+                continue;
+            }
+        } else {
+            // fresh, and holding values pinned in this block
+            if (c->hdr.type != A_XTASK) {
+                continue;
+            }
+            ATask* x = (ATask*) c;
+            if (x->status==T_DONE || x->mindepth<a_depth) {
+                continue;
+            }
         }
         // the node may leave the tree when it dies
         AVal ref = a_obj(&c->hdr);
@@ -2317,6 +2514,9 @@ int a_conf_end (ATrail* me, AStatus* st, int base) {
         *st = blk_abort(c, *st);
         any = 1;
         ATrail* late = late_of(c);
+        if (late==NULL && c->hdr.type==A_TASKS && !c->dead) {
+            node_died(c);
+        }
         int dead = c->dead;
         a_dec(ref);
         if (late != NULL) {
@@ -2469,6 +2669,8 @@ AStatus a_main (const AProto* p) {
     }
     MAIN = task_new(A_FUNC_OF(proto), &ROOT.node, base);
     MAIN->depth = 1;
+    // owned by the runtime, outside all blocks
+    MAIN->node.hdr.pinned = 1;
     a_inc(a_obj(&MAIN->node.hdr));
     a_dec(proto);
     return trail_resume(MAIN, &MAIN->trs[0], R_START);
@@ -2488,6 +2690,8 @@ void a_task_init (int argc, char** argv) {
 
 void a_task_quit (void) {
     if (MAIN != NULL) {
+        // what it holds may refer to it
+        clr_task(MAIN, 0);
         a_dec(a_obj(&MAIN->node.hdr));
         MAIN = NULL;
         node_sweep(&ROOT.node);
