@@ -28,6 +28,12 @@ Each item has the recommended option.
    discussion, not his words.
    Recommended: to review them one at a time.
 
+5. **The saved game of Doom, between this paper and the one on
+   games.** Proposed to `paper-games`, which put it to the author too.
+   Recommended: that paper keeps it as a limit of structured
+   concurrency, in one paragraph; this one takes it as its motivation;
+   each cites the other.
+
 ## B. Pending in the outline
 
 1. **Answers from other sessions.** Asked on 2026-11-15:
@@ -43,9 +49,12 @@ Each item has the recommended option.
       of pin". Exact anchors of the rules of store, end of block, and
       result: to ask the `paper-pin` session
       (session_011eECofALi31oSimzbLxYZp) when the text is written.
-    - `paper-games` (session_011eECogKyRYMVJJfbmpHYv9): asked on
-      2026-11-15 who takes the saved game of Doom, and what it claims
-      on determinism and test modes. Not answered.
+    - ~~`paper-games`~~ (session_011eECogKyRYMVJJfbmpHYv9): answered
+      on 2026-11-15. Its outline claims nothing on the saved game of
+      Doom, on determinism, or on replays. It expects determinism only
+      as a property of the language, and the test modes only as the
+      method of its case studies. The split of item A5 is not agreed:
+      it is the author's, and is also in `TODO-paper-games.md`.
     - ~~`paper-pin`~~ (session_011eECofALi31oSimzbLxYZp): answered
       on 2026-11-15. Cite the rules by name ("store", "end", "result",
       "pin"), not only by section. No overlap. Its request: not to
