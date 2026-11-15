@@ -1,7 +1,16 @@
 val fs = []
+;; a captured variable belongs to its block, and leaves it with the
+;; closure that is the result of the block
 loop i in 3 {
-    var k = i * 10
-    set fs@+ = func () { set k = k + 1 ; (i, k) }
+    set fs@+ = do {
+        var k = i * 10
+        func () { set k = k + 1 ; (i, k) }
+    }
+}
+;; but the closure cannot be stored outside the block by itself
+loop i in 1 {
+    var k = i
+    print(catch true { set fs@+ = func () { set k = k + 1 } })
 }
 print(fs@0(), fs@1(), fs@2())
 print(fs@0())

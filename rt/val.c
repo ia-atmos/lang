@@ -314,8 +314,9 @@ AVal a_box (void) {
     ABox* b = malloc(sizeof(ABox));
     b->hdr.rc     = 1;
     b->hdr.type   = A_BOX;
-    b->hdr.pinned = 0;
-    b->hdr.depth  = 0;
+    // it belongs to the block that declares its variable
+    b->hdr.pinned = 1;
+    b->hdr.depth  = a_depth;
     b->v = a_nil();
     return a_obj(&b->hdr);
 }

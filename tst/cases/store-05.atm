@@ -19,8 +19,14 @@ print(#ts)
 func f () {
     var x = 1
     val g = func () { set x = x + 1 ; x }
-    print(catch true { set x = a })
+    ;; a captured variable belongs to the block that declares it
+    do {
+        pin c = [3]
+        print(catch true { set x = c })
+    }
     print(g())
+    print(catch true { set x = a })
+    print(x == a)
 }
 f()
 print(catch true {

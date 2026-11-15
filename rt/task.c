@@ -2098,6 +2098,9 @@ static int xfer_mark (AVal v, int d) {
             int mc = xfer_mark(f->caps[i], d);
             m = (mc > m) ? mc : m;
         }
+    } else if (v.type == A_BOX) {
+        // a captured variable leaves with its closure
+        m = xfer_mark(A_BOX_OF(v)->v, d);
     }
     return m;
 }
@@ -2109,9 +2112,12 @@ static void xfer_set (AVal v, int m) {
         return;
     }
     AObj* o = v.u.o;
-    o->pinned = 0;
+    // a captured variable keeps belonging to a block: the floor
+    o->pinned = (v.type == A_BOX);
     o->depth  = m;
-    if (v.type == A_TAB) {
+    if (v.type == A_BOX) {
+        xfer_set(A_BOX_OF(v)->v, m);
+    } else if (v.type == A_TAB) {
         uint32_t pos = 0;
         AVal k, x;
         while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {

@@ -15,7 +15,7 @@ func g () {
 g()
 do {
     var a = 10
-    func h () {
+    val func h () {
         do {
             var b = 20
             val func hh () {

@@ -6,7 +6,9 @@ false	invalid escape : pinned value
 0
 false	invalid escape : pinned value
 2
-false	invalid escape : pinned value
+true
+true
+true	function: 0x?
 false	invalid escape : pinned value
 false	invalid escape : pinned value
 false	X	1

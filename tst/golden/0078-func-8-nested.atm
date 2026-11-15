@@ -1,6 +1,6 @@
         do {
             var i = 10
-            func f () {
+            val func f () {
                 do {
                     var j = 20
                     val func g () {

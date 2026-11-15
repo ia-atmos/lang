@@ -83,6 +83,8 @@ typedef struct Unit {
     Expr* born;
     // inside the body of a defer, which never suspends
     int indefer;
+    // the block being generated declares a captured variable
+    int box;
     // the next block is the outermost of a task: it ends its orphans
     int orph;
 } Unit;
@@ -767,6 +769,7 @@ typedef struct Blk {
     int cl;
     Defer* defs;
     int ndefs;
+    int box;
 } Blk;
 
 static Blk blk_open (Unit* u) {
@@ -776,6 +779,8 @@ static Blk blk_open (Unit* u) {
     b.cl = ++u->nlabels;
     b.defs  = u->defs;
     b.ndefs = u->ndefs;
+    b.box   = u->box;
+    u->box  = 0;
     u->cleanup = b.cl;
     u->defs  = NULL;
     u->ndefs = 0;
@@ -815,12 +820,15 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     Defer* mine = u->defs;
     int   nmine = u->ndefs;
 
-    // what leaves a block with pins is unpinned before they end
+    // what leaves a block with pins is unpinned before they end; so
+    // is a captured variable of the block, with a closure that leaves
     int user = 0;
     for (int i=0; i<nmine; i++) {
         user = user || (mine[i].pin!=NULL && mine[i].user);
     }
-    if (user) {
+    int box = u->box;
+    u->box = b.box;
+    if (user || box) {
         switch (d.kind) {
             case D_NONE:
                 out(u, "st = a_blk_xfer(st, NULL, 0);");
@@ -1117,6 +1125,7 @@ static void gen_boxes (Unit* u, Expr* e) {
     for (int i=0; i<e->u.dcl.n; i++) {
         if (e->vars[i]->boxed) {
             out(u, "a_set(&%s, a_box());", var_raw(u,e->vars[i]));
+            u->box = 1;
         }
     }
 }
@@ -1130,9 +1139,10 @@ static void gen_dcl_chk (Unit* u, Expr* e) {
             gen_pin(u, v);
         } else {
             out_try(u, "a_chk(%s)", v);
-            // a box outlives any pin block
+            // a captured variable belongs to the block that declares it
             if (e->vars[i]->boxed) {
-                out_try(u, "a_chk_store(%s, 0)", v);
+                out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v,
+                    var_raw(u,e->vars[i]));
             }
         }
     }
@@ -1211,11 +1221,13 @@ static void gen_assign (Unit* u, Loc l, Opnd v) {
         // a variable only refers to a task or pool that has an owner
         out_try(u, "a_chk(%s)", v.c);
         // a pinned value cannot go to a variable that outlives its
-        // pin block: a box, a top-level variable, or an outer block
+        // pin block: a captured variable (which belongs to the block
+        // that declares it), a top-level variable, or an outer block
         Var* x = l.e->var;
         const char* dst = var_c(u, x);
         if (x->boxed) {
-            out_try(u, "a_chk_store(%s, 0)", v.c);
+            out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v.c,
+                var_raw(u,x));
         } else if (x->global) {
             out_try(u, "a_chk_store(%s, 1)", v.c);
         } else if (x->level < u->level) {
