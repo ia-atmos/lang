@@ -213,7 +213,14 @@ state, and case studies.
       saved games
     - after the faithful port: checkpoints, and things as tasks instead
       of rows of the state table
-- A game with checkpoints or by turns, among the ports
+- The test modes of the ports: a run is a list of inputs
+    - every port has one: scripted input, fixed frames, traces and
+      screenshots compared
+    - evidence for determinism, not for the architecture
+- A game by turns: 1oom (planned, not started)
+    - its saved game is the whole state, in a documented format, and a
+      run is reproducible from a seed
+- Flare: the original has saved games; what the port does is to ask
 - An application that is not a game: an editor
 - Measures: size of the snapshot, commands per minute, time to resume,
   hidden state found by the test
@@ -249,6 +256,8 @@ state, and case studies.
     - machine level; no separation of what matters
 - Snapshots of processes and continuations
     - the way we do not take
+    - a snapshot of the tasks by the runtime is possible in Atmos (a
+      task is a record, not a C stack), and is not designed
 - Synchronous languages: Esterel, Céu
     - determinism used for testing and replay
 

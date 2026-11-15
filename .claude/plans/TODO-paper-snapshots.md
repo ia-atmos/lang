@@ -31,8 +31,11 @@ Each item has the recommended option.
 ## B. Pending in the outline
 
 1. **Answers from other sessions.** Asked on 2026-11-15:
-    - `ceu-atmos` (the parent): rules for the papers, which sessions
-      write papers, which sessions hold evidence.
+    - ~~`ceu-atmos` (the parent)~~: answered on 2026-11-15. No rule
+      beyond the form of the other outlines; venue, length, and title
+      are the author's; nothing unmeasured or unimplemented is claimed.
+      Overlap to avoid: with `pin`, state tied to blocks; with `games`,
+      the saved game of Doom.
     - ~~`doom`~~: answered on 2026-11-15, in Sections 7, 10 and 11.
       The numbers of the state table are from its plan, not recounted.
     - ~~`pin`~~: answered on 2026-11-15, in Section 5. The rules are
@@ -40,8 +43,16 @@ Each item has the recommended option.
       of pin". Exact anchors of the rules of store, end of block, and
       result: to ask the `paper-pin` session
       (session_011eECofALi31oSimzbLxYZp) when the text is written.
-    - The session of `papers/games.md`: not reached (`src-games` is
-      inactive). To ask the parent which session writes it now.
+    - `paper-games` (session_011eECogKyRYMVJJfbmpHYv9): asked on
+      2026-11-15 who takes the saved game of Doom, and what it claims
+      on determinism and test modes. Not answered.
+    - `paper-pin` (session_011eECofALi31oSimzbLxYZp): asked on
+      2026-11-15 for the names of the rules to cite, and for overlap.
+      Not answered.
+    - `flare` (session_011eECoegYsZr7nSPxcugGtt): asked on 2026-11-15
+      what the port does with saved games. Not answered.
+    - `pico-1oom` (session_011eECoiEGgQ6ZBFHUCoxt77): not asked, the
+      port is not started. Its plan is `261114-pico-1oom.md`.
 2. **Related work from sources.** Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
    Elm and Redux, Raft, and lockstep are from memory: to check and to
