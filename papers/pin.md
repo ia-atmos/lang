@@ -8,9 +8,9 @@ Alternative titles:
 - Structured Memory: Values that Live and Die with their Blocks
 - Lexical Memory Management for Structured Concurrency
 
-> Status: outline. The rules in Section 4 follow the redesign under
-> discussion ("Pin rules discussion"), not yet approved; the current rules
-> are in `doc/manual.md` ("Lexical Memory Management", "Pin").
+> Status: outline. The rules in Section 4 are the ones approved by the
+> author on 2026-11-15 ("Pin rules discussion"). They are not implemented
+> yet: the compiler and `doc/manual.md` still have the previous rules.
 
 ## Abstract
 
@@ -68,22 +68,46 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 4. The Rules
 
-- One principle
-    - a value may only be stored where its block lasts at least as long
+- Principle
+    - every dynamic value belongs to a block
+    - it may only be stored where its block lasts at least as long
+    - protects finalization order and forbids references to finalized values
+    - same rules for tables, functions, natives, tasks, and pools
 - Two states
-    - pinned: owned by a block
-    - fresh: not yet owned, with a floor block it cannot leave
-- Five rules
-    - birth: a new value is fresh, with a floor
-    - pin: by declaration, or by being stored in a pinned value (deep)
-    - store: checked against the block of the destination
-    - finalization: at block end; a dropped fresh value, at once
-    - un-pin: only as the result of a block
-- Uniformity: tasks and pools obey the same rules
-- `val` only aliases; the first declaration is always `pin`
-- Channels of escape, all checked
-    - assignment, capture, table field, `pub`
-    - `emit`, `throw`, pool, argument of a task
+    - pinned: owned by a block, which finalizes it at its end
+    - fresh: not owned yet, the result of a constructor, call, or block
+    - a fresh value has a floor: the innermost block of what it holds
+    - it cannot leave the floor; it may be pinned there or deeper
+- Rule 1, birth
+    - a value is born fresh
+    - floor from what it is born with: fields, operands, captures, arguments
+    - a native declares what it depends on in its binding
+    - the floor never rises after birth
+- Rule 2, pin
+    - by declaration: `pin`, in the current block
+    - by storage: in a pinned value, in the block of the holder
+    - deep: every fresh value it holds is pinned with it
+- Rule 3, store
+    - a place accepts a value of the same block or of an outer one
+    - places: table field, `pub`, outer variable, captured variable, pool
+    - a fresh place is checked against its floor
+    - `emit` and `throw` follow the same check
+    - a captured variable belongs to the block that declares it
+- Rule 4, end
+    - pinned values finalized in reverse order, interleaved with `defer`
+    - a dropped fresh value is finalized at once
+    - table released, native closed, task aborted
+- Rule 5, result
+    - the only way to undo a pin: to be the result of the block
+    - last expression, `return`, `break`, `escape`
+    - the value becomes fresh in the outer block, with what it holds
+    - error if it holds something that cannot leave
+- Consequences
+    - the first declaration is always `pin`; `val` only aliases
+    - a parameter may receive a fresh value: pin it, store it, or return it
+    - the work block: `pin r = do { pin tmp = ... ; pin x = ... ; x }`
+    - a work block as an argument: `spawn @ts H(do { pin c = accept() ; c })`
+    - natives: a child holds its parent, by rule 3
 - Semantics sketch: block depth as the lifetime order
 
 ## 5. Why It Matters as a Memory Mechanism
@@ -139,11 +163,16 @@ case studies from six ports of libraries and games to Atmos.
 - A task and its data aborted together by `watching`
 - A constructor: a function that gives a pinned value away
 - A pool of tasks pinned outside a loop
+- A work block: temporaries die, the result leaves
+- A fresh value dropped: finalized at once
+- A temporary table with a pinned value: `f([x=a])`, `await :close [h=dlg]`
 - An escape caught: `invalid escape : pinned value`
 
 ## 8. Implementation
 
 - Compilation to C, no collector in the runtime
+- Current runtime implements the previous rules; delta to the new ones
+- Fresh state: a floor depth in the header, before the pin
 - Header of a value: reference count, pinned bit, block depth
 - `a_pin`: pin at the current depth, requires a fresh value
 - `a_pdepth`: effective depth of a value, tasks and pools included
@@ -196,7 +225,7 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
-- Scoped assignment: `with m.x = v {...}`
+- Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion
 
