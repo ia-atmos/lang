@@ -65,10 +65,8 @@ Waiting for the author's "ok":
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
 | 11 | Mouse events in `lib/sdl.atm` | Recommended to do now: `raylib.atm` and `pico.atm` have them |
-| 18 | Delete the branch `trails`, already in `main` | |
 | 22 | Mark the plan of Pingus as done, with the link to the port | |
 | 23 | Ask the session `pingus` to remove the workarounds that the compiler no longer needs | |
-| 24 | Ask the session `pingus` to point the link of the plan in its README to `ia-atmos/lang`, `main`; then delete the branch `ccr-566b5373-ag7186` (item 19) | |
 
 Not started, with no decision needed:
 
@@ -79,7 +77,7 @@ Not started, with no decision needed:
 | 15 | Faster compilation (24 s in Pingus, a single C file) | To measure in Flare first |
 | 35 | Performance. Three ports show the same profile: the dispatch of events to many tasks, the access to tables, and, the clearest, the construction of small tables (about 0.5 us each, in the Storm of pico) | Not now: SNKRX runs at almost twice the speed of its original . Measured by `env-uv` (20000 round trips of an echo, in ms): a broadcast with a filter costs 374, 2084, 7880 for 10, 100, 1000 connections; an emit to one task (`atm_emit_to`) costs 196, 312, 465 |
 | 38 | The paper, "Structured Reactive Concurrency in Games". Moved to this repository on 2026-11-15, by the author: the outline is `papers/games.md`, the list of its session is `.claude/plans/TODO-paper-games.md`, and a new session, `paper-games`, writes them. They came from `ia-atmos/paper-src-games` at `7ff8f88` (session `src-games`), which the author removes | After the ports close: they are its evaluation. Not of this session: pull before any push |
-| 66 | A second paper, on `pin` as a memory mechanism (an idea of the author, 2026-11-15). A session of its own, `paper-pin`, writes the outline in this repository, `papers/pin.md` (in `main` since 2026-11-15; its temporary branch `claude/paper-pin` is to be deleted by the author, in GitHub: a session cannot delete a branch, the push is refused with 403): a name, the idea, why it is relevant as a memory mechanism, and why it only applies to structured programming | Not of this session. It is a third session that writes in `ia-atmos/lang`: pull before any push |
+| 66 | A second paper, on `pin` as a memory mechanism (an idea of the author, 2026-11-15). A session of its own, `paper-pin`, writes the outline in this repository, `papers/pin.md` (in `main` since 2026-11-15, and its session pushes there: `8bb293a`; its list is `.claude/plans/TODO-paper-pin.md`): a name, the idea, why it is relevant as a memory mechanism, and why it only applies to structured programming | Not of this session. It is a third session that writes in `ia-atmos/lang`: pull before any push |
 | 52 | Environments that the families of Atmos and Céu have and this backend does not: the browser (through WebAssembly; SDL and raylib support it) and embedded boards | Ideas, not asked for |
 
 ## C. Reported and not acknowledged
@@ -182,5 +180,5 @@ of the sessions still have the old names.
 (`await(n, p)`, done); 48 (`skip`, done by a session of its own on
 2026-11-14: no value, parentheses optional; the author chose no
 dedicated error for `continue`); 36 (the check of spawns, done on
-2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47);
+2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47); 18, 19, and 24 (on 2026-11-15 the author deleted every branch but `main`: `trails`, the two `ccr-*`, and `claude/paper-pin`, none with work missing from `main`; the README of Pingus already pointed its plan to `main`; a session cannot delete a branch, the push is refused with 403);
 51 (became 55).
