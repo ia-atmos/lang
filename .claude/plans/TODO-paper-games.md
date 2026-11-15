@@ -46,6 +46,17 @@ Each item has the recommended option.
    "degree of scattering" metric of the aspect-oriented literature.
    Bias to state: the model knows the original code and C from training
    and does not know Atmos.
+8. **Border with the paper on snapshots** (`papers/snapshots.md`, session
+   `snapshots`, which asked on 2026-11-15). It proposes: the saved game
+   of Doom (the simulation kept in C because a save must cover it) is
+   one paragraph here, as a limit of structured concurrency, and the
+   motivation there; each paper cites the other. It also asked where
+   this paper claims determinism, test modes with scripted input, or
+   replays. Answered: no claim today; nothing agreed.
+   Recommended: accept. Here, determinism only as a property of the
+   language (section on Atmos), and the test modes only in the method
+   of the case studies; no claim on save, resume, or replay. Tell that
+   session the names of the sections when A4 is decided.
 
 ## B. Work known and not done
 
