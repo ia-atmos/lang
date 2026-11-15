@@ -1878,17 +1878,16 @@ void a_func_scope (AVal f) {
             d = p;
         }
     }
-    if (d > 0) {
-        fn->hdr.pinned = 1;
-        fn->hdr.depth  = d;
-    }
+    // fresh, with its floor at the deepest block of its captures
+    fn->hdr.depth = d;
 }
 
 int a_pdepth (AVal v) {
     if (v.type < A_TAB) {
         return 0;
     }
-    int d = v.u.o->pinned ? (int)v.u.o->depth : 0;
+    // the block of a pinned value, or the floor of a fresh one
+    int d = (int) v.u.o->depth;
     if (v.type == A_XTASK) {
         ATask* t = A_TASK_OF(v);
         // a terminated task holds nothing and needs no owner
@@ -1927,12 +1926,15 @@ AStatus a_pin (AVal* slot) {
         case A_TASK:
         case A_NAT:
             // The block must hold the only reference. A fresh value
-            // may already be confined by what it holds (a closure, or
-            // a value that left its block): the pin only narrows it.
+            // may have a floor, from what it holds (a closure, or a
+            // value that left its block): it is pinned there or deeper.
             if (v.u.o->rc != 1) {
                 return a_error(v.u.o->pinned ?
                     "invalid assignment : unexpected pinned value" :
                     "invalid pin : shared value");
+            }
+            if ((int)v.u.o->depth > a_depth) {
+                return a_err_pinned();
             }
             break;
         default:
@@ -1962,9 +1964,10 @@ static int xfer_mark (AVal v, int d) {
         int p = a_pdepth(v);
         return (p <= d) ? p : 0;
     }
-    if (!o->pinned || o->depth==XFER) {
+    if (o->depth == XFER) {
         return 0;
     }
+    // it stays: pinned outside, or fresh with a floor outside
     if ((int)o->depth <= d) {
         return o->depth;
     }
@@ -1989,14 +1992,14 @@ static int xfer_mark (AVal v, int d) {
     return m;
 }
 
-// What leaves becomes free, or confined to the block `m` of what it
-// still holds.
+// What leaves becomes fresh, with its floor at the block `m` of what
+// it still holds.
 static void xfer_set (AVal v, int m) {
-    if (v.type<A_TAB || !v.u.o->pinned || v.u.o->depth!=XFER) {
+    if (v.type<A_TAB || v.u.o->depth!=XFER) {
         return;
     }
     AObj* o = v.u.o;
-    o->pinned = (m > 0);
+    o->pinned = 0;
     o->depth  = m;
     if (v.type == A_TAB) {
         uint32_t pos = 0;
@@ -2047,6 +2050,7 @@ static void xfer (AVal v, int d) {
             // the destination must pin it again
             if (deep) {
                 o->pinned = 0;
+                o->depth  = 0;
             }
             xfer(t->pub, d);
             break;
@@ -2061,6 +2065,7 @@ static void xfer (AVal v, int d) {
                 xfer(t->pub, d);
             }
             o->pinned = 0;
+            o->depth  = 0;
             break;
         }
         default:

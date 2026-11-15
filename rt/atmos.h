@@ -514,8 +514,8 @@ typedef struct AFunc {
 // New function with `ncap` empty captures (owned).
 AVal a_func (AFn fn, int ncap);
 
-// A closure inherits the scope of what it captures: it is pinned at
-// the deepest pin block among its captures. Called once they are set.
+// A closure is born with its floor at the deepest block among its
+// captures. Called once they are set.
 void a_func_scope (AVal f);
 
 // A captured mutable variable lives in a box, shared by the function
@@ -947,9 +947,9 @@ void a_pin_clr (AVal* slot);
 // Releases all entries of a table.
 void a_tab_clear (ATab* t);
 
-// Depth of the pin block of a value: the block where it is pinned, or
-// the deepest block of what it holds (a task with pinned arguments).
-// Zero if the value is free to go anywhere.
+// Depth of the block of a value: the block where it is pinned, or the
+// floor of a fresh one (the deepest block of what it holds). Zero if
+// the value is free to go anywhere.
 int a_pdepth (AVal v);
 
 // Raises "invalid escape : pinned value".
@@ -964,10 +964,10 @@ static inline AStatus a_chk_store (AVal v, int d) {
     return A_OK;
 }
 
-// A table only holds a pinned value if it is itself pinned, at the
-// same depth or deeper.
+// A table only holds a value of its own block or of an outer one: of
+// its pin block, or of its floor while it is fresh.
 static inline AStatus a_chk_tab (ATab* t, AVal v) {
-    return a_chk_store(v, t->hdr.pinned ? (int)t->hdr.depth : 0);
+    return a_chk_store(v, (int)t->hdr.depth);
 }
 
 // A block with pins is being left, with status `st`. What it gives to
