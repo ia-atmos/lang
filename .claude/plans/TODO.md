@@ -63,7 +63,6 @@ Waiting for the author's "ok":
 | # | Work | Note |
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
-| 11 | Mouse events in `lib/sdl.atm` | Recommended to do now: `raylib.atm` and `pico.atm` have them |
 | 22 | Mark the plan of Pingus as done, with the link to the port | |
 | 23 | Ask the session `pingus` to remove the workarounds that the compiler no longer needs | |
 
@@ -181,4 +180,4 @@ of the sessions still have the old names.
 2026-11-14: no value, parentheses optional; the author chose no
 dedicated error for `continue`); 36 (the check of spawns, done on
 2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47); 34, 41, and 62 (done with the new rules of `pin` on 2026-11-15: a nested constructor is pinned with the outer one; the message of an escape says the type and the line of the pin; a fresh task that is dropped is aborted at once); 18, 19, and 24 (on 2026-11-15 the author deleted every branch but `main`: `trails`, the two `ccr-*`, and `claude/paper-pin`, none with work missing from `main`; the README of Pingus already pointed its plan to `main`; a session cannot delete a branch, the push is refused with 403);
-51 (became 55).
+51 (became 55); 11 (mouse in `lib/sdl.atm`: the library left this repository on 2026-11-16, by the author's decision, with Rocks; both live in `ia-atmos/env-sdl`).

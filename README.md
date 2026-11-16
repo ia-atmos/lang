@@ -132,14 +132,17 @@ terminates the program when there is nothing left to awake.
 Other environments are written in C, in the Atmos program itself or in a file
 that it includes:
 
-- [`lib/sdl.atm`](lib/sdl.atm):
-    A basic environment that relies on [SDL][sdl] to provide a window, keys,
+- [`sdl.atm`](https://github.com/ia-atmos/env-sdl):
+    An environment that relies on [SDL][sdl], with a window, keys, mouse,
     images, text, sounds, and timers.
-- [`raylib.atm`](https://github.com/ia-atmos/env-ray):
+- [`ray.atm`](https://github.com/ia-atmos/env-ray):
     An environment that relies on [raylib][raylib], with keys, mouse,
     textures, sounds, and fonts.
+- [`pico.atm`](https://github.com/ia-atmos/env-pico):
+    An environment that relies on [pico-sdl][pico], with layers, anchors,
+    and positions relative to the window.
 
-Both have a test mode with no screen, with a fixed number of frames and
+Each has a test mode with no screen, with a fixed number of frames and
 scripted input.
 
 An environment may have a compiler of its own, such as `atmos-pico`, so that a
@@ -148,12 +151,14 @@ program needs no `include`: `make env` builds one (see the
 
 [sdl]:          https://www.libsdl.org/
 [raylib]:       https://www.raylib.com/
+[pico]:         https://github.com/fsantanna/pico-sdl
 
 # Resources
 
 - [A toy problem][toy]: Drag, Click, or Cancel
 - A simple but complete 2D game in Atmos:
-    - [`exs/rocks/`](exs/rocks/)
+    - [`exs/rocks/`](https://github.com/ia-atmos/env-sdl/tree/main/exs/rocks)
+      of `env-sdl`
 - Academic publications (Céu):
     - http://ceu-lang.org/chico/#ceu
 - Mailing list (Céu & Atmos):
@@ -193,7 +198,6 @@ rt/atmos.h   C API for generated code, natives, and environments
 tst/    tests
 doc/    manual
 exs/    examples
-lib/    libraries in Atmos: sdl.atm
 ```
 
 ## Differences

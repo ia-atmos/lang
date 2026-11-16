@@ -12,8 +12,8 @@ printf 'one\ntwo\nquit\nthree\n' | ./atmos exs/stdin.atm
   block defines the driver, which emits each line of the standard
   input as an event.
 
-- `rocks/`: the "Rocks!" game, over the SDL environment in
-  `lib/sdl.atm`. See its `README.md`.
+The game "Rocks!", over SDL, lives with its environment, in
+[`ia-atmos/env-sdl`](https://github.com/ia-atmos/env-sdl), `exs/rocks/`.
 
 The examples of the reference implementation that are not here depend
 on what this version leaves out: the functional streams (`rx.atm`,
