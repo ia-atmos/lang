@@ -176,7 +176,12 @@ case studies from six ports of libraries and games to Atmos.
 ## 8. Implementation
 
 - Compilation to C, no tracing collector in the runtime
-- What reference counting still does: dropped fresh values, events, early release
+- What reference counting still does
+    - a dropped fresh value: data at count zero; a task at count one,
+      aborted at the end of the statement, since an abort runs code
+    - an emitted event: owned by the runtime, released by its count
+    - a value removed from a pinned holder: freed before the block ends
+    - values with no block at all, such as strings
 - Header of a value: reference count, state, block depth, line of the pin
 - States in the header: fresh, fresh with a floor, pinned by declaration,
   pinned by a holder, owned by the runtime
@@ -205,7 +210,20 @@ case studies from six ports of libraries and games to Atmos.
 - Cost of the migration
     - test suite: about 230 of 830 programs changed
     - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
-- What remains strange or needs a workaround, from the reports of the ports
+- Reports of the migration, so far (`261115-pin.md`)
+    - sdl-tux: 9 lines to `pin`, 1 rewrite
+    - doom: 8 lines to `pin`, 2 rewrites
+    - SDL environment: 16 lines to `pin`, 4 rewrites
+    - libuv environment: 25 lines to `pin`, 13 rewrites; workaround gone in 10 places
+    - IUP environment: 66 lines to `pin`, 4 rewrites; workaround gone in 12 places
+    - outputs of the tests identical in all five
+    - pending: pico, Flare, Lessmilk, SNKRX
+- What remains strange, from the reports
+    - a record filled and then given away: created in its place first
+    - two resources opened in parallel need a table to hold them
+    - `pin ok, e = catch`: a `pin` on names that are not dynamic
+    - a helper that returns a small table: a `pin` for a value read once
+    - errors only show on the paths that execute
 - Quality of errors: what escaped, from where, to where
 - Cost
     - time: the store check, the transfer of results
@@ -220,6 +238,10 @@ case studies from six ports of libraries and games to Atmos.
 - Shared structures must be owned by a common enclosing block
 - No weak references
 - Reference counting is still required: not "no GC", but no tracing GC
+- A cycle among fresh values that no block pins is not reclaimed
+  (a fresh task kept alive only by its own `pub`)
+- A task cannot publish a value pinned in its body
+- A parameter that the callee pins is released when the callee returns
 - A variable does not own: `var x` cannot receive a fresh value later
 - A value sometimes fresh and sometimes owned fits neither `val` nor `pin`
 - An event is shared: a receiver cannot pin it
