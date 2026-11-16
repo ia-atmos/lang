@@ -322,6 +322,15 @@ is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
 
+Leaving the tracing collector out is a design choice, with a price.
+A block bounds how long a value may live, but it does not collect what
+becomes garbage while the block is still alive.
+Garbage that the counts cannot reclaim, such as a cycle that is removed from
+a pinned value, waits for the end of its block, and a block that lives long
+may accumulate it.
+A program keeps such values in blocks that end, or breaks the cycle before
+it lets the values go.
+
 A [`pin` declaration](#pin) attaches a value to its enclosing block:
 
 - The value is reclaimed when the block terminates, even if it is part of a
