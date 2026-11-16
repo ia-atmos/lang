@@ -684,6 +684,18 @@ static void res (Expr* e) {
             {
                 err(e->u.dcl.ids[0], "invalid declaration : expected 'pin'");
             }
+            // val a, b = [...], [...]: each name with its expression
+            if (kind!=V_PIN && !e->u.dcl.opt && e->u.dcl.n>1 &&
+                e->u.dcl.set!=NULL && e->u.dcl.set->tag==E_LIST)
+            {
+                List* es = &e->u.dcl.set->u.list.es;
+                for (int i=0; i<e->u.dcl.n && i<es->n; i++) {
+                    if (is_fresh(es->v[i])) {
+                        err(e->u.dcl.ids[i],
+                            "invalid declaration : expected 'pin'");
+                    }
+                }
+            }
             break;
         }
 
