@@ -3,7 +3,8 @@
 Proposed name of the architecture: **snapshots and commands**.
 
 The author asked on 2026-11-16 that the title has one of: decentralized,
-blockchain, permissionless, consensus. Alternative titles:
+blockchain, permissionless, consensus, and left the choice open. The
+title above is a placeholder. Alternative titles:
 
 - State is Data, Tasks are Disposable: Snapshots and Commands for
   Decentralized Reactive Programs
@@ -185,8 +186,10 @@ state, and case studies.
 ## 8. Decentralized Execution
 
 > Added on 2026-11-16, from the author: commands are reordered by the
-> consensus, and the resolution of branches is to be automatic. The
-> mechanism below is a proposal to discuss with him, not his words.
+> consensus, and the resolution of branches is to be automatic. He
+> approved the mechanism on the same day: back to a snapshot, and apply
+> the commands again in the new order, with those that no longer apply
+> rejected by all peers. The rest of the section is a proposal.
 
 - From one machine to many
     - peers with the same snapshot and the same order of commands reach

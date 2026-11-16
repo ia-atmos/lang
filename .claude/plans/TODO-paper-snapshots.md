@@ -15,13 +15,16 @@ Each item has the recommended option.
    Proposed: "Snapshots and Commands: Structured Reactive Programs over
    a Permissionless Consensus". Four alternatives are in
    `papers/snapshots.md`.
+   Left open by the author on 2026-11-16: not to ask again until the
+   outline is otherwise settled.
 2. **Freechains.** Partly answered on 2026-11-16: the consensus reorders
    commands, and the resolution of branches is to be automatic. Section
    8 was written from that, as a proposal. To confirm with him:
     - each command is a post, and the order of the consensus is the
       order of the journal;
-    - the resolution is "back to a snapshot, apply again in the new
-      order", with commands that no longer apply rejected by all peers;
+    - ~~the resolution is "back to a snapshot, apply again in the new
+      order", with commands that no longer apply rejected by all
+      peers~~: approved on 2026-11-16;
     - when a command is final, and what the user sees before that.
 3. **Case studies.** No port follows the architecture.
    Recommended: Doom with checkpoints after the faithful port, one game
