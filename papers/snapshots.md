@@ -277,7 +277,14 @@ state, and case studies.
 - A game by turns: 1oom (planned, not started)
     - its saved game is the whole state, in a documented format, and a
       run is reproducible from a seed
-- Flare: the original has saved games; what the port does is to ask
+- Flare (`ia-atmos/sdl-flare`; reported by its session on 2026-11-16)
+    - the original saves stats, inventory, campaign, map and position,
+      and cooldowns; the port has no save yet
+    - the tasks of a map are already created from its file at each load
+    - state in tasks that a save of tables would miss: a turn timer as
+      the counter of a loop, the current action as which task runs, the
+      rest of an effect as the progress of its task
+    - a candidate for checkpoints: a save at the entry of a map
 - An application that is not a game: an editor
 - Measures: size of the snapshot, commands per minute, time to resume,
   hidden state found by the test

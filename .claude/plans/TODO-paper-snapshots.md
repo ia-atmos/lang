@@ -63,8 +63,10 @@ Each item has the recommended option.
       "pin"), not only by section. No overlap. Its request: not to
       restate the rules, nor the comparison with GC, RC, Rust, and
       regions. It may cite this paper as a case study in its Section 9.
-    - `flare` (session_011eECoegYsZr7nSPxcugGtt): asked on 2026-11-15
-      what the port does with saved games. Not answered.
+    - ~~`flare`~~ (session_011eECoegYsZr7nSPxcugGtt): answered on
+      2026-11-16, in Section 11. No save in the port yet. "A save at
+      the entry of a map" is a reading of this session, not a plan of
+      the port.
     - `pico-1oom` (session_011eECoiEGgQ6ZBFHUCoxt77): not asked, the
       port is not started. Its plan is `261114-pico-1oom.md`.
 2. **Related work from sources.** Prevayler, record and replay, and
