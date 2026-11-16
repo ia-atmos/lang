@@ -20,9 +20,10 @@ by that session.
 
 2. ~~Sections 7 and 8 against the implementation.~~ Done on
    2026-11-15, from `261115-pin.md` and `261115-pin-migration.md`.
-3. **Section 9, the reports of the ports.** The ports are migrating to
-   the new rules. To add their numbers and strange cases when the
-   reports arrive (through the session of the rules).
+3. **Section 9, the reports of the ports.** Five are in (sdl-tux,
+   doom, and the environments of SDL, libuv, and IUP), from
+   `261115-pin.md`. Pending: pico, Flare, Lessmilk, SNKRX. The bullet
+   of SNKRX in the case studies is still a guess (item B1).
 
 ## C. Next steps, not started
 
