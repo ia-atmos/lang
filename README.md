@@ -38,7 +38,7 @@ and [Esterel][esterel].
 
 This repository is the implementation of Atmos that compiles to C:
 
-- No virtual machine, no interpreter, and no garbage collector.
+- No virtual machine, no interpreter, and no tracing garbage collector.
 - The whole program becomes a single C file, which a C compiler builds.
 - Tasks have no stacks of their own: a task is a record with its variables
   and the point where it resumes.

@@ -85,7 +85,8 @@ programming with two main functionalities:
 - Lexical Memory Management:
     - A lexical policy to manage dynamic allocation automatically.
     - A set of strict escaping rules to preserve structured reasoning.
-    - A reference-counter collector for deterministic reclamation.
+    - Reference counting underneath, for deterministic reclamation, with no
+      tracing garbage collector.
 
 Atmos is inspired by [synchronous programming languages][sync] like [Céu][ceu]
 and [Esterel][esterel].
@@ -103,8 +104,8 @@ Atmos is inspired by [Lua][lua]:
 It mimics most of the semantics of Lua with respect to values, types,
 declarations, and expressions.
 Nevertheless, this implementation does not depend on Lua: it compiles to C,
-which links with a small runtime with no virtual machine and no garbage
-collector.
+which links with a small runtime with no virtual machine and no tracing
+garbage collector.
 
 Atmos is in **experimental stage**.
 
@@ -304,12 +305,22 @@ print(t ?? :T)              ;; --> true
 
 ## Lexical Memory Management
 
-Atmos has no garbage collector.
+Atmos has no tracing garbage collector: no pauses and no scans of the heap.
+Values are reference counted underneath, and the blocks of the program add
+what counting alone cannot do: they reclaim cycles, they give each value a
+lexical point of death, and they rule out dangling references.
+
 Every dynamic value (a table, a function, a native value, a task, or a pool
 of tasks) belongs to a block of the program, which reclaims the value when
 it terminates.
 A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
+
+The counts remain in use for what has no block, or ends before its block:
+a fresh value that is dropped is reclaimed at once; an event that is emitted
+is shared by the tasks that receive it, and is reclaimed when the last of
+them lets it go; and a value that is removed from a pinned value is
+reclaimed then, and does not wait for the block.
 
 A [`pin` declaration](#pin) attaches a value to its enclosing block:
 
