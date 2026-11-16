@@ -4,4 +4,4 @@ f	native
 c	3
 v	3	nil
 shared	true	3
-false	invalid assignment : unexpected pinned value
+false	invalid assignment : unexpected pinned value : table pinned at pin-await-01.atm:36

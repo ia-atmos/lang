@@ -67,6 +67,18 @@ AStatus a_throw (void) {
     return A_ERROR;
 }
 
+AStatus a_err_owned (AVal v) {
+    uint32_t lin = v.u.o->lin;
+    const char* type = (v.type == A_XTASK) ? "task" :
+                       (v.type == A_TASKS) ? "pool" : a_typename(v);
+    if (lin == 0) {
+        return a_error("invalid assignment : unexpected pinned value");
+    }
+    return a_error(
+        "invalid assignment : unexpected pinned value : %s pinned at %s:%d",
+        type, atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
+}
+
 AStatus a_err_pinned (AVal v) {
     AVal msg = err_pinned(v);
     AStatus st = a_error("%s", A_STR_OF(msg)->s);

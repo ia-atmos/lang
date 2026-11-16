@@ -4,9 +4,9 @@ end	1
 end	2
 true
 3
-false	invalid assignment : unexpected pinned value
+false	invalid assignment : unexpected pinned value : table pinned at deep-01.atm:39
 false	invalid escape : table pinned at deep-01.atm:47
-false	invalid assignment : unexpected pinned value
+false	invalid assignment : unexpected pinned value : table pinned at deep-01.atm:47
 in
 end	3
 end	4

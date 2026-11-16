@@ -1014,6 +1014,10 @@ void a_tab_clear (ATab* t);
 // the value is free to go anywhere.
 int a_pdepth (AVal v);
 
+// Raises the pin of a value that already has an owner: "invalid
+// assignment : unexpected pinned value : table pinned at f:10".
+AStatus a_err_owned (AVal v);
+
 // Raises the escape of `v`: "invalid escape : table pinned at f:10",
 // with its type and the line of the pin that confines it.
 AStatus a_err_pinned (AVal v);

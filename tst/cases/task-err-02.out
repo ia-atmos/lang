@@ -1,4 +1,4 @@
 true
 ==> ERROR:
  v  task-err-02.atm:5 (throw)
-==> invalid assignment : unexpected pinned value
+==> invalid assignment : unexpected pinned value : task pinned at task-err-02.atm:2

@@ -2122,7 +2122,7 @@ AStatus a_pin (AVal* slot) {
         return a_error("invalid assignment : unexpected parent task");
     }
     if (v.u.o->pinned) {
-        return a_error("invalid assignment : unexpected pinned value");
+        return a_err_owned(v);
     }
     // a fresh value is pinned at its floor or deeper
     if (a_pdepth(v) > a_depth) {
