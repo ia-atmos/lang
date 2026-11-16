@@ -46,21 +46,6 @@ Each item has the recommended option.
    "degree of scattering" metric of the aspect-oriented literature.
    Bias to state: the model knows the original code and C from training
    and does not know Atmos.
-8. **Border with the paper on snapshots** (`papers/snapshots.md`, session
-   `snapshots`).
-    - The saved game of Doom: decided by the author on 2026-11-16, in
-      that session (as it reported, and as its
-      `TODO-paper-snapshots.md` records; not heard here). This paper:
-      one paragraph, as a limit of structured concurrency (the save
-      prevented tasks in the simulation), pointing to that paper. That
-      paper: the whole story, as its motivation.
-    - Still open: where this paper claims determinism, test modes with
-      scripted input, or replays.
-      Recommended: determinism only as a property of the language
-      (section on Atmos), and the test modes only in the method of the
-      case studies; no claim on save, resume, or replay. Tell that
-      session the names of the sections when A4 is decided.
-
 ## B. Work known and not done
 
 1. **Plan for the paper.** None exists. The old session waited for one
@@ -224,3 +209,16 @@ memory or from search snippets, and is to be checked before use.
   Naughty Dog (GDC talk on Uncharted 2).
 - FRP: Elm (early versions) and Yampa. Synchronous languages: Esterel,
   Lustre, Signal. No citations collected.
+
+## F. Settled
+
+- **Border with the paper on snapshots** (`papers/snapshots.md`, session
+  `snapshots`; was A8). The author decided the saved game of Doom there
+  on 2026-11-16, and answered "Ok" here, on the same day, to the report
+  of it and to the recommendation on the rest. This paper: the saved
+  game of Doom in one paragraph, as a limit of structured concurrency,
+  pointing to that paper; determinism only as a property of the
+  language (section on Atmos); the test modes with scripted input only
+  in the method of the case studies; no claim on save, resume, or
+  replay. To do: tell that session the names of the sections when A4 is
+  decided.
