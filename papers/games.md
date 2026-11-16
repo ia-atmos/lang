@@ -40,6 +40,10 @@ Holds the evaluation and the discussion (no separate section).
   Argument to use: Sweeney, on accepting 10% of performance in exchange
   for better productivity (POPL 2006 talk; quote to verify).
 - Specific engines: Doom (`ia-atmos/doom`).
+  One paragraph on its saved game, as a limit of structured
+  concurrency: the save prevented tasks in the simulation, which stays
+  in C. It points to the paper on snapshots (`papers/snapshots.md`),
+  which tells the whole story.
 
 - Change study with AI (idea of the author, to be designed): the cost of
   the same change in the original and in the port, e.g. adding a new
@@ -113,6 +117,8 @@ Same as above.
   | complex | SNKRX            | Pingus, Flare            |
 
   Plus Doom as the case of a specific engine.
+  Its saved game is one paragraph, as a limit of structured
+  concurrency, pointing to the paper on snapshots.
 - Method: how the ports were made, how each measure is taken.
 - Questions:
     - Q1: do the patterns of section 4 recur across the ports?

@@ -47,16 +47,19 @@ Each item has the recommended option.
    Bias to state: the model knows the original code and C from training
    and does not know Atmos.
 8. **Border with the paper on snapshots** (`papers/snapshots.md`, session
-   `snapshots`, which asked on 2026-11-15). It proposes: the saved game
-   of Doom (the simulation kept in C because a save must cover it) is
-   one paragraph here, as a limit of structured concurrency, and the
-   motivation there; each paper cites the other. It also asked where
-   this paper claims determinism, test modes with scripted input, or
-   replays. Answered: no claim today; nothing agreed.
-   Recommended: accept. Here, determinism only as a property of the
-   language (section on Atmos), and the test modes only in the method
-   of the case studies; no claim on save, resume, or replay. Tell that
-   session the names of the sections when A4 is decided.
+   `snapshots`).
+    - The saved game of Doom: decided by the author on 2026-11-16, in
+      that session (as it reported, and as its
+      `TODO-paper-snapshots.md` records; not heard here). This paper:
+      one paragraph, as a limit of structured concurrency (the save
+      prevented tasks in the simulation), pointing to that paper. That
+      paper: the whole story, as its motivation.
+    - Still open: where this paper claims determinism, test modes with
+      scripted input, or replays.
+      Recommended: determinism only as a property of the language
+      (section on Atmos), and the test modes only in the method of the
+      case studies; no claim on save, resume, or replay. Tell that
+      session the names of the sections when A4 is decided.
 
 ## B. Work known and not done
 
