@@ -1,12 +1,17 @@
-# State is Data, Tasks are Disposable: Snapshots and Commands for Structured Reactive Programs
+# Snapshots and Commands: Structured Reactive Programs over a Permissionless Consensus
 
 Proposed name of the architecture: **snapshots and commands**.
 
-Alternative titles:
+The author asked on 2026-11-16 that the title has one of: decentralized,
+blockchain, permissionless, consensus. Alternative titles:
 
-- Snapshots and Commands: A Persistence Architecture for Synchronous Programs
-- Tasks as a Function of Data: Saving, Resuming, and Replaying Reactive Programs
-- System Prevalence Meets Structured Concurrency
+- State is Data, Tasks are Disposable: Snapshots and Commands for
+  Decentralized Reactive Programs
+- Tasks as a Function of Data: Decentralized Reactive Programs that
+  Survive Reordering
+- Deterministic Reactive Programs on a Blockchain: Snapshots, Commands,
+  and Automatic Branch Resolution
+- System Prevalence Meets Structured Concurrency, without a Server
 
 > Status: outline, first version, 2026-11-15. The idea is the author's
 > (item 64 of `.claude/plans/TODO.md`, 2026-11-14). Nothing here is
@@ -36,6 +41,11 @@ needs no further discipline; and blocks own tasks, so a restart is the
 abortion of a block.
 For action games, we restrict saves to checkpoints, which keeps the state
 between two checkpoints in tasks.
+The same journal makes the program decentralized: peers that agree on the
+order of the commands reach the same table, with no server.
+Over a permissionless consensus the order may change after the fact, when
+branches meet; a peer then goes back to a snapshot and applies the commands
+again in the new order, with no code from the programmer.
 We present the architecture in Atmos, its rules, a test that detects hidden
 state, and case studies.
 
@@ -61,6 +71,8 @@ state, and case studies.
     - the architecture and its rules
     - what the synchronous model gives for free
     - checkpoints as the form for action games
+    - decentralized execution over a permissionless consensus, with
+      reordering resolved by the architecture
     - a test for hidden state, automatic under determinism
     - case studies
 
@@ -170,7 +182,49 @@ state, and case studies.
 - What is lost: a save at any point
 - Design decisions made explicit: which pickups survive a death
 
-## 8. Detecting Hidden State
+## 8. Decentralized Execution
+
+> Added on 2026-11-16, from the author: commands are reordered by the
+> consensus, and the resolution of branches is to be automatic. The
+> mechanism below is a proposal to discuss with him, not his words.
+
+- From one machine to many
+    - peers with the same snapshot and the same order of commands reach
+      the same table: a replicated state machine
+    - the journal is the only thing that travels
+- A permissionless consensus as the journal: Freechains
+    - a command is a post in a chain
+    - posts form a graph: a partial order
+    - the consensus gives a total order, which is the order of the journal
+    - no server, no fixed set of members
+- The problem: the order is not final
+    - a peer applies a command when it arrives, before the others agree
+    - when branches meet, commands may enter before ones already applied
+- Automatic branch resolution
+    - find the first position where the old and the new order differ
+    - go back to the nearest snapshot before it
+    - apply the commands again, in the new order
+    - abort and spawn the tasks from the resulting table
+    - the same operation as "go to an instant" of Section 3
+- What a command must be, to survive a reordering
+    - valid or rejected by the table alone (R8): a command that no longer
+      applies in the new order is rejected by every peer alike
+    - an intention, not a difference of state: "move note 3 to x,y", not
+      "the table is now T"
+- What the user sees
+    - a state that is tentative until the consensus settles
+    - a command of the user undone by a branch that arrives later
+    - open: how to show it, and when a command is final
+- What the tick is, among peers
+    - time is local and disposable; only commands are shared
+    - an action game among peers needs the tick as a command: lockstep,
+      out of scope
+- Snapshots among peers
+    - a snapshot is valid for a position of the order that is final
+    - a new peer starts from a snapshot and the commands after it
+- Cost: the depth of a reordering, times the cost of a command
+
+## 9. Detecting Hidden State
 
 - The risk: a local variable that the table does not know
 - The test
@@ -181,7 +235,7 @@ state, and case studies.
     - writes to the table outside the applier
     - open
 
-## 9. Implementation
+## 10. Implementation
 
 - The applier, the journal, and the snapshot in Atmos
 - Cost
@@ -192,7 +246,7 @@ state, and case studies.
 - Versions: a journal against changed code
     - snapshots age better than journals
 
-## 10. Case Studies
+## 11. Case Studies
 
 - To be chosen with the author; none follows the architecture yet
 - Doom (`ia-atmos/doom`; facts reported by its session on 2026-11-15)
@@ -228,19 +282,21 @@ state, and case studies.
 - Measures: size of the snapshot, commands per minute, time to resume,
   hidden state found by the test
 
-## 11. Limitations
+## 12. Limitations
 
 - Action games with a save at any point
 - Rule R6 has two paths to keep equal
 - Rule R4 is not checked by the compiler
 - Journals and changes of code
 - State in memory: the table must fit
+- Among peers: a command of the user may be undone later, and the cost
+  of a deep reordering is not bounded by the architecture
 - Determinism ends at native code
     - in Doom the screen differed between runs at first: the engine
       reads beyond the end of sprite columns, and pointers of the
       allocator reached the screen as pixels
 
-## 12. Related Work
+## 13. Related Work
 
 - System prevalence: Prevayler
     - the closest: memory, journal of commands, periodic snapshots
@@ -253,6 +309,17 @@ state, and case studies.
     - the view is a pure function; our tasks have a life of their own
 - Replicated state machines: Raft
     - a log of commands, snapshots to compact it
+    - a fixed set of members, an order that is final
+- Optimistic replication: Bayou, Time Warp
+    - tentative writes, undone and applied again when the order settles
+    - the closest to Section 8
+- Blockchains and smart contracts
+    - a state machine over a consensus, with reorganizations of the chain
+    - ours: a whole reactive program, not a contract, and no currency
+- CRDTs and local-first software
+    - commands that commute, so that the order does not matter
+    - the alternative we do not take: it constrains the data, ours the
+      order
 - Deterministic lockstep and replays in games; rollback netcode
     - records raw input, not commands
 - Record and replay debugging: rr, QEMU, TARDIS
@@ -264,18 +331,17 @@ state, and case studies.
 - Synchronous languages: Esterel, Céu
     - determinism used for testing and replay
 
-## 13. Future Work
+## 14. Future Work
 
-- Distribution
-    - a total order of commands among peers is a replicated state machine
-    - Freechains as the journal
-    - when the order changes: back to a snapshot, apply again
+- Action games among peers: the tick as a shared command
+- Permissions: which peer may emit which command
 - A check in the compiler for rules R2 and R4
 - Undo as an operation on the journal
 - Migration of journals between versions
 
-## 14. Conclusion
+## 15. Conclusion
 
 - What persists is data; tasks are a function of it
 - A synchronous language makes the old pattern cheap
 - Checkpoints give tasks back to action games
+- The same journal, over a permissionless consensus, removes the server

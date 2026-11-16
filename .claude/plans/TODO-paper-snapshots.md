@@ -10,16 +10,19 @@ The idea is item 64 of `TODO.md`, related to item 45.
 
 Each item has the recommended option.
 
-1. **Name and title.** Proposed: the architecture is "snapshots and
-   commands"; the title is "State is Data, Tasks are Disposable:
-   Snapshots and Commands for Structured Reactive Programs". Three
-   alternatives are in `papers/snapshots.md`.
-2. **Freechains.** Asked on 2026-11-14, not answered: is each command a
-   post in a chain, with the order of the consensus as the order of the
-   journal, or does Freechains only distribute closed snapshots and
-   journals?
-   Recommended: the first, and to apply again when the order changes.
-   Until then it stays in Future Work.
+1. **Name and title.** On 2026-11-16 the author asked that the title
+   has one of: decentralized, blockchain, permissionless, consensus.
+   Proposed: "Snapshots and Commands: Structured Reactive Programs over
+   a Permissionless Consensus". Four alternatives are in
+   `papers/snapshots.md`.
+2. **Freechains.** Partly answered on 2026-11-16: the consensus reorders
+   commands, and the resolution of branches is to be automatic. Section
+   8 was written from that, as a proposal. To confirm with him:
+    - each command is a post, and the order of the consensus is the
+      order of the journal;
+    - the resolution is "back to a snapshot, apply again in the new
+      order", with commands that no longer apply rejected by all peers;
+    - when a command is final, and what the user sees before that.
 3. **Case studies.** No port follows the architecture.
    Recommended: Doom with checkpoints after the faithful port, one game
    by turns or with checkpoints among the ports, and one small editor
@@ -42,7 +45,7 @@ Each item has the recommended option.
       are the author's; nothing unmeasured or unimplemented is claimed.
       Overlap to avoid: with `pin`, state tied to blocks; with `games`,
       the saved game of Doom.
-    - ~~`doom`~~: answered on 2026-11-15, in Sections 7, 10 and 11.
+    - ~~`doom`~~: answered on 2026-11-15, in Sections 7, 11 and 12.
       The numbers of the state table are from its plan, not recounted.
     - ~~`pin`~~: answered on 2026-11-15, in Section 5. The rules are
       approved but not in the compiler: the paper says "by the rules
@@ -66,7 +69,8 @@ Each item has the recommended option.
       port is not started. Its plan is `261114-pico-1oom.md`.
 2. **Related work from sources.** Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
-   Elm and Redux, Raft, and lockstep are from memory: to check and to
+   Elm and Redux, Raft, lockstep, Bayou, Time Warp, and CRDTs are from
+   memory: to check and to
    add references.
 3. **The example of Section 3.** A sketch, not compiled.
 
