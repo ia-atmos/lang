@@ -23,10 +23,13 @@ resources at a known point of the program.
 A dynamic check, a block depth per value compared on every store, guarantees
 that no reference to a pinned value outlives its block, and a block may still
 give a value away as its result.
-Reference counting remains underneath, but the mechanism needs no tracing
-collector, no static lifetime annotations, and
-no separate region or arena abstraction: the blocks of the program are the
-regions.
+The mechanism needs no static lifetime annotations and no separate region or
+arena abstraction: the blocks of the program are the regions.
+It bounds the lifetime of a value, but does not collect what becomes garbage
+while its block is alive: reference counting does that underneath, and
+cycles wait for the end of the block.
+A tracing collector would still help inside a long-lived block; Atmos leaves
+it out as a design choice, trading that memory for determinism.
 We argue that it is only sound and useful under structured programming, in
 which blocks own tasks, abortion is a language primitive, and finalization
 order is deterministic.
@@ -44,7 +47,7 @@ case studies from six ports of libraries and games to Atmos.
     - the mechanism: structured memory, with lexical pins
     - a small set of rules, uniform for all dynamic values
     - a cheap dynamic check: one depth per value, one comparison per store
-    - an implementation with no tracing collector
+    - an implementation on reference counting, with no tracing collector by choice
     - an evaluation with six real ports
 
 ## 2. Background
@@ -119,9 +122,11 @@ case studies from six ports of libraries and games to Atmos.
 
 - Criteria: determinism, cycles, resources, annotations, pauses, cost, errors
 - vs. tracing GC
-    - no pauses, no heap scans, no finalizer nondeterminism
-    - resources released at a known program point
-    - fits embedded and real-time targets
+    - not a replacement: orthogonal, and the two could be combined
+    - pins give what a collector does not: a known point of finalization
+    - a collector gives what pins do not: garbage reclaimed inside a live block
+    - Atmos drops the collector as a tradeoff: no pauses, no heap scans
+    - the price: cycles and unreachable data wait for the end of the block
 - vs. plain reference counting
     - cycles are reclaimed
     - death point is lexical, not "when the last reference goes"
@@ -175,7 +180,7 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 8. Implementation
 
-- Compilation to C, no tracing collector in the runtime
+- Compilation to C; reference counting, and no tracing collector by choice
 - What reference counting still does
     - a dropped fresh value: data at count zero; a task at count one,
       aborted at the end of the statement, since an abort runs code
@@ -237,7 +242,9 @@ case studies from six ports of libraries and games to Atmos.
 - The check is dynamic: errors appear when the program executes
 - Shared structures must be owned by a common enclosing block
 - No weak references
-- Reference counting is still required: not "no GC", but no tracing GC
+- Collection is still needed during the scope: pins do not replace a GC
+- Without a tracing collector, garbage in cycles lives as long as its block
+- A long-lived block (the main loop, a module) may accumulate such garbage
 - A cycle among fresh values that no block pins is not reclaimed
   (a fresh task kept alive only by its own `pub`)
 - A task cannot publish a value pinned in its body
@@ -247,7 +254,6 @@ case studies from six ports of libraries and games to Atmos.
 - An event is shared: a receiver cannot pin it
 - `pin` on every first declaration: more annotations than `val`
 - A value that leaves is transferred deep: cost proportional to its size
-- Long-lived blocks keep what they pin until the end
 - Requires a language with structured tasks and abortion
 
 ## 11. Related Work
@@ -266,6 +272,7 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
+- An optional tracing collector, scoped to a block
 - Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion
