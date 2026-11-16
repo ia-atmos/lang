@@ -34,11 +34,10 @@ Each item has the recommended option.
    discussion, not his words.
    Recommended: to review them one at a time.
 
-5. **The saved game of Doom, between this paper and the one on
-   games.** Proposed to `paper-games`, which put it to the author too.
-   Recommended: that paper keeps it as a limit of structured
-   concurrency, in one paragraph; this one takes it as its motivation;
-   each cites the other.
+5. ~~The saved game of Doom, between this paper and the one on
+   games.~~ Decided on 2026-11-16: that paper keeps it as a limit of
+   structured concurrency, in one paragraph that points here; this one
+   tells the whole story, as its motivation. `paper-games` was told.
 
 ## B. Pending in the outline
 

@@ -254,6 +254,8 @@ state, and case studies.
 - To be chosen with the author; none follows the architecture yet
 - Doom (`ia-atmos/doom`; facts reported by its session on 2026-11-15)
     - the saved game as the origin of the idea
+        - told in full here; the paper on games (`papers/games.md`)
+          has one paragraph that points to this one
         - the simulation stays in C because a save must cover it: 967
           rows of states, 448 with an action, 137 types of object
         - Atmos has the control around it: frames, wipe, intermission
