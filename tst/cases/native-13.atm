@@ -1,0 +1,62 @@
+;; A native that holds another is finalized before it, wherever each
+;; one is pinned, and takes it along when it leaves a block.
+```:prelude
+static void res_fin (void* p) {
+    printf("close\t%s\n", (char*) p);
+    free(p);
+}
+static AVal res_new (const char* name, AVal parent) {
+    AVal v = a_nat(strdup(name), res_fin, "res");
+    if (parent.type != A_NIL) {
+        a_nat_holds(v, parent);
+    }
+    return v;
+}
+```
+func layer (name, parent) {
+    `:value res_new(A_STR_OF($name)->s, $parent)`
+}
+
+;; the child is held by a table that was pinned before the parent
+do {
+    pin t = []
+    pin p = layer("p1", nil)
+    set t.c = layer("c1", p)
+}
+print(:1)
+
+;; the parent is removed from its table: the child keeps it
+do {
+    pin t = [p=layer("p2", nil)]
+    set t.c = layer("c2", t.p)
+    set t.p = nil
+    print(:in)
+}
+print(:2)
+
+;; a parent that is never declared is pinned with its child
+do {
+    pin c = layer("c3", layer("p3", nil))
+    print(:in)
+}
+print(:3)
+
+;; the child leaves the block with its parent
+func mk () {
+    pin p = layer("p4", nil)
+    pin c = layer("c4", p)
+    c
+}
+do {
+    pin c = mk()
+    print(:in)
+}
+print(:4)
+
+;; a chain, declared from the parent to the grandchild
+do {
+    pin a = layer("a5", nil)
+    pin b = layer("b5", a)
+    pin c = layer("c5", b)
+}
+print(:5)

@@ -1194,7 +1194,9 @@ A library may declare that a native value holds another value, as a child
 resource holds its parent, with the C function `a_nat_holds(nat, v)`, called
 right after the native value is created.
 The native value is then born with its floor in the block of the other
-value: it cannot leave that block, and is finalized before the value.
+value, and keeps a reference to it.
+It is always finalized before the value that it holds, wherever each one is
+pinned, and takes the value along when it leaves a block as a result.
 
 Examples:
 

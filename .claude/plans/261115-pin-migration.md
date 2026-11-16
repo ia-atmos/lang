@@ -76,6 +76,7 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
 | `pin tmp = [] ; <fill tmp> ; set outer.list@+ = [x=tmp]` (a value that is built and then given to a table of an outer block) | `set outer.list@+ = do { pin tmp = [] ; <fill tmp> ; [x=tmp] }` | A pinned value does not leave its block, except as the result of the block: the store then pins it outside |
 | `var shown = []` ... `set shown = []` (to empty a vector) | `pin shown = []` ... `vector.clear(shown)` | A variable does not own a fresh value |
 | `val new = [...] ; vector.insert(cs, new)` with `cs` of an outer block | `val new = vector.insert(cs, [...])` | The insert pins the fresh value in `cs` and gives it back |
+| `var pos` ... `set pos = get_mouse()` (a variable that follows the last result of a function) | `pin pos = [x=0, y=0]` ... `val p = ...` is not possible either: copy the fields (`pin p = get_mouse() ; set pos.x = p.x ; set pos.y = p.y`), keep it as a field of a pinned table (`set st.pos = get_mouse()`), or let the function return numbers (`val x, y = get_mouse()`) | A variable does not own a fresh value |
 | `x or []` assigned to a `val` or a `pin` | decide: `pin y = if x { X.copy(x) } else { [] }`, or keep it as a field | A value that is sometimes fresh and sometimes owned fits neither |
 
 ## C in an environment

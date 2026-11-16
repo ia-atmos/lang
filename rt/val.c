@@ -356,15 +356,45 @@ AVal a_nat (void* ptr, void (*fin)(void*), const char* kind) {
     n->ptr  = ptr;
     n->fin  = fin;
     n->kind = kind;
+    n->holds   = NULL;
+    n->nholds  = 0;
+    n->nheld   = 0;
+    n->pending = 0;
+    n->closed  = 0;
     return a_obj(&n->hdr);
 }
 
 void a_nat_close (AVal v) {
     ANat* n = A_NAT_OF(v);
+    if (n->closed) {
+        return;
+    }
+    // a native that holds it is still open: it closes first
+    if (n->nheld > 0) {
+        n->pending = 1;
+        return;
+    }
+    n->closed = 1;
     if (n->ptr!=NULL && n->fin!=NULL) {
         n->fin(n->ptr);
     }
     n->ptr = NULL;
+    // what it held is released, and closed if it waited for this
+    AVal* hs = n->holds;
+    int   k  = n->nholds;
+    n->holds  = NULL;
+    n->nholds = 0;
+    for (int i=0; i<k; i++) {
+        if (hs[i].type == A_NAT) {
+            ANat* p = A_NAT_OF(hs[i]);
+            p->nheld--;
+            if (p->pending && p->nheld==0) {
+                a_nat_close(hs[i]);
+            }
+        }
+        a_dec(hs[i]);
+    }
+    free(hs);
 }
 
 // Nested calls in progress: bounded to protect the C stack.

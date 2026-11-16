@@ -554,6 +554,14 @@ typedef struct ANat {
     void*       ptr;
     void      (*fin) (void*);
     const char* kind;
+    // values that it holds (`a_nat_holds`), each with a reference
+    AVal*       holds;
+    int         nholds;
+    // natives that hold it and are not closed yet: its close waits
+    // for them, so that a child is always finalized before its parent
+    int         nheld;
+    uint8_t     pending;
+    uint8_t     closed;
 } ANat;
 
 #define A_NAT_OF(v) ((ANat*)(v).u.o)
@@ -826,6 +834,10 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base);
 // already in its first run.
 AStatus a_spawn_pin (AVal* dst, AVal proto, int base);
 
+// The same, for a spawn whose task goes to a field of the table `h`:
+// if the table is pinned, the task is pinned with it from birth.
+AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h);
+
 // spawn {...}, a branch of a par: starts trail `i` of the task, a
 // transparent block.
 AStatus a_trail_spawn (struct ATask* t, int i);
@@ -1052,13 +1064,12 @@ static inline AStatus a_tab_field (AVal t, AVal k, AVal v) {
 // A native holds another value, as a child resource holds its parent:
 // the value must last at least as long as the native. A binding
 // declares it right after it creates the native, which is then born
-// with its floor in the block of the value, and so is finalized
-// before it. Fails for a native that is already pinned outside the
-// block of the value.
-static inline AStatus a_nat_holds (AVal nat, AVal v) {
-    a_born(nat, v);
-    return a_chk_store(v, (int)nat.u.o->depth);
-}
+// with its floor in the block of the value. The native keeps a
+// reference to the value, which is pinned with it if it is fresh, and
+// leaves a block with it. A native that is held is only finalized
+// after those that hold it. Fails for a native that is already pinned
+// outside the block of the value.
+AStatus a_nat_holds (AVal nat, AVal v);
 
 // A block with pins is being left, with status `st`. What it gives to
 // the outer block is transferred: values pinned in the block are

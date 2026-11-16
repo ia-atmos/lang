@@ -1704,8 +1704,20 @@ static ATask* task_new (AFunc* f, ANode* up, int base) {
 // The task being spawned is pinned by its block from birth.
 static int SPAWN_PIN = 0;
 
+static int SPAWN_DEPTH = 0;
+
 AStatus a_spawn_pin (AVal* dst, AVal proto, int base) {
     SPAWN_PIN = 1;
+    AStatus st = a_spawn(dst, proto, a_nil(), base);
+    SPAWN_PIN = 0;
+    return st;
+}
+
+AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
+    if (h.type==A_TAB && h.u.o->pinned) {
+        SPAWN_PIN   = 2;
+        SPAWN_DEPTH = h.u.o->depth;
+    }
     AStatus st = a_spawn(dst, proto, a_nil(), base);
     SPAWN_PIN = 0;
     return st;
@@ -1749,13 +1761,22 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
     }
     // the body is one deeper than the block the task is attached to
     t->depth = a_depth + 1;
-    if (SPAWN_PIN) {
+    if (SPAWN_PIN == 1) {
         // pinned from birth, in the block of the spawn
-        SPAWN_PIN = 0;
         t->node.hdr.pinned = 1;
         t->node.hdr.depth  = a_depth;
         t->node.hdr.lin    = a_lin;
+    } else if (SPAWN_PIN == 2) {
+        // pinned from birth with the table that will hold it, whose
+        // block aborts it
+        t->node.hdr.pinned = 2;
+        t->node.hdr.depth  = SPAWN_DEPTH;
+        t->node.hdr.lin    = a_lin;
+        if (a_trl!=NULL && a_trl->conf<SPAWN_DEPTH) {
+            a_trl->conf = SPAWN_DEPTH;
+        }
     }
+    SPAWN_PIN = 0;
     // a task in a pool is owned by the pool
     if (pool.type == A_TASKS) {
         t->node.hdr.pinned = 1;
@@ -1993,12 +2014,42 @@ static void pin_deep (AVal v, int d, int how) {
             }
             break;
         }
+        case A_NAT: {
+            o->pinned = how;
+            o->depth  = d;
+            o->lin    = a_lin;
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                pin_deep(n->holds[i], d, 2);
+            }
+            break;
+        }
         default:
             o->pinned = how;
             o->depth  = d;
             o->lin    = a_lin;
             break;
     }
+}
+
+AStatus a_nat_holds (AVal nat, AVal v) {
+    a_born(nat, v);
+    if (a_chk_store(v, (int)nat.u.o->depth) != A_OK) {
+        return A_ERROR;
+    }
+    if (v.type >= A_STR) {
+        ANat* n = A_NAT_OF(nat);
+        n->holds = realloc(n->holds, (n->nholds+1) * sizeof(AVal));
+        n->holds[n->nholds++] = v;
+        a_inc(v);
+        if (v.type == A_NAT) {
+            A_NAT_OF(v)->nheld++;
+        }
+    }
+    if (nat.u.o->pinned) {
+        pin_deep(v, nat.u.o->depth, 2);
+    }
+    return A_OK;
 }
 
 AStatus a_hold (AObj* h, AVal v) {
@@ -2191,6 +2242,12 @@ static int xfer_mark (AVal v, int d) {
     } else if (v.type == A_BOX) {
         // a captured variable leaves with its closure
         m = xfer_mark(A_BOX_OF(v)->v, d);
+    } else if (v.type == A_NAT) {
+        ANat* n = A_NAT_OF(v);
+        for (int i=0; i<n->nholds; i++) {
+            int mh = xfer_mark(n->holds[i], d);
+            m = (mh > m) ? mh : m;
+        }
     }
     return m;
 }
@@ -2241,6 +2298,11 @@ static void xfer_set (AVal v, int ok, int m, int d) {
         AFunc* f = A_FUNC_OF(v);
         for (int i=0; i<f->ncap; i++) {
             xfer_set(f->caps[i], ok, m, d);
+        }
+    } else if (v.type == A_NAT) {
+        ANat* n = A_NAT_OF(v);
+        for (int i=0; i<n->nholds; i++) {
+            xfer_set(n->holds[i], ok, m, d);
         }
     }
 }
@@ -2444,9 +2506,25 @@ static void clr_deep (AVal v, uint32_t d) {
             a_clrs(f->caps, f->ncap);
             break;
         }
-        case A_NAT:
+        case A_NAT: {
+            // what it holds is released after it
+            ANat* n = A_NAT_OF(v);
+            int   k = n->nholds;
+            AVal* hs = malloc((k+1) * sizeof(AVal));
+            for (int i=0; i<k; i++) {
+                hs[i] = n->holds[i];
+                a_inc(hs[i]);
+            }
             a_nat_close(v);
+            for (int i=0; i<k; i++) {
+                if (clr_held(hs[i], d)) {
+                    clr_deep(hs[i], d);
+                }
+                a_dec(hs[i]);
+            }
+            free(hs);
             break;
+        }
         case A_XTASK: {
             // only after it ended
             ATask* t = A_TASK_OF(v);

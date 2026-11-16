@@ -81,6 +81,8 @@ typedef struct Unit {
     int ndefs;
     // constructor that initializes a `pin`: pinned before it is filled
     Expr* born;
+    // table that will hold the spawn in `born`, if it goes to a field
+    const char* bornh;
     // inside the body of a defer, which never suspends
     int indefer;
     // the block being generated declares a captured variable
@@ -657,6 +659,15 @@ static Opnd gen_bin (Unit* u, Expr* e) {
     return gen_binop(u, e->tk, op, x, y);
 }
 
+// A spawn that is the value of a field of the table `holder` is pinned
+// from birth with the table, if the table is pinned.
+static void gen_born_in (Unit* u, Expr* val, const char* holder) {
+    if (val->tag==E_SPAWN && val->u.spawn.pool==NULL) {
+        u->born  = val;
+        u->bornh = holder;
+    }
+}
+
 // [ e, id=e, @(k)=e ]: positional entries are numbered from 0, and
 // the last entry, if positional, gives all of its values.
 static Opnd gen_table (Unit* u, Expr* e) {
@@ -677,12 +688,14 @@ static Opnd gen_table (Unit* u, Expr* e) {
             gen(u, val, m);
             out_try(u, "a_tab_fill(%s, %d, %s)", d.c, n, m.n);
         } else if (key == NULL) {
+            gen_born_in(u, val, d.c);
             Opnd v = gen_expr(u, val);
             out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, a_int(%d), %s)", d.c, n++, v.c);
             opnd_rel(u, v);
         } else {
             Opnd k = gen_expr(u, key);
+            gen_born_in(u, val, d.c);
             Opnd v = gen_expr(u, val);
             out(u, "a_born(%s, %s);", d.c, k.c);
             out(u, "a_born(%s, %s);", d.c, v.c);
@@ -1376,6 +1389,10 @@ static void gen_set (Unit* u, Expr* e) {
         ls[i] = gen_loc(u, e->u.set.dsts.v[i]);
     }
     if (k == 1) {
+        // set t.x = spawn T(...)
+        if (ls[0].e->tag == E_INDEX) {
+            gen_born_in(u, e->u.set.src, ls[0].t.c);
+        }
         Opnd v = gen_expr(u, e->u.set.src);
         out(u, "a_lin = %d;", lin_of(e->tk));
         // set f = func () {...}: as the declaration of a prototype
@@ -2081,10 +2098,16 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
     // pins the task from birth
     int stmt = (d.kind==D_NONE && e->u.spawn.pool==NULL);
     int born = (u->born == e);
+    const char* holder = born ? u->bornh : NULL;
     if (born) {
-        u->born = NULL;
+        u->born  = NULL;
+        u->bornh = NULL;
     }
-    if (stmt || born) {
+    if (born && holder!=NULL) {
+        // the value of a field: pinned from birth with its table
+        out_try(u, "a_spawn_in(&%s, %s, a_top-%s, %s)", t.c, f.c, m.n,
+            holder);
+    } else if (stmt || born) {
         out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
     } else {
         out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);

@@ -1,0 +1,20 @@
+;; A task that is spawned into a field of a pinned table is pinned with
+;; the table from birth: it may refer to what it publishes in its
+;; first run.
+task Car (id) {
+    set pub = [ phy=[x=id] ]
+    val phy = pub.phy
+    defer { print(:end, id) }
+    await(:go)
+    print(:car, phy.x)
+}
+do {
+    pin G = []
+    set G.car = spawn Car(1)
+    pin H = [car = spawn Car(2), spawn Car(3)]
+    print(G.car.pub.phy.x, H.car.pub.phy.x)
+    emit(:go)
+    set G.other = spawn Car(4)
+    print(:in)
+}
+print(:out)
