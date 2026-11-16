@@ -1,0 +1,18 @@
+;; a spawn before the last one may be awoken by the start of the next
+task T (id) {
+    defer { print(:aborted, id) }
+    await(:tick)
+    print(:boom, id)
+}
+if true {
+    spawn { val x = await(true) ; print(:ok, x) }
+    spawn { emit @:global :10 }
+}
+pin ts = tasks()
+if true {
+    spawn T(:a)
+    spawn @ts T(:b)
+}
+print(:after)
+emit(:tick)
+print(:end)

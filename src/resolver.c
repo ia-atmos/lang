@@ -319,9 +319,10 @@ static void res_list (List* l) {
 static int STMT = 0;
 
 // The value of the expression about to be resolved is not used, and
-// only spawns follow it in its block, if anything. A task spawned
-// there with no pool is aborted when the block ends, having only the
-// reaction of its own start.
+// it is the last statement of its block. A task spawned there with no
+// pool is aborted when the block ends, having only the reaction of its
+// own start. A spawn before the last one may be awoken by what follows
+// it, also by the start of another spawn.
 static int VOID = 0;
 static int TAIL = 0;
 
@@ -345,20 +346,12 @@ static void res_in (Expr* e, int isvoid, int tail) {
     TAIL = 0;
 }
 
-static int is_spawn (Expr* e) {
-    return e->tag==E_SPAWN || e->tag==E_SPAWN_BLK;
-}
-
 // `isvoid`: the value of the block is not used.
 static void res_stmts (List* l, int isvoid) {
     for (int i=0; i<l->n; i++) {
         int last = (i == l->n-1);
-        int tail = 1;
-        for (int j=i+1; j<l->n; j++) {
-            tail = tail && is_spawn(l->v[j]);
-        }
         STMT = 1;
-        res_in(l->v[i], isvoid || !last, tail);
+        res_in(l->v[i], isvoid || !last, last);
     }
     STMT = 0;
 }

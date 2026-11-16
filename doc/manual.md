@@ -1047,7 +1047,7 @@ This is the compile error
 the following hold:
 
 - The `spawn` has no pool, and its value is not used.
-- In its block, the `spawn` is only followed by other spawns, if anything.
+- The `spawn` is the last statement of its block.
   The block may be the body of any construct, such as an `if`, a `loop`, a
   `do`, a branch of a `par`, a task, or the main chunk.
 - The task may await: a `spawn { ... }` has an `await`, a `watching`, a
@@ -1056,8 +1056,8 @@ the following hold:
   that is known at compile time and has one.
 
 A task that never awaits terminates in its first reaction, and a `spawn` that
-is followed by another statement, such as an `emit` or an `await`, may awake
-in the meantime.
+is followed by another statement, such as an `emit`, an `await`, or another
+`spawn`, may awake in the meantime.
 These are not errors.
 
 There are two ways out:
