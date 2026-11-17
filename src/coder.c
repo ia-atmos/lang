@@ -1916,7 +1916,7 @@ static int trail_new (Unit* u, const char* fn, int up, int level) {
 // with the extra arguments, if variadic. The value of the body, or of
 // a return, becomes the result of the task.
 static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
-                             int lin)
+                             int lin, int flin)
 {
     Unit u;
     memset(&u, 0, sizeof(u));
@@ -1936,7 +1936,7 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
     trail_new(&u, name, -1, 0);
     // the parameters are names of the body of the task
     if (npar > 0) {
-        out(&u, "a_lin = %d;", lin);
+        out(&u, "a_lin = %d;", flin);
     }
     for (int i=0; i<npar; i++) {
         out(&u, "a_name(L[%d], D);", pars[i]->slot);
@@ -2026,7 +2026,7 @@ static Opnd gen_proto (Unit* u, Expr* e) {
     Opnd d = opnd_tmp(u);
     if (e->u.proto.task) {
         const char* name = gen_task(p, e->vars, e->u.proto.n,
-            &e->u.proto.blk->u.block.es, e->tk.lin);
+            &e->u.proto.blk->u.block.es, e->tk.lin, lin_of(e->tk));
         out(u, "a_set(&%s, a_task(&%s, %d));", d.c, name, p->ncaps);
     } else {
         const char* name = gen_func(e);
@@ -2711,7 +2711,7 @@ static void gen (Unit* u, Expr* e, Dst d) {
 
 char* coder_main (Expr* prog, Var** globals, int nglobals) {
     // the main chunk is a task
-    const char* main = gen_task(PROTO_MAIN, NULL, 0, &prog->u.block.es, 1);
+    const char* main = gen_task(PROTO_MAIN, NULL, 0, &prog->u.block.es, 1, 1);
 
     Unit u;
     memset(&u, 0, sizeof(u));
