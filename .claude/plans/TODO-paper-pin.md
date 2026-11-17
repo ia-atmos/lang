@@ -25,6 +25,11 @@ by that session.
    `261115-pin.md`. Pending: pico, Flare, Lessmilk, SNKRX. The bullet
    of SNKRX in the case studies is still a guess (item B1).
 
+4. **The cost of the migration under the current rules.** The figure
+   of 230 of 830 tests is from the first rules. Names may now hold fresh
+   values and owned places may be reassigned (2026-11-17), so a new
+   count is needed for Section 9.
+
 ## C. Next steps, not started
 
 1. Fill the sections with text, after the author approves the outline.
