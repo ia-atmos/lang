@@ -29,9 +29,21 @@ do {
     print(catch true { spawn @ts T(x) })
 }
 
-;; nor leave the block of a prototype that its tasks run
+;; a prototype declared in the function leaves with the pool
+func good () {
+    task U () { await(:X) ; print(:U) }
+    val p = tasks()
+    spawn @p U()
+    p
+}
+do {
+    pin p = good()
+    emit(:X)
+}
+
+;; but not a prototype pinned there
 func bad () {
-    val task U () { await(false) }
+    pin task U () { await(false) }
     val p = tasks()
     spawn @p U()
     p

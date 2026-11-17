@@ -1,0 +1,15 @@
+;; a declaration inside a function, with an unknown name, is local, as a
+;; `val func`, and may be returned
+func f () {
+    func g () { 1 }
+    g()
+}
+print(f())
+func mk (k) {
+    func rec (n) {
+        if n == 0 => k => rec(n-1)
+    }
+    rec
+}
+val h = mk(:deep)
+print(h(3))

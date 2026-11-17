@@ -1012,10 +1012,6 @@ static inline AStatus a_pin_opt (AVal* slot) {
     return a_pin(slot);
 }
 
-// A prototype that is assigned to a variable by its declaration
-// (`func f () {...}`) is pinned in the block `d` of the variable.
-AStatus a_pin_at (AVal* slot, int d);
-
 // The value becomes owned by the runtime, outside all blocks, along
 // with what it holds: a function or a table of a library.
 void a_own (AVal v);

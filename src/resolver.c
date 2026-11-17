@@ -648,8 +648,11 @@ static void res (Expr* e) {
         case E_DCL: {
             if (e->u.dcl.rec) {
                 // `val func f`: the body sees `f`, to call itself
+                VarKind rk = !strcmp(e->tk.str,"var") ? V_VAR :
+                             !strcmp(e->tk.str,"pin") ? V_PIN : V_VAL;
                 e->vars = xalloc(sizeof(Var*));
-                e->vars[0] = declare(e->u.dcl.ids[0], V_VAL);
+                e->vars[0] = declare(e->u.dcl.ids[0], rk);
+                e->vars[0]->pmut = e->u.dcl.mut;
                 e->vars[0]->def = e->u.dcl.set;
                 SELF = e->vars[0];
                 res(e->u.dcl.set);
@@ -673,16 +676,31 @@ static void res (Expr* e) {
         }
 
         case E_SET:
+            if (e->u.set.proto && e->u.set.dsts.n==1 &&
+                e->u.set.dsts.v[0]->tag==E_ACC &&
+                lookup(e->u.set.dsts.v[0]->tk.str)==NULL)
+            {
+                // `func f` inside a function, with `f` unknown: a local
+                // declaration, as `val func f` (a global would be shared
+                // by all of its calls)
+                Tk id = e->u.set.dsts.v[0]->tk;
+                Expr* p = e->u.set.src;
+                e->tag = E_DCL;
+                memset(&e->u, 0, sizeof(e->u));
+                e->tk.str = "val";
+                e->u.dcl.n   = 1;
+                e->u.dcl.ids = xalloc(sizeof(Tk));
+                e->u.dcl.ids[0] = id;
+                e->u.dcl.set = p;
+                e->u.dcl.rec = 1;
+                STMT = 1;
+                VOID = isvoid;
+                res(e);
+                break;
+            }
             res(e->u.set.src);
             for (int i=0; i<e->u.set.dsts.n; i++) {
                 Expr* dst = e->u.set.dsts.v[i];
-                if (e->u.set.proto && dst->tag==E_ACC &&
-                    lookup(dst->tk.str)==NULL)
-                {
-                    // `func f` inside a function, with `f` unknown: a
-                    // global would be shared by all of its calls
-                    err(dst->tk, "invalid declaration : expected 'val'");
-                }
                 res(dst);
                 if (dst->tag == E_PUB) {
                     continue;

@@ -2867,21 +2867,6 @@ AStatus a_chk_unpinned (AVal v) {
     return a_error("invalid assignment : expected pinned value");
 }
 
-AStatus a_pin_at (AVal* slot, int d) {
-    AVal v = *slot;
-    if (v.type<A_TAB || v.u.o->pinned) {
-        return A_OK;
-    }
-    if (a_pdepth(v) > d) {
-        return a_err_pinned(v);
-    }
-    if (!adopt_ok(v, d, 1)) {
-        return adopt_err("pin");
-    }
-    pin_deep(v, d, 1);
-    return A_OK;
-}
-
 void a_own (AVal v) {
     pin_deep(v, 0, 1);
 }

@@ -1,0 +1,9 @@
+;; the same for a task, which a function may give away
+task T () {
+    task U () { print(:U) }
+    await(:E)
+    U
+}
+pin t = spawn T()
+emit(:E)
+pin u = spawn (t.ret) ()

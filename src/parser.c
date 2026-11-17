@@ -566,9 +566,9 @@ static Expr* parser_dcl (void) {
         } else {
             accept_str("val");
         }
-    } else if (!strcmp(TK0.str,"val") &&
-        (accept_str("func") || accept_str("task")))
-    {
+    }
+    // val func f () {...}  |  var func f  |  pin func f  |  pin var func f
+    if (accept_str("func") || accept_str("task")) {
         Expr* p = mk(E_PROTO, TK0);
         p->u.proto.task = !strcmp(TK0.str, "task");
         accept_tag_err(TK_ID);

@@ -1219,10 +1219,6 @@ static void gen_dcl (Unit* u, Expr* e) {
         opnd_mov(u, o, var_c(u,e->vars[0]));
         if (born) {
             gen_pin_end(u, var_c(u,e->vars[0]), 1);
-        } else if (e->u.dcl.rec) {
-            // val func f () {...}: the declaration of a prototype
-            // pins it
-            gen_pin(u, var_c(u,e->vars[0]));
         } else {
             gen_dcl_chk(u, e);
         }
@@ -1269,7 +1265,7 @@ static Loc gen_loc (Unit* u, Expr* dst) {
 }
 
 // Assigns an operand to a destination, consuming both.
-static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
+static void gen_assign_x (Unit* u, Loc l, Opnd v) {
     if (l.e->tag==E_ACC && l.e->var->kind==V_PIN) {
         // set x = v, with `x` a pin: it owns the new value, in the
         // block of the variable, and releases the old one
@@ -1284,28 +1280,6 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
             out_try(u, "a_pin_set(&%s, %s, D + %d)", dst, v.c, x->level);
         }
         opnd_rel(u, v);
-        return;
-    }
-    if (proto && l.e->tag==E_ACC) {
-        // func f () {...}: the declaration of a prototype pins it, in
-        // the block of its variable
-        Var* x = l.e->var;
-        const char* dst = var_c(u, x);
-        opnd_mov(u, v, dst);
-        if (x->boxed) {
-            out_try(u, "a_pin_at(&%s, (int)%s.u.o->depth)", dst,
-                var_raw(u,x));
-        } else if (x->global) {
-            out_try(u, "a_pin_at(&%s, 1)", dst);
-            if (u->proto==PROTO_MAIN && u->trail==0 && u->level==0) {
-                gen_pin_end(u, dst, 1);
-            }
-        } else {
-            out_try(u, "a_pin_at(&%s, D + %d)", dst, x->level);
-            if (x->level == u->level) {
-                gen_pin_end(u, dst, 1);
-            }
-        }
         return;
     }
     if (l.e->tag == E_ACC) {
@@ -1350,7 +1324,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
 }
 
 static void gen_assign (Unit* u, Loc l, Opnd v) {
-    gen_assign_x(u, l, v, 0);
+    gen_assign_x(u, l, v);
 }
 
 // Reads the current value of a destination into a temporary.
@@ -1426,9 +1400,7 @@ static void gen_set (Unit* u, Expr* e) {
         }
         Opnd v = gen_expr(u, e->u.set.src);
         out(u, "a_lin = %d;", lin_of(e->tk));
-        // set f = func () {...}: as the declaration of a prototype
-        int proto = e->u.set.proto || e->u.set.src->tag==E_PROTO;
-        gen_assign_x(u, ls[0], v, proto);
+        gen_assign_x(u, ls[0], v);
     } else {
         Dst m = dst_multi(u);
         gen(u, e->u.set.src, m);
