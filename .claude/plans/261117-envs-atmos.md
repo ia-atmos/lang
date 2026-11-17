@@ -125,3 +125,31 @@ Each of the five environments moves its `main` from the prelude to a
 `step` and a `quit` in Atmos; the C helpers stay as natives. While they
 move, a prelude that defines `main` still works (the generic `main` is
 used only when none is defined).
+
+## Against the reference (lua-atmos `aa0a99a`, `atmos/run.lua`)
+
+Read in `run.lua`, `api.md`, and the environments `env-socket`,
+`env-iup`, `env-js` of `lua-atmos`.
+
+The same, and to keep the same:
+
+- `atmos.env(e)` with `step`, `quit`, `mode = [primary=true, secondary=true]`.
+- The runtime writes `mode.current` (`:primary` or `:secondary`) into
+  the table; the environment reads it in `step` to decide whether to wait
+  and whether to emit time (`env-socket`: `select` with 0 or 0.1 s;
+  `env-iup`: `LoopStep` or `LoopStepWait`).
+- The first registered must support primary; every other must support
+  secondary (an error otherwise).
+- `step` returns true to end; `quit` in reverse order, also on an error.
+- Time is a number in µs emitted by the primary; `atmos.next()` gives the
+  time to the next timer.
+
+What stays different:
+
+| | lua-atmos | Here | Why |
+|---|---|---|---|
+| Body | `loop(f)`, or `start(f)` | the file is the main task | already the language here; the end of the file is the end of `loop` |
+| Registration | `require`, at run time | `include` (or `-e`), and `atmos.env` in the file | same order: the first included is the primary |
+| No step (`start`, the browser) | `start(f)` with one environment with no `mode` | to add: one environment with no `step` makes the generic `main` return after `atm_main`; the host emits | needed for the browser (item 52) |
+| Library callbacks | Lua functions that `emit` | C that calls `atm_emit` or `atm_emit_to` | the libraries are C; `atm_emit_to` has no equivalent there |
+| Sweep of dead tasks | `gc()` after each step | none | reference counting |
