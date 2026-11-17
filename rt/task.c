@@ -1952,7 +1952,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
     ANode* own = (t->pool != NULL) ? &t->pool->node : &t->node;
     if (own->hdr.pinned) {
         if (!adopt_ok(v, d)) {
-            return adopt_err("escape");
+            return adopt_err("pin");
         }
         pin_deep(v, d, 2);
     } else if (own->hdr.ceil != 0) {
@@ -2065,7 +2065,7 @@ AStatus a_nat_holds (AVal nat, AVal v) {
     }
     if (nat.u.o->pinned) {
         if (!adopt_ok(v, nat.u.o->depth)) {
-            return adopt_err("escape");
+            return adopt_err("pin");
         }
         pin_deep(v, nat.u.o->depth, 2);
     }
@@ -2234,7 +2234,7 @@ AStatus a_hold (AObj* h, AVal v) {
     }
     if (h->pinned) {
         if (!adopt_ok(v, h->depth)) {
-            return adopt_err("escape");
+            return adopt_err("pin");
         }
         pin_deep(v, h->depth, 2);
     } else if (h->ceil != 0) {

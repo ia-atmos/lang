@@ -1,4 +1,4 @@
 ==> ERROR:
  |  pin-err-04.atm:9 (call)
  v  pin-err-04.atm:5 (throw)
-==> invalid escape : table named at pin-err-04.atm:2
+==> invalid pin : table named at pin-err-04.atm:2
