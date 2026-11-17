@@ -1,0 +1,3 @@
+(set f = (func (x y z a b ...) { (var x = x) (pin var z = z) (pin a = a) x }))
+(pin g = (func () { 1 }))
+(var T = (task () { nil }))

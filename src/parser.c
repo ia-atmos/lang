@@ -284,27 +284,45 @@ static Tk tk_id (Tk tk, const char* str) {
 // PROTOS
 ///////////////////////////////////////////////////////////////////////////////
 
-// Parameters with `pin`, from the last call to `parser_pars`, which
-// `proto_body` consumes.
-static Tk* PINS  = NULL;
-static int NPINS = 0;
+// Parameters with a modifier, from the last call to `parser_pars`, which
+// `proto_body` consumes: `var x`, `pin x`, `pin val x`, `pin var x`.
+typedef struct { Tk id; const char* kw; int mut; } Par;
+static Par* PARS  = NULL;
+static int  NPARS = 0;
 
 // Parameters, after '(': ids separated by commas, optional `...`. A
-// parameter `pin x` adopts its argument: see `proto_body`.
+// parameter is a declaration initialized by its argument, with the same
+// modifiers: `val x` (or just `x`), `var x`, `pin x` (or `pin val x`),
+// and `pin var x`. See `proto_body`.
 static void parser_pars (Expr* p) {
-    PINS  = NULL;
-    NPINS = 0;
+    PARS  = NULL;
+    NPARS = 0;
     while (!check_str(")")) {
         if (accept_str("...")) {
             p->u.proto.dots = 1;
             break;
         }
+        const char* kw = NULL;
+        int mut = 0;
         if (accept_str("pin")) {
-            accept_tag_err(TK_ID);
-            PINS = realloc(PINS, (NPINS+1) * sizeof(Tk));
-            PINS[NPINS++] = TK0;
+            kw = "pin";
+            if (accept_str("var")) {
+                mut = 1;
+            } else {
+                accept_str("val");
+            }
+        } else if (accept_str("var")) {
+            kw = "var";
         } else {
-            accept_tag_err(TK_ID);
+            accept_str("val");
+        }
+        accept_tag_err(TK_ID);
+        if (kw != NULL) {
+            PARS = realloc(PARS, (NPARS+1) * sizeof(Par));
+            PARS[NPARS].id  = TK0;
+            PARS[NPARS].kw  = kw;
+            PARS[NPARS].mut = mut;
+            NPARS++;
         }
         int n = p->u.proto.n;
         p->u.proto.pars = realloc(p->u.proto.pars, (n+1) * sizeof(Tk));
@@ -317,14 +335,15 @@ static void parser_pars (Expr* p) {
     accept_str_err(")");
 }
 
-// The body of a prototype, after its parameters. Each parameter `pin x`
-// is pinned at the top of the body, as by `pin x = x`: the body block
-// owns the argument.
+// The body of a prototype, after its parameters. A parameter with a
+// modifier is declared again at the top of the body, initialized by
+// itself: `var x = x`, `pin x = x`, `pin var x = x`. A `pin` makes the
+// body block own the argument.
 static Expr* proto_body (void) {
-    Tk* pins = PINS;
-    int n    = NPINS;
-    PINS  = NULL;
-    NPINS = 0;
+    Par* pars = PARS;
+    int n     = NPARS;
+    PARS  = NULL;
+    NPARS = 0;
     Expr* blk = parser_block();
     if (n > 0) {
         List* es = &blk->u.block.es;
@@ -332,16 +351,17 @@ static Expr* proto_body (void) {
         memmove(&es->v[n], &es->v[0], es->n * sizeof(Expr*));
         es->n += n;
         for (int i=0; i<n; i++) {
-            Tk tk = pins[i];
-            tk.str = "pin";
+            Tk tk = pars[i].id;
+            tk.str = pars[i].kw;
             Expr* dcl = mk(E_DCL, tk);
             dcl->u.dcl.n   = 1;
+            dcl->u.dcl.mut = pars[i].mut;
             dcl->u.dcl.ids = xalloc(sizeof(Tk));
-            dcl->u.dcl.ids[0] = pins[i];
-            dcl->u.dcl.set = mk(E_ACC, pins[i]);
+            dcl->u.dcl.ids[0] = pars[i].id;
+            dcl->u.dcl.set = mk(E_ACC, pars[i].id);
             es->v[i] = dcl;
         }
-        free(pins);
+        free(pars);
     }
     return blk;
 }

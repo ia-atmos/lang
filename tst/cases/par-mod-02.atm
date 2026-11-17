@@ -1,0 +1,4 @@
+;; a `val` parameter is immutable
+func bad (val x) {
+    set x = 1
+}

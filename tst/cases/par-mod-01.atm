@@ -1,0 +1,30 @@
+;; a parameter is a declaration initialized by its argument, with the
+;; same modifiers
+func p (var x, val y, pin var z, pin a, pin val c, b, ...) {
+    set x = x + 1
+    set z = [x]                 ;; the old value is released
+    print(x, y, z@0, a@0, c@0, b, ...)
+}
+p(1, 2, [3], [4], [5], 6, 7, 8)
+
+;; in a task and in a lambda
+task T (var n) {
+    loop {
+        await(:X)
+        set n = n - 1
+        print(:n, n)
+        until n == 0
+    }
+}
+pin t = spawn T(2)
+emit(:X)
+emit(:X)
+val l = \(var x) { set x = x * 2 ; x }
+print(l(21))
+
+;; a captured `var` parameter is shared
+func counter (var k) {
+    \{ set k = k + 1 ; k }
+}
+val c = counter(10)
+print(c(), c())
