@@ -52,6 +52,18 @@ void err (Tk tk, const char* fmt, ...) {
     exit(1);
 }
 
+void warn (Tk tk, const char* fmt, ...) {
+    va_list ap;
+    fflush(stdout);
+    const char* file = (tk.file < NFILES) ? FILES[tk.file] : FILENAME;
+    fprintf(stderr, "%s : line %d : near '%s' : warning : ", file, tk.lin,
+        tk.str);
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
+}
+
 NatKind nat_kind (const char* s, const char** code) {
     // in the order of `NatKind`
     static const char* TAGS[] = {

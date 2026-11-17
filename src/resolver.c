@@ -337,6 +337,28 @@ static void res_in (Expr* e, int isvoid, int tail) {
     TAIL = 0;
 }
 
+// A pin of the current block given as its value, which the block may
+// not give away (`invalid escape` when it executes, unless the value
+// is not dynamic, as in `pin x = 10`): a warning.
+static void chk_giveaway (Expr* e, Scope* sc) {
+    if (e->tag == E_LIST) {
+        for (int i=0; i<e->u.list.es.n; i++) {
+            chk_giveaway(e->u.list.es.v[i], sc);
+        }
+        return;
+    }
+    if (e->tag!=E_ACC || e->var==NULL || e->var->kind!=V_PIN) {
+        return;
+    }
+    for (int i=0; i<sc->n; i++) {
+        if (sc->vars[i] == e->var) {
+            warn(e->tk, "pinned value given away by its block "
+                "(expected 'val')");
+            return;
+        }
+    }
+}
+
 // `isvoid`: the value of the block is not used.
 static void res_stmts (List* l, int isvoid) {
     for (int i=0; i<l->n; i++) {
@@ -345,6 +367,9 @@ static void res_stmts (List* l, int isvoid) {
         res_in(l->v[i], isvoid || !last, last);
     }
     STMT = 0;
+    if (!isvoid && l->n>0) {
+        chk_giveaway(l->v[l->n-1], SCOPE);
+    }
 }
 
 static void res_block (Expr* e, int isvoid) {
@@ -622,6 +647,22 @@ static void res (Expr* e) {
                 err(e->u.call.f->tk, "invalid skip : unexpected argument");
             }
             res_list(&e->u.call.es);
+            // return(x), with `x` a pin of the function: as a block value
+            if (e->u.call.sp == SP_RETURN) {
+                for (int i=0; i<e->u.call.es.n; i++) {
+                    Expr* x = e->u.call.es.v[i];
+                    while (x->tag == E_PARENS) {
+                        x = x->u.parens.e;
+                    }
+                    if (x->tag==E_ACC && x->var!=NULL &&
+                        x->var->kind==V_PIN && x->var->proto==PROTO &&
+                        PROTO!=NULL)
+                    {
+                        warn(x->tk, "pinned value given away by its block "
+                            "(expected 'val')");
+                    }
+                }
+            }
             break;
 
         case E_MET:

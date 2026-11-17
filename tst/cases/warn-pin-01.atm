@@ -1,0 +1,20 @@
+;; a pin given away by its block is a warning at compile time (and an
+;; escape when it executes, unless its value is not dynamic)
+func f () {
+    pin t = [1]
+    t
+}
+val x = do {
+    pin n = 10
+    n
+}
+print(x)
+do {
+    pin u = []
+    u
+}
+func g () {
+    pin t = [2]
+    return(t)
+}
+print(catch true { f() })

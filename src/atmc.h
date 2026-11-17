@@ -91,6 +91,8 @@ void lexer_restore (Lex l);
 
 // Reports "FILE : line N : near 'STR' : MSG" and exits.
 void err (Tk tk, const char* fmt, ...);
+// Like `err`, but goes on.
+void warn (Tk tk, const char* fmt, ...);
 
 void lexer_init (const char* file, const char* src, size_t len);
 
