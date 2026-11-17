@@ -1,0 +1,39 @@
+;; a pool held by a name is checked by the block of the name
+task T (id) {
+    defer { print(:end, id) }
+    await(:X)
+    print(:got, id)
+}
+do {
+    val ts = tasks()
+    spawn @ts T(1)
+    emit(:X)
+}
+
+;; a function creates a pool with tasks and gives it away
+func mk (id) {
+    val p = tasks()
+    spawn @p T(id)
+    p
+}
+do {
+    pin q = mk(2)
+    emit(:X)
+}
+
+;; the pool takes its floor from what its tasks hold: it may not hold
+;; a value pinned inside the block of its name
+val ts = tasks()
+do {
+    pin x = [3]
+    print(catch true { spawn @ts T(x) })
+}
+
+;; nor leave the block of a prototype that its tasks run
+func bad () {
+    val task U () { await(false) }
+    val p = tasks()
+    spawn @p U()
+    p
+}
+print(catch true { bad() })

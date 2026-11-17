@@ -1,0 +1,6 @@
+got	1
+end	1
+got	2
+end	2
+false	invalid escape : table pinned at pool-val-01.atm:28
+false	invalid escape : task pinned at pool-val-01.atm:34

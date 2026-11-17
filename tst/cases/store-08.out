@@ -3,7 +3,7 @@ dead	b	1
 true
 dead	c	2
 dead	d	3
-false	invalid escape : pinned task
+false	invalid escape : task pinned at store-08.atm:25
 1
 2
 3

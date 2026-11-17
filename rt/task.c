@@ -1676,6 +1676,8 @@ static ATask* task_new (AFunc* f, ANode* up, int base) {
     t->status = T_RUNNING;
     // a task is confined like its prototype, if it is a closure
     t->mindepth = a_pdepth(a_obj(&f->hdr));
+    // the line of what confines it, for the message of an escape
+    t->node.hdr.lin = f->hdr.lin;
 
     // parameters, then a table with the extra arguments
     int argc = a_top - base;
@@ -1696,6 +1698,7 @@ static ATask* task_new (AFunc* f, ANode* up, int base) {
         int d = a_pdepth(a_stk[base+i]);
         if (d > t->mindepth) {
             t->mindepth = d;
+            t->node.hdr.lin = a_stk[base+i].u.o->lin;
         }
     }
     a_settop(base);
@@ -1738,14 +1741,38 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
         up = &ts->node;
         // the task lives as long as the pool: so must its prototype
         // and its arguments
-        if (a_chk_store(proto, a_pdepth(pool)) != A_OK) {
-            a_settop(base);
-            return A_ERROR;
-        }
-        for (int i=base; i<a_top; i++) {
-            if (a_chk_store(a_stk[i], a_pdepth(pool)) != A_OK) {
+        AObj* po = pool.u.o;
+        if (po->pinned) {
+            if (a_chk_store(proto, po->depth) != A_OK) {
                 a_settop(base);
                 return A_ERROR;
+            }
+            for (int i=base; i<a_top; i++) {
+                if (a_chk_store(a_stk[i], po->depth) != A_OK) {
+                    a_settop(base);
+                    return A_ERROR;
+                }
+            }
+        } else {
+            // An unpinned pool takes its floor from what its tasks
+            // hold, as a constructor from its fields, up to the block
+            // of the names that hold it (its ceiling), where it is
+            // checked.
+            AVal x = proto;
+            for (int i=base-1; i<a_top; i++) {
+                if (i >= base) {
+                    x = a_stk[i];
+                }
+                int p = a_pdepth(x);
+                if (po->ceil!=0 && p>po->ceil) {
+                    a_err_pinned(x);
+                    a_settop(base);
+                    return A_ERROR;
+                }
+                if (p > (int)po->depth) {
+                    po->depth = p;
+                    po->lin   = x.u.o->lin;
+                }
             }
         }
         if (ts->max>=0 && a_tasks_len(ts)>=ts->max) {
