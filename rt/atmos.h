@@ -551,6 +551,17 @@ typedef struct ABox {
 // New box holding nil (owned).
 AVal a_box (void);
 
+// The value in the box `*b`, or a nil with no box (a declaration that
+// was not reached).
+static inline AVal* a_box_ref (AVal* b) {
+    static AVal NIL;
+    if (b->type != A_BOX) {
+        NIL.type = A_NIL;
+        return &NIL;
+    }
+    return &A_BOX_OF(*b)->v;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // NATIVES
 ///////////////////////////////////////////////////////////////////////////////

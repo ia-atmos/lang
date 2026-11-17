@@ -816,6 +816,19 @@ static Blk blk_open (Unit* u) {
     return b;
 }
 
+// The address of the slot of a pin, for its end. A boxed one (a `pin
+// var` that a closure captures) has no box yet if an exit left the block
+// before its declaration: the end then sees nil.
+static const char* pin_ref (const char* slot) {
+    const char* pre = "A_BOX_OF(";
+    size_t n = strlen(pre);
+    size_t m = strlen(slot);
+    if (strncmp(slot, pre, n)==0 && m>n+4 && !strcmp(slot+m-4, ")->v")) {
+        return xfmt("a_box_ref(&%.*s)", (int)(m-n-4), slot+n);
+    }
+    return xfmt("&%s", slot);
+}
+
 // Closes a block: runs its finalizers, releases its slots, and then
 // handles or propagates a pending exit. The block gives its values
 // to `d` when it ends normally.
@@ -865,7 +878,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             if (mine[j].trail >= 0) {
                 out(u, "    a_trail_doom(t, %d);", mine[j].trail);
             } else if (mine[j].pin != NULL) {
-                out(u, "    a_pin_doom(&%s);", mine[j].pin);
+                out(u, "    a_pin_doom(%s);", pin_ref(mine[j].pin));
             } else if (mine[j].orph) {
                 out(u, "    a_orph_doom(tr);");
             }
@@ -898,7 +911,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             // the tasks that nobody pinned
             end = "a_orph_end(tr, &st, base)";
         } else if (mine[i].pin!=NULL && u->task && !u->indefer) {
-            end = xfmt("a_pin_end(tr, &%s, &st, base)", mine[i].pin);
+            end = xfmt("a_pin_end(tr, %s, &st, base)", pin_ref(mine[i].pin));
         }
         if (end != NULL) {
             int pc = ++u->npcs;
@@ -909,7 +922,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
                 if (mine[j].trail >= 0) {
                     out(u, "    a_trail_doom(t, %d);", mine[j].trail);
                 } else if (mine[j].pin != NULL) {
-                    out(u, "    a_pin_doom(&%s);", mine[j].pin);
+                    out(u, "    a_pin_doom(%s);", pin_ref(mine[j].pin));
                 } else if (mine[j].orph) {
                     out(u, "    a_orph_doom(tr);");
                 }
@@ -929,7 +942,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             continue;
         }
         if (mine[i].pin != NULL) {
-            out(u, "a_pin_end(NULL, &%s, &st, 0);", mine[i].pin);
+            out(u, "a_pin_end(NULL, %s, &st, 0);", pin_ref(mine[i].pin));
             continue;
         }
         int id = ++u->nlabels;
@@ -962,7 +975,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     // pinned data is released after all code of the block has run
     for (int i=nmine-1; i>=0; i--) {
         if (mine[i].pin != NULL) {
-            out(u, "a_pin_clr(&%s);", mine[i].pin);
+            out(u, "a_pin_clr(%s);", pin_ref(mine[i].pin));
         }
     }
     u->cleanup = b.cl;

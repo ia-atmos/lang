@@ -1,0 +1,23 @@
+;; a `pin var` that a closure captures and assigns lives in a box; an
+;; exit before its declaration leaves no box to end (found by Flare)
+func load (empty) {
+    if empty {
+        return 1
+    }
+    pin var active = []
+    val func finish () {
+        set active = [2]
+    }
+    finish()
+    active@0
+}
+print(load(true))
+print(load(false))
+do {
+    print(catch :X {
+        throw(:X)
+        pin var t = []
+        val f = \{ set t = [] }
+    })
+}
+print(:ok)
