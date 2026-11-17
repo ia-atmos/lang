@@ -140,11 +140,11 @@ state, and case studies.
       order, with its `defer`s
     - rule "store": tasks hold rows, since a row belongs to an outer
       block; rows cannot hold tasks, so the table keeps no task alive
-    - rules "result" and "pin": the only door out of a level is a fresh
-      value stored in the table, which is, by definition, state that
-      persists
+    - rules "result" and "pin": the only door out of a level is an
+      unpinned value stored in the table, which is, by definition,
+      state that persists; a value pinned in the level never leaves it
     - what the rules do not see: global state inside a C binding
-    - load is one assignment: `pin S` at the top, then
+    - load is one assignment: `pin var S` at the top, then
       `set S = X.load(...)`; the old snapshot is finalized when its last
       reference goes (rules of pin as changed on 2026-11-17)
         - tasks of the old level still hold rows of the old snapshot:
