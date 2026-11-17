@@ -1,4 +1,5 @@
-;; the same, through a store into a pinned table of an inner block
+;; a named value stored into a pinned table of an inner block is only
+;; referenced: the name still sees it after that block
 func f (o) {
     do {
         pin h = []
@@ -7,3 +8,11 @@ func f (o) {
     print(o@0)
 }
 f([7])
+
+;; and it may no longer be pinned inside the block of the table
+pin h = []
+do {
+    val k = [1]
+    set h.k = k
+    pin z = k
+}

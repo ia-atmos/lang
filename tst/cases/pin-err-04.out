@@ -1,4 +1,4 @@
+7
 ==> ERROR:
- |  pin-err-04.atm:9 (call)
- v  pin-err-04.atm:5 (throw)
-==> invalid pin : table named at pin-err-04.atm:2
+ v  pin-err-04.atm:17 (throw)
+==> invalid pin : table named at pin-err-04.atm:16

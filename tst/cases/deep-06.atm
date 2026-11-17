@@ -1,0 +1,34 @@
+;; a deep pin adopts only the unpinned values that have no name: one with
+;; a name is only referenced, and the name keeps seeing it
+task Item (r) {
+    spawn {
+        pin over = \(x, y) { r.x + x + y }
+        print(:over, over(1, 2))
+    }
+    print(:item, r.x)
+}
+pin it = spawn Item([x=10])
+
+;; the same for a store into a pinned table
+pin h = []
+do {
+    val k = [1]
+    set h.k = k
+    print(:k, h.k == k)
+}
+print(:h, h.k@0)
+
+;; an unnamed value is adopted with its holder
+do {
+    pin t = [[2]]
+    print(:t, t@0@0)
+}
+
+;; a name that a pinned holder refers to may not be pinned inside the
+;; block of the holder
+pin h2 = []
+do {
+    val k = [3]
+    set h2.k = k
+    pin z = k
+}

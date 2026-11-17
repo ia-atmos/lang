@@ -1,0 +1,8 @@
+over	13
+item	10
+k	true
+h	1
+t	2
+==> ERROR:
+ v  deep-06.atm:33 (throw)
+==> invalid pin : table named at deep-06.atm:32

@@ -66,10 +66,9 @@ do {
     print(catch true { set play.enemies = ts })
 }
 
-;; a cycle among unpinned values is accepted by the check
+;; a cycle among unpinned values is accepted by the check (unnamed once
+;; its block ends: the pin adopts it)
 do {
-    val c = []
-    set c.self = c
-    pin h = [c]
-    print((h@0).self == c)
+    pin h = [do { val c = [] ; set c.self = c ; c }]
+    print((h@0).self == h@0)
 }
