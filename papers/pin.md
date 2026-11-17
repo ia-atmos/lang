@@ -90,7 +90,8 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 2, pin (adoption)
     - by declaration: `pin val x` or `pin var x` (bare `pin` is `pin val`),
       in the current block
-    - by parameter: `func f (pin x)` adopts its argument
+    - by parameter: parameters take the modifiers of declarations,
+      `func f (var x, val y, pin a, pin var z, b)`; `pin` makes the body own it
     - by storage: in a pinned value or a `pub`, in the block of the holder
     - by assignment to an owned place: a `pin` variable, a field of a
       pinned table, the `pub` of a pinned task
@@ -128,7 +129,8 @@ case studies from six ports of libraries and games to Atmos.
     - an emitted event: owned by the emit, at its floor, by no block
     - a task holds its `pub` and its final value
     - a task is pinned from birth by the block that owns it
-    - declarations of functions and tasks pin their prototypes
+    - declarations of functions and tasks name their prototypes (unpinned),
+      so a local function, recursive or not, may be returned; `pin func f` owns it
 - Semantics sketch: block depth as the lifetime order
 
 ## 5. Why It Matters as a Memory Mechanism
@@ -291,8 +293,6 @@ case studies from six ports of libraries and games to Atmos.
   deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
 - A value that leaves is transferred deep: cost proportional to its size
-- A function declared in a block is pinned there and cannot be returned
-  (pending decision: declarations as `val`)
 - A named cycle held by a pin is not reclaimed by that pin
 - Requires a language with structured tasks and abortion
 
