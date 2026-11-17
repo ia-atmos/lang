@@ -18,3 +18,15 @@ The compiler (`ia-atmos/lang`, `main` at `84f8627` or later): the rules of `pin`
 Still open (do not work around yet): an unpinned holder whose floor rises (`val z = [] ; set z.k = k` with `k` pinned outside fails: write `val z = [k=k]`), `with`, a flag that removes the checks.
 
 What to do: move your compiler to 84f8627 or later, run your tests, fix what fails (mostly item 6: `pin` -> `val` at the declaration that is given away; item 4: `pin` -> `pin var`), remove workarounds that items 2, 3, 7, 8, 9 make unnecessary, check your tests are identical, commit in small grains, and report once to ceu-atmos (session_011eECogKVQ7ZzmWCoMST2wK): what failed and how you fixed it, what workarounds you removed, and anything strange (with a 5-10 line snippet). Reference: doc/manual.md, "Pin" and "Prototypes". Each session got, by message, a static scan of its repository (a lower bound: it misses one-liners and values given away inside constructors).
+
+## Stable (2026-11-17)
+
+The author declared these rules stable until the next round of
+decisions: no project needs to expect another migration of the same
+lines. What is still open, and may change later: an unpinned holder
+whose floor rises (`val z = [] ; set z.k = k`), a named cycle held by a
+pin, the scoped assignment `with`, and a flag that removes the checks.
+Since `5da4b8e`: a compile-time warning for a pin given away by its
+block (`c325dd4`); `X.in` is the name of `X.xin` (an alias, to be
+removed); a branch of `par :any` gives only the values its destination
+takes (`444b54e`).
