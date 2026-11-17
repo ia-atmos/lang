@@ -505,8 +505,12 @@ for `atmos.next()` microseconds, the time to the nearest timer) and emits the
 time, as a number of microseconds.
 The others are *secondary*: their `step` never waits and emits no time.
 An environment says which modes it supports in `mode`, and the runtime writes
-the one it got in `mode.current` (`:primary` or `:secondary`); an environment
-that cannot take its mode is an error.
+the one it got in `mode.current` (`:primary` or `:secondary`), which `step`
+also receives as its argument; an environment that cannot take its mode is an
+error.
+The `step` of the primary waits at most until `atmos.next()`, or for a short
+bound when other environments are registered, since the secondaries only run
+between its steps.
 An environment with no `step` makes the runtime return after the main chunk,
 so that a host, such as a browser, emits to the program.
 The table must be unpinned: the runtime owns it.

@@ -14,7 +14,10 @@ atmos.env([
 ])
 atmos.env([
     mode = [secondary=true],
-    step = func () { false },
+    step = func (m) {
+        if n == 1 { print("mode", m) }
+        false
+    },
     quit = func () { print("quit B") },
 ])
 spawn {

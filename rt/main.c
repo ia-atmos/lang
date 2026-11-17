@@ -44,8 +44,9 @@ static AVal env_fn (int i, const char* name) {
     return f;
 }
 
-// Calls `name` of the environment `i`, if it has one: `*end` tells
-// whether it gave a true value.
+// Calls the `step` of the environment `i`, if it has one, with its
+// mode (:primary or :secondary): `*end` tells whether it gave a true
+// value.
 static AStatus env_call (int i, const char* name, int* end) {
     *end = 0;
     AVal f = env_fn(i, name);
@@ -53,6 +54,7 @@ static AStatus env_call (int i, const char* name, int* end) {
         return A_OK;
     }
     int base = a_top;
+    a_push(a_strz((i == 0) ? "primary" : "secondary"));
     atm_step_begin();
     AStatus st = atm_step_end(a_call(f, base));
     if (st == A_OK) {
