@@ -70,14 +70,16 @@ Each item has the recommended option.
    written from memory; verify each and find the reference.
 7. **Text of the paper.** Only `papers/games.md` exists, an outline. No instruction
    yet to start writing.
-8. **The rules of `pin` changed on 2026-11-17** (reported by the
-   compiler session). A place that owns its value may take a fresh one;
-   `val` and `var` may hold a fresh value again, with a ceiling; `pin`
-   stays the explicit owner, recommended for natives, tasks, and pools.
-   The migration costs the ports reported (about 1770 lines changed,
-   about 240 rewrites) were measured under the earlier rules: never cite
-   them as the cost of the final rules. Any example of `pin` in the
-   paper follows `.claude/plans/261115-pin.md` and the manual, "Pin".
+8. **The rules of `pin` changed on 2026-11-17**, twice (reported by the
+   compiler session; the second version approved by the author). Now:
+   a pinned value never leaves its block (a block gives away a `val`);
+   `pin val` and `pin var`; parameter modifiers (`func f (var x, pin
+   y)`); declarations of prototypes are names; a pool held by `val`
+   works. The ports are migrating again. Never cite the migration
+   numbers reported before (about 1770 lines, about 240 rewrites), nor
+   any until the ports report on these rules. Any `pin` code in the
+   paper follows `.claude/plans/261117-pin-migration-2.md` and the
+   manual, "Pin".
 
 ## C. Reported or decided, not acknowledged
 
