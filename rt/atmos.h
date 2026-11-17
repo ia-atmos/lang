@@ -186,7 +186,9 @@ static inline void a_dec (AVal v) {
     if (v.type >= A_STR) {
         if (--v.u.o->rc == 0) {
             a_free(v.u.o);
-        } else if (v.u.o->rc==1 && (v.type==A_XTASK || v.type==A_TASKS)) {
+        } else if (v.u.o->rc==1 &&
+            (v.type==A_XTASK || v.type==A_TASKS || v.u.o->pinned==4))
+        {
             a_dropped(v.u.o);
         }
     }
@@ -489,6 +491,10 @@ AStatus a_tag (AVal t, AVal tag);
 // in a constructor: a fresh table takes its floor from them, and a
 // pinned one fails on a value that it cannot hold.
 AStatus a_tab_fill (AVal t, int i, int n);
+
+// Sets a key of a table, which was checked: a value that a pinned
+// table owned in that key is retired (`a_retire`).
+void a_tab_put (ATab* t, AVal k, AVal v);
 
 // Arguments that wait in a table: those of a task spawned by an
 // await, and the extra ones of a variadic task. The table keeps their
@@ -938,6 +944,8 @@ AStatus a_pub (AVal** ref);
 //  - 0: fresh, with its floor in `depth` (0 if it has none)
 //  - 1: pinned by a declaration, in the block `depth`
 //  - 2: pinned by the value that holds it, in the block `depth`
+//  - 3: a task or pool that was finalized
+//  - 4: retired: it left the place that owned it (`a_retire`)
 AStatus a_pin (AVal* slot);
 
 // val x = v: a variable only refers to a value that has an owner. A
@@ -950,6 +958,23 @@ static inline AStatus a_chk (AVal v) {
     }
     return a_chk_fresh(v);
 }
+
+// set x = v, with `x` a pin of the block `d`: the new value is pinned
+// there, deep, as by a declaration, and the old one is released (see
+// `a_retire`). A value that already has an owner is refused.
+AStatus a_pin_set (AVal* slot, AVal v, int d);
+
+// The value `old`, owned by a place of the block `d` (a pin, a field of
+// a pinned table, the pub of a pinned task), left that place: the
+// reference passes to the runtime. It is finalized when its last other
+// reference goes (at once, if there is none), and at the latest at the
+// end of its block, where a cycle is broken. Until then it stays
+// confined to the block. A retired value has `pinned` 4.
+void a_retire (AVal old, int d);
+
+// The end of a block: finalizes what was retired in it and is still
+// alive, in practice cycles.
+void a_retired_end (void);
 
 // x = v, in a `where`: pins the value if it is fresh.
 static inline AStatus a_pin_opt (AVal* slot) {

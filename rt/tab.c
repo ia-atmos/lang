@@ -315,8 +315,25 @@ AStatus a_setindex (AVal t, AVal k, AVal v) {
     if (a_chk_tab(A_TAB_OF(t),k)!=A_OK || a_chk_tab(A_TAB_OF(t),v)!=A_OK) {
         return A_ERROR;
     }
-    a_tab_set(A_TAB_OF(t), k, v);
+    a_tab_put(A_TAB_OF(t), k, v);
     return A_OK;
+}
+
+void a_tab_put (ATab* t, AVal k, AVal v) {
+    // the value that a pinned table owned in this key leaves it
+    AObj* h = &t->hdr;
+    if (h->pinned) {
+        AVal old = a_tab_get(t, k);
+        if (old.type>=A_TAB && old.u.o->pinned==2 &&
+            old.u.o->depth==h->depth && !(old.type==v.type && old.u.o==v.u.o))
+        {
+            a_inc(old);
+            a_tab_set(t, k, v);
+            a_retire(old, h->depth);
+            return;
+        }
+    }
+    a_tab_set(t, k, v);
 }
 
 AStatus a_len (AVal* dst, AVal v) {

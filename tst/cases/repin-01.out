@@ -1,0 +1,19 @@
+1
+close	a
+after
+close	b
+1
+alias
+close	c
+in
+close	d
+2
+false	invalid escape : table pinned at repin-01.atm:40
+false	invalid assignment : unexpected pinned value : table pinned at repin-01.atm:43
+3
+end	1
+in
+end	2
+4
+1	2	2
+5

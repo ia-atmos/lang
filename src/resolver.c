@@ -136,6 +136,9 @@ static void capture (Var* v) {
         // a captured mutable variable is shared through a box
         if (v->kind == V_VAR) {
             v->boxed = 1;
+        } else if (v->kind == V_PIN) {
+            v->pcap = 1;
+            v->boxed = v->boxed || v->pset;
         }
     }
 }
@@ -714,12 +717,18 @@ static void res (Expr* e) {
                 if (dst->tag == E_PUB) {
                     continue;
                 }
-                if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
+                // a `pin` may be assigned: it owns the new value, and
+                // releases the old one
+                if (dst->tag==E_ACC && dst->var->kind==V_PIN) {
+                    dst->var->pset = 1;
+                    dst->var->boxed = dst->var->boxed || dst->var->pcap;
+                } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
                     err(dst->tk, "invalid set : expected mutable variable");
                 }
                 // set x = [...]: a variable does not own a fresh value
                 // (a function is the declaration of a prototype)
-                if (dst->tag==E_ACC && e->u.set.dsts.n==1 &&
+                if (dst->tag==E_ACC && dst->var->kind!=V_PIN &&
+                    e->u.set.dsts.n==1 &&
                     e->u.set.op==NULL && e->u.set.src->tag!=E_PROTO &&
                     is_fresh(e->u.set.src))
                 {

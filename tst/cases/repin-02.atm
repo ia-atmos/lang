@@ -1,0 +1,67 @@
+;; An old value in a cycle is reclaimed at the end of its block at the
+;; latest; one with no cycle, at once. Nothing accumulates.
+```:prelude
+static void res_fin (void* p) {
+    printf("close\t%s\n", (char*) p);
+    free(p);
+}
+```
+func res (name) {
+    `:value a_nat(strdup(A_STR_OF($name)->s), res_fin, "res")`
+}
+
+;; a field of a pinned table, with a cycle
+do {
+    pin h = []
+    set h.a = [0, r=res("cycle")]
+    set h.a.self = h.a
+    set h.a = [1]
+    print(:replaced)
+}                           ;; the old cycle is closed here
+print(:1)
+
+;; a field with no cycle goes at once
+do {
+    pin h = []
+    set h.a = [r=res("field")]
+    set h.a = nil           ;; closed here
+    print(:in)
+}
+print(:2)
+
+;; the pub of a task
+task U () {
+    set pub = [r=res("pub1")]
+    set pub = [r=res("pub2")]   ;; pub1 closed here
+    await(false)
+}
+do {
+    pin u = spawn U()
+    print(:in)
+}
+print(:3)
+
+;; a pin assigned in a loop does not grow
+do {
+    pin cur = []
+    loop i in 10000 {
+        set cur = [i, [i]]
+    }
+    print(cur@0)
+}
+do {
+    pin h = []
+    loop i in 1000 {
+        set h.a = [i]
+        set h.a.self = h.a      ;; a cycle each time: they wait for the block
+    }
+    print(h.a@0)
+}
+print(:4)
+
+;; vector.clear on a pinned vector
+do {
+    pin v = [[r=res("v0")], [r=res("v1")]]
+    vector.clear(v)
+    print(:cleared, #v)
+}

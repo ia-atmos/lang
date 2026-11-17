@@ -1,0 +1,66 @@
+;; A `pin` may be assigned: it owns the new value, in its block, and the
+;; old one is finalized when its last reference goes.
+```:prelude
+static void res_fin (void* p) {
+    printf("close\t%s\n", (char*) p);
+    free(p);
+}
+```
+func res (name) {
+    `:value a_nat(strdup(A_STR_OF($name)->s), res_fin, "res")`
+}
+
+;; the old value had no other reference: it goes at once
+do {
+    pin acc = [0, 0]
+    set acc = [1, 1]
+    print(acc@0)
+    pin f = res("a")
+    set f = res("b")        ;; a is closed here
+    print(:after)
+}                           ;; b is closed here
+print(:1)
+
+;; an alias keeps the old value alive, until it goes
+do {
+    pin f = res("c")
+    do {
+        val g = f
+        set f = res("d")
+        print(:alias)
+    }                       ;; c is closed here: its last reference went
+    print(:in)
+}                           ;; d
+print(:2)
+
+;; the new value is pinned deep, in the block of the variable
+pin out = []
+do {
+    pin t = []
+    set t = [[1]]
+    print(catch true { set out.x = t@0 })
+    ;; and a value that has an owner is refused
+    pin u = []
+    print(catch true { set t = u })
+}
+print(:3)
+
+;; a task in a pin: the old one is aborted
+task T (id) {
+    defer { print(:end, id) }
+    await(false)
+}
+do {
+    pin t = spawn T(1)
+    set t = spawn T(2)      ;; 1 ends here
+    print(:in)
+}                           ;; 2
+print(:4)
+
+;; a captured pin
+do {
+    pin cur = [n=0]
+    val func f () { set cur = [n=cur.n+1] ; cur.n }
+    print(f(), f(), cur.n)
+}
+print(:5)

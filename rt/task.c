@@ -43,6 +43,7 @@ static RFrame* RSTK = NULL;
 
 static AStatus node_abort (ANode* n);
 static void    pin_deep (AVal v, int d, int how);
+static void    clr_deep (AVal v, uint32_t d);
 static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
@@ -1950,7 +1951,16 @@ AStatus a_pub_set (ATask* t, AVal v) {
     if (own->hdr.pinned) {
         pin_deep(v, d, 2);
     }
-    a_cpy(&t->pub, v);
+    AVal old = t->pub;
+    a_inc(v);
+    t->pub = v;
+    if (old.type>=A_TAB && old.u.o->pinned==2 && (int)old.u.o->depth==d &&
+        !(old.type==v.type && old.u.o==v.u.o))
+    {
+        a_retire(old, d);
+    } else {
+        a_dec(old);
+    }
     return A_OK;
 }
 
@@ -2370,7 +2380,167 @@ static int node_dropped (ANode* n) {
     return 1;
 }
 
+// RETIRE
+
+// The values that left the place that owned them and are still alive:
+// the list holds one reference to each.
+typedef struct { AObj* o; int d; } ARet;
+static ARet* RETS  = NULL;
+static int   NRETS = 0;
+static int   CRETS = 0;
+
+static void ret_release (AObj* o);
+
+void a_retire (AVal old, int d) {
+    if (old.type < A_TAB) {
+        a_dec(old);
+        return;
+    }
+    AObj* o = old.u.o;
+    if (old.type==A_XTASK || old.type==A_TASKS) {
+        // as a task held by pinned data: it is aborted when its last
+        // other reference goes, or at the end of the block
+        ANode* n = (ANode*) o;
+        if (o->pinned != 3) {
+            o->pinned = 2;
+            o->depth  = d;
+            if (n->up!=NULL && n->up->hdr.type==A_XTASK) {
+                ATask* up = (ATask*) n->up;
+                if (up->trs!=NULL && up->trs[n->trail].conf<d) {
+                    up->trs[n->trail].conf = d;
+                }
+            }
+        }
+        a_dec(old);
+        return;
+    }
+    if (o->pinned == 4) {
+        // already retired: the list holds it
+        a_dec(old);
+        return;
+    }
+    o->pinned = 4;
+    o->depth  = d;
+    if (NRETS == CRETS) {
+        CRETS = (CRETS == 0) ? 8 : CRETS*2;
+        RETS  = realloc(RETS, CRETS * sizeof(ARet));
+    }
+    RETS[NRETS].o = o;
+    RETS[NRETS].d = d;
+    NRETS++;
+    // nobody else refers to it: at once
+    if (o->rc == 1) {
+        ret_release(o);
+    }
+}
+
+// The values pinned with a retired one (by it, in its block) are
+// retired with it, so that a cycle among them is broken at the end of
+// the block at the latest.
+static void ret_children (AVal v, int d) {
+    #define RET_KID(x) \
+        if ((x).type>=A_TAB && (x).type!=A_XTASK && (x).type!=A_TASKS && \
+            (x).u.o->pinned==2 && (int)(x).u.o->depth==d) { \
+            a_inc(x); a_retire(x, d); \
+        }
+    if (v.type == A_TAB) {
+        uint32_t pos = 0;
+        AVal k, x;
+        while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+            RET_KID(k);
+            RET_KID(x);
+        }
+    } else if (v.type==A_FUNC || v.type==A_TASK) {
+        AFunc* f = A_FUNC_OF(v);
+        for (int i=0; i<f->ncap; i++) {
+            RET_KID(f->caps[i]);
+        }
+    } else if (v.type == A_NAT) {
+        ANat* n = A_NAT_OF(v);
+        for (int i=0; i<n->nholds; i++) {
+            RET_KID(n->holds[i]);
+        }
+    }
+    #undef RET_KID
+}
+
+static void ret_remove (AObj* o) {
+    for (int i=NRETS-1; i>=0; i--) {
+        if (RETS[i].o == o) {
+            RETS[i] = RETS[--NRETS];
+            return;
+        }
+    }
+}
+
+// The list has the last reference: the value goes now.
+static void ret_release (AObj* o) {
+    AVal v = a_obj(o);
+    int d = o->depth;
+    ret_remove(o);
+    o->pinned = 0;
+    o->depth  = 0;
+    ret_children(v, d);
+    a_dec(v);
+}
+
+void a_retired_end (void) {
+    // the latest first; a release may retire more
+    for (int i=NRETS-1; i>=0; i--) {
+        if (i >= NRETS) {
+            continue;
+        }
+        ARet r = RETS[i];
+        if (r.d < a_depth) {
+            continue;
+        }
+        RETS[i] = RETS[--NRETS];
+        AVal v = a_obj(r.o);
+        if (r.o->pinned==4 && (int)r.o->depth==r.d) {
+            // still alive: other references remain, in practice a
+            // cycle; it is finalized as the pins of the block are
+            r.o->pinned = 2;
+            clr_deep(v, r.d);
+        }
+        a_dec(v);
+        i = NRETS;
+    }
+}
+
+AStatus a_pin_set (AVal* slot, AVal v, int d) {
+    if (v.type >= A_TAB) {
+        // the same value again
+        if (slot->type==v.type && slot->u.o==v.u.o) {
+            return A_OK;
+        }
+        if (v.u.o->pinned) {
+            return a_err_owned(v);
+        }
+        if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
+            return a_error("invalid assignment : unexpected parent task");
+        }
+        if (a_pdepth(v) > d) {
+            return a_err_pinned(v);
+        }
+        pin_deep(v, d, 1);
+    }
+    AVal old = *slot;
+    a_inc(v);
+    *slot = v;
+    if (old.type>=A_TAB && old.u.o->pinned==1 && (int)old.u.o->depth==d) {
+        a_retire(old, d);
+    } else {
+        a_dec(old);
+    }
+    return A_OK;
+}
+
 void a_dropped (AObj* o) {
+    if (o->type!=A_XTASK && o->type!=A_TASKS) {
+        // a retired value: the list has the last reference
+        ret_release(o);
+        return;
+    }
     ANode* n = (ANode*) o;
     if (n->dropq || !node_dropped(n)) {
         return;
@@ -2927,6 +3097,10 @@ void a_task_quit (void) {
     if (MAIN != NULL) {
         // what it holds may refer to it
         clr_task(MAIN, 0);
+        int dep = a_depth;
+        a_depth = 0;
+        a_retired_end();
+        a_depth = dep;
         a_dec(a_obj(&MAIN->node.hdr));
         MAIN = NULL;
         node_sweep(&ROOT.node);
@@ -2935,6 +3109,10 @@ void a_task_quit (void) {
     }
     a_drop_flush(A_OK);
     a_drop_quit();
+    free(RETS);
+    RETS  = NULL;
+    NRETS = 0;
+    CRETS = 0;
 }
 
 int atm_alive (void) {

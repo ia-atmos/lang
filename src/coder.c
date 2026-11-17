@@ -965,6 +965,10 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             out(u, "a_pin_clr(&%s);", mine[i].pin);
         }
     }
+    // and so is what left its owner in the block, if still alive
+    if (user) {
+        out(u, "a_retired_end();");
+    }
     u->cleanup = b.cl;
     u->defs  = b.defs;
     u->ndefs = b.ndefs;
@@ -1256,6 +1260,22 @@ static Loc gen_loc (Unit* u, Expr* dst) {
 
 // Assigns an operand to a destination, consuming both.
 static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
+    if (l.e->tag==E_ACC && l.e->var->kind==V_PIN) {
+        // set x = v, with `x` a pin: it owns the new value, in the
+        // block of the variable, and releases the old one
+        Var* x = l.e->var;
+        const char* dst = var_c(u, x);
+        if (x->boxed) {
+            out_try(u, "a_pin_set(&%s, %s, (int)%s.u.o->depth)", dst, v.c,
+                var_raw(u,x));
+        } else if (x->global) {
+            out_try(u, "a_pin_set(&%s, %s, 1)", dst, v.c);
+        } else {
+            out_try(u, "a_pin_set(&%s, %s, D + %d)", dst, v.c, x->level);
+        }
+        opnd_rel(u, v);
+        return;
+    }
     if (proto && l.e->tag==E_ACC) {
         // func f () {...}: the declaration of a prototype pins it, in
         // the block of its variable

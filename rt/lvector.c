@@ -66,7 +66,7 @@ static AStatus vec_clear (AFunc* self, int argc, AVal* argv) {
     }
     ATab* t = A_TAB_OF(argv[0]);
     for (int64_t j=n-1; j>=0; j--) {
-        a_tab_set(t, a_int(j), a_nil());
+        a_tab_put(t, a_int(j), a_nil());
     }
     return A_OK;
 }

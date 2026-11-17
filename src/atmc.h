@@ -323,6 +323,10 @@ struct Var {
     int     redef;
     // mutable and captured by a closure: lives in a shared box
     int     boxed;
+    // a `pin` that is captured, and one that is assigned: when both,
+    // it lives in a box, as a mutable variable
+    int     pcap;
+    int     pset;
     // coder: slot in `L`, and nesting level of its block
     int     slot;
     int     level;
