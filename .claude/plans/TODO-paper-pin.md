@@ -32,4 +32,14 @@ by that session.
 
 ## C. Next steps, not started
 
+1. **Experiment: CLBG in Atmos.** Re-implement the 7 programs of Câmara
+   (2024; github.com/alochaus/dyn-lex-benchmark): binary-trees,
+   fannkuch-redux, fasta, fibonacci, mandelbrot, n-body, spectral-norm.
+   Measure Atmos against Lua 5.4 and against Atmos with the checks
+   disabled (a compile flag under discussion, which keeps end-of-block
+   finalization). Compile once and time only the run: the earlier study
+   included recompilation in every run, so its numbers are not cited.
+2. **Related work: dyn-lex.** Read its manual (doc/manual.md) and
+   runtime (src/main/kotlin/C.kt) for the side-by-side with the rules.
+
 1. Fill the sections with text, after the author approves the outline.
