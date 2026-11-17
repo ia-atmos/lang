@@ -79,7 +79,11 @@ Each item has the recommended option.
 2. **Related work from sources.** "Prevalent Systems" (2014) was read
    on 2026-11-17 from a PDF the author uploaded; its examples are in
    Section 13. Its claim on Age of Empires and StarCraft has no
-   citation: to find a primary source (Bettner and Terrano 2001).
+   citation. Primary sources searched on 2026-11-17, in Section 13:
+   Bettner and Terrano (2001) for Age of Empires; for StarCraft no
+   paper by Blizzard, only an interview of Wyatt (2015) and community
+   sources. Not read in full: the sites of Gamasutra / Game Developer
+   are blocked by the network of this session.
    Earlier note: Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
    Elm and Redux, Raft, lockstep, Bayou, Time Warp, and CRDTs are from

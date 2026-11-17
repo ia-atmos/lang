@@ -335,9 +335,27 @@ state, and case studies.
           through a serializer, rendering is a query done locally
           (Smith et al. 2003); the closest to Section 8
         - Age of Empires and StarCraft: a save is a snapshot, a replay
-          is a journal, multiplayer is replication; stated with no
-          citation; the source to cite is Bettner and Terrano, "1500
-          Archers on a 28.8" (GDC 2001), not yet checked
+          is a journal, multiplayer is replication; stated there with
+          no citation
+- Deterministic lockstep in games: the primary sources
+    - Age of Empires: Bettner and Terrano, "1500 Archers on a 28.8:
+      Network Programming in Age of Empires and Beyond", GDC 2001 and
+      Gamasutra, 2001-03-22
+        - every machine runs the whole simulation; only commands travel
+        - the recording of games began as a tool to debug desyncs
+          (quoted by a secondary source; to confirm in the text)
+        - the recorded game (.mgx) is a header with a snapshot of the
+          initial state and the commands of each turn; a patch breaks
+          old recordings (community format specs, not the developers)
+    - StarCraft: no paper by Blizzard found
+        - Wyatt (Blizzard), HandmadeCon 2015 interview: Warcraft 2 and
+          StarCraft wait for the packets of every player each turn
+        - replays: every command with its frame, replayed by the engine;
+          old replays break with new patches (Liquipedia, OpenBW)
+        - StarCraft II: "a deterministic state machine": initial state
+          plus a list of events (sc2reader documentation)
+    - the lesson for us: a journal is tied to the version of the code
+      (Section 10, Versions)
 - Event sourcing and CQRS
     - records facts; ours records intentions, and needs determinism
 - Command and Memento patterns: the two parts, not the architecture
