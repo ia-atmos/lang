@@ -974,7 +974,13 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     u->ndefs = b.ndefs;
 
     if (*nslots(u) > b.lo) {
+        out(u, "a_unname(&L[%d], %d, D + %d);", b.lo, *nslots(u)-b.lo,
+            u->level);
         out(u, "a_clrs(&L[%d], %d);", b.lo, *nslots(u)-b.lo);
+    }
+    // the parameters of a function or task end with its body
+    if (u->level==0 && u->npar>0 && u->root==NULL) {
+        out(u, "a_unname(&L[0], %d, D);", u->npar);
     }
     u->level--;
     out(u, "a_depth = D + %d;", u->level);
@@ -1154,6 +1160,17 @@ static void gen_boxes (Unit* u, Expr* e) {
     }
 }
 
+// The depth of the block of a variable, as a C expression.
+static const char* var_depth (Unit* u, Var* x) {
+    if (x->boxed) {
+        return xfmt("(int)%s.u.o->depth", var_raw(u,x));
+    } else if (x->global) {
+        return "1";
+    } else {
+        return xfmt("D + %d", (x->level < 0) ? 0 : x->level);
+    }
+}
+
 // After a declaration: a pin takes ownership of a task or pool; a val
 // or var only accepts one that is pinned elsewhere.
 static void gen_dcl_chk (Unit* u, Expr* e) {
@@ -1161,13 +1178,10 @@ static void gen_dcl_chk (Unit* u, Expr* e) {
         const char* v = var_c(u, e->vars[i]);
         if (e->vars[i]->kind == V_PIN) {
             gen_pin(u, v);
-        } else if (e->u.dcl.opt) {
-            // a `where` has no modifier: its block owns a value that
-            // is fresh, and refers to one that has an owner
-            out_try(u, "a_pin_opt(&%s)", v);
-            gen_pin_end(u, v, 1);
         } else {
-            out_try(u, "a_chk(%s)", v);
+            // a name: it refers to a value that has an owner, or holds
+            // a fresh one, which gets its ceiling here
+            out(u, "a_name(%s, %s);", v, var_depth(u, e->vars[i]));
             // a captured variable belongs to the block that declares it
             if (e->vars[i]->boxed) {
                 out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v,
@@ -1299,8 +1313,9 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
         return;
     }
     if (l.e->tag == E_ACC) {
-        // a variable only refers to a task or pool that has an owner
-        out_try(u, "a_chk(%s)", v.c);
+        // a name: it refers to a value that has an owner, or holds a
+        // fresh one, which gets its ceiling in the block of the name
+        out(u, "a_name(%s, %s);", v.c, var_depth(u, l.e->var));
         // a pinned value cannot go to a variable that outlives its
         // pin block: a captured variable (which belongs to the block
         // that declares it), a top-level variable, or an outer block
@@ -1579,6 +1594,10 @@ static void gen_loop (Unit* u, Expr* e, Dst d) {
     if (iter) {
         out_try(u, "a_next(%s, %s, &%s, &%s, &%s)", it.c, lim.c, pos.c, k, v);
         out(u, "if (%s.type == A_NIL) break;", k);
+        for (int i=0; i<e->u.loop.n && i<2; i++) {
+            out(u, "a_name(%s, %s);", var_c(u,e->vars[i]),
+                var_depth(u,e->vars[i]));
+        }
     }
     Hnd h = hnd_none();
     h.brk  = end;
@@ -1915,6 +1934,13 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
     u.orph = 1;
     const char* name = xfmt("atm_T%d", p->id);
     trail_new(&u, name, -1, 0);
+    // the parameters are names of the body of the task
+    if (npar > 0) {
+        out(&u, "a_lin = %d;", lin);
+    }
+    for (int i=0; i<npar; i++) {
+        out(&u, "a_name(L[%d], D);", pars[i]->slot);
+    }
     gen_block(&u, body, dst_slot("t->ret"));
 
     const char* sig = xfmt(
@@ -1964,10 +1990,15 @@ static const char* gen_func (Expr* e) {
     u.npar  = e->u.proto.n;
     u.level = -1;
 
-    // parameters are immutable copies of the arguments
+    // parameters are immutable copies of the arguments, names of the
+    // body of the function
+    if (e->u.proto.n > 0) {
+        out(&u, "a_lin = %d;", lin_of(e->tk));
+    }
     for (int i=0; i<e->u.proto.n; i++) {
         out(&u, "if (argc > %d) a_cpy(&%s, argv[%d]);",
             i, var_c(&u,e->vars[i]), i);
+        out(&u, "a_name(%s, D);", var_c(&u,e->vars[i]));
     }
     gen_block(&u, &e->u.proto.blk->u.block.es, dst_multi(&u));
 

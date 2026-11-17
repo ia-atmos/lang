@@ -331,6 +331,8 @@ AVal a_func (AFn fn, int ncap) {
     f->hdr.pinned = 0;
     f->hdr.depth  = 0;
     f->hdr.lin    = 0;
+    f->hdr.ceil   = 0;
+    f->hdr.clin   = 0;
     f->fn   = fn;
     f->task = NULL;
     f->ncap = ncap;
@@ -354,6 +356,8 @@ AVal a_box (void) {
     b->hdr.pinned = 1;
     b->hdr.depth  = a_depth;
     b->hdr.lin    = a_lin;
+    b->hdr.ceil   = 0;
+    b->hdr.clin   = 0;
     b->v = a_nil();
     return a_obj(&b->hdr);
 }
@@ -365,6 +369,8 @@ AVal a_nat (void* ptr, void (*fin)(void*), const char* kind) {
     n->hdr.pinned = 0;
     n->hdr.depth  = 0;
     n->hdr.lin    = 0;
+    n->hdr.ceil   = 0;
+    n->hdr.clin   = 0;
     n->ptr  = ptr;
     n->fin  = fin;
     n->kind = kind;

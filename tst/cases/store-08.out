@@ -1,6 +1,6 @@
 dead	a	1
 dead	b	1
-false	invalid assignment : expected pinned value
+true
 dead	c	2
 dead	d	3
 false	invalid escape : pinned task

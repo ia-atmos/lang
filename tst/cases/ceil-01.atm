@@ -1,0 +1,75 @@
+;; A name may hold a fresh value: it gets a ceiling, the block of its
+;; outermost name, and may be pinned there or outside.
+
+;; B: a local name for an argument that is fresh or owned
+pin D = [n=0]
+func opt (o) {
+    val x = o || D
+    val a = x.n
+    a
+}
+pin own = [n=2]
+print(opt([n=1]), opt(own), opt(nil))
+
+;; C: build, complete, then store in an outer table
+pin G = []
+func mk (k) {
+    val d = [x=1]
+    set d.y = 2
+    set G@(k) = d
+}
+mk(0)
+print((G@0).x, (G@0).y)
+
+;; D: a task publishes what it built in a name
+task T () {
+    val rect = [x=0, y=0, w=10]
+    set pub = [rect=rect]
+    await(false)
+}
+pin t = spawn T()
+print(t.pub.rect.w)
+
+;; F: a helper that returns a table, read once; the results of a catch
+func pos (x, y) { [x=x, y=y] }
+val p = pos(50, 50)
+val ok, e = catch :X { throw :X [msg="m"] }
+print(p.x, ok, e.msg)
+
+;; a task held by a name is aborted at the end of the block of the name
+task U (id) {
+    defer { print(:end, id) }
+    await(false)
+}
+do {
+    val u = spawn U(1)
+    print(:in)
+}
+print(:out)
+
+;; a fresh value that leaves the block of its name loses that ceiling
+func mk2 () {
+    val v = [7]
+    v
+}
+do {
+    do {
+        pin z = mk2()
+        print(z@0)
+    }
+}
+
+;; E stays an error: a table of a module that refers to an inner pool
+pin play = []
+do {
+    pin ts = tasks()
+    print(catch true { set play.enemies = ts })
+}
+
+;; a cycle among fresh values is accepted by the check
+do {
+    val c = []
+    set c.self = c
+    pin h = [c]
+    print((h@0).self == c)
+}

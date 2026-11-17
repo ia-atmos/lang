@@ -25,10 +25,15 @@ typedef struct AObj {
     int32_t  rc;
     uint8_t  type;
     uint8_t  pinned;
+    // ceiling of a fresh value: the outermost block of the names that
+    // hold it (0 if none). It may only be pinned there or outside.
+    uint16_t ceil;
     uint32_t depth;
     // line of the pin that gives the value its depth (0 if none), for
     // the message of an escape
     uint32_t lin;
+    // line of the name that gives it its ceiling
+    uint32_t clin;
 } AObj;
 
 typedef struct AVal {
@@ -958,6 +963,26 @@ static inline AStatus a_chk (AVal v) {
     }
     return a_chk_fresh(v);
 }
+
+// A name of the block `d` (a `val`, a `var`, a parameter, a loop
+// variable, a declaration of a `where`) holds `v`. A fresh value gets
+// its ceiling there, if that block is outer than the one it had, and so
+// do the fresh values it holds: it may only be pinned at its ceiling or
+// outside, so that no name sees it finalized. A fresh value stored in a
+// fresh one that has a ceiling gets it too.
+void a_ceil (AVal v, int d, uint32_t lin);
+
+static inline void a_name (AVal v, int d) {
+    if (v.type>=A_TAB && !v.u.o->pinned && d>0 &&
+        (v.u.o->ceil==0 || d<v.u.o->ceil))
+    {
+        a_ceil(v, d, a_lin);
+    }
+}
+
+// The names `vs[0..n)` of the block `d` end: a fresh value that only
+// they held loses its ceiling.
+void a_unname (AVal* vs, int n, int d);
 
 // set x = v, with `x` a pin of the block `d`: the new value is pinned
 // there, deep, as by a declaration, and the old one is released (see

@@ -1,1 +1,3 @@
-pin-err-05.atm : line 4 : near 'f' : invalid set : expected pinned value
+==> ERROR:
+ v  pin-err-05.atm:5 (throw)
+==> invalid pin : table named at pin-err-05.atm:3

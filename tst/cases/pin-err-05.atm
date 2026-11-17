@@ -1,4 +1,6 @@
-;; a variable does not own a fresh value: a constructor, at compile
-;; time
-var f
-set f = [1]
+;; a fresh value held by a `val` may be pinned at the block of the
+;; name or outside, and not inside
+val a = [1]
+do {
+    pin b = a
+}

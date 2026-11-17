@@ -14,6 +14,7 @@ do {
     ;; dropped
     sp(:a, a)
     ;; rejected
+    ;; named: aborted at the end of the block of the name
     print(catch true { val x = sp(:b, a) })
     do {
         pin b = [2]

@@ -62,6 +62,8 @@ AVal a_str (const char* s, size_t len) {
     x->hdr.pinned = 0;
     x->hdr.depth  = 0;
     x->hdr.lin    = 0;
+    x->hdr.ceil   = 0;
+    x->hdr.clin   = 0;
     x->hash = h;
     x->len  = len;
     memcpy(x->s, s, len);

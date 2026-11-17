@@ -1,2 +1,0 @@
-;; each name of a declaration is checked with its expression
-val a, b = 1, []

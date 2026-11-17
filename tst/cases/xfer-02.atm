@@ -19,7 +19,7 @@ func sp (v) {
     pin t = spawn T(v)
     t
 }
-;; rejected, and dropped: aborted at once
+;; a name holds it, and it is aborted at the end of the block of the name
 print(catch true { val x = sp(:a) })
 print(:1)
 do {

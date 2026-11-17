@@ -1,4 +1,9 @@
-;; a variable does not own a fresh value: a result, at run time
-func mk () { [1] }
-var f
-set f = mk()
+;; the same, through a store into a pinned table of an inner block
+func f (o) {
+    do {
+        pin h = []
+        set h.x = o
+    }
+    print(o@0)
+}
+f([7])

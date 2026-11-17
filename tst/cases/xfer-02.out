@@ -1,6 +1,6 @@
 1	2	3
 dead	a
-false	invalid assignment : expected pinned value
+true
 1
 2
 awake	b

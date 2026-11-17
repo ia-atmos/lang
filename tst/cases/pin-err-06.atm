@@ -1,3 +1,6 @@
-;; a result that is fresh, at run time
-func mk () { [1] }
-val a = mk()
+;; the ceiling reaches the fresh values that a named one holds
+val a = [[1]]
+do {
+    pin x = a@0
+}
+print(a@0@0)

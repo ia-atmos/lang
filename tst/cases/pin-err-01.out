@@ -1,1 +1,4 @@
-pin-err-01.atm : line 2 : near 'a' : invalid declaration : expected 'pin'
+==> ERROR:
+ |  pin-err-01.atm:9 (call)
+ v  pin-err-01.atm:5 (throw)
+==> invalid pin : table named at pin-err-01.atm:3

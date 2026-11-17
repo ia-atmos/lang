@@ -44,6 +44,8 @@ static RFrame* RSTK = NULL;
 static AStatus node_abort (ANode* n);
 static void    pin_deep (AVal v, int d, int how);
 static void    clr_deep (AVal v, uint32_t d);
+static int     adopt_ok (AVal v, int d);
+static AStatus adopt_err (const char* what);
 static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
@@ -1949,7 +1951,12 @@ AStatus a_pub_set (ATask* t, AVal v) {
     // a fresh value is pinned with the task, if it is pinned
     ANode* own = (t->pool != NULL) ? &t->pool->node : &t->node;
     if (own->hdr.pinned) {
+        if (!adopt_ok(v, d)) {
+            return adopt_err("escape");
+        }
         pin_deep(v, d, 2);
+    } else if (own->hdr.ceil != 0) {
+        a_ceil(v, own->hdr.ceil, own->hdr.clin);
     }
     AVal old = t->pub;
     a_inc(v);
@@ -2057,9 +2064,168 @@ AStatus a_nat_holds (AVal nat, AVal v) {
         }
     }
     if (nat.u.o->pinned) {
+        if (!adopt_ok(v, nat.u.o->depth)) {
+            return adopt_err("escape");
+        }
         pin_deep(v, nat.u.o->depth, 2);
     }
     return A_OK;
+}
+
+// The fresh values that `v` holds, for `f`.
+static void fresh_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
+                        uint32_t lin)
+{
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                f(k, d, lin);
+                f(x, d, lin);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* fn = A_FUNC_OF(v);
+            for (int i=0; i<fn->ncap; i++) {
+                f(fn->caps[i], d, lin);
+            }
+            break;
+        }
+        case A_XTASK:
+            f(A_TASK_OF(v)->pub, d, lin);
+            f(A_TASK_OF(v)->ret, d, lin);
+            break;
+        case A_NAT: {
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                f(n->holds[i], d, lin);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void a_ceil (AVal v, int d, uint32_t lin) {
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+        return;
+    }
+    AObj* o = v.u.o;
+    if (o->ceil!=0 && o->ceil<=d) {
+        return;
+    }
+    o->ceil = (d < 0xFFFF) ? d : 0xFFFF;
+    o->clin = lin;
+    fresh_kids(v, a_ceil, d, lin);
+}
+
+// The names of the block `d` end: what only they held loses that
+// ceiling, deep.
+static void ceil_up (AVal v, int d, uint32_t lin) {
+    (void) lin;
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+        return;
+    }
+    AObj* o = v.u.o;
+    if (o->ceil==0 || o->ceil<d) {
+        return;
+    }
+    o->ceil = 0;
+    fresh_kids(v, ceil_up, d, 0);
+}
+
+void a_unname (AVal* vs, int n, int d) {
+    for (int i=0; i<n; i++) {
+        ceil_up(vs[i], d, 0);
+    }
+}
+
+// A fresh value, and the fresh values it holds, may be adopted in the
+// block `d` only if it is their ceiling or an outer block: the names
+// that hold them must not see them finalized.
+static AObj*  ADOPT_BAD = NULL;
+static AObj** ADOPT_VIS = NULL;
+static int    ADOPT_N   = 0;
+static int    ADOPT_CAP = 0;
+static int adopt_rec (AVal v, int d);
+
+static int adopt_ok (AVal v, int d) {
+    ADOPT_N = 0;
+    int ok = adopt_rec(v, d);
+    // the marks of the visit are undone
+    for (int i=0; i<ADOPT_N; i++) {
+        ADOPT_VIS[i]->pinned = 0;
+    }
+    return ok;
+}
+
+static int adopt_rec (AVal v, int d) {
+    // pinned, or already visited (a cycle among fresh values)
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+        return 1;
+    }
+    AObj* o = v.u.o;
+    if (o->ceil!=0 && d>o->ceil) {
+        ADOPT_BAD = o;
+        return 0;
+    }
+    if (ADOPT_N == ADOPT_CAP) {
+        ADOPT_CAP = (ADOPT_CAP == 0) ? 16 : ADOPT_CAP*2;
+        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AObj*));
+    }
+    ADOPT_VIS[ADOPT_N++] = o;
+    o->pinned = 5;
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                if (!adopt_rec(k,d) || !adopt_rec(x,d)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* f = A_FUNC_OF(v);
+            for (int i=0; i<f->ncap; i++) {
+                if (!adopt_rec(f->caps[i], d)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case A_XTASK:
+            return adopt_rec(A_TASK_OF(v)->pub, d) &&
+                   adopt_rec(A_TASK_OF(v)->ret, d);
+        case A_NAT: {
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                if (!adopt_rec(n->holds[i], d)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        default:
+            return 1;
+    }
+}
+
+// "invalid pin : table named at f:10"
+static AStatus adopt_err (const char* what) {
+    AObj* o = ADOPT_BAD;
+    AVal v = a_obj(o);
+    const char* type = (v.type == A_XTASK) ? "task" :
+                       (v.type == A_TASKS) ? "pool" : a_typename(v);
+    uint32_t lin = o->clin;
+    return a_error("invalid %s : %s named at %s:%d", what, type,
+        atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
 }
 
 AStatus a_hold (AObj* h, AVal v) {
@@ -2067,7 +2233,13 @@ AStatus a_hold (AObj* h, AVal v) {
         return a_err_pinned(v);
     }
     if (h->pinned) {
+        if (!adopt_ok(v, h->depth)) {
+            return adopt_err("escape");
+        }
         pin_deep(v, h->depth, 2);
+    } else if (h->ceil != 0) {
+        // the names of the holder see it too
+        a_ceil(v, h->ceil, h->clin);
     }
     return A_OK;
 }
@@ -2134,9 +2306,13 @@ AStatus a_pin (AVal* slot) {
     if (v.u.o->pinned) {
         return a_err_owned(v);
     }
-    // a fresh value is pinned at its floor or deeper
+    // a fresh value is pinned at its floor or deeper, and at its
+    // ceiling or outer
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
+    }
+    if (!adopt_ok(v, a_depth)) {
+        return adopt_err("pin");
     }
     pin_deep(v, a_depth, 1);
     return A_OK;
@@ -2522,6 +2698,9 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
         if (a_pdepth(v) > d) {
             return a_err_pinned(v);
         }
+        if (!adopt_ok(v, d)) {
+            return adopt_err("pin");
+        }
         pin_deep(v, d, 1);
     }
     AVal old = *slot;
@@ -2602,6 +2781,9 @@ AStatus a_pin_at (AVal* slot, int d) {
     }
     if (a_pdepth(v) > d) {
         return a_err_pinned(v);
+    }
+    if (!adopt_ok(v, d)) {
+        return adopt_err("pin");
     }
     pin_deep(v, d, 1);
     return A_OK;
@@ -3109,6 +3291,9 @@ void a_task_quit (void) {
     }
     a_drop_flush(A_OK);
     a_drop_quit();
+    free(ADOPT_VIS);
+    ADOPT_VIS = NULL;
+    ADOPT_CAP = 0;
     free(RETS);
     RETS  = NULL;
     NRETS = 0;
