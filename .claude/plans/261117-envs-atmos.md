@@ -235,3 +235,21 @@ variables. What is missing is only on the side of the environment: under
 `include`. The reference has `atmos.test`; here there is no such flag
 (the compiler only drops `test` blocks). To ask `ceu-atmos`: a flag
 under `-t`, readable by the environment from Atmos and from C.
+
+### The test flag, with no compiler change (the author, 2026-11-17)
+
+A global set in a `test` block, in the file of the environment itself
+(its `test` blocks are enabled by `-t` as well), is known before the
+environment opens anything, and C can read it:
+
+```
+var env_test = false
+test { set env_test = true }
+`int ENV_TEST;`
+`ENV_TEST = a_truthy($env_test);`
+if env_test { ... no window, no sound, no device ... } else { ... open ... }
+```
+
+Checked: `atmos p.atm` opens, `atmos -t p.atm` does not, and C sees 0
+and 1. So no `atmos.test` is needed from the compiler: a convention of
+the environments.

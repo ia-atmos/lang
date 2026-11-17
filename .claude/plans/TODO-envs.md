@@ -13,9 +13,8 @@ One at a time, each with the recommended option.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| A1 | (57) Two environments in one program; the author proposed (2026-11-17) the interface in Atmos, as in lua-atmos: `261117-envs-atmos.md`, proven to run with no compiler change. A pair works today (`env-iup` owns `main` and polls `env-uv`, built with `-DUVA_NO_MAIN`, through weak symbols), but only for that pair | A registry in the runtime, as `step`/`quit` of lua-atmos: an environment that does not own `main` registers a poller and a closer (`atm_poll_add`, `atm_close_add`); the one that owns `main` (the first included, the primary) owns the time and calls `atm_poll()` each turn of its loop. Design document here first, then to `ceu-atmos`, `uv`, `iup` |
 | A2 | (46) The names and fields of the events. `env-sdl` adopted the vocabulary of `pico.atm` (decided 2026-11-16); `env-ray` still has `[key=262, name='RIGHT']` and `:mouse.dn`; `pico.atm` has no `:frame` | The vocabulary of pico for all, plus `:frame` (logic) before `:draw`; `key` the name, `code` the number; handle events carry `h` |
-| A3 | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time works today (`261117-envs-atmos.md`); what is missing is a flag under `-t` so the environment does not open the real window, sound or device | Ask `ceu-atmos` for the flag (as `atmos.test` of the reference); then each environment honors it, and the `*_ATM_*` variables can go |
+| A3 | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time; the environment knows it is under `-t` by a global set in a `test` block of its own file (both checked, no compiler change; `261117-envs-atmos.md`) | Each environment adopts it, and the `*_ATM_*` variables can go. To propose to the environment sessions after the pilot of A1 |
 | A4 | (59) Confirm the mechanism of selection: `make env` builds `atmos-<env>`, `-e` does it by hand | Confirm. With A1, `make env` takes a list of environments |
 | A5 | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
 | A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `ceu-atmos` |
@@ -35,3 +34,10 @@ One at a time, each with the recommended option.
 ## C. Reported and not acknowledged
 
 - (none yet)
+
+## D. Decided by the author
+
+| Date | Decision |
+|---|---|
+| 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Sent to `ceu-atmos`; the pair uv+iup is the pilot (`uv`, `iup`) |
+| 2026-11-17 | No `task main`: the file stays the main task; a game's own task is what tests spawn |
