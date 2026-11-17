@@ -15,6 +15,7 @@ static AVal res_new (const char* name, AVal parent) {
 }
 ```
 func window () {
+    ;; `:value` is the former name of `:atmos`
     `:value res_new("window", a_nil())`
 }
 func layer (name, parent) {

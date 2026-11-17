@@ -718,10 +718,11 @@ A tag in the beginning of the literal gives its kind:
 `:number e`         ;; C expression converted to a number
 `:boolean e`        ;; C expression converted to a boolean
 `:string e`         ;; C string, which is copied (NULL becomes nil)
-`:value e`          ;; C expression that is already an Atmos value
+`:atmos e`          ;; C expression that is already an Atmos value
 ```
 
-The tags are the names of the [types](#types--values).
+The tags are the names of the [types](#types--values), and `:atmos` is a
+value of any type (`:value` is its former name, to be removed).
 A `:number` becomes an integer or a real according to the type of the
 expression in C: `` `:number 7/2` `` is `3`, and `` `:number 7/2.0` `` is `3.5`.
 The tags `:number.integer` and `:number.float` force one of them.

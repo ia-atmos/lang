@@ -26,7 +26,8 @@ char* file_read (const char* path, size_t* len);
 //      `:number.float e`       ... always to a real
 //      `:boolean e`    ... to a boolean
 //      `:string e`     ... to a string (NULL gives nil)
-//      `:value e`      C expression of type AVal (owned)
+//      `:atmos e`      C expression of type AVal (owned); `:value` is
+//                      its former name
 typedef enum {
     NAT_STMT, NAT_PRE, NAT_INT, NAT_NUM, NAT_BOOL, NAT_STR, NAT_VAL,
     NAT_NUMBER, NAT_ERR

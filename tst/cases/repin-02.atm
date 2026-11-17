@@ -7,7 +7,7 @@ static void res_fin (void* p) {
 }
 ```
 func res (name) {
-    `:value a_nat(strdup(A_STR_OF($name)->s), res_fin, "res")`
+    `:atmos a_nat(strdup(A_STR_OF($name)->s), res_fin, "res")`
 }
 
 ;; a field of a pinned table, with a cycle

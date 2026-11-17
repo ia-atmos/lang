@@ -82,6 +82,12 @@ NatKind nat_kind (const char* s, const char** code) {
     while (nat_id(s+1+n)>0 || (n>0 && s[1+n]=='.' && nat_id(s+2+n)>0)) {
         n += (s[1+n] == '.') ? 1 : nat_id(s+1+n);
     }
+    // `:atmos`: already a value of the language; `:value` is its former
+    // name, to be removed
+    if (n==5 && !strncmp(s+1,"atmos",5)) {
+        *code = s + 1 + n;
+        return NAT_VAL;
+    }
     for (int i=1; TAGS[i]!=NULL; i++) {
         if ((int)strlen(TAGS[i])==n && !strncmp(s+1,TAGS[i],n)) {
             *code = s + 1 + n;

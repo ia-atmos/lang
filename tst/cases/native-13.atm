@@ -14,7 +14,7 @@ static AVal res_new (const char* name, AVal parent) {
 }
 ```
 func layer (name, parent) {
-    `:value res_new(A_STR_OF($name)->s, $parent)`
+    `:atmos res_new(A_STR_OF($name)->s, $parent)`
 }
 
 ;; the child is held by a table that was pinned before the parent
