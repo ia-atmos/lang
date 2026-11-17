@@ -193,3 +193,45 @@ generic `main` calls the first `step` only after `atm_main` returns,
 with the default clock when none is registered. So the trick is built
 in, and a `task main` is not needed for it. Its remaining value is
 tests (item 58): leave it for that discussion.
+
+### No `main` needed for tests either (the author, 2026-11-17)
+
+The game is its own task, and a `test` block runs it. Checked with the
+compiler at `c4b7411`, no change:
+
+```
+task Game () {
+    var n = 0
+    loop {
+        val e = await :key.dn
+        set n = n + 1
+        print("key", e.key, n)
+        until e.key == 'Q'
+    }
+    n
+}
+
+test {
+    pin g = spawn Game()
+    emit(:key.dn [key='A'])
+    emit(:key.dn [key='Q'])
+    assert(g.ret == 2)
+    print("test ok")
+    return 0
+}
+
+print("real run")
+val n = await Game()
+print("score", n)
+```
+
+`atmos -t g.atm` prints `key A 1`, `key Q 2`, `test ok`, exit 0;
+`atmos g.atm` skips the test and runs the game. The `return` in the
+`test` ends the main chunk before the environment ever steps: the test
+block itself is the source of input and time (`emit(:key.dn ...)`,
+`emit(16000)`). So item 58 needs no `task main` and no test mode with
+variables. What is missing is only on the side of the environment: under
+`-t` it should not open the real window, sound, or device at its
+`include`. The reference has `atmos.test`; here there is no such flag
+(the compiler only drops `test` blocks). To ask `ceu-atmos`: a flag
+under `-t`, readable by the environment from Atmos and from C.
