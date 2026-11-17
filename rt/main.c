@@ -53,7 +53,8 @@ static AStatus env_call (int i, const char* name, int* end) {
         return A_OK;
     }
     int base = a_top;
-    AStatus st = a_call(f, base);
+    atm_step_begin();
+    AStatus st = atm_step_end(a_call(f, base));
     if (st == A_OK) {
         *end = (a_top > base) && a_truthy(a_stk[base]);
     }
@@ -105,16 +106,8 @@ int main (int argc, char** argv) {
     }
     st = fail(st);
 
-    // the environments quit in reverse order, also after an error
-    for (int i=atm_nenvs-1; i>=0; i--) {
-        int end;
-        AStatus st2 = env_call(i, "quit", &end);
-        if (st2 != A_OK) {
-            st2 = fail(st2);
-            st = (st == A_OK) ? st2 : st;
-        }
-    }
-
+    // the environments quit in reverse order, also after an error,
+    // inside `atm_quit`, after the values of the program are released
     fflush(stdout);
     atm_quit();
     return (st == A_OK) ? 0 : 1;

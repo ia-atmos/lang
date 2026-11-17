@@ -1395,8 +1395,8 @@ extern AVal atm_g_atmos;
 //     atm_init; atm_main
 //     while alive: each `step()`, in order (true ends the program)
 //     atm_stop
-//     each `quit()`, in reverse, also after an error
-//     atm_quit
+//     atm_quit: the variables of the program are released, then each
+//     `quit()`, in reverse, also after an error
 //
 // With no environment, it lets the time pass by the clock. With one
 // environment with no `step`, it returns after `atm_main`, and the host
@@ -1404,5 +1404,20 @@ extern AVal atm_g_atmos;
 #define ATM_ENVS_MAX 8
 extern AVal atm_envs[ATM_ENVS_MAX];
 extern int  atm_nenvs;
+
+// The `quit` of each environment, in reverse order, called by
+// `atm_quit` (in `atm_free`) after the variables of the program are
+// released, so that a handle that a global holds is closed before its
+// library: a `quit` sees the variables of the program as nil.
+void atm_env_quit (void);
+
+// Around the `step` of an environment: an error of `atm_emit` or
+// `atm_emit_to` from C inside it (a callback of a library, which
+// ignores the status) is kept, the emits that follow fail at once, and
+// `atm_step_end` gives it as the status of the step.
+void    atm_step_begin  (void);
+AStatus atm_step_end    (AStatus st);
+AStatus atm_step_chk    (AStatus st);
+int     atm_step_failed (void);
 
 #endif

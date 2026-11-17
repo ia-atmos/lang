@@ -1,0 +1,6 @@
+callback goes on
+step goes on
+==> ERROR:
+ v  env-05.atm:25 (throw)
+==> boom
+quit

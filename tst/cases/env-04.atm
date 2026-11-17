@@ -1,0 +1,15 @@
+;; the quit of an environment runs after the variables of the program are
+;; released: a handle that a global holds is closed before its library
+```:prelude
+static void h_fin (void* p) {
+    (void) p;
+    printf("close handle\n");
+}
+```
+val h = `:atmos a_nat((void*)1, h_fin, "h")`
+atmos.env([
+    mode = [primary=true],
+    step = func () { true },
+    quit = func () { print("quit library") },
+])
+print("main")

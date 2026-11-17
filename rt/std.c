@@ -633,6 +633,27 @@ static AStatus atmos_env (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
+void atm_env_quit (void) {
+    for (int i=atm_nenvs-1; i>=0; i--) {
+        AVal k = a_strz("quit");
+        AVal f = a_tab_get(A_TAB_OF(atm_envs[i]), k);
+        a_dec(k);
+        if (f.type == A_NIL) {
+            continue;
+        }
+        int base = a_top;
+        AStatus st = a_call(f, base);
+        a_settop(base);
+        if (st != A_OK) {
+            if (st == A_ESCAPE) {
+                st = a_escape_err();
+            }
+            a_error_dump();
+            a_pay_clear();
+        }
+    }
+}
+
 // atmos.next(): microseconds to the nearest timer, or nil.
 static AStatus atmos_next (AFunc* self, int argc, AVal* argv) {
     (void) self;

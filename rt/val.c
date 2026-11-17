@@ -137,6 +137,60 @@ const char* a_error_msg (void) {
     return ERR;
 }
 
+// The trace of an error, set aside while other code runs.
+typedef struct ATrace {
+    int thr, n, more;
+    int calls[TRACE_MAX];
+} ATrace;
+static ATrace STEP_TRACE;
+
+// Errors of `atm_emit` from C during the step of an environment (the
+// callbacks of a library, which ignore the status): the first one is
+// kept, and is the status of the step when it returns.
+static int     STEP_IN  = 0;
+static AStatus STEP_ST  = A_OK;
+static APay    STEP_PAY;
+
+void atm_step_begin (void) {
+    STEP_IN = 1;
+    STEP_ST = A_OK;
+}
+
+AStatus atm_step_end (AStatus st) {
+    STEP_IN = 0;
+    if (STEP_ST == A_OK) {
+        return st;
+    }
+    if (st == A_OK) {
+        a_pay_restore(&STEP_PAY);
+        TRACE_THROW = STEP_TRACE.thr;
+        TRACE_N     = STEP_TRACE.n;
+        TRACE_MORE  = STEP_TRACE.more;
+        memcpy(TRACE_CALLS, STEP_TRACE.calls, sizeof(TRACE_CALLS));
+        st = STEP_ST;
+    } else {
+        a_pay_drop(&STEP_PAY);
+    }
+    STEP_ST = A_OK;
+    return st;
+}
+
+AStatus atm_step_chk (AStatus st) {
+    if (STEP_IN && st!=A_OK && STEP_ST==A_OK) {
+        STEP_ST = st;
+        a_pay_save(&STEP_PAY);
+        STEP_TRACE.thr  = TRACE_THROW;
+        STEP_TRACE.n    = TRACE_N;
+        STEP_TRACE.more = TRACE_MORE;
+        memcpy(STEP_TRACE.calls, TRACE_CALLS, sizeof(TRACE_CALLS));
+    }
+    return st;
+}
+
+int atm_step_failed (void) {
+    return STEP_IN && STEP_ST!=A_OK;
+}
+
 void a_error_dump (void) {
     fflush(stdout);
     fprintf(stderr, "==> ERROR:\n");
@@ -765,6 +819,7 @@ void atm_init (int argc, char** argv) {
 
 void atm_quit (void) {
     a_task_quit();
+    // also calls the `quit` of the environments (`atm_env_quit`)
     atm_free();
     atm_std_quit();
     a_settop(0);

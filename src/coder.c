@@ -2751,6 +2751,9 @@ char* coder_main (Expr* prog, Var** globals, int nglobals) {
     for (int i=nglobals-1; i>=0; i--) {
         buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
     }
+    // the environments close their libraries after the variables that
+    // hold their handles, and before the constants that their code uses
+    buf_add(&c, "    atm_env_quit();\n");
     buf_add(&c, xfmt("    a_clrs(atm_K, %d);\n", KN));
     buf_add(&c, "}\n");
     return c.s;

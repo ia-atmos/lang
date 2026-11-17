@@ -494,6 +494,12 @@ atmos.env([
 After the main chunk, the runtime calls the `step` of each environment, in the
 order they were registered, while the main chunk is pending, and then their
 `quit`, in reverse order, also after an error.
+A `quit` runs after the variables of the program are released, so that a
+handle that a variable holds is closed before its library: a `quit` only
+calls the library, and sees the variables of the program as `nil`.
+An error of an event that C emits inside a `step` (a callback of the library,
+which cannot return a status) is kept: the emits that follow fail at once, and
+the error is raised when the `step` returns.
 The first environment is the *primary*: its `step` may sleep (until input, or
 for `atmos.next()` microseconds, the time to the nearest timer) and emits the
 time, as a number of microseconds.

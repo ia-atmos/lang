@@ -3406,11 +3406,14 @@ AStatus atm_stop (void) {
 }
 
 AStatus atm_emit (AVal evt) {
+    if (atm_step_failed()) {
+        return A_ERROR;
+    }
     if (a_isnum(evt)) {
-        return emit_tick(a_dbl(evt));
+        return atm_step_chk(emit_tick(a_dbl(evt)));
     }
     evt_own(evt);
-    return emit_top(&ROOT.node, evt);
+    return atm_step_chk(emit_top(&ROOT.node, evt));
 }
 
 // The task that holds a node, beyond its pool, and the trail of that
@@ -3424,7 +3427,16 @@ static ATask* node_holder (ANode* n, int* i) {
     return (ATask*) x;
 }
 
+static AStatus emit_to1 (AVal to, AVal evt);
+
 AStatus atm_emit_to (AVal to, AVal evt) {
+    if (atm_step_failed()) {
+        return A_ERROR;
+    }
+    return atm_step_chk(emit_to1(to, evt));
+}
+
+static AStatus emit_to1 (AVal to, AVal evt) {
     if (to.type!=A_XTASK && to.type!=A_TASKS) {
         return a_error("invalid emit : expected task");
     }

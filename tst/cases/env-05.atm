@@ -1,0 +1,27 @@
+;; an error of an emit from C inside a step (a callback of a library,
+;; which ignores the status) is the status of the step
+```:prelude
+static void lib_poll (void) {
+    AVal e = a_strz("go");
+    atm_emit(e);            // the callback ignores the status
+    a_dec(e);
+    printf("callback goes on\n");
+    e = a_strz("go");
+    atm_emit(e);            // fails at once: the step already failed
+    a_dec(e);
+}
+```
+atmos.env([
+    mode = [primary=true],
+    step = func () {
+        `lib_poll();`
+        print("step goes on")
+        false
+    },
+    quit = func () { print("quit") },
+])
+spawn {
+    await :go
+    throw(:boom)
+}
+await(false)
