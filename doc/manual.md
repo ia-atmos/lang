@@ -1479,8 +1479,10 @@ Local : (`val´ | `var` | `pin`) ID* [`=´ Expr+]
 
 A declaration first specifies one of `val`, `var` or `pin` variable modifier.
 A `val` is immutable, while a `var` is mutable.
-A [`pin`](#pin) is immutable and attaches its value to the enclosing block,
-which reclaims the value when it terminates or aborts.
+A [`pin`](#pin) attaches its value to the enclosing block, which reclaims
+the value when it terminates or aborts.
+A `pin` may be assigned a new value, which it owns in turn, and the old one
+is released.
 
 A [dynamic value](#pin) that was just created must be declared with `pin`:
 a `val` or a `var` only refers to a value that already belongs to a block.
@@ -1552,7 +1554,7 @@ A fresh value becomes pinned in two ways:
 
 The pin is deep: the fresh values that the value holds are pinned with it.
 
-A `val`, a `var`, or an assignment to a variable does not own a value:
+A `val`, a `var`, or an assignment to a `var` does not own a value:
 it only refers to a value that is already pinned.
 Therefore, the first declaration of a dynamic value is always a `pin`, and
 the error `invalid assignment : expected pinned value` is raised otherwise.
@@ -1566,6 +1568,39 @@ If it does not, the value stays fresh, and is reclaimed when the last
 reference to it goes away, which is the end of the function or task that
 received it, at the latest.
 The `pin` makes it explicit, and also reclaims cycles.
+
+A place that owns its value may be assigned a fresh one: a variable
+declared with `pin`, a field of a pinned table, and the `pub` of a pinned
+task.
+The new value is pinned in the block of the place, deep, as by a
+declaration.
+The old value leaves the place, and is finalized when its last reference
+goes: at once, if the place held the only one, or later, if an alias or a
+task still refers to it, and at the latest at the end of the block of the
+place, which is where a cycle is broken.
+Until then it stays confined to that block.
+Therefore, a value lives while something refers to it, and no cycle leaks:
+
+```
+do {
+    pin acc = [0, 0]
+    loop {
+        <...>
+        set acc = [0, 0]        ;; the old table is released at once
+    }
+}
+
+pin h = []
+set h.a = [0]
+set h.a.self = h.a              ;; a cycle
+set h.a = [1]                   ;; reclaimed at the end of the block of `h`
+```
+
+A value that already has an owner cannot be assigned to a `pin`, which would
+then own it twice: `invalid assignment : unexpected pinned value`.
+For a native value, the moment it is closed is then the moment its last
+holder lets it go, which is deterministic but not a point of the text, as
+the end of a block is.
 
 The declaration of a [prototype](#prototypes) pins it: `func f () {...}`,
 `task T () {...}`, and the assignment of a function to a variable, as in

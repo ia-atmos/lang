@@ -66,7 +66,7 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
 |--------|-----|-----|
 | `val M = [...]` (the table of a module or of an environment) | `pin M = [...]` | A fresh value is declared with `pin` |
 | `val rect = [...]` then `set pub = [rect=rect]` in a task | `set pub = [rect=[...]]` then `val rect = pub.rect` | The `pub` is visible outside the task: it cannot hold a value pinned in its body. The task owns what it creates in the `pub` |
-| `var acc = [0,0]` ... `set acc = [0,0]` | `pin acc = [0,0]` ... `set acc@0 = 0 ; set acc@1 = 0`, or keep it as a field of a pinned table (`set st.acc = [0,0]`) | A variable does not own: it cannot receive a fresh value |
+| `var acc = [0,0]` ... `set acc = [0,0]` (since 2026-11-17: `pin acc = [0,0]` ... `set acc = [0,0]`) | `pin acc = [0,0]` ... `set acc@0 = 0 ; set acc@1 = 0`, or keep it as a field of a pinned table (`set st.acc = [0,0]`) | A variable does not own: it cannot receive a fresh value |
 | `var cb` ... `set cb = make()` (a fresh table or closure from a call) | a field of a pinned table: `pin st = [] ; set st.cb = make()` | The same. `set f = func () {...}` is accepted: it is the declaration of a prototype |
 | `set list@+ = func () { set k = k+1 }` with `k` a `var` of an inner block | the block gives the closure as its result: `set list@+ = do { var k = 0 ; func () {...} }` | A closure that captures a variable belongs to the block of the variable |
 | `func f () {...}` inside a block, capturing a local of the block | `val func f () {...}` | The first form declares a variable of the program, which outlives the block |
