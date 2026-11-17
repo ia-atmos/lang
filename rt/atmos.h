@@ -1082,7 +1082,9 @@ static inline AStatus a_chk_store (AVal v, int d) {
 
 // A value is stored in the holder `h`, which only accepts a value of
 // its own block or of an outer one: of its pin block, or of its floor
-// while it is unpinned. An unpinned value stored in a pinned holder is pinned
+// while it is unpinned. An unpinned holder that only one reference
+// (its name) refers to accepts a value of an inner block, and its floor
+// rises there, up to its ceiling. An unpinned value stored in a pinned holder is pinned
 // with it, in the same block, along with the unpinned values it holds.
 AStatus a_hold (AObj* h, AVal v);
 
@@ -1107,7 +1109,8 @@ static inline void a_born (AVal x, AVal v) {
 // constructor: an unpinned table takes its floor from the key and the
 // value, so that it may hold values that are pinned in the program
 // (an event with the handle of a control). A plain `a_setindex` into
-// an unpinned table refuses them.
+// an unpinned table accepts them only while nothing else refers to the
+// table (`a_hold`).
 static inline AStatus a_tab_field (AVal t, AVal k, AVal v) {
     a_born(t, k);
     a_born(t, v);

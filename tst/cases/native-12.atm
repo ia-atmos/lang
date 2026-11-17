@@ -1,5 +1,6 @@
 ;; An event that C builds may hold a value that is pinned in the
-;; program: its fields are those of a constructor.
+;; program: its fields are those of a constructor (`a_tab_field`), and a
+;; plain `a_setindex` works too while only C refers to the event.
 ```:prelude
 static AStatus evt_emit (AVal h, int born) {
     AVal evt = a_tab();

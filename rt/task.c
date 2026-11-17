@@ -2276,8 +2276,18 @@ static AStatus adopt_err (const char* what) {
 }
 
 AStatus a_hold (AObj* h, AVal v) {
-    if (a_pdepth(v) > (int)h->depth) {
-        return a_err_pinned(v);
+    int p = a_pdepth(v);
+    if (p > (int)h->depth) {
+        // An unpinned holder that only its name refers to may receive a
+        // value of an inner block: its floor rises there, up to its
+        // ceiling. With another reference, a value that holds it took
+        // the old floor at its birth, and could leave with it.
+        if (!h->pinned && h->rc==1 && (h->ceil==0 || p<=(int)h->ceil)) {
+            h->depth = p;
+            h->lin   = v.u.o->lin;
+        } else {
+            return a_err_pinned(v);
+        }
     }
     if (h->pinned) {
         if (!adopt_ok(v, h->depth, 0)) {

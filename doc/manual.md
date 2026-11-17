@@ -1732,8 +1732,27 @@ pin dlg = <...>
 await :close [h=dlg]        ;; the pattern holds `dlg`, with no pin
 ```
 
-The floor is set when the value is born: a value that is stored later in a
-unpinned value must belong to the floor, or to a block that encloses it.
+The floor is set when the value is born.
+A value that is stored later in an unpinned value must belong to the floor,
+or to a block that encloses it, with one exception: an unpinned value that
+only its name refers to may receive a value of an inner block, and its floor
+rises there, up to the block of its name.
+So a function may build a list of values pinned elsewhere, in a loop, and
+give it away:
+
+```
+pin G = [list = [...]]
+func get () {
+    val out = []
+    loop _, o in G.list {
+        set out@+ = o       ;; the floor of `out` rises to the block of `G`
+    }
+    out
+}
+```
+
+If another value already refers to it, the store is an `invalid escape`:
+that value took the old floor when it was born, and could leave with it.
 
 A pinned value never leaves its block: not as the final value of the
 block, nor through a `return`, `break`, or `escape`, which raise

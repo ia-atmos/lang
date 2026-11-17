@@ -1,0 +1,42 @@
+;; An unpinned value that only its name refers to may receive a value
+;; pinned in an inner block: its floor rises there, up to its ceiling.
+pin G = [ list = [ [x=1], [x=2] ] ]
+func get () {
+    val out = []
+    loop _, o in G.list {
+        set out@+ = o           ;; the floor of `out` rises to the block of G
+    }
+    out                         ;; and it leaves the function
+}
+task T () {
+    loop _, x in get() {
+        print(x.x)
+    }
+}
+pin t = spawn T()
+
+;; it still cannot leave the block of what it holds
+func bad () {
+    pin o = [3]
+    val out = []
+    set out@+ = o
+    out
+}
+print(catch true { bad() })
+
+;; nor rise above the block of its name
+val top = []
+do {
+    pin o = [4]
+    print(catch true { set top@+ = o })
+}
+
+;; nor rise when another value refers to it, which took its old floor
+do {
+    pin o = [5]
+    val a = []
+    val b = [a]
+    print(catch true { set a@+ = o })
+    val c = []
+    print(catch true { set c@+ = o }, #c)   ;; ok: only `c` refers to it
+}
