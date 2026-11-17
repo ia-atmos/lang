@@ -26,7 +26,7 @@ by that session.
    of SNKRX in the case studies is still a guess (item B1).
 
 4. **The cost of the migration under the current rules.** The figure
-   of 230 of 830 tests is from the first rules. Names may now hold fresh
+   of 230 of 830 tests is from the first rules. Names may now hold unpinned
    values and owned places may be reassigned (2026-11-17), so a new
    count is needed for Section 9.
 
@@ -41,5 +41,4 @@ by that session.
    included recompilation in every run, so its numbers are not cited.
 2. **Related work: dyn-lex.** Read its manual (doc/manual.md) and
    runtime (src/main/kotlin/C.kt) for the side-by-side with the rules.
-
-1. Fill the sections with text, after the author approves the outline.
+3. Fill the sections with text, after the author approves the outline.
