@@ -37,6 +37,18 @@ One at a time, each with the recommended option.
   4. Each environment re-invents carrying the error of a C callback out of
      its step. Sent to `ceu-atmos`: `atm_emit` records the first error and
      the runtime raises it after the step.
+  Added by `iup` (same day; it confirms 1 and 4):
+  5. When an environment starts is implicit (`iup.atm` opens the library
+     in a top-level native at its include). Recommended: the convention
+     "the include is the start", written in the manual.
+  6. The primary must bound its wait (at `atmos.next()` or a short tick),
+     or it starves the secondaries: a line for the manual. Sent to
+     `ceu-atmos`.
+  7. `mode.current` is awkward to reach from the step (the table must be
+     unpinned and named). Sent to `ceu-atmos`: pass the mode to `step` as
+     its argument.
+  8. The secondary mode of `iup.atm` has no test (no primary runs before
+     IUP).
 
 - (56) Looks done: `env-ray` already renamed `raylib.atm` to `ray.atm`,
   the table to `ray`, and dropped the prefix. To confirm with the `raylib`
