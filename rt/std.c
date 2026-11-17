@@ -547,7 +547,7 @@ static AStatus x_lt (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
-// X.xin(v, t): membership
+// X.in(v, t): membership (also `X.xin`, its former name)
 static AStatus x_xin (AFunc* self, int argc, AVal* argv) {
     (void) self;
     AVal ret = a_nil();
@@ -558,7 +558,7 @@ static AStatus x_xin (AFunc* self, int argc, AVal* argv) {
     return st;
 }
 
-// X.nin(v, t): the negation of X.xin
+// X.nin(v, t): the negation of X.in
 static AStatus x_nin (AFunc* self, int argc, AVal* argv) {
     (void) self;
     AVal ret = a_nil();
@@ -643,7 +643,8 @@ void atm_std_init (void) {
     field(atm_g_X, "lte",      x_lte);
     field(atm_g_X, "gt",       x_gt);
     field(atm_g_X, "lt",       x_lt);
-    field(atm_g_X, "xin",      x_xin);
+    field(atm_g_X, "in",       x_xin);
+    field(atm_g_X, "xin",      x_xin);   // former name, to be removed
     field(atm_g_X, "nin",      x_nin);
 
     atm_g_math = a_tab();

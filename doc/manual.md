@@ -3395,7 +3395,8 @@ tables recursively.
 - `X.copy(v)`: deep copy of `v`
 - `X.load(s)`: reads a value written as data
 - `X.dump(v)`: writes a value as data
-- `X.xin(v, t)`, `X.nin(v, t)`: membership ("in" and "not in")
+- `X.in(v, t)`, `X.nin(v, t)`: membership ("in" and "not in"); `X.xin` is a
+  former name of `X.in`, to be removed
 - `X.gte(a, b)`, `X.lte(a, b)`: deep ordering ("sup" and "sub")
 - `X.gt(a, b)`, `X.lt(a, b)`: strict deep ordering
 - `X.eq(a, b)`, `X.neq(a, b)`: deep equality

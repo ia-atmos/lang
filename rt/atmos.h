@@ -1260,7 +1260,7 @@ static inline int a_deq (AVal a, AVal b) {
     return a_gte(a, b) && a_gte(b, a);
 }
 
-// X.xin(v, t): `v` is a value or a non-numeric key of a table, a task
+// X.in(v, t): `v` is a value or a non-numeric key of a table, a task
 // of a pool, or a number in a range.
 AStatus a_in (AVal* dst, AVal v, AVal t);
 

@@ -1,0 +1,4 @@
+==> ERROR:
+ |  in-err-01.atm:1 (call)
+ v  in-err-01.atm:1 (throw)
+==> invalid argument to 'in' : unexpected nil

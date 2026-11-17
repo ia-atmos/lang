@@ -92,7 +92,7 @@ AStatus a_in (AVal* dst, AVal v, AVal t) {
         int64_t i;
         ret = a_isnum(v) && a_toint(v,&i) && i>=0 && a_num_cmp(v,t)==-1;
     } else {
-        return a_error("invalid argument to 'xin' : unexpected %s",
+        return a_error("invalid argument to 'in' : unexpected %s",
             a_typename(t));
     }
     a_set(dst, a_bool(ret));
