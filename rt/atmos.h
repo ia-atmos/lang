@@ -992,14 +992,17 @@ AStatus a_pin_set (AVal* slot, AVal v, int d);
 // The value `old`, owned by a place of the block `d` (a pin, a field of
 // a pinned table, the pub of a pinned task), left that place: the
 // reference passes to the runtime. It is finalized when its last other
-// reference goes (at once, if there is none), and at the latest at the
-// end of its block, where a cycle is broken. Until then it stays
+// reference goes (at once, if there is none), and at the latest when the
+// place `key` ends, where a cycle is broken. Until then it stays
 // confined to the block. A retired value has `pinned` 4.
-void a_retire (AVal old, int d);
+void a_retire (AVal old, int d, const void* key);
 
-// The end of a block: finalizes what was retired in it and is still
-// alive, in practice cycles.
-void a_retired_end (void);
+// The place `key` ends (a slot of a `pin`, a table, a task; NULL for
+// all): what left it and is still alive, in practice a cycle, is
+// finalized. And a holder freed before its block ends.
+extern int a_nrets;
+void a_ret_end (const void* key);
+void a_ret_forget (AObj* o);
 
 // x = v, in a `where`: pins the value if it is fresh.
 static inline AStatus a_pin_opt (AVal* slot) {

@@ -1964,7 +1964,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
     if (old.type>=A_TAB && old.u.o->pinned==2 && (int)old.u.o->depth==d &&
         !(old.type==v.type && old.u.o==v.u.o))
     {
-        a_retire(old, d);
+        a_retire(old, d, &t->node.hdr);
     } else {
         a_dec(old);
     }
@@ -2559,15 +2559,29 @@ static int node_dropped (ANode* n) {
 // RETIRE
 
 // The values that left the place that owned them and are still alive:
-// the list holds one reference to each.
-typedef struct { AObj* o; int d; } ARet;
+// the list holds one reference to each. The key is the place: the slot
+// of a `pin`, or the table or task whose field or `pub` it left. They
+// are finalized when the place is: at the end of its block.
+typedef struct { AObj* o; int d; const void* key; } ARet;
 static ARet* RETS  = NULL;
-static int   NRETS = 0;
 static int   CRETS = 0;
+int a_nrets = 0;
+#define NRETS a_nrets
 
 static void ret_release (AObj* o);
 
-void a_retire (AVal old, int d) {
+static void ret_add (AObj* o, int d, const void* key) {
+    if (NRETS == CRETS) {
+        CRETS = (CRETS == 0) ? 8 : CRETS*2;
+        RETS  = realloc(RETS, CRETS * sizeof(ARet));
+    }
+    RETS[NRETS].o   = o;
+    RETS[NRETS].d   = d;
+    RETS[NRETS].key = key;
+    NRETS++;
+}
+
+void a_retire (AVal old, int d, const void* key) {
     if (old.type < A_TAB) {
         a_dec(old);
         return;
@@ -2597,27 +2611,23 @@ void a_retire (AVal old, int d) {
     }
     o->pinned = 4;
     o->depth  = d;
-    if (NRETS == CRETS) {
-        CRETS = (CRETS == 0) ? 8 : CRETS*2;
-        RETS  = realloc(RETS, CRETS * sizeof(ARet));
-    }
-    RETS[NRETS].o = o;
-    RETS[NRETS].d = d;
-    NRETS++;
+    ret_add(o, d, key);
     // nobody else refers to it: at once
     if (o->rc == 1) {
         ret_release(o);
     }
 }
 
-// The values pinned with a retired one (by it, in its block) are
-// retired with it, so that a cycle among them is broken at the end of
-// the block at the latest.
-static void ret_children (AVal v, int d) {
+// The values pinned with a retired one, and that only it refers to, are
+// retired with it, so that a cycle among them is broken when the place
+// ends at the latest. One that something else refers to (another holder
+// of the block) is left alone.
+static void ret_children (AVal v, int d, const void* key) {
     #define RET_KID(x) \
         if ((x).type>=A_TAB && (x).type!=A_XTASK && (x).type!=A_TASKS && \
-            (x).u.o->pinned==2 && (int)(x).u.o->depth==d) { \
-            a_inc(x); a_retire(x, d); \
+            (x).u.o->pinned==2 && (int)(x).u.o->depth==d && \
+            (x).u.o->rc==1) { \
+            a_inc(x); a_retire(x, d, key); \
         }
     if (v.type == A_TAB) {
         uint32_t pos = 0;
@@ -2640,45 +2650,70 @@ static void ret_children (AVal v, int d) {
     #undef RET_KID
 }
 
-static void ret_remove (AObj* o) {
+static const void* ret_remove (AObj* o) {
     for (int i=NRETS-1; i>=0; i--) {
         if (RETS[i].o == o) {
+            const void* key = RETS[i].key;
             RETS[i] = RETS[--NRETS];
-            return;
+            return key;
         }
     }
+    return NULL;
 }
 
 // The list has the last reference: the value goes now.
 static void ret_release (AObj* o) {
     AVal v = a_obj(o);
     int d = o->depth;
-    ret_remove(o);
+    const void* key = ret_remove(o);
     o->pinned = 0;
     o->depth  = 0;
-    ret_children(v, d);
+    ret_children(v, d, key);
     a_dec(v);
 }
 
-void a_retired_end (void) {
-    // the latest first; a release may retire more
+// The place `key` ends (NULL: all of them): what left it and is still
+// alive, in practice a cycle, is finalized as a pin of its block.
+void a_ret_end (const void* key) {
     for (int i=NRETS-1; i>=0; i--) {
         if (i >= NRETS) {
+            i = NRETS;
+            continue;
+        }
+        if (key!=NULL && RETS[i].key!=key) {
             continue;
         }
         ARet r = RETS[i];
-        if (r.d < a_depth) {
-            continue;
-        }
         RETS[i] = RETS[--NRETS];
         AVal v = a_obj(r.o);
         if (r.o->pinned==4 && (int)r.o->depth==r.d) {
-            // still alive: other references remain, in practice a
-            // cycle; it is finalized as the pins of the block are
             r.o->pinned = 2;
             clr_deep(v, r.d);
         }
         a_dec(v);
+        // the list may have changed
+        i = NRETS;
+    }
+}
+
+// The holder `o` is freed before its block ends: what left it and is
+// still referred to is no longer owned by a place, and stays confined
+// to its block by its floor.
+void a_ret_forget (AObj* o) {
+    for (int i=NRETS-1; i>=0; i--) {
+        if (i >= NRETS) {
+            i = NRETS;
+            continue;
+        }
+        if (RETS[i].key != o) {
+            continue;
+        }
+        ARet r = RETS[i];
+        RETS[i] = RETS[--NRETS];
+        if (r.o->pinned == 4) {
+            r.o->pinned = 0;
+        }
+        a_dec(a_obj(r.o));
         i = NRETS;
     }
 }
@@ -2707,7 +2742,7 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
     a_inc(v);
     *slot = v;
     if (old.type>=A_TAB && old.u.o->pinned==1 && (int)old.u.o->depth==d) {
-        a_retire(old, d);
+        a_retire(old, d, slot);
     } else {
         a_dec(old);
     }
@@ -2812,6 +2847,9 @@ static void clr_deep (AVal v, uint32_t d);
 
 // What a task that ended holds: its `pub` and its final value.
 static void clr_task (ATask* t, uint32_t d) {
+    if (NRETS > 0) {
+        a_ret_end(&t->node.hdr);
+    }
     if (clr_held(t->pub, d)) {
         clr_deep(t->pub, d);
     }
@@ -2824,6 +2862,9 @@ static void clr_task (ATask* t, uint32_t d) {
 
 static void clr_deep (AVal v, uint32_t d) {
     AObj* o = v.u.o;
+    if (NRETS > 0) {
+        a_ret_end(o);
+    }
     // each value once: what is left of data is fresh, and a task or
     // pool stays as finalized (3), not to be pinned again
     if (v.type==A_XTASK || v.type==A_TASKS) {
@@ -2904,6 +2945,9 @@ static void clr_deep (AVal v, uint32_t d) {
 }
 
 void a_pin_clr (AVal* slot) {
+    if (NRETS > 0) {
+        a_ret_end(slot);
+    }
     AVal v = *slot;
     // only what is still pinned in this very block
     if (v.type<A_TAB || v.u.o->pinned!=1 || v.u.o->depth!=(uint32_t)a_depth) {
@@ -3279,10 +3323,7 @@ void a_task_quit (void) {
     if (MAIN != NULL) {
         // what it holds may refer to it
         clr_task(MAIN, 0);
-        int dep = a_depth;
-        a_depth = 0;
-        a_retired_end();
-        a_depth = dep;
+        a_ret_end(NULL);
         a_dec(a_obj(&MAIN->node.hdr));
         MAIN = NULL;
         node_sweep(&ROOT.node);
@@ -3296,7 +3337,7 @@ void a_task_quit (void) {
     ADOPT_CAP = 0;
     free(RETS);
     RETS  = NULL;
-    NRETS = 0;
+    a_nrets = 0;
     CRETS = 0;
 }
 

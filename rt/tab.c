@@ -329,7 +329,7 @@ void a_tab_put (ATab* t, AVal k, AVal v) {
         {
             a_inc(old);
             a_tab_set(t, k, v);
-            a_retire(old, h->depth);
+            a_retire(old, h->depth, h);
             return;
         }
     }

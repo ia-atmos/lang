@@ -1,0 +1,21 @@
+;; A value that left a field of a pinned table is finalized when that
+;; table ends, and not when another block at the same depth ends. A
+;; value that something else holds is not finalized with it (Flare).
+task Enemy () {
+    set pub = [powers=[], next=nil]
+    set pub.powers@+ = [id=1]
+    set pub.next = [power=pub.powers@0]
+    set pub.next = nil
+    await(:go)
+    print((pub.powers@0).id)
+}
+task Other () {
+    pin z = []
+    await(:x)
+}
+pin o = spawn Other()
+do {
+    pin e = spawn Enemy()
+    emit(:x)
+    emit(:go)
+}

@@ -965,10 +965,6 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             out(u, "a_pin_clr(&%s);", mine[i].pin);
         }
     }
-    // and so is what left its owner in the block, if still alive
-    if (user) {
-        out(u, "a_retired_end();");
-    }
     u->cleanup = b.cl;
     u->defs  = b.defs;
     u->ndefs = b.ndefs;
