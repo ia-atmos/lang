@@ -28,8 +28,11 @@ Each item has the recommended option.
    Recommended: fix the list now and send it to the port sessions.
 4. **Organization of the paper.** The alternative is in
    `papers/games.md`, under "Alternative organization". The author said
-   "to be defined" on 2026-11-14 and asked to be reminded: bring it up
-   again.
+   "to be defined" on 2026-11-14 and asked to be reminded. Reminded on
+   2026-11-16 and 2026-11-17; on 2026-11-17 he said he still does not
+   know and asked to be reminded in 7 days: a scheduled task fires in
+   this session on 2026-11-24, 12:00 UTC, for this item and for the
+   title and venue of the Pingus paper.
    Recommended: the alternative (patterns as their own section, by
    pattern; case studies by question).
 5. **`env-pico` in the paper.** Not answered yet.
