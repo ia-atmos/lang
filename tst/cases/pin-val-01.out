@@ -1,0 +1,7 @@
+1	4	3
+f	5	6
+T	7
+g	8
+false	invalid pin : table named at pin-val-01.atm:21
+false	invalid assignment : unexpected pinned value : table pinned at pin-val-01.atm:2
+false	invalid escape : table pinned at pin-val-01.atm:28

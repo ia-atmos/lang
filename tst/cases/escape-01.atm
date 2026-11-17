@@ -5,7 +5,7 @@ val x = do :X {
 }
 X.print(x)
 pin y = do :X {
-    pin x = [0]
+    val x = [0]
     escape(:X,x)
 }
 X.print(y)

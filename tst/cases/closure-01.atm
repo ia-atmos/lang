@@ -18,7 +18,7 @@ do {
     val func h () {
         do {
             var b = 20
-            val func hh () {
+            val hh = func () {
                 return(a + b)
             }
             return(hh)

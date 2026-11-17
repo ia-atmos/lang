@@ -1,5 +1,5 @@
         pin x = do :X {
-            pin x = [0]
+            val x = [0]
             escape(:X,x)   ;; escape but no access
         }
         X.print(x)

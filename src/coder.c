@@ -1937,7 +1937,8 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
     for (int i=0; i<npar; i++) {
         out(&u, "a_name(L[%d], D);", pars[i]->slot);
     }
-    gen_block(&u, body, dst_slot("t->ret"));
+    // the value of the main chunk goes nowhere
+    gen_block(&u, body, (p == PROTO_MAIN) ? dst_none() : dst_slot("t->ret"));
 
     const char* sig = xfmt(
         "static AStatus %s (ATask* t, ATrail* tr, AKind k)", name);

@@ -10,8 +10,8 @@ pin c2 = counter()
 print(c1(), c1(), c1(), c2())
 pin mk = func () {
     var v = 0
-    pin get = \{ v }
-    pin set_ = \x { set v = x }
+    val get = \{ v }
+    val set_ = \x { set v = x }
     [get, set_]
 }
 pin p = mk()

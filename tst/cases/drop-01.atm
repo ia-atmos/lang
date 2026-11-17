@@ -46,7 +46,7 @@ do {
 
 ;; a pool
 func pool () {
-    pin ts = tasks()
+    val ts = tasks()
     spawn @ts T(8)
     ts
 }

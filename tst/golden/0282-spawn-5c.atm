@@ -3,7 +3,7 @@
             await(false)
         }
         pin T = task () {
-            pin u = spawn U()
+            val u = spawn U()
             u
         }
         pin t = await T()

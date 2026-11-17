@@ -3,7 +3,7 @@
             val func f () {
                 do {
                     var j = 20
-                    val func g () {
+                    val g = func () {
                         return(i + j)
                     }
                     return(g)

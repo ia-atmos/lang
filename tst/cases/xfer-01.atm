@@ -1,7 +1,7 @@
 ;; transfer of tables on exits
 func mk (n) {
-    pin t = [n]
-    pin u = [t, x=t]
+    val t = [n]
+    val u = [t, x=t]
     set t.up = u
     u
 }
@@ -10,14 +10,14 @@ func chk (v) {
 }
 pin a = mk(1)
 chk(a)
-;; unpinned again: pinned where it arrives, with what it holds
+;; unpinned: pinned where it arrives, with what it holds
 pin box = [a]
 print(#box)
 set a.x.up = nil
 
 ;; block value, and pinned again
 pin b = do {
-    pin t = [2]
+    val t = [2]
     t
 }
 print(b@0)
@@ -26,20 +26,20 @@ print(catch true { set box@+ = b })
 ;; return, break, escape
 func ret () {
     do {
-        pin t = [3]
+        val t = [3]
         return(t)
     }
 }
 pin c = ret()
 set box@+ = c
 pin d = loop {
-    pin t = [4]
+    val t = [4]
     break(t)
 }
 set box@+ = d
 pin e = do :X {
     do {
-        pin t = [5]
+        val t = [5]
         escape(:X, t)
     }
 }
@@ -48,8 +48,8 @@ print(#box, box@1@0, box@2@0, box@3@0)
 
 ;; multiple values
 func two () {
-    pin x = [6]
-    pin y = [7]
+    val x = [6]
+    val y = [7]
     (x, y)
 }
 pin p, q = two()
@@ -65,20 +65,37 @@ val r = do {
     k
 }
 print(r == k, catch true { set box@+ = r })
-;; only what is pinned inside is unpinned
+;; a value of the block that holds one pinned outside
 pin s = do {
-    pin z = [10]
-    set z.k = k
+    val z = [10, k=k]
     z
 }
 print(s@0, s.k == k, catch true { set box@+ = s })
 ;; and it may be pinned again, in a block inside
 do {
     pin w = do {
-        pin z = [11]
-        set z.k = k
+        val z = [11, k=k]
         z
     }
     print(w@0, w.k == k)
 }
 print(#k, #box)
+
+;; a pinned value never leaves its block, not even as its result
+print(catch true {
+    val x = do {
+        pin t = [12]
+        t
+    }
+})
+func pinned () {
+    pin t = [13]
+    return(t)
+}
+print(catch true { pinned() })
+print(catch true {
+    val x = do {
+        pin t = [14]
+        [t]
+    }
+})

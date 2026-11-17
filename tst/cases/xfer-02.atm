@@ -1,6 +1,6 @@
 ;; transfer of closures and tasks
 func counter () {
-    pin st = [n=0]
+    val st = [n=0]
     func () {
         set st.n += 1
         st.n
@@ -16,7 +16,7 @@ task T (v) {
     print(:awake, v)
 }
 func sp (v) {
-    pin t = spawn T(v)
+    val t = spawn T(v)
     t
 }
 ;; a name holds it, and it is aborted at the end of the block of the name
@@ -29,7 +29,7 @@ do {
 }
 print(:3)
 func pool () {
-    pin ts = tasks()
+    val ts = tasks()
     spawn @ts T(:c)
     spawn @ts T(:d)
     ts
@@ -42,15 +42,15 @@ print(:4)
 ;; a task is confined to its pinned arguments
 func bad () {
     pin a = [1]
-    pin t = spawn T(a@0)
-    pin u = spawn (task (v) { await(false) }) (a)
+    val t = spawn T(a@0)
+    val u = spawn (task (v) { await(false) }) (a)
     (t, u)
 }
 print(catch true { pin t = bad() })
 func bad2 () {
     pin a = [1]
     pin U = task () { await(false) ; a }
-    pin u = spawn U()
+    val u = spawn U()
     u
 }
 print(catch true { pin t = bad2() })
@@ -65,8 +65,8 @@ print(atmos.status(dn))
 print(:5)
 ;; tasks held by data leave with it, and are pinned with it again
 func held () {
-    pin t = spawn T(:e)
-    pin r = [t]
+    val t = spawn T(:e)
+    val r = [t]
     r
 }
 do {
@@ -77,14 +77,14 @@ print(:6)
 ;; but not a task of a pool that stays
 func held2 () {
     pin ts = tasks()
-    pin r = [spawn @ts T(:f)]
+    val r = [spawn @ts T(:f)]
     r
 }
 print(catch true { pin h = held2() })
 ;; unless the pool leaves too
 func held3 () {
-    pin ts = tasks()
-    pin r = [ts, spawn @ts T(:g)]
+    val ts = tasks()
+    val r = [ts, spawn @ts T(:g)]
     r
 }
 do {
@@ -94,7 +94,7 @@ do {
 print(:7)
 ;; a pool held by data
 func held4 () {
-    pin r = [ts=tasks()]
+    val r = [ts=tasks()]
     spawn @(r.ts) T(:h)
     r
 }

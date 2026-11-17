@@ -2325,9 +2325,7 @@ AStatus a_pin (AVal* slot) {
         return A_OK;
     }
     // taking the running task or an ancestor would abort upwards
-    if ((v.type==A_XTASK || v.type==A_TASKS) && !v.u.o->pinned &&
-        is_up((ANode*)v.u.o))
-    {
+    if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
         return a_error("invalid assignment : unexpected parent task");
     }
     if (v.u.o->pinned) {
@@ -2403,7 +2401,13 @@ static int xfer_mark (AVal v, int d) {
         if (o->pinned && (int)o->depth<=d) {
             return o->depth;
         }
-        // unpinned, or pinned in the block
+        // a pinned value never leaves its block
+        if (live && o->pinned) {
+            XFER_OK  = 0;
+            XFER_BAD = v;
+            return 0;
+        }
+        // unpinned, or terminated
         if (live && t->mindepth>d) {
             XFER_OK  = 0;
             XFER_BAD = v;
@@ -2425,6 +2429,13 @@ static int xfer_mark (AVal v, int d) {
     if ((int)o->depth <= d) {
         // it stays: pinned outside, or unpinned with a floor outside
         return o->depth;
+    }
+    // a pinned value never leaves its block, except a captured
+    // variable, with the closure that leaves
+    if (o->pinned && v.type!=A_BOX) {
+        XFER_OK  = 0;
+        XFER_BAD = v;
+        return 0;
     }
     o->depth = XFER;
     int m = 0;

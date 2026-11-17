@@ -26,7 +26,7 @@ do {
 }
 ;; a returned file is transferred
 func open () {
-    pin f = io.open(path)
+    val f = io.open(path)
     io.read(f)
     f
 }

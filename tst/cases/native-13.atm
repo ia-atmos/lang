@@ -43,8 +43,8 @@ print(:3)
 
 ;; the child leaves the block with its parent
 func mk () {
-    pin p = layer("p4", nil)
-    pin c = layer("c4", p)
+    val p = layer("p4", nil)
+    val c = layer("c4", p)
     c
 }
 do {

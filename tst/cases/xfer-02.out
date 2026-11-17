@@ -11,8 +11,8 @@ dead	c
 dead	d
 4
 dead	1
-false	invalid escape : task pinned at xfer-02.atm:46
-false	invalid escape : task pinned at xfer-02.atm:53
+false	invalid escape : task pinned at xfer-02.atm:44
+false	invalid escape : task pinned at xfer-02.atm:52
 dead
 5
 1	suspended

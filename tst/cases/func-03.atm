@@ -8,7 +8,7 @@ func f (v) {
 X.print(f(2))
 func g (v) {
     if v > 0 {
-        pin x = g(v - 1)
+        val x = g(v - 1)
         [x]
     } else {
         0

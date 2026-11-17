@@ -13,15 +13,14 @@ func outer (k) {
 print(outer(:a), outer(:b))
 
 ;; a closure inside it captures it
-func mk (k) {
+func mk (k, n) {
     val func f (n) {
         pin g = func () { f(n-1) }
         if n == 0 => k => g()
     }
-    f
+    f(n)
 }
-pin h = mk(:deep)
-print(h(4))
+print(mk(:deep, 4))
 
 ;; with a pinned capture
 do {

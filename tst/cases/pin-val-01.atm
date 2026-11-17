@@ -1,0 +1,31 @@
+;; pin val, pin var, and a bare pin, which is a pin val
+pin val a = [1]
+pin var b = [2]
+pin c = [3]
+set b = [4]
+print(a@0, b@0, c@0)
+
+;; a parameter with pin adopts its argument: the body owns it
+func f (pin x, y) {
+    print(:f, x@0, y)
+}
+f([5], 6)
+task T (pin t) {
+    print(:T, t@0)
+}
+pin tt = spawn T([7])
+val g = \(pin z) { print(:g, z@0) }
+g([8])
+
+;; a named argument cannot be adopted inside the function
+val n = [9]
+print(catch true { f(n, 0) })
+
+;; nor one that already has an owner
+print(catch true { f(a, 0) })
+
+;; and the body does not give it away
+func h (pin x) {
+    x
+}
+print(catch true { h([10]) })

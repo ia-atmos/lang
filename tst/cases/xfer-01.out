@@ -8,3 +8,6 @@ true	true
 10	true	true
 11	true
 1	9
+false	invalid escape : table pinned at xfer-01.atm:87
+false	invalid escape : table pinned at xfer-01.atm:92
+false	invalid escape : table pinned at xfer-01.atm:98
