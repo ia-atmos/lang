@@ -1,0 +1,29 @@
+;; a `par :any` gives its destination only the values it takes: those it
+;; discards need not leave the block (here, the task and the pool pinned
+;; in the branch, which `await :any` gives after the value)
+task Item (i) {
+    await :go
+    i
+}
+val e = par :any {
+    pin vis = tasks()
+    spawn @vis Item(0)
+    spawn @vis Item(1)
+    await :any vis
+} with {
+    emit :go
+    await(false)
+}
+print(:e, e)
+
+;; but a destination that takes them all refuses them
+print(catch true {
+    val a, b, c = par :any {
+        pin vis = tasks()
+        spawn @vis Item(2)
+        await :any vis
+    } with {
+        emit :go
+        await(false)
+    }
+})
