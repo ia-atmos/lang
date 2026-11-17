@@ -1,4 +1,4 @@
-;; A fresh task that is dropped is aborted at once: one that nobody
+;; An unpinned task that is dropped is aborted at once: one that nobody
 ;; pinned and that no value refers to any longer.
 task T (id) {
     defer { print(:end, id) }
@@ -23,7 +23,7 @@ func ign (t) { nil }
 ign(mk(3))
 print(:c)
 
-;; a fresh table that holds it
+;; an unpinned table that holds it
 func tab (id) {
     [mk(id)]
 }

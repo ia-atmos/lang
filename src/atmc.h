@@ -248,7 +248,7 @@ struct Expr {
         struct { List dcls; Expr* e; }                  where;
         // tk is val, var, or pin
         // rec: `val func f`, whose body sees `f`
-        // opt: of a `where`, which pins a value that is fresh
+        // opt: of a `where`, which pins a value that is unpinned
         struct { int n; Tk* ids; Expr* set; int rec; int opt; } dcl;
         // proto: `func f () {}` declares `f` if it is unknown
         // op: binary operator of a compound assignment, or NULL

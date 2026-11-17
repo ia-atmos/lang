@@ -1,4 +1,4 @@
-;; a fresh task that is dropped is aborted at once; one that is still
+;; an unpinned task that is dropped is aborted at once; one that is still
 ;; referred to, and confined to a block, ends with the block
 task T (id, v) {
     defer { print(:dead, id, v@0) }
@@ -36,7 +36,7 @@ do {
 print(:4)
 ;; with no pinned argument either
 sp(:e, [5])
-;; one that is still referred to, by a fresh table that is the
+;; one that is still referred to, by an unpinned table that is the
 ;; parameter of another task: it ends with the block of the values it
 ;; is confined to
 task K (keep) {

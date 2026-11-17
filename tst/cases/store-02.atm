@@ -15,7 +15,7 @@ do {
 }
 pin u = []
 print(catch true { set u.a = a })
-;; a fresh table is born with its floor in the block of what it holds
+;; an unpinned table is born with its floor in the block of what it holds
 print(catch true { [a] })
 print(catch true { [x=a] })
 print(catch true { [1, (a,b)] })

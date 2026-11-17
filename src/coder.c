@@ -1055,7 +1055,7 @@ static void gen_block_x (Unit* u, List* es, Dst d, Hnd h) {
         u->lin = lin_of(tk);
         gen(u, es->v[i], (i == es->n-1) ? d : dst_none());
         if (i < es->n-1) {
-            // a fresh task that the statement dropped is aborted
+            // an unpinned task that the statement dropped is aborted
             out(u, "if (a_ndrop && (st = a_drop_flush(A_OK)) != A_OK) "
                    "goto CL_%d;", u->cleanup);
         }
@@ -1145,7 +1145,7 @@ static void gen_where (Unit* u, Expr* e, Dst d) {
 // DECLARATIONS AND ASSIGNMENTS
 ///////////////////////////////////////////////////////////////////////////////
 
-// A captured mutable variable gets a fresh box every time its
+// A captured mutable variable gets an unpinned box every time its
 // declaration executes.
 static void gen_boxes (Unit* u, Expr* e) {
     for (int i=0; i<e->u.dcl.n; i++) {
@@ -1176,7 +1176,7 @@ static void gen_dcl_chk (Unit* u, Expr* e) {
             gen_pin(u, v);
         } else {
             // a name: it refers to a value that has an owner, or holds
-            // a fresh one, which gets its ceiling here
+            // an unpinned one, which gets its ceiling here
             out(u, "a_name(%s, %s);", v, var_depth(u, e->vars[i]));
             // a captured variable belongs to the block that declares it
             if (e->vars[i]->boxed) {
@@ -1310,7 +1310,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v, int proto) {
     }
     if (l.e->tag == E_ACC) {
         // a name: it refers to a value that has an owner, or holds a
-        // fresh one, which gets its ceiling in the block of the name
+        // unpinned one, which gets its ceiling in the block of the name
         out(u, "a_name(%s, %s);", v.c, var_depth(u, l.e->var));
         // a pinned value cannot go to a variable that outlives its
         // pin block: a captured variable (which belongs to the block

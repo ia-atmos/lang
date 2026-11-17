@@ -10,7 +10,7 @@ func chk (v) {
 }
 pin a = mk(1)
 chk(a)
-;; fresh again: pinned where it arrives, with what it holds
+;; unpinned again: pinned where it arrives, with what it holds
 pin box = [a]
 print(#box)
 set a.x.up = nil

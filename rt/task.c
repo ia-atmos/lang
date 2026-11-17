@@ -1051,7 +1051,7 @@ static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
         // the task itself: the frame goes, the header stays
         t->status = T_DONE;
         frame_free(t);
-        // its final value is kept by the task: pinned with it, if fresh
+        // its final value is kept by the task: pinned with it, if unpinned
         {
             ANode* o = (t->pool != NULL) ? &t->pool->node : &t->node;
             int d = node_adepth(&t->node);
@@ -1948,7 +1948,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
     if (a_chk_store(v, d) != A_OK) {
         return A_ERROR;
     }
-    // a fresh value is pinned with the task, if it is pinned
+    // an unpinned value is pinned with the task, if it is pinned
     ANode* own = (t->pool != NULL) ? &t->pool->node : &t->node;
     if (own->hdr.pinned) {
         if (!adopt_ok(v, d)) {
@@ -1971,7 +1971,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
     return A_OK;
 }
 
-// A fresh value becomes pinned in the block `d`, along with the fresh
+// An unpinned value becomes pinned in the block `d`, along with the unpinned
 // values it holds: by a declaration (`how` is 1) or by the value that
 // holds it (2).
 static void pin_deep (AVal v, int d, int how) {
@@ -2072,8 +2072,8 @@ AStatus a_nat_holds (AVal nat, AVal v) {
     return A_OK;
 }
 
-// The fresh values that `v` holds, for `f`.
-static void fresh_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
+// The unpinned values that `v` holds, for `f`.
+static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
                         uint32_t lin)
 {
     switch (v.type) {
@@ -2120,7 +2120,7 @@ void a_ceil (AVal v, int d, uint32_t lin) {
     }
     o->ceil = (d < 0xFFFF) ? d : 0xFFFF;
     o->clin = lin;
-    fresh_kids(v, a_ceil, d, lin);
+    unpinned_kids(v, a_ceil, d, lin);
 }
 
 // The names of the block `d` end: what only they held loses that
@@ -2135,7 +2135,7 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
         return;
     }
     o->ceil = 0;
-    fresh_kids(v, ceil_up, d, 0);
+    unpinned_kids(v, ceil_up, d, 0);
 }
 
 void a_unname (AVal* vs, int n, int d) {
@@ -2144,7 +2144,7 @@ void a_unname (AVal* vs, int n, int d) {
     }
 }
 
-// A fresh value, and the fresh values it holds, may be adopted in the
+// An unpinned value, and the unpinned values it holds, may be adopted in the
 // block `d` only if it is their ceiling or an outer block: the names
 // that hold them must not see them finalized.
 static AObj*  ADOPT_BAD = NULL;
@@ -2164,7 +2164,7 @@ static int adopt_ok (AVal v, int d) {
 }
 
 static int adopt_rec (AVal v, int d) {
-    // pinned, or already visited (a cycle among fresh values)
+    // pinned, or already visited (a cycle among unpinned values)
     if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
         return 1;
     }
@@ -2255,7 +2255,7 @@ void a_func_scope (AVal f) {
             lin = fn->caps[i].u.o->lin;
         }
     }
-    // fresh, with its floor at the deepest block of its captures
+    // unpinned, with its floor at the deepest block of its captures
     fn->hdr.depth = d;
     fn->hdr.lin   = lin;
 }
@@ -2264,7 +2264,7 @@ int a_pdepth (AVal v) {
     if (v.type < A_TAB) {
         return 0;
     }
-    // the block of a pinned value, or the floor of a fresh one
+    // the block of a pinned value, or the floor of an unpinned one
     int d = (int) v.u.o->depth;
     if (v.type == A_XTASK) {
         ATask* t = A_TASK_OF(v);
@@ -2276,7 +2276,7 @@ int a_pdepth (AVal v) {
         if (t->pool != NULL) {
             d = node_adepth(&t->pool->node);
         } else if (!v.u.o->pinned) {
-            // A fresh task has its floor from birth: the outermost
+            // An unpinned task has its floor from birth: the outermost
             // block of the trail that spawned it, which aborts it at
             // its end if nobody pins it.
             ANode* up = t->node.up;
@@ -2306,7 +2306,7 @@ AStatus a_pin (AVal* slot) {
     if (v.u.o->pinned) {
         return a_err_owned(v);
     }
-    // a fresh value is pinned at its floor or deeper, and at its
+    // an unpinned value is pinned at its floor or deeper, and at its
     // ceiling or outer
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
@@ -2321,11 +2321,11 @@ AStatus a_pin (AVal* slot) {
 // Transfer of `v` out of the block being left, to the block `d` that
 // encloses it. What `v` holds from the block leaves with it: data
 // (tables, closures with their captured variables, natives), tasks,
-// and pools. What leaves becomes fresh in the outer block, which may
+// and pools. What leaves becomes unpinned in the outer block, which may
 // pin it again.
 //
 // A value belongs to the block being left if its depth is greater
-// than `d`: it is pinned there, or it is fresh with its floor there.
+// than `d`: it is pinned there, or it is unpinned with its floor there.
 // It cannot be deeper, since the blocks inside have ended.
 
 #define XFER UINT32_MAX     // depth of a value being transferred
@@ -2376,7 +2376,7 @@ static int xfer_mark (AVal v, int d) {
         if (o->pinned && (int)o->depth<=d) {
             return o->depth;
         }
-        // fresh, or pinned in the block
+        // unpinned, or pinned in the block
         if (live && t->mindepth>d) {
             XFER_OK  = 0;
             XFER_BAD = v;
@@ -2396,7 +2396,7 @@ static int xfer_mark (AVal v, int d) {
         return (mt > m) ? mt : m;
     }
     if ((int)o->depth <= d) {
-        // it stays: pinned outside, or fresh with a floor outside
+        // it stays: pinned outside, or unpinned with a floor outside
         return o->depth;
     }
     o->depth = XFER;
@@ -2438,7 +2438,7 @@ static int xfer_mark (AVal v, int d) {
     return m;
 }
 
-// What was marked either leaves (`ok`), fresh and with its floor at
+// What was marked either leaves (`ok`), unpinned and with its floor at
 // the block `m` of what it still holds, or goes back to the block.
 static void xfer_set (AVal v, int ok, int m, int d) {
     if (v.type<A_TAB || v.u.o->depth!=XFER) {
@@ -2795,7 +2795,7 @@ static void a_drop_quit (void) {
     a_ndrop = 0;
 }
 
-AStatus a_chk_fresh (AVal v) {
+AStatus a_chk_unpinned (AVal v) {
     if (v.type==A_XTASK || v.type==A_TASKS) {
         // the running task and its ancestors outlive the current
         // scope, and a terminated task needs no owner
@@ -2829,7 +2829,7 @@ void a_own (AVal v) {
 }
 
 // An event that is emitted is shared by the tasks that receive it,
-// which may keep it after the emit: no block can own it. A fresh one
+// which may keep it after the emit: no block can own it. An unpinned one
 // becomes owned by the runtime, at its floor, and is released when
 // nobody refers to it.
 static void evt_own (AVal evt) {
@@ -2865,7 +2865,7 @@ static void clr_deep (AVal v, uint32_t d) {
     if (NRETS > 0) {
         a_ret_end(o);
     }
-    // each value once: what is left of data is fresh, and a task or
+    // each value once: what is left of data is unpinned, and a task or
     // pool stays as finalized (3), not to be pinned again
     if (v.type==A_XTASK || v.type==A_TASKS) {
         o->pinned = 3;
@@ -3129,7 +3129,7 @@ int a_conf_end (ATrail* me, AStatus* st, int base) {
                 continue;
             }
         } else {
-            // fresh, and holding values pinned in this block
+            // unpinned, and holding values pinned in this block
             if (c->hdr.type != A_XTASK) {
                 continue;
             }

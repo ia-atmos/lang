@@ -29,7 +29,7 @@ do {
     pin a = layer("a", win)
     ;; it cannot leave the block of its parent
     print(catch true { set out.b = layer("b", inner) })
-    ;; a fresh child is pinned in the block of the parent, or deeper
+    ;; an unpinned child is pinned in the block of the parent, or deeper
     do {
         pin c = layer("c", inner)
         print(:in)

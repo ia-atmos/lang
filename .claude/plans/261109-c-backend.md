@@ -346,7 +346,7 @@ carry a value `v` with depth `p` to a destination at depth `d`:
 
 - **Alias (`p <= d`).** `v` stays pinned where it is.
 - **Transfer (`p > d`).** The pin block of `v` is being exited.
-    - `v` is unpinned and flows out as a fresh value.
+    - `v` is unpinned and flows out as an unpinned value.
     - Pinned values reachable from `v` with depth `> d` are unpinned
       too. The traversal only visits pinned objects, since unpinned
       ones cannot hold pinned ones.
@@ -413,7 +413,7 @@ typedef struct {
 - A captured `val` is copied into `caps`.
 - **Scope inheritance.** A closure that captures pinned values is
   pinned at creation, at the deepest of their depths.
-    - The closure is fresh, so the pin is always valid.
+    - The closure is unpinned, so the pin is always valid.
     - It is then subject to the Stores rules like any pinned value: it
       cannot go to an unpinned table, a captured `var`, a `throw`, or an
       outer variable.

@@ -139,7 +139,7 @@ AStatus a_cat (AVal* dst, AVal a, AVal b) {
             a_typename((a.type==A_TAB || str_a) ? b : a));
     }
 
-    // the result is a fresh table, born with what the operands hold
+    // the result is an unpinned table, born with what the operands hold
     AVal ret = a_tab();
     ATab* t = A_TAB_OF(ret);
     uint32_t pos = 0;

@@ -1,4 +1,4 @@
-;; a fresh value held by a `val` may be pinned at the block of the
+;; an unpinned value held by a `val` may be pinned at the block of the
 ;; name or outside, and not inside
 val a = [1]
 do {

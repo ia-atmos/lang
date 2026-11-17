@@ -1,4 +1,4 @@
-;; The pin is deep: the fresh values that a pinned value holds are
+;; The pin is deep: the unpinned values that a pinned value holds are
 ;; pinned with it, when it is declared and when they are stored.
 
 task T (v) {

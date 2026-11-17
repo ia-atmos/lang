@@ -22,7 +22,7 @@ spawn {
 pin e = :close [h=d]
 emit(e)
 
-;; a fresh constructor may hold it too: it is born with its floor in
+;; an unpinned constructor may hold it too: it is born with its floor in
 ;; the block of what it holds
 print(catch true {
     pin x = :close [h=d]

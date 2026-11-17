@@ -1,4 +1,4 @@
-;; a name holds a fresh value: a shorter-lived owner cannot adopt it,
+;; a name holds an unpinned value: a shorter-lived owner cannot adopt it,
 ;; or the name would see it finalized
 func f (o) {
     do {

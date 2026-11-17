@@ -25,7 +25,7 @@ typedef struct AObj {
     int32_t  rc;
     uint8_t  type;
     uint8_t  pinned;
-    // ceiling of a fresh value: the outermost block of the names that
+    // ceiling of an unpinned value: the outermost block of the names that
     // hold it (0 if none). It may only be pinned there or outside.
     uint16_t ceil;
     uint32_t depth;
@@ -224,7 +224,7 @@ static inline void a_mov (AVal* dst, AVal* src) {
     a_set(dst, v);
 }
 
-// Initializes `n` fresh slots.
+// Initializes `n` new slots.
 static inline void a_nils (AVal* vs, int n) {
     for (int i=0; i<n; i++) {
         vs[i] = a_nil();
@@ -493,7 +493,7 @@ AStatus a_setindex_next (AVal t, AVal v);
 AStatus a_tag (AVal t, AVal tag);
 
 // Moves the top `n` values of the stack into the keys `i, i+1, ...`,
-// in a constructor: a fresh table takes its floor from them, and a
+// in a constructor: an unpinned table takes its floor from them, and a
 // pinned one fails on a value that it cannot hold.
 AStatus a_tab_fill (AVal t, int i, int n);
 
@@ -941,12 +941,12 @@ AVal a_me (void);
 AStatus a_pub (AVal** ref);
 
 // pin x = v: the value becomes owned by the block being executed,
-// which finalizes it on exit, along with the fresh values it holds.
-// It must be fresh: not pinned yet. Numbers, strings, and the like
+// which finalizes it on exit, along with the unpinned values it holds.
+// It must be unpinned: not pinned yet. Numbers, strings, and the like
 // are not pinned.
 //
 // `pinned` in the header of a value:
-//  - 0: fresh, with its floor in `depth` (0 if it has none)
+//  - 0: unpinned, with its floor in `depth` (0 if it has none)
 //  - 1: pinned by a declaration, in the block `depth`
 //  - 2: pinned by the value that holds it, in the block `depth`
 //  - 3: a task or pool that was finalized
@@ -954,22 +954,22 @@ AStatus a_pub (AVal** ref);
 AStatus a_pin (AVal* slot);
 
 // val x = v: a variable only refers to a value that has an owner. A
-// fresh value must be declared with `pin`.
-AStatus a_chk_fresh (AVal v);
+// unpinned value must be declared with `pin`.
+AStatus a_chk_unpinned (AVal v);
 
 static inline AStatus a_chk (AVal v) {
     if (v.type<A_TAB || v.u.o->pinned) {
         return A_OK;
     }
-    return a_chk_fresh(v);
+    return a_chk_unpinned(v);
 }
 
 // A name of the block `d` (a `val`, a `var`, a parameter, a loop
-// variable, a declaration of a `where`) holds `v`. A fresh value gets
+// variable, a declaration of a `where`) holds `v`. An unpinned value gets
 // its ceiling there, if that block is outer than the one it had, and so
-// do the fresh values it holds: it may only be pinned at its ceiling or
-// outside, so that no name sees it finalized. A fresh value stored in a
-// fresh one that has a ceiling gets it too.
+// do the unpinned values it holds: it may only be pinned at its ceiling or
+// outside, so that no name sees it finalized. An unpinned value stored in a
+// unpinned one that has a ceiling gets it too.
 void a_ceil (AVal v, int d, uint32_t lin);
 
 static inline void a_name (AVal v, int d) {
@@ -980,7 +980,7 @@ static inline void a_name (AVal v, int d) {
     }
 }
 
-// The names `vs[0..n)` of the block `d` end: a fresh value that only
+// The names `vs[0..n)` of the block `d` end: an unpinned value that only
 // they held loses its ceiling.
 void a_unname (AVal* vs, int n, int d);
 
@@ -1004,7 +1004,7 @@ extern int a_nrets;
 void a_ret_end (const void* key);
 void a_ret_forget (AObj* o);
 
-// x = v, in a `where`: pins the value if it is fresh.
+// x = v, in a `where`: pins the value if it is unpinned.
 static inline AStatus a_pin_opt (AVal* slot) {
     if (slot->type<A_TAB || slot->u.o->pinned) {
         return A_OK;
@@ -1063,7 +1063,7 @@ void a_pin_clr (AVal* slot);
 void a_tab_clear (ATab* t);
 
 // Depth of the block of a value: the block where it is pinned, or the
-// floor of a fresh one (the deepest block of what it holds). Zero if
+// floor of an unpinned one (the deepest block of what it holds). Zero if
 // the value is free to go anywhere.
 int a_pdepth (AVal v);
 
@@ -1086,15 +1086,15 @@ static inline AStatus a_chk_store (AVal v, int d) {
 
 // A value is stored in the holder `h`, which only accepts a value of
 // its own block or of an outer one: of its pin block, or of its floor
-// while it is fresh. A fresh value stored in a pinned holder is pinned
-// with it, in the same block, along with the fresh values it holds.
+// while it is unpinned. An unpinned value stored in a pinned holder is pinned
+// with it, in the same block, along with the unpinned values it holds.
 AStatus a_hold (AObj* h, AVal v);
 
 static inline AStatus a_chk_tab (ATab* t, AVal v) {
     return (v.type < A_TAB) ? A_OK : a_hold(&t->hdr, v);
 }
 
-// Birth: a fresh value that is being constructed takes its floor from
+// Birth: an unpinned value that is being constructed takes its floor from
 // the values it is born with (the fields of a constructor, the
 // operands of a concatenation). A pinned one is checked by the store.
 static inline void a_born (AVal x, AVal v) {
@@ -1108,10 +1108,10 @@ static inline void a_born (AVal x, AVal v) {
 }
 
 // A field of a table that C is constructing, as a field of a
-// constructor: a fresh table takes its floor from the key and the
+// constructor: an unpinned table takes its floor from the key and the
 // value, so that it may hold values that are pinned in the program
 // (an event with the handle of a control). A plain `a_setindex` into
-// a fresh table refuses them.
+// an unpinned table refuses them.
 static inline AStatus a_tab_field (AVal t, AVal k, AVal v) {
     a_born(t, k);
     a_born(t, v);
@@ -1122,7 +1122,7 @@ static inline AStatus a_tab_field (AVal t, AVal k, AVal v) {
 // the value must last at least as long as the native. A binding
 // declares it right after it creates the native, which is then born
 // with its floor in the block of the value. The native keeps a
-// reference to the value, which is pinned with it if it is fresh, and
+// reference to the value, which is pinned with it if it is unpinned, and
 // leaves a block with it. A native that is held is only finalized
 // after those that hold it. Fails for a native that is already pinned
 // outside the block of the value.
@@ -1130,7 +1130,7 @@ AStatus a_nat_holds (AVal nat, AVal v);
 
 // A block with pins is being left, with status `st`. What it gives to
 // the outer block is transferred: values pinned in the block are
-// unpinned and flow out as fresh values, along with what they hold.
+// unpinned and flow out as unpinned values, along with what they hold.
 // The values are `vs[0..n)` if the block ends normally, or else the
 // payload of the exit. Fails for a task that is confined to the block.
 AStatus a_blk_xfer (AStatus st, AVal* vs, int n);
@@ -1141,7 +1141,7 @@ AStatus a_blk_xfer (AStatus st, AVal* vs, int n);
 // the block, and waits like `a_pin_end`.
 int a_conf_end (ATrail* me, AStatus* st, int base);
 
-// A fresh task or pool that is dropped is aborted: one that nobody
+// An unpinned task or pool that is dropped is aborted: one that nobody
 // pinned and that no value refers to any longer. The generated code
 // calls it at the end of a statement and of a block, with the pending
 // exit of the block, if any. Returns the status to go on with.

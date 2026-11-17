@@ -1,4 +1,4 @@
-;; Birth: a fresh value has its floor in the innermost block of the
+;; Birth: an unpinned value has its floor in the innermost block of the
 ;; pinned values it is born with. It cannot leave the floor, but may
 ;; be pinned there or deeper.
 
@@ -7,7 +7,7 @@ func f (t) { t.x@0 }
 pin a = [10]
 print(f([x=a]))
 
-;; a store into a fresh value is checked against its floor
+;; a store into an unpinned value is checked against its floor
 func g (t, v) {
     set t.y = v
     #t

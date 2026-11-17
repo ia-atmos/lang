@@ -168,7 +168,7 @@ rules of `pin` are new since 2026-11-15, and they shape this design.
 - A part that a task needs to change (the current frame of a video,
   the position of an animation) is state of the task, or a field of
   the document that the task changes in place. A variable does not
-  receive a fresh table.
+  receive an unpinned table.
 - A task that publishes creates what it publishes in its `pub`.
 - A task spawned in the body of a loop or of an `if` is aborted when
   that block ends: the parts of a composite live in a pool of the

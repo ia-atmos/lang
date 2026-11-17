@@ -1,5 +1,5 @@
 ;; A task that nobody pinned, but that is still referred to (here, by a
-;; fresh table that is the parameter of another task), ends with the
+;; unpinned table that is the parameter of another task), ends with the
 ;; outermost block of the task that spawned it, after its defers, and
 ;; that task only terminates after it: also when the orphan is the one
 ;; that is running.

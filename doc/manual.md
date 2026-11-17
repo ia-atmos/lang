@@ -317,7 +317,7 @@ A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
 
 The counts remain in use for what has no block, or ends before its block:
-a fresh value that is dropped is reclaimed at once; an event that is emitted
+an unpinned value that is dropped is reclaimed at once; an event that is emitted
 is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
@@ -1172,7 +1172,7 @@ print(t.pub)            ;; --> 20
 A task also has the field `ret`, which can only be read, and holds the value
 that the task terminated with.
 
-A task owns what it keeps in `pub` and in `ret`: a fresh value that is stored
+A task owns what it keeps in `pub` and in `ret`: an unpinned value that is stored
 there is [pinned](#pin) with the task, in the block that the task is attached
 to, and is reclaimed with the task.
 Since the `pub` is visible wherever the task is, it cannot hold a value that
@@ -1197,7 +1197,7 @@ referenced, or when its [pin](#pin) block terminates.
 Native values are created by libraries written in C.
 In the [standard libraries](#standard-libraries), files are native values.
 
-A native value follows the [rules](#pin) of all dynamic values: it is fresh
+A native value follows the [rules](#pin) of all dynamic values: it is unpinned
 when it is created, and is declared with `pin`.
 A library may declare that a native value holds another value, as a child
 resource holds its parent, with the C function `a_nat_holds(nat, v)`, called
@@ -1524,7 +1524,7 @@ do {
 do {
     pin p = [1, 2]      ;; `p` owns the table
     val q = p           ;; `q` refers to it
-    val r = [3, 4]      ;; `r` holds a fresh table, reclaimed with `r`
+    val r = [3, 4]      ;; `r` holds an unpinned table, reclaimed with `r`
 }
 
 do {
@@ -1542,28 +1542,28 @@ Values of other types, such as numbers and strings, are not affected.
 A dynamic value is in one of two states:
 
 - *Pinned*: it is owned by a block, which reclaims it on termination.
-- *Fresh*: it is not owned yet.
+- *Unpinned*: it is not owned yet.
   It is the result of a constructor, of a call, or of a block, before it is
   declared or stored.
 
-A fresh value becomes pinned in two ways:
+An unpinned value becomes pinned in two ways:
 
 - When it is declared with `pin`, in the enclosing block.
 - When it is stored in a pinned value, such as in a field of a pinned table
   or in the [`pub`](#pub) of a pinned task.
   It is then pinned in the block of the value that holds it.
 
-The pin is deep: the fresh values that the value holds are pinned with it.
+The pin is deep: the unpinned values that the value holds are pinned with it.
 
 A name does not own a value: a `val`, a `var`, a parameter, a loop
 variable, and a declaration of a [`where`](#where).
-A name refers to a value that is already pinned, or holds a fresh one.
+A name refers to a value that is already pinned, or holds an unpinned one.
 
-A fresh value that a name holds gets a *ceiling*: the block of the name, or
+An unpinned value that a name holds gets a *ceiling*: the block of the name, or
 the outermost one, if several names hold it.
-The ceiling reaches the fresh values that it holds, and those that are
+The ceiling reaches the unpinned values that it holds, and those that are
 stored in it later.
-A fresh value may only be pinned at its ceiling or outside: by a `pin`, by
+An unpinned value may only be pinned at its ceiling or outside: by a `pin`, by
 being stored in a pinned value or in a `pub`, or by being assigned to a
 `pin`.
 Otherwise, a block inside could finalize it while the name still sees it,
@@ -1580,19 +1580,19 @@ func f (o) {
 f([7])
 ```
 
-So a fresh value has a window: from its floor, which is the block of what it
+So an unpinned value has a window: from its floor, which is the block of what it
 holds, to its ceiling, which is the block of who names it.
 A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
-A `val` of a fresh value is thus an implicit pin, which a block outside may
+A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-It does not reclaim a cycle among fresh values, which only a `pin` does.
+It does not reclaim a cycle among unpinned values, which only a `pin` does.
 The explicit `pin` is recommended where the moment of finalization matters:
 native values, tasks, and pools.
 A task that a name holds, as in `val t = spawn T()`, is aborted at the end
 of the block of the name, unless a block outside adopts it.
 
-A place that owns its value may be assigned a fresh one: a variable
+A place that owns its value may be assigned an unpinned one: a variable
 declared with `pin`, a field of a pinned table, and the `pub` of a pinned
 task.
 The new value is pinned in the block of the place, deep, as by a
@@ -1649,7 +1649,7 @@ Therefore, finalization always goes from the inside out: a `defer` of a task
 executes before the `defer` blocks that its enclosing block declares before
 it.
 
-A fresh value that is dropped is reclaimed at once: a table is released, a
+An unpinned value that is dropped is reclaimed at once: a table is released, a
 native value releases its resource, and a task or pool is aborted.
 A task is dropped when nobody pinned it and no value refers to it any
 longer, such as a `spawn` in the middle of an expression whose value is not
@@ -1676,11 +1676,11 @@ and the line of its pin:
 A variable that is captured by a function belongs to the block that declares
 it, as any other variable.
 
-A fresh value may hold pinned values: a constructor with a pinned value as a
+An unpinned value may hold pinned values: a constructor with a pinned value as a
 field, a concatenation of tables that hold pinned values, a function that
 captures a pinned value or a variable, a task that receives a pinned value as
 an argument.
-Such a fresh value is born with a *floor*, which is the innermost block of
+Such an unpinned value is born with a *floor*, which is the innermost block of
 the pinned values it is born with.
 It cannot leave its floor, but may be pinned there or in any block inside.
 Therefore, a pinned value may be passed inside a constructor to a function,
@@ -1693,11 +1693,11 @@ await :close [h=dlg]        ;; the pattern holds `dlg`, with no pin
 ```
 
 The floor is set when the value is born: a value that is stored later in a
-fresh value must belong to the floor, or to a block that encloses it.
+unpinned value must belong to the floor, or to a block that encloses it.
 
 Finally, a block may give away what it pins.
 If a pinned value is the final value of its block, or goes out through a
-`return`, `break`, or `escape`, then it leaves the block as a fresh value,
+`return`, `break`, or `escape`, then it leaves the block as an unpinned value,
 along with the values it holds from the block, including tasks and pools.
 The destination must pin it again.
 It is an error if the value holds something that cannot leave: a task of a
@@ -1756,7 +1756,7 @@ Decl : ID* `=´ Expr
 A `where` initializes a list of immutable locals, which are only visible within
 the prefix expression and the clause itself.
 The declarations have no modifier: the clause [owns](#pin) a value that is
-fresh, and refers to a value that is already pinned.
+unpinned, and refers to a value that is already pinned.
 
 Examples:
 
@@ -2083,7 +2083,7 @@ Examples:
 [x=10] ++ [x=1,y=2]       ;; [x=1, y=2]
 ```
 
-The result is a fresh table.
+The result is an unpinned table.
 If the operands hold [pinned values](#pin), such as the tasks of a pool, the
 result is born with its floor in their block.
 
@@ -2893,7 +2893,7 @@ A bare call (e.g., `await T()`, or as an operand `await<T() || :X>`)
 [spawns](#tasks) the given task and awaits its termination, evaluating to the
 task final value.
 The task gives its final value away, as a function call does: the value comes
-out fresh, and is [pinned](#pin) by who awaits, as in
+out unpinned, and is [pinned](#pin) by who awaits, as in
 `pin f = await Open()`.
 The task that comes as the second result no longer holds the value.
 A task that is awaited by its reference (`await(t)`) keeps its final value,
@@ -2985,7 +2985,7 @@ which all tasks live.
 
 An event is shared by the tasks that receive it, which may keep it after the
 `emit` returns.
-Therefore, no block owns a fresh value that is emitted: it is reclaimed when
+Therefore, no block owns an unpinned value that is emitted: it is reclaimed when
 no task refers to it any longer, and a task that receives it cannot pin it.
 A task keeps the event in a `val`, as in `val e = await(:X)`.
 

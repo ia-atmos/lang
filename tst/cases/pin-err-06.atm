@@ -1,4 +1,4 @@
-;; the ceiling reaches the fresh values that a named one holds
+;; the ceiling reaches the unpinned values that a named one holds
 val a = [[1]]
 do {
     pin x = a@0

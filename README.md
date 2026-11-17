@@ -254,13 +254,13 @@ From the [original implementation][atmos-lua], which compiles to Lua:
 - Every dynamic value belongs to a block: tasks, pools, tables,
   functions, and natives.
     - A `pin` owns a value that was just created. A `val` or a `var`
-      refers to a value that belongs to a block, or holds a fresh one,
+      refers to a value that belongs to a block, or holds an unpinned one,
       which only a block at the name or outside may adopt.
     - A pinned value is freed when its block ends, cycles included,
-      along with the fresh values that were stored in it.
+      along with the unpinned values that were stored in it.
     - It cannot escape its block: storing it in an outer variable, in
       a table of an outer block, in a `throw`, or emitting it outwards
       raises `invalid escape : table pinned at prog.atm:10`.
     - Returning it from its own block transfers it: it flows out as a
-      fresh value, which is pinned again.
-    - A fresh task that is dropped is aborted at once.
+      unpinned value, which is pinned again.
+    - An unpinned task that is dropped is aborted at once.
