@@ -26,17 +26,17 @@ One at a time, each with the recommended option.
   two includes, no weak symbols, ASAN clean. Four gaps reported by `uv`
   (2026-11-17):
   1. The quits run before `atm_quit`, so globals holding handles are
-     finalized after the library is closed (`uv` moved its close to an
-     `atexit`). Sent to `ceu-atmos`: quits after the program's values, or a
-     `fini` hook.
+     finalized after the library is closed. Fixed in `ceu-atmos` `c12cf52`:
+     quits run inside `atm_free`, after the variables, before the constants
+     (a `quit` sees the program's variables as nil).
   2. A primary that waits delays the secondaries (IUP's 10 ms tick is the
      network's latency). Design for the author: a secondary gives the
      primary something to wake it (an `fd` field).
   3. A dedicated compiler forces its environment as primary (`atmos-uv`
      with IUP). Design for the author.
   4. Each environment re-invents carrying the error of a C callback out of
-     its step. Sent to `ceu-atmos`: `atm_emit` records the first error and
-     the runtime raises it after the step.
+     its step. Fixed in `c12cf52`: the first error of an emit from C inside
+     a step is kept and becomes the step's status.
   Added by `iup` (same day; it confirms 1 and 4):
   5. When an environment starts is implicit (`iup.atm` opens the library
      in a top-level native at its include). Recommended: the convention
