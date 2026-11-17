@@ -22,6 +22,22 @@ One at a time, each with the recommended option.
 
 ## B. Work known and not done
 
+- The pilot passed (`env-uv` `ecc8b48`, `env-iup` `944b9a9`): the pair with
+  two includes, no weak symbols, ASAN clean. Four gaps reported by `uv`
+  (2026-11-17):
+  1. The quits run before `atm_quit`, so globals holding handles are
+     finalized after the library is closed (`uv` moved its close to an
+     `atexit`). Sent to `ceu-atmos`: quits after the program's values, or a
+     `fini` hook.
+  2. A primary that waits delays the secondaries (IUP's 10 ms tick is the
+     network's latency). Design for the author: a secondary gives the
+     primary something to wake it (an `fd` field).
+  3. A dedicated compiler forces its environment as primary (`atmos-uv`
+     with IUP). Design for the author.
+  4. Each environment re-invents carrying the error of a C callback out of
+     its step. Sent to `ceu-atmos`: `atm_emit` records the first error and
+     the runtime raises it after the step.
+
 - (56) Looks done: `env-ray` already renamed `raylib.atm` to `ray.atm`,
   the table to `ray`, and dropped the prefix. To confirm with the `raylib`
   session and close in the compiler's list.
