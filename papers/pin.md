@@ -77,12 +77,12 @@ case studies from six ports of libraries and games to Atmos.
     - same rules for tables, functions, natives, tasks, and pools
 - Two states
     - pinned: owned by a block, which finalizes it at its end
-    - fresh: not owned yet, the result of a constructor, call, or block
-    - a fresh value has a floor: the innermost block of what it holds
-    - a fresh value held by a name has a ceiling: the block of its outermost name
+    - unpinned: not owned yet, the result of a constructor, call, or block
+    - an unpinned value has a floor: the innermost block of what it holds
+    - an unpinned value held by a name has a ceiling: the block of its outermost name
     - a window: it may only be adopted between its floor and its ceiling
 - Rule 1, birth
-    - a value is born fresh
+    - a value is born unpinned
     - floor from what it is born with: fields, operands, captures, arguments
     - a native declares what it depends on in its binding
     - the floor never rises after birth
@@ -91,30 +91,30 @@ case studies from six ports of libraries and games to Atmos.
     - by storage: in a pinned value or a `pub`, in the block of the holder
     - by assignment to an owned place: a `pin` variable, a field of a
       pinned table, the `pub` of a pinned task
-    - deep: every fresh value it holds is pinned with it
+    - deep: every unpinned value it holds is pinned with it
     - only at the ceiling or outside: a name never sees its value finalized
 - Rule 3, store
     - a place accepts a value of the same block or of an outer one
     - places: table field, `pub`, outer variable, captured variable, pool
-    - a fresh place is checked against its floor
+    - an unpinned place is checked against its floor
     - `emit` and `throw` follow the same check
     - a captured variable belongs to the block that declares it
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
-    - a dropped fresh value is finalized at once
+    - a dropped unpinned value is finalized at once
     - table released, native closed, task aborted
     - a value replaced in an owned place is retired: finalized when its last
       reference goes, at the latest at the end of the block (cycles broken)
 - Rule 5, result
     - the only way to undo a pin: to be the result of the block
     - last expression, `return`, `break`, `escape`
-    - the value becomes fresh in the outer block, with what it holds
+    - the value becomes unpinned in the outer block, with what it holds
     - error if it holds something that cannot leave
 - Consequences
     - `val`, `var`, parameters, loop variables, `where`: name, do not own
     - `pin` adopts at once; recommended for natives, tasks, and pools
     - a value that nobody adopts is reclaimed when it is dropped
-    - a parameter may receive a fresh value: store it outside, or return it
+    - a parameter may receive an unpinned value: store it outside, or return it
     - the work block: `pin r = do { pin tmp = ... ; pin x = ... ; x }`
     - a work block as an argument: `spawn @ts H(do { pin c = accept() ; c })`
     - natives: a child holds its parent, by rule 3
@@ -181,7 +181,7 @@ case studies from six ports of libraries and games to Atmos.
 - A constructor: a function that gives a pinned value away
 - A pool of tasks pinned outside a loop
 - A work block: temporaries die, the result leaves
-- A fresh value dropped: finalized at once
+- An unpinned value dropped: finalized at once
 - A temporary table with a pinned value: `f([x=a])`, `await :close [h=dlg]`
 - An escape caught: `invalid escape : pinned value`
 
@@ -189,14 +189,14 @@ case studies from six ports of libraries and games to Atmos.
 
 - Compilation to C; reference counting, and no tracing collector by choice
 - What reference counting still does
-    - a dropped fresh value: data at count zero; a task at count one,
+    - a dropped unpinned value: data at count zero; a task at count one,
       aborted at the end of the statement, since an abort runs code
     - an emitted event: owned by the runtime, released by its count
     - a value removed from a pinned holder: freed before the block ends
     - values with no block at all, such as strings
 - Header of a value: reference count, state, block depth, line of the pin,
   ceiling and its line
-- States in the header: fresh, fresh with a floor, pinned by declaration,
+- States in the header: unpinned, unpinned with a floor, pinned by declaration,
   pinned by a holder, owned by the runtime
 - Rule 1: constructors and `++` raise the floor at birth
 - Rule 2: `a_pin`, and the deep pin on a store into a pinned value
@@ -204,7 +204,7 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
 - Rule 5: `a_blk_xfer`, transfer of a result, deep, all or nothing
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
-  the check before an adoption walks the fresh value, with marks for cycles
+  the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
   the rest finalized at the end of the block (`a_retire`, `a_retired_end`)
 - Approximations: a ceiling kept after a `var` is reassigned; parallel trails
@@ -228,11 +228,11 @@ case studies from six ports of libraries and games to Atmos.
 - Workarounds removed in each port after the migration
 - Cost of the migration (under the first rules, before the ceiling)
     - test suite: about 230 of 830 programs changed
-    - to measure again: names may hold fresh values, and owned places may be
+    - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
+    - to measure again: names may hold unpinned values, and owned places may be
       reassigned, so many of those rewrites are no longer needed
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
   0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
-    - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
 - Reports of the migration, so far (`261115-pin.md`)
     - sdl-tux: 9 lines to `pin`, 1 rewrite
     - doom: 8 lines to `pin`, 2 rewrites
@@ -252,6 +252,17 @@ case studies from six ports of libraries and games to Atmos.
     - time: the store check, the transfer of results
     - space: bits per value
     - comparison with a GC and with plain RC
+- Planned experiment: the Computer Language Benchmark Game (CLBG)
+    - the 7 programs of Câmara (2024): binary-trees, fannkuch-redux, fasta,
+      fibonacci, mandelbrot, n-body, spectral-norm
+    - Atmos against Lua 5.4, and against Atmos with the checks disabled
+      (a compile flag: removes only the checks, keeps end-of-block finalization)
+    - methodology fix: compile once, time only the run (the earlier study
+      included recompilation in every run)
+    - questions: overhead of the checks; where it concentrates (binary-trees)
+- Two ends of expressiveness
+    - CLBG: algorithms translated from Lua with no change (dyn-lex, 2024)
+    - the ports: games with tasks, registries, module state; about 240 rewrites
 - Leak freedom: test suite under a memory checker
 - Expressiveness: programs that needed restructuring, and how much
 
@@ -263,10 +274,10 @@ case studies from six ports of libraries and games to Atmos.
 - Collection is still needed during the scope: pins do not replace a GC
 - Without a tracing collector, garbage in cycles lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- A cycle among fresh values that nothing adopts is not reclaimed: only a `pin` breaks it
-  (a fresh task kept alive only by its own `pub`)
+- A cycle among unpinned values that nothing adopts is not reclaimed: only a `pin` breaks it
+  (an unpinned task kept alive only by its own `pub`)
 - A task cannot publish a value pinned in its body
-- A fresh value outside its window is an error: `invalid pin : table named at f:N`
+- An unpinned value outside its window is an error: `invalid pin : table named at f:N`
 - A native replaced in an owned place is closed when its last holder lets it go:
   deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
@@ -275,6 +286,26 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 11. Related Work
 
+- Prior work by the same author: dyn-lex (2023)
+    - every dynamic value attached, with no keyword, to the block of its first
+      assignment; tasks and coroutines too; all checks at run time
+    - states: FLEET (not assigned yet: the ancestor of unpinned),
+      MUTAB (attached, may still be narrowed), IMMUT (captured, cannot move)
+    - `drop(v)`: an explicit move, single reference, source set to nil;
+      Atmos has `func f (pin x)` in its place
+    - `:tmp` names that hold without attaching, for `and`/`or`: the problem
+      Atmos solves with `val` without owner and the ceiling
+    - its test `ll_05_nest` fails on the hole that the ceiling closes
+    - what Atmos changes: an explicit `pin`, the floor and the ceiling,
+      reassignment of owned places, the same rules for tasks
+- Câmara, undergraduate thesis, UERJ (2024): dyn-lex against Lua 5.4 on 7
+  CLBG programs
+    - expressiveness: the programs translated with no change of algorithm
+    - cost of the checks against a variant without them; reference counting
+      doubles each pointer; cycles leak
+    - its five rules, for a side-by-side with the Atmos rules
+    - known flaw: times include recompilation; cite the method and the
+      qualitative findings, not the numbers
 - Structured concurrency: Trio, Kotlin, Swift, Java Loom, Céu
 - Regions: Tofte-Talpin, MLKit, Cyclone, Real-Time Java scoped memory
 - Ownership: Rust, ownership types, Vale, Lobster
