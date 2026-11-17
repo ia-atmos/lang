@@ -1484,8 +1484,9 @@ the value when it terminates or aborts.
 A `pin` may be assigned a new value, which it owns in turn, and the old one
 is released.
 
-A [dynamic value](#pin) that was just created must be declared with `pin`:
-a `val` or a `var` only refers to a value that already belongs to a block.
+A `val` or a `var` does not own a [dynamic value](#pin): it refers to a
+value that belongs to a block, or holds one that was just created, which it
+lets a `pin` adopt.
 
 A declaration may specify a list of identifiers, which supports multiple
 declarations with the same modifier.
@@ -1523,7 +1524,7 @@ do {
 do {
     pin p = [1, 2]      ;; `p` owns the table
     val q = p           ;; `q` refers to it
-    val r = [3, 4]      ;; ERROR: invalid declaration : expected 'pin'
+    val r = [3, 4]      ;; `r` holds a fresh table, reclaimed with `r`
 }
 
 do {
@@ -1554,20 +1555,42 @@ A fresh value becomes pinned in two ways:
 
 The pin is deep: the fresh values that the value holds are pinned with it.
 
-A `val`, a `var`, or an assignment to a `var` does not own a value:
-it only refers to a value that is already pinned.
-Therefore, the first declaration of a dynamic value is always a `pin`, and
-the error `invalid assignment : expected pinned value` is raised otherwise.
-When the value is a constructor or a function, which are fresh for sure, it
-is the compile error `invalid declaration : expected 'pin'`.
-There are exceptions for places that receive values from elsewhere:
-a parameter, a loop variable, and the declarations of a [`where`](#where)
-may hold fresh values.
-A function may pin a fresh value that it receives as an argument.
-If it does not, the value stays fresh, and is reclaimed when the last
-reference to it goes away, which is the end of the function or task that
-received it, at the latest.
-The `pin` makes it explicit, and also reclaims cycles.
+A name does not own a value: a `val`, a `var`, a parameter, a loop
+variable, and a declaration of a [`where`](#where).
+A name refers to a value that is already pinned, or holds a fresh one.
+
+A fresh value that a name holds gets a *ceiling*: the block of the name, or
+the outermost one, if several names hold it.
+The ceiling reaches the fresh values that it holds, and those that are
+stored in it later.
+A fresh value may only be pinned at its ceiling or outside: by a `pin`, by
+being stored in a pinned value or in a `pub`, or by being assigned to a
+`pin`.
+Otherwise, a block inside could finalize it while the name still sees it,
+which raises an error such as `invalid pin : table named at prog.atm:10`,
+with the line of the name:
+
+```
+func f (o) {
+    do {
+        pin x = o       ;; ERROR: invalid pin : table named at ...
+    }
+    print(o@0)          ;; the name `o` would see a finalized table
+}
+f([7])
+```
+
+So a fresh value has a window: from its floor, which is the block of what it
+holds, to its ceiling, which is the block of who names it.
+A value that nobody pins is reclaimed when it is dropped, which is in
+practice at the end of the block of its last name.
+A `val` of a fresh value is thus an implicit pin, which a block outside may
+still adopt.
+It does not reclaim a cycle among fresh values, which only a `pin` does.
+The explicit `pin` is recommended where the moment of finalization matters:
+native values, tasks, and pools.
+A task that a name holds, as in `val t = spawn T()`, is aborted at the end
+of the block of the name, unless a block outside adopts it.
 
 A place that owns its value may be assigned a fresh one: a variable
 declared with `pin`, a field of a pinned table, and the `pub` of a pinned

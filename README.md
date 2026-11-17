@@ -253,9 +253,9 @@ From the [original implementation][atmos-lua], which compiles to Lua:
   0-based positions, instead of the libraries of Lua.
 - Every dynamic value belongs to a block: tasks, pools, tables,
   functions, and natives.
-    - A value that was just created is declared with `pin`. A `val` or
-      a `var` only refers to a value that already belongs to a block:
-      `val t = [1, 2]` is an error.
+    - A `pin` owns a value that was just created. A `val` or a `var`
+      refers to a value that belongs to a block, or holds a fresh one,
+      which only a block at the name or outside may adopt.
     - A pinned value is freed when its block ends, cycles included,
       along with the fresh values that were stored in it.
     - It cannot escape its block: storing it in an outer variable, in
