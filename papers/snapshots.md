@@ -341,9 +341,23 @@ state, and case studies.
     - Age of Empires: Bettner and Terrano, "1500 Archers on a 28.8:
       Network Programming in Age of Empires and Beyond", GDC 2001 and
       Gamasutra, 2001-03-22
-        - every machine runs the whole simulation; only commands travel
-        - the recording of games began as a tool to debug desyncs
-          (quoted by a secondary source; to confirm in the text)
+        - read in full on 2026-11-17
+        - every machine runs the whole simulation; only commands travel,
+          each scheduled for a future turn (latency up to 250 ms is not
+          noticed)
+        - a player issues a command every 1.5 to 2 s on average: the
+          journal is small compared with the work of the simulation
+        - random numbers seeded and synchronized; "the same number of
+          calls to random" was the hard part for the programmers
+        - out of sync: checksums of the world, the objects, the paths;
+          small differences multiply (a deer, then a villager)
+        - recorded games (AoE2) began as "I could really use this for
+          debugging": deterministic, so a recording is a repro case
+          that "plays out the exact same way every time"
+        - a side benefit: a client that runs differently is "out of
+          sync" and stops, so cheating is hard
+        - nothing on saved games: the claim of Johnson and Wuestefeld
+          that a save is a snapshot has no source yet
         - the recorded game (.mgx) is a header with a snapshot of the
           initial state and the commands of each turn; a patch breaks
           old recordings (community format specs, not the developers)

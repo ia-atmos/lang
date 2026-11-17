@@ -82,8 +82,8 @@ Each item has the recommended option.
    citation. Primary sources searched on 2026-11-17, in Section 13:
    Bettner and Terrano (2001) for Age of Empires; for StarCraft no
    paper by Blizzard, only an interview of Wyatt (2015) and community
-   sources. Not read in full: the sites of Gamasutra / Game Developer
-   are blocked by the network of this session.
+   sources. Bettner and Terrano read in full on 2026-11-17, after the
+   author opened the network: it says nothing on saved games.
    Earlier note: Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
    Elm and Redux, Raft, lockstep, Bayou, Time Warp, and CRDTs are from
