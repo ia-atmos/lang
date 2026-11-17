@@ -23,10 +23,14 @@ What to do: move your compiler to 84f8627 or later, run your tests, fix what fai
 
 The author declared these rules stable until the next round of
 decisions: no project needs to expect another migration of the same
-lines. What is still open, and may change later: an unpinned holder
-whose floor rises (`val z = [] ; set z.k = k`), a named cycle held by a
+lines. What is still open, and may change later: a named cycle held by a
 pin, the scoped assignment `with`, and a flag that removes the checks.
 Since `5da4b8e`: a compile-time warning for a pin given away by its
 block (`c325dd4`); `X.in` is the name of `X.xin` (an alias, to be
 removed); a branch of `par :any` gives only the values its destination
 takes (`444b54e`).
+
+Later on 2026-11-17, decided by the author: the floor of an unpinned
+value that only its name refers to rises when it receives a value of an
+inner block, up to the block of its name. `val out = [] ; loop ... {
+set out@+ = o } ; out` works, with `o` pinned outside.
