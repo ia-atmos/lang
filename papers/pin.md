@@ -21,13 +21,14 @@ The block finalizes what it pins when it terminates or aborts, in reverse
 order and interleaved with `defer`, which reclaims cycles and releases
 resources at a known point of the program.
 A dynamic check, a block depth per value compared on every store, guarantees
-that no reference to a pinned value outlives its block, and a block may still
-give a value away as its result.
+that no reference to a pinned value outlives its block.
+A pinned value never leaves its block; a block gives away only values it has
+not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
 arena abstraction: the blocks of the program are the regions.
 It bounds the lifetime of a value, but does not collect what becomes garbage
 while its block is alive: reference counting does that underneath, and
-cycles wait for the end of the block.
+cycles are reclaimed only when pinned, at the end of their block.
 A tracing collector would still help inside a long-lived block; Atmos leaves
 it out as a design choice, trading that memory for determinism.
 We argue that it is only sound and useful under structured programming, in
@@ -64,7 +65,7 @@ case studies from six ports of libraries and games to Atmos.
 - `pin x = e`: the enclosing block owns the value
 - The block finalizes its values when it terminates or aborts
 - No reference to a value outlives its block
-- A block may give a value away as its result
+- A block gives away only what it has not pinned
 - Tasks, data, and resources follow the same rule
 - Motto: a task, its data, and its block live and die together
 
@@ -87,11 +88,14 @@ case studies from six ports of libraries and games to Atmos.
     - a native declares what it depends on in its binding
     - the floor never rises after birth
 - Rule 2, pin (adoption)
-    - by declaration: `pin`, in the current block
+    - by declaration: `pin val x` or `pin var x` (bare `pin` is `pin val`),
+      in the current block
+    - by parameter: `func f (pin x)` adopts its argument
     - by storage: in a pinned value or a `pub`, in the block of the holder
     - by assignment to an owned place: a `pin` variable, a field of a
       pinned table, the `pub` of a pinned task
-    - deep: every unpinned value it holds is pinned with it
+    - deep: every unnamed unpinned value it holds is pinned with it;
+      a named one is only referenced, and its ceiling drops to the holder
     - only at the ceiling or outside: a name never sees its value finalized
 - Rule 3, store
     - a place accepts a value of the same block or of an outer one
@@ -106,17 +110,19 @@ case studies from six ports of libraries and games to Atmos.
     - a value replaced in an owned place is retired: finalized when its last
       reference goes, at the latest at the end of the block (cycles broken)
 - Rule 5, result
-    - the only way to undo a pin: to be the result of the block
-    - last expression, `return`, `break`, `escape`
-    - the value becomes unpinned in the outer block, with what it holds
-    - error if it holds something that cannot leave
+    - a pinned value never leaves its block: no implicit give-away
+    - a block gives away an unpinned value (a `val`): last expression,
+      `return`, `break`, `escape`
+    - it leaves unless its floor is in the block
+    - a captured variable leaves with its closure
 - Consequences
     - `val`, `var`, parameters, loop variables, `where`: name, do not own
     - `pin` adopts at once; recommended for natives, tasks, and pools
     - a value that nobody adopts is reclaimed when it is dropped
     - a parameter may receive an unpinned value: store it outside, or return it
-    - the work block: `pin r = do { pin tmp = ... ; pin x = ... ; x }`
-    - a work block as an argument: `spawn @ts H(do { pin c = accept() ; c })`
+    - a constructor builds with `val` and returns it; the caller pins it
+    - a pool held by a `val` takes its floor from its tasks, checked at its ceiling
+    - a cyclic structure should be pinned; otherwise reference counting applies
     - natives: a child holds its parent, by rule 3
 - Refinements found in the implementation
     - an emitted event: owned by the emit, at its floor, by no block
@@ -178,9 +184,9 @@ case studies from six ports of libraries and games to Atmos.
 - A cycle reclaimed at block end
 - A native resource: a file closed at block end
 - A task and its data aborted together by `watching`
-- A constructor: a function that gives a pinned value away
+- A constructor: a function that builds with `val` and returns; the caller pins
 - A pool of tasks pinned outside a loop
-- A work block: temporaries die, the result leaves
+- A work block: pinned temporaries die, an unpinned result leaves
 - An unpinned value dropped: finalized at once
 - A temporary table with a pinned value: `f([x=a])`, `await :close [h=dlg]`
 - An escape caught: `invalid escape : pinned value`
@@ -202,7 +208,7 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 2: `a_pin`, and the deep pin on a store into a pinned value
 - Rule 3: `a_chk_store`, one comparison of depths per store
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
-- Rule 5: `a_blk_xfer`, transfer of a result, deep, all or nothing
+- Rule 5: `a_blk_xfer`, refuses a pinned value that would leave; transfers an unpinned one
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
@@ -228,6 +234,9 @@ case studies from six ports of libraries and games to Atmos.
 - Workarounds removed in each port after the migration
 - Cost of the migration (under the first rules, before the ceiling)
     - test suite: about 230 of 830 programs changed
+    - after the five decisions of 2026-11-17: 18 more tests; in the ports,
+      pins given away by a block (a lower bound): SNKRX 36, Lessmilk 16,
+      Flare 13, Pingus 8, pico-1oom 4, others 0 to 3
     - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
     - to measure again: names may hold unpinned values, and owned places may be
       reassigned, so many of those rewrites are no longer needed
@@ -249,7 +258,7 @@ case studies from six ports of libraries and games to Atmos.
     - errors only show on the paths that execute
 - Quality of errors: what escaped, from where, to where
 - Cost
-    - time: the store check, the transfer of results
+    - time: the store check, the transfer of unpinned results
     - space: bits per value
     - comparison with a GC and with plain RC
 - Planned experiment: the Computer Language Benchmark Game (CLBG)
@@ -282,6 +291,9 @@ case studies from six ports of libraries and games to Atmos.
   deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
 - A value that leaves is transferred deep: cost proportional to its size
+- A function declared in a block is pinned there and cannot be returned
+  (pending decision: declarations as `val`)
+- A named cycle held by a pin is not reclaimed by that pin
 - Requires a language with structured tasks and abortion
 
 ## 11. Related Work
