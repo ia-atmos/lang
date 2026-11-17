@@ -79,16 +79,20 @@ case studies from six ports of libraries and games to Atmos.
     - pinned: owned by a block, which finalizes it at its end
     - fresh: not owned yet, the result of a constructor, call, or block
     - a fresh value has a floor: the innermost block of what it holds
-    - it cannot leave the floor; it may be pinned there or deeper
+    - a fresh value held by a name has a ceiling: the block of its outermost name
+    - a window: it may only be adopted between its floor and its ceiling
 - Rule 1, birth
     - a value is born fresh
     - floor from what it is born with: fields, operands, captures, arguments
     - a native declares what it depends on in its binding
     - the floor never rises after birth
-- Rule 2, pin
+- Rule 2, pin (adoption)
     - by declaration: `pin`, in the current block
-    - by storage: in a pinned value, in the block of the holder
+    - by storage: in a pinned value or a `pub`, in the block of the holder
+    - by assignment to an owned place: a `pin` variable, a field of a
+      pinned table, the `pub` of a pinned task
     - deep: every fresh value it holds is pinned with it
+    - only at the ceiling or outside: a name never sees its value finalized
 - Rule 3, store
     - a place accepts a value of the same block or of an outer one
     - places: table field, `pub`, outer variable, captured variable, pool
@@ -99,14 +103,18 @@ case studies from six ports of libraries and games to Atmos.
     - pinned values finalized in reverse order, interleaved with `defer`
     - a dropped fresh value is finalized at once
     - table released, native closed, task aborted
+    - a value replaced in an owned place is retired: finalized when its last
+      reference goes, at the latest at the end of the block (cycles broken)
 - Rule 5, result
     - the only way to undo a pin: to be the result of the block
     - last expression, `return`, `break`, `escape`
     - the value becomes fresh in the outer block, with what it holds
     - error if it holds something that cannot leave
 - Consequences
-    - the first declaration is always `pin`; `val` only aliases
-    - a parameter may receive a fresh value: pin it, store it, or return it
+    - `val`, `var`, parameters, loop variables, `where`: name, do not own
+    - `pin` adopts at once; recommended for natives, tasks, and pools
+    - a value that nobody adopts is reclaimed when it is dropped
+    - a parameter may receive a fresh value: store it outside, or return it
     - the work block: `pin r = do { pin tmp = ... ; pin x = ... ; x }`
     - a work block as an argument: `spawn @ts H(do { pin c = accept() ; c })`
     - natives: a child holds its parent, by rule 3
@@ -115,7 +123,6 @@ case studies from six ports of libraries and games to Atmos.
     - a task holds its `pub` and its final value
     - a task is pinned from birth by the block that owns it
     - declarations of functions and tasks pin their prototypes
-    - parameters and loop variables may hold fresh values
 - Semantics sketch: block depth as the lifetime order
 
 ## 5. Why It Matters as a Memory Mechanism
@@ -187,7 +194,8 @@ case studies from six ports of libraries and games to Atmos.
     - an emitted event: owned by the runtime, released by its count
     - a value removed from a pinned holder: freed before the block ends
     - values with no block at all, such as strings
-- Header of a value: reference count, state, block depth, line of the pin
+- Header of a value: reference count, state, block depth, line of the pin,
+  ceiling and its line
 - States in the header: fresh, fresh with a floor, pinned by declaration,
   pinned by a holder, owned by the runtime
 - Rule 1: constructors and `++` raise the floor at birth
@@ -195,6 +203,12 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 3: `a_chk_store`, one comparison of depths per store
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
 - Rule 5: `a_blk_xfer`, transfer of a result, deep, all or nothing
+- Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
+  the check before an adoption walks the fresh value, with marks for cycles
+- Retired values: a list that keeps one reference; released at count one,
+  the rest finalized at the end of the block (`a_retire`, `a_retired_end`)
+- Approximations: a ceiling kept after a `var` is reassigned; parallel trails
+  at the same depth compare depths, not blocks
 - A block that waits for a task that is unwinding
 - A dropped task that is running: ends with the trail that spawned it
 - Tasks held by pinned data: aborted with the block of the holder
@@ -212,8 +226,12 @@ case studies from six ports of libraries and games to Atmos.
     - libuv: accepted connections pinned in a loop, living in a pool
 - Friction found under the first rules, and how the new rules answer it
 - Workarounds removed in each port after the migration
-- Cost of the migration
+- Cost of the migration (under the first rules, before the ceiling)
     - test suite: about 230 of 830 programs changed
+    - to measure again: names may hold fresh values, and owned places may be
+      reassigned, so many of those rewrites are no longer needed
+- Cost of the ceiling: 2,000,000 `pin` of two small tables,
+  0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
     - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
 - Reports of the migration, so far (`261115-pin.md`)
     - sdl-tux: 9 lines to `pin`, 1 rewrite
@@ -245,14 +263,13 @@ case studies from six ports of libraries and games to Atmos.
 - Collection is still needed during the scope: pins do not replace a GC
 - Without a tracing collector, garbage in cycles lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- A cycle among fresh values that no block pins is not reclaimed
+- A cycle among fresh values that nothing adopts is not reclaimed: only a `pin` breaks it
   (a fresh task kept alive only by its own `pub`)
 - A task cannot publish a value pinned in its body
-- A parameter that the callee pins is released when the callee returns
-- A variable does not own: `var x` cannot receive a fresh value later
-- A value sometimes fresh and sometimes owned fits neither `val` nor `pin`
+- A fresh value outside its window is an error: `invalid pin : table named at f:N`
+- A native replaced in an owned place is closed when its last holder lets it go:
+  deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
-- `pin` on every first declaration: more annotations than `val`
 - A value that leaves is transferred deep: cost proportional to its size
 - Requires a language with structured tasks and abortion
 
