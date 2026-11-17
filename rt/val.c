@@ -144,6 +144,10 @@ void a_error_dump (void) {
         fprintf(stderr, " |  ...\n");
     }
     for (int i=TRACE_N-1; i>=0; i--) {
+        // a call from C, with no line (the `step` of an environment)
+        if (A_LIN_LINE(TRACE_CALLS[i]) == 0) {
+            continue;
+        }
         fprintf(stderr, " |  %s:%d (call)\n",
             atm_files[A_LIN_FILE(TRACE_CALLS[i])], A_LIN_LINE(TRACE_CALLS[i]));
     }

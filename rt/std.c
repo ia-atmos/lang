@@ -588,6 +588,51 @@ static AStatus atmos_status (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
+// atmos.env(e): registers an environment, a table with `step` and `quit`
+// (functions, optional) and `mode` (`[primary=true, secondary=true]`).
+// The first one registered is the primary, and must support it; every
+// other is a secondary, and must support it. The runtime writes the
+// mode it got in `mode.current` (:primary or :secondary). The generic
+// `main` (rt/main.c) calls the steps in order and the quits in reverse.
+AVal atm_envs[ATM_ENVS_MAX];
+int  atm_nenvs = 0;
+
+static AStatus atmos_env (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal e = arg(argc, argv, 0);
+    if (e.type != A_TAB) {
+        return a_error("invalid environment : expected table");
+    }
+    if (atm_nenvs == ATM_ENVS_MAX) {
+        return a_error("invalid environment : too many environments");
+    }
+    AVal k = a_strz("mode");
+    AVal mode = a_tab_get(A_TAB_OF(e), k);
+    a_dec(k);
+    int primary = (atm_nenvs == 0);
+    const char* want = primary ? "primary" : "secondary";
+    AVal kw = a_strz(want);
+    int ok = (mode.type == A_TAB) && a_truthy(a_tab_get(A_TAB_OF(mode), kw));
+    a_dec(kw);
+    if (!ok) {
+        return a_error("invalid environment : expected %s mode", want);
+    }
+    AVal kc = a_strz("current");
+    AVal vc = a_strz(want);
+    a_tab_set(A_TAB_OF(mode), kc, vc);
+    a_dec(kc);
+    a_dec(vc);
+    // the runtime owns it: a pinned table would be finalized with its
+    // block, before its `quit` is called
+    if (e.u.o->pinned) {
+        return a_error("invalid environment : expected unpinned table");
+    }
+    a_inc(e);
+    a_own(e);
+    atm_envs[atm_nenvs++] = e;
+    return A_OK;
+}
+
 // atmos.next(): microseconds to the nearest timer, or nil.
 static AStatus atmos_next (AFunc* self, int argc, AVal* argv) {
     (void) self;
@@ -672,6 +717,7 @@ void atm_std_init (void) {
     atm_g_atmos = a_tab();
     field(atm_g_atmos, "status", atmos_status);
     field(atm_g_atmos, "next",   atmos_next);
+    field(atm_g_atmos, "env",    atmos_env);
 
     atm_lib_load_init();
     atm_lib_string_init();
@@ -703,6 +749,10 @@ void atm_std_quit (void) {
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
     a_clr(&atm_g_X);
+    for (int i=0; i<atm_nenvs; i++) {
+        a_clr(&atm_envs[i]);
+    }
+    atm_nenvs = 0;
     a_clr(&atm_g_atmos);
     a_clr(&atm_g_math);
     atm_lib_string_quit();

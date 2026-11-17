@@ -476,7 +476,38 @@ After the main chunk executes, it sleeps until the nearest
 It terminates the program when the main chunk terminates, or when there are no
 more timers to awake it.
 
-Other environments are written in C, over the interface of the runtime:
+Other environments register themselves in Atmos, with `atmos.env`, and call
+their library through [native literals](#native-literals):
+
+```
+atmos.env([
+    mode = [primary=true, secondary=true],
+    step = func () {            ;; reads input and emits events
+        <...>                   ;; true ends the program
+    },
+    quit = func () {            ;; frees the library
+        <...>
+    },
+])
+```
+
+After the main chunk, the runtime calls the `step` of each environment, in the
+order they were registered, while the main chunk is pending, and then their
+`quit`, in reverse order, also after an error.
+The first environment is the *primary*: its `step` may sleep (until input, or
+for `atmos.next()` microseconds, the time to the nearest timer) and emits the
+time, as a number of microseconds.
+The others are *secondary*: their `step` never waits and emits no time.
+An environment says which modes it supports in `mode`, and the runtime writes
+the one it got in `mode.current` (`:primary` or `:secondary`); an environment
+that cannot take its mode is an error.
+An environment with no `step` makes the runtime return after the main chunk,
+so that a host, such as a browser, emits to the program.
+The table must be unpinned: the runtime owns it.
+Callbacks of a library in C may emit from inside a `step`, as below.
+
+An environment may also be written in C, with a `main` of its own over the
+interface of the runtime, which replaces the generic one:
 
 ```
 atm_init(argc, argv);

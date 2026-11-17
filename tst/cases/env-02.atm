@@ -1,0 +1,17 @@
+;; a task that raises during an emit of a step: the error ends the
+;; program, and the environments still quit
+atmos.env([
+    mode = [primary=true],
+    step = func () {
+        emit(:go)
+        false
+    },
+    quit = func () { print("quit") },
+])
+print(catch true { atmos.env([mode=[primary=true]]) })
+print(catch true { atmos.env(10) })
+spawn {
+    await :go
+    throw(:boom)
+}
+await(false)

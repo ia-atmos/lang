@@ -1388,4 +1388,21 @@ AStatus atm_stop (void);
 
 extern AVal atm_g_atmos;
 
+// Environments registered by `atmos.env`, in order: the first is the
+// primary. The generic `main` (rt/main.c), used when the program
+// defines none, drives them:
+//
+//     atm_init; atm_main
+//     while alive: each `step()`, in order (true ends the program)
+//     atm_stop
+//     each `quit()`, in reverse, also after an error
+//     atm_quit
+//
+// With no environment, it lets the time pass by the clock. With one
+// environment with no `step`, it returns after `atm_main`, and the host
+// emits (a browser).
+#define ATM_ENVS_MAX 8
+extern AVal atm_envs[ATM_ENVS_MAX];
+extern int  atm_nenvs;
+
 #endif

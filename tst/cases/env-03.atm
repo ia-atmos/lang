@@ -1,0 +1,4 @@
+;; with no step, main returns after the main chunk: the host emits
+atmos.env([mode = [primary=true]])
+spawn { await :x ; print(:never) }
+print("main chunk done")

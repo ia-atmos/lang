@@ -1,0 +1,29 @@
+;; environments registered with atmos.env: the generic main calls the
+;; steps in order (the primary emits the time) and the quits in reverse
+var n = 0
+atmos.env([
+    mode = [primary=true],
+    step = func () {
+        set n = n + 1
+        if n > 3 { return true }
+        emit(:key.dn [key=n])
+        emit(1000)
+        false
+    },
+    quit = func () { print("quit A") },
+])
+atmos.env([
+    mode = [secondary=true],
+    step = func () { false },
+    quit = func () { print("quit B") },
+])
+spawn {
+    loop {
+        val e = await :key.dn
+        print("key", e.key)
+    }
+}
+await 2ms
+print("2ms")
+await :key.dn
+print("end")
