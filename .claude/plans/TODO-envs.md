@@ -42,11 +42,10 @@ One at a time, each with the recommended option.
      in a top-level native at its include). Recommended: the convention
      "the include is the start", written in the manual.
   6. The primary must bound its wait (at `atmos.next()` or a short tick),
-     or it starves the secondaries: a line for the manual. Sent to
-     `ceu-atmos`.
+     or it starves the secondaries. In the manual since `ceu-atmos` `129eb6a`.
   7. `mode.current` is awkward to reach from the step (the table must be
-     unpinned and named). Sent to `ceu-atmos`: pass the mode to `step` as
-     its argument.
+     unpinned and named). Fixed in `129eb6a`: `step(:primary)` /
+     `step(:secondary)`; `mode.current` stays.
   8. The secondary mode of `iup.atm` has no test (no primary runs before
      IUP).
 
