@@ -153,3 +153,24 @@ What stays different:
 | No step (`start`, the browser) | `start(f)` with one environment with no `mode` | to add: one environment with no `step` makes the generic `main` return after `atm_main`; the host emits | needed for the browser (item 52) |
 | Library callbacks | Lua functions that `emit` | C that calls `atm_emit` or `atm_emit_to` | the libraries are C; `atm_emit_to` has no equivalent there |
 | Sweep of dead tasks | `gc()` after each step | none | reference counting |
+
+## A `main` in the program? (asked by the author, 2026-11-17)
+
+Today the whole file is the main task. The question: an explicit
+`main`, a function or a task.
+
+| | The file is the main task (today) | `func main` | `task main` |
+|---|---|---|---|
+| Awaits | at the top level | no (a function does not suspend the program) | yes |
+| Scripts with no events | the file itself | the file itself | the file itself (no `main`) |
+| Environments registered before the first reaction | only by order of the code | yes | yes: the top level is the setup, then the runtime spawns `main` |
+| Tests (item 58) | the program cannot be run again from a `test` block | — | `test { spawn main(...) ... }` with scripted input, as many times as wanted |
+| lua-atmos | — | — | the same as `loop(main)` |
+
+Recommended: an optional `task main (...)`. If the file defines it, the
+top level is the setup (includes, `atmos.env`, declarations), and after
+it the runtime spawns `main` with the arguments; the program ends when
+`main` ends, and its value is the exit status. If the file does not
+define it, the file is the main task, as today, so scripts and existing
+programs do not change. `func main` gives nothing that the top level
+does not give already.
