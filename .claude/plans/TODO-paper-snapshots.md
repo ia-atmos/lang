@@ -84,6 +84,10 @@ Each item has the recommended option.
    paper by Blizzard, only an interview of Wyatt (2015) and community
    sources. Bettner and Terrano read in full on 2026-11-17, after the
    author opened the network: it says nothing on saved games.
+   Croquet (current docs) and Akka Persistence (docs) read on
+   2026-11-17. Croquet is the closest work found: to discuss with the
+   author what this paper adds to it. The 2003 Croquet paper was not
+   read: web.archive.org resets the connection.
    Earlier note: Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
    Elm and Redux, Raft, lockstep, Bayou, Time Warp, and CRDTs are from

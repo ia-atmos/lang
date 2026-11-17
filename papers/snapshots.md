@@ -330,10 +330,47 @@ state, and case studies.
           (Garcia-Molina et al. 1984)
         - Akka persistent actors: state changes only by messages,
           journal and snapshot, migration of an actor
+            - read in its documentation on 2026-11-17: a command
+              handler validates and persists events; an event handler
+              updates the state, with no side effects, and is the same
+              on recovery
+            - so Akka journals events (facts), as event sourcing; we
+              journal commands, which needs a deterministic applier
         - LMAX: 6 million transactions per second (Fowler 2011)
         - Croquet: replicated 3D worlds; actions are transactions sent
           through a serializer, rendering is a query done locally
-          (Smith et al. 2003); the closest to Section 8
+          (Smith et al. 2003); see below
+- Croquet, today (Croquet Labs, `github.com/croquet/croquet`, docs read
+  on 2026-11-17); the closest related work found so far
+    - model and view: the model is replicated and identical on every
+      machine; the view handles input and output, and is local
+    - the view reads the model and never writes it; events from view
+      to model go through a reflector, a stateless relay that orders
+      them and mirrors them to all
+    - "the Prime Directive": the model only talks to the outside by
+      events from a view; all else 100% deterministic
+    - time: the model has no real time, only simulation time, which
+      advances by heartbeat ticks from the reflector; `future` schedules
+      a message; the view uses real time
+    - random numbers in the model are the same on all machines
+    - snapshots taken periodically by one participant; a new user loads
+      the last one and the reflector resends the events after it
+    - a change in the model code starts a new session; data that must
+      outlive the code is saved apart (`persistSession`), as plain JSON,
+      with a version, when the application decides
+    - against ours
+        - model = our table plus applier; view = our disposable tasks
+        - their time is a stream of events from outside: our "time as
+          an event" (Section 5)
+        - their model is a graph of objects with pending `future`
+          messages, all in the snapshot: closer to a snapshot of the
+          runtime (item 45) than to a table of data
+        - their order comes from one reflector; ours from a
+          permissionless consensus that may reorder (Section 8)
+        - their split of snapshot (same code) and persisted data (any
+          code) is our "snapshots age better than journals" made
+          explicit (Section 10)
+        - the reflector is a server, though it holds no state
         - Age of Empires and StarCraft: a save is a snapshot, a replay
           is a journal, multiplayer is replication; stated there with
           no citation
