@@ -13,7 +13,7 @@ One at a time, each with the recommended option.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| A2 | (46) The names and fields of the events. `env-sdl` adopted the vocabulary of `pico.atm` (decided 2026-11-16); `env-ray` still has `[key=262, name='RIGHT']` and `:mouse.dn`; `pico.atm` has no `:frame` | The vocabulary of pico for all, plus `:frame` (logic) before `:draw`; `key` the name, `code` the number; handle events carry `h` |
+| A2 | (46) The rest of the vocabulary: `env-sdl` adopted that of `pico.atm`; `env-ray` still has `[key=262, name='RIGHT']` and `:mouse.dn`/`.up` | The vocabulary of pico for all: `key` the name, `code` the number; `:mouse.motion`, `:mouse.button.dn`/`.up` with `x`, `y`, `button`; handle events carry `h` |
 | A3 | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time; the environment knows it is under `-t` by a global set in a `test` block of its own file (both checked, no compiler change; `261117-envs-atmos.md`) | Each environment adopts it, and the `*_ATM_*` variables can go. To propose to the environment sessions after the pilot of A1 |
 | A4 | (59) Confirm the mechanism of selection: `make env` builds `atmos-<env>`, `-e` does it by hand | Confirm. With A1, `make env` takes a list of environments |
 | A5 | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
@@ -68,4 +68,5 @@ One at a time, each with the recommended option.
 | Date | Decision |
 |---|---|
 | 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Done in `ceu-atmos` `81986e7` (the table must be unpinned; a missing `mode` is an error; up to 8). Pilot told to `uv` and `iup` |
+| 2026-11-17 | (46) `:frame` stays, in every environment with frames (pico, sdl, ray), for the logic of a frame, before `:draw`; `:clock` is time only (it awakes once per piece of time, many per frame). Environments with no frames (uv, iup, posix) emit none. Told to `pico-sdl`, `raylib`, `env-sdl`, `ceu-atmos` |
 | 2026-11-17 | No `task main`: the file stays the main task; a game's own task is what tests spawn |
