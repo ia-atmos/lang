@@ -284,14 +284,28 @@ static Tk tk_id (Tk tk, const char* str) {
 // PROTOS
 ///////////////////////////////////////////////////////////////////////////////
 
-// Parameters, after '(': ids separated by commas, optional `...`.
+// Parameters with `pin`, from the last call to `parser_pars`, which
+// `proto_body` consumes.
+static Tk* PINS  = NULL;
+static int NPINS = 0;
+
+// Parameters, after '(': ids separated by commas, optional `...`. A
+// parameter `pin x` adopts its argument: see `proto_body`.
 static void parser_pars (Expr* p) {
+    PINS  = NULL;
+    NPINS = 0;
     while (!check_str(")")) {
         if (accept_str("...")) {
             p->u.proto.dots = 1;
             break;
         }
-        accept_tag_err(TK_ID);
+        if (accept_str("pin")) {
+            accept_tag_err(TK_ID);
+            PINS = realloc(PINS, (NPINS+1) * sizeof(Tk));
+            PINS[NPINS++] = TK0;
+        } else {
+            accept_tag_err(TK_ID);
+        }
         int n = p->u.proto.n;
         p->u.proto.pars = realloc(p->u.proto.pars, (n+1) * sizeof(Tk));
         p->u.proto.pars[n] = TK0;
@@ -301,6 +315,35 @@ static void parser_pars (Expr* p) {
         }
     }
     accept_str_err(")");
+}
+
+// The body of a prototype, after its parameters. Each parameter `pin x`
+// is pinned at the top of the body, as by `pin x = x`: the body block
+// owns the argument.
+static Expr* proto_body (void) {
+    Tk* pins = PINS;
+    int n    = NPINS;
+    PINS  = NULL;
+    NPINS = 0;
+    Expr* blk = parser_block();
+    if (n > 0) {
+        List* es = &blk->u.block.es;
+        es->v = realloc(es->v, (es->n+n) * sizeof(Expr*));
+        memmove(&es->v[n], &es->v[0], es->n * sizeof(Expr*));
+        es->n += n;
+        for (int i=0; i<n; i++) {
+            Tk tk = pins[i];
+            tk.str = "pin";
+            Expr* dcl = mk(E_DCL, tk);
+            dcl->u.dcl.n   = 1;
+            dcl->u.dcl.ids = xalloc(sizeof(Tk));
+            dcl->u.dcl.ids[0] = pins[i];
+            dcl->u.dcl.set = mk(E_ACC, pins[i]);
+            es->v[i] = dcl;
+        }
+        free(pins);
+    }
+    return blk;
 }
 
 static void proto_par (Expr* p, Tk id, int first) {
@@ -353,7 +396,7 @@ static Expr* parser_lambda (void) {
     if (!check_str("{")) {
         err(TK1, "expected '{'");
     }
-    p->u.proto.blk = parser_block();
+    p->u.proto.blk = proto_body();
     return p;
 }
 
@@ -378,7 +421,7 @@ static Expr* parser_proto (void) {
 
     if (accept_str("(")) {
         parser_pars(p);
-        p->u.proto.blk = parser_block();
+        p->u.proto.blk = proto_body();
         return p;
     }
 
@@ -409,7 +452,7 @@ static Expr* parser_proto (void) {
     if (met) {
         proto_par(p, tk_id(tk,"self"), 1);
     }
-    p->u.proto.blk = parser_block();
+    p->u.proto.blk = proto_body();
 
     Expr* set = mk(E_SET, tk);
     list_add(&set->u.set.dsts, dst);
@@ -516,7 +559,14 @@ static int is_exit (Expr* e) {
 static Expr* parser_dcl (void) {
     Expr* dcl = mk(E_DCL, TK0);
 
-    if (!strcmp(TK0.str,"val") &&
+    // pin val x  |  pin var x  |  pin x, as pin val x
+    if (!strcmp(TK0.str,"pin")) {
+        if (accept_str("var")) {
+            dcl->u.dcl.mut = 1;
+        } else {
+            accept_str("val");
+        }
+    } else if (!strcmp(TK0.str,"val") &&
         (accept_str("func") || accept_str("task")))
     {
         Expr* p = mk(E_PROTO, TK0);
@@ -527,7 +577,7 @@ static Expr* parser_dcl (void) {
         dcl->u.dcl.ids[0] = TK0;
         accept_str_err("(");
         parser_pars(p);
-        p->u.proto.blk = parser_block();
+        p->u.proto.blk = proto_body();
         dcl->u.dcl.set = p;
         dcl->u.dcl.rec = 1;
         return dcl;

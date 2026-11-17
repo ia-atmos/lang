@@ -1,0 +1,3 @@
+(pin var x = [1])
+(pin y = [2])
+(set f = (func (a b) { (pin a = a) a }))

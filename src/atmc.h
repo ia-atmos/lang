@@ -249,7 +249,8 @@ struct Expr {
         // tk is val, var, or pin
         // rec: `val func f`, whose body sees `f`
         // opt: of a `where`, which pins a value that is unpinned
-        struct { int n; Tk* ids; Expr* set; int rec; int opt; } dcl;
+        struct { int n; Tk* ids; Expr* set; int rec; int opt; int mut; }
+                                                        dcl;
         // proto: `func f () {}` declares `f` if it is unknown
         // op: binary operator of a compound assignment, or NULL
         struct { List dsts; Expr* src; int proto; const char* op; }
@@ -327,6 +328,8 @@ struct Var {
     // it lives in a box, as a mutable variable
     int     pcap;
     int     pset;
+    // a `pin var`, which may be assigned
+    int     pmut;
     // coder: slot in `L`, and nesting level of its block
     int     slot;
     int     level;

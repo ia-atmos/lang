@@ -149,7 +149,7 @@ void ast_dump (Expr* e) {
             printf(")");
             break;
         case E_DCL:
-            printf("(%s", e->tk.str);
+            printf("(%s%s", e->tk.str, e->u.dcl.mut ? " var" : "");
             for (int i=0; i<e->u.dcl.n; i++) {
                 printf(" %s", e->u.dcl.ids[i].str);
             }

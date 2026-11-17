@@ -43,7 +43,7 @@ print(:3)
 
 ;; a pin assigned in a loop does not grow
 do {
-    pin cur = []
+    pin var cur = []
     loop i in 10000 {
         set cur = [i, [i]]
     }

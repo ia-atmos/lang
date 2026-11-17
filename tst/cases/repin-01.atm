@@ -12,10 +12,10 @@ func res (name) {
 
 ;; the old value had no other reference: it goes at once
 do {
-    pin acc = [0, 0]
+    pin var acc = [0, 0]
     set acc = [1, 1]
     print(acc@0)
-    pin f = res("a")
+    pin var f = res("a")
     set f = res("b")        ;; a is closed here
     print(:after)
 }                           ;; b is closed here
@@ -23,7 +23,7 @@ print(:1)
 
 ;; an alias keeps the old value alive, until it goes
 do {
-    pin f = res("c")
+    pin var f = res("c")
     do {
         val g = f
         set f = res("d")
@@ -36,7 +36,7 @@ print(:2)
 ;; the new value is pinned deep, in the block of the variable
 pin out = []
 do {
-    pin t = []
+    pin var t = []
     set t = [[1]]
     print(catch true { set out.x = t@0 })
     ;; and a value that has an owner is refused
@@ -51,7 +51,7 @@ task T (id) {
     await(false)
 }
 do {
-    pin t = spawn T(1)
+    pin var t = spawn T(1)
     set t = spawn T(2)      ;; 1 ends here
     print(:in)
 }                           ;; 2
@@ -59,7 +59,7 @@ print(:4)
 
 ;; a captured pin
 do {
-    pin cur = [n=0]
+    pin var cur = [n=0]
     val func f () { set cur = [n=cur.n+1] ; cur.n }
     print(f(), f(), cur.n)
 }

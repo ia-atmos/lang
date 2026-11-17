@@ -662,6 +662,7 @@ static void res (Expr* e) {
             e->vars = xalloc(e->u.dcl.n * sizeof(Var*));
             for (int i=0; i<e->u.dcl.n; i++) {
                 e->vars[i] = declare(e->u.dcl.ids[i], kind);
+                e->vars[i]->pmut = e->u.dcl.mut;
             }
             if (e->u.dcl.n==1 && e->u.dcl.set!=NULL &&
                 e->u.dcl.set->tag==E_PROTO)
@@ -686,9 +687,11 @@ static void res (Expr* e) {
                 if (dst->tag == E_PUB) {
                     continue;
                 }
-                // a `pin` may be assigned: it owns the new value, and
-                // releases the old one
-                if (dst->tag==E_ACC && dst->var->kind==V_PIN) {
+                // a `pin var` may be assigned: it owns the new value,
+                // and releases the old one
+                if (dst->tag==E_ACC && dst->var->kind==V_PIN &&
+                    dst->var->pmut)
+                {
                     dst->var->pset = 1;
                     dst->var->boxed = dst->var->boxed || dst->var->pcap;
                 } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
