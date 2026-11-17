@@ -338,6 +338,10 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
 - The value cannot escape the block, which is verified when the program
   executes.
 
+A value that nobody pins follows the rules of reference counting: a cycle
+among unpinned values is never reclaimed, so a cyclic structure should be
+pinned.
+
 The next example builds a cycle that is reclaimed when the block terminates:
 
 ```
@@ -1474,15 +1478,17 @@ Locals in Atmos must be declared before use, and are only visible inside the
 [block](#blocks) in which they are declared:
 
 ```
-Local : (`val´ | `var` | `pin`) ID* [`=´ Expr+]
+Local : (`val´ | `var` | `pin` [`val´ | `var´]) ID* [`=´ Expr+]
 ```
 
 A declaration first specifies one of `val`, `var` or `pin` variable modifier.
 A `val` is immutable, while a `var` is mutable.
 A [`pin`](#pin) attaches its value to the enclosing block, which reclaims
 the value when it terminates or aborts.
-A `pin` may be assigned a new value, which it owns in turn, and the old one
-is released.
+A `pin` is also immutable (`pin val`) or mutable (`pin var`), and a `pin`
+alone is a `pin val`.
+A `pin var` may be assigned a new value, which it owns in turn, and the old
+one is released.
 
 A `val` or a `var` does not own a [dynamic value](#pin): it refers to a
 value that belongs to a block, or holds one that was just created, which it
@@ -1546,14 +1552,27 @@ A dynamic value is in one of two states:
   It is the result of a constructor, of a call, or of a block, before it is
   declared or stored.
 
-An unpinned value becomes pinned in two ways:
+An unpinned value becomes pinned in three ways:
 
 - When it is declared with `pin`, in the enclosing block.
+- When it is passed to a parameter declared with `pin`, in the body of the
+  function or task.
 - When it is stored in a pinned value, such as in a field of a pinned table
   or in the [`pub`](#pub) of a pinned task.
   It is then pinned in the block of the value that holds it.
 
-The pin is deep: the unpinned values that the value holds are pinned with it.
+The pin is deep: the unpinned values that the value holds are pinned with it,
+except those that a name holds (see below), which are only referenced.
+
+A parameter declared with `pin` adopts its argument, as `pin x = x` at the
+top of the body would do, and the body reclaims it when it terminates:
+
+```
+func save (pin file, data) {
+    io.write(file, data)
+}                               ;; the file is closed here
+save(io.open("out.txt", "w"), "...")
+```
 
 A name does not own a value: a `val`, a `var`, a parameter, a loop
 variable, and a declaration of a [`where`](#where).
@@ -1563,9 +1582,8 @@ An unpinned value that a name holds gets a *ceiling*: the block of the name, or
 the outermost one, if several names hold it.
 The ceiling reaches the unpinned values that it holds, and those that are
 stored in it later.
-An unpinned value may only be pinned at its ceiling or outside: by a `pin`, by
-being stored in a pinned value or in a `pub`, or by being assigned to a
-`pin`.
+An unpinned value may only be pinned at its ceiling or outside: by a `pin`,
+by a parameter declared with `pin`, or by being assigned to a `pin var`.
 Otherwise, a block inside could finalize it while the name still sees it,
 which raises an error such as `invalid pin : table named at prog.atm:10`,
 with the line of the name:
@@ -1580,20 +1598,38 @@ func f (o) {
 f([7])
 ```
 
+A named value that is stored in a pinned value, or that a pinned value holds
+when it is pinned, is not adopted: the pinned value only refers to it, and
+the name keeps seeing it after the block of the holder ends.
+Its ceiling becomes the block of the holder, if that block is outer, so that
+it can no longer be pinned inside that block:
+
+```
+task Item (r) {             ;; `r` is a name
+    spawn {
+        pin over = \(x, y) { inside(r, x, y) }   ;; refers to `r`
+        <...>
+    }                       ;; `over` is reclaimed, and `r` stays
+    <...>                   ;; `Item` still uses `r`
+}
+```
+
 So an unpinned value has a window: from its floor, which is the block of what it
 holds, to its ceiling, which is the block of who names it.
 A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
 A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-It does not reclaim a cycle among unpinned values, which only a `pin` does.
+It does not reclaim a cycle among unpinned values, which only a `pin` does:
+without a `pin`, the rules of reference counting apply, and a cyclic
+structure should be pinned.
 The explicit `pin` is recommended where the moment of finalization matters:
 native values, tasks, and pools.
 A task that a name holds, as in `val t = spawn T()`, is aborted at the end
 of the block of the name, unless a block outside adopts it.
 
 A place that owns its value may be assigned an unpinned one: a variable
-declared with `pin`, a field of a pinned table, and the `pub` of a pinned
+declared with `pin var`, a field of a pinned table, and the `pub` of a pinned
 task.
 The new value is pinned in the block of the place, deep, as by a
 declaration.
@@ -1606,7 +1642,7 @@ Therefore, a value lives while something refers to it, and no cycle leaks:
 
 ```
 do {
-    pin acc = [0, 0]
+    pin var acc = [0, 0]
     loop {
         <...>
         set acc = [0, 0]        ;; the old table is released at once
@@ -1628,6 +1664,8 @@ the end of a block is.
 The declaration of a [prototype](#prototypes) pins it: `func f () {...}`,
 `task T () {...}`, and the assignment of a function to a variable, as in
 `set f = func () {...}`, pin the prototype in the block of the variable.
+Therefore, a function declared in a block cannot leave it: a function that
+is given away is an anonymous one, as in `val f = func () {...}`.
 
 When the block terminates or aborts, its pinned values are reclaimed:
 
@@ -1671,7 +1709,9 @@ and the line of its pin:
   `pub` of a task attached outside the block;
 - to pass the value in a `throw`, or to `emit` it to tasks that live outside
   the block;
-- to spawn a task with the value in a pool that lives outside the block.
+- to spawn a task with the value in a pool that lives outside the block;
+- to give the value as the final value of its block, or through a `return`,
+  `break`, or `escape` (see below).
 
 A variable that is captured by a function belongs to the block that declares
 it, as any other variable.
@@ -1695,24 +1735,39 @@ await :close [h=dlg]        ;; the pattern holds `dlg`, with no pin
 The floor is set when the value is born: a value that is stored later in a
 unpinned value must belong to the floor, or to a block that encloses it.
 
-Finally, a block may give away what it pins.
-If a pinned value is the final value of its block, or goes out through a
-`return`, `break`, or `escape`, then it leaves the block as an unpinned value,
-along with the values it holds from the block, including tasks and pools.
-The destination must pin it again.
-It is an error if the value holds something that cannot leave: a task of a
-pool that stays in the block, or a task that received an argument that is
-pinned in the block.
-This is the only way to undo a pin, and the way to build a value with the
-help of temporary ones:
+A pinned value never leaves its block: not as the final value of the
+block, nor through a `return`, `break`, or `escape`, which raise
+`invalid escape`.
+Neither does an unpinned value that holds a value pinned in the block, since
+its floor is there.
+A block that builds a value to give it away declares it with `val`, and may
+pin the temporary values that it uses:
 
 ```
 pin r = do {
     pin tmp = [...]         ;; temporary, reclaimed here
-    pin x   = [...]
+    val x   = [...]         ;; unpinned, held by a name
     <...>
     x                       ;; leaves the block, and is pinned outside
 }
+```
+
+A pool of tasks follows the same rule.
+A pool that a name holds, as in `val ts = tasks()`, takes its floor from
+what its tasks hold (their prototype and their arguments), up to the block of
+the name, where it is checked.
+Therefore, a function may create a pool, spawn tasks in it, and give it
+away:
+
+```
+func enemies (n) {
+    val ts = tasks()
+    loop i in n {
+        spawn @ts Enemy(i)
+    }
+    ts                      ;; leaves the function, with its tasks
+}
+pin es = enemies(10)
 ```
 
 Examples:
@@ -1731,13 +1786,17 @@ do {
 }
 
 func new () {
-    pin t = [1, 2, 3]
-    t                       ;; `t` leaves the block
+    val t = [1, 2, 3]       ;; unpinned
+    t                       ;; leaves the block
 }
-pin v = new()               ;; `v` is pinned again
+pin v = new()               ;; `v` is pinned here
 
-func f (t) {
-    pin u = t               ;; a function may pin what it receives
+func bad () {
+    pin t = [1, 2, 3]
+    t                       ;; ERROR: invalid escape : table pinned at ...
+}
+
+func f (pin u) {            ;; a function may pin what it receives
     #u
 }
 f([1, 2, 3])
