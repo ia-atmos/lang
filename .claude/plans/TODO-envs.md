@@ -19,6 +19,7 @@ One at a time, each with the recommended option.
 | A5 | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
 | A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `ceu-atmos` |
 | A7 | (52) New environments: POSIX (serial, fds, signals), the browser (WebAssembly), embedded boards | `env-posix` first, as the first secondary environment of A1 (FrescoGO! is its case) |
+| A8 | (46) The order inside a frame. pico: the time, the input, `:frame`, `:draw`; sdl: the input, `:frame`, the time, `:draw` (SNKRX sets the clock factor in `:frame` for the time of the same frame). Reported by `pico-sdl` with its `:frame` (2026-11-17) | The order of sdl for all, since one game depends on it; pico's traces change once |
 
 ## B. Work known and not done
 
