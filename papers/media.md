@@ -137,6 +137,12 @@ The four points of the thesis, each against Céu-Media.
 - `pin` gives the document one owner **[claim]**
     - `pin doc = ...` owns every table inside it; tasks refer to parts,
       they do not own them
+    - the document may be replaced as a whole (`set doc = <new>`): the
+      old one is finalized when its last reference goes, at the latest
+      at the end of its block (rules of pin as of 2026-11-17)
+    - **[open]** what the player does then: abort and replay, or keep
+      the parts that did not change (close to `snapshots`; see
+      Section 9)
     - resources (layers, fonts, sounds, videos) are pinned by who loads
       them, and freed when that block ends
     - by the rules of pin, cited by name, not restated
