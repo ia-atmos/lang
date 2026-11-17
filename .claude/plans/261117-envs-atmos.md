@@ -174,3 +174,22 @@ it the runtime spawns `main` with the arguments; the program ends when
 define it, the file is the main task, as today, so scripts and existing
 programs do not change. `func main` gives nothing that the top level
 does not give already.
+
+### The trick of the reference (atmos-lang/atmos, `atmos` and `src/exec.lua`)
+
+The command `atmos` wraps the whole file in a function and passes it to
+`loop`: `atm_loadfile` builds `(func (...) { <file> \n })(...)` (a
+function, so that `return` and `throw` work at the top and `...` are the
+arguments; the `\n` keeps a `;;` comment in the last line from eating
+the `}`), and the last line of `atmos` is
+`atmos.loop(atm_loadfile(input), args...)`. The program `require`s its
+environment in its own text (`require "atmos.env.clock"`), so the
+environment is registered during the first run of the main task, before
+its first `await`, which is before `loop` calls the first `step`. With
+no environment, `loop` spins: `hello.atm` requires the clock by hand.
+
+Here the compiler already makes the file the main task, and the
+generic `main` calls the first `step` only after `atm_main` returns,
+with the default clock when none is registered. So the trick is built
+in, and a `task main` is not needed for it. Its remaining value is
+tests (item 58): leave it for that discussion.
