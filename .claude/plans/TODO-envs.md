@@ -33,11 +33,11 @@ One at a time, each with the recommended option.
 
 ## C. Reported and not acknowledged
 
-- (none yet)
+- `ceu-atmos` `81986e7`: `atmos.env` and the generic `main`, with three changes from the draft: the env table must be unpinned, a missing `mode` is an error, the error of the main chunk is printed before the quits.
 
 ## D. Decided by the author
 
 | Date | Decision |
 |---|---|
-| 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Sent to `ceu-atmos`; the pair uv+iup is the pilot (`uv`, `iup`) |
+| 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Done in `ceu-atmos` `81986e7` (the table must be unpinned; a missing `mode` is an error; up to 8). Pilot told to `uv` and `iup` |
 | 2026-11-17 | No `task main`: the file stays the main task; a game's own task is what tests spawn |
