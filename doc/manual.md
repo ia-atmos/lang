@@ -1661,11 +1661,10 @@ For a native value, the moment it is closed is then the moment its last
 holder lets it go, which is deterministic but not a point of the text, as
 the end of a block is.
 
-The declaration of a [prototype](#prototypes) pins it: `func f () {...}`,
-`task T () {...}`, and the assignment of a function to a variable, as in
-`set f = func () {...}`, pin the prototype in the block of the variable.
-Therefore, a function declared in a block cannot leave it: a function that
-is given away is an anonymous one, as in `val f = func () {...}`.
+The declaration of a [prototype](#prototypes) does not pin it: as a `val`,
+its name holds an unpinned function or task, which may leave the block, as
+the result of a function that builds it.
+`pin func f () {...}` gives it an explicit owner.
 
 When the block terminates or aborts, its pinned values are reclaimed:
 
@@ -1832,28 +1831,45 @@ print(x)    ;; --> 22
 Atmos supports declarations for [functions](#function) and [tasks](#tasks):
 
 ```
-Proto : [`val´] (`func´|`task`) ID `(´ ID* [`...´] `)´ Block
-      | (`func´|`task`) ID {`.´ ID} [`::´ ID] `(´ ID* [`...´] `)´ Block
+Proto : [Mod] (`func´|`task`) ID `(´ Pars `)´ Block
+      | (`func´|`task`) ID {`.´ ID} [`::´ ID] `(´ Pars `)´ Block
+Mod   : `val´ | `var´ | `pin´ [`val´ | `var´]
+Pars  : [[Mod] ID {`,´ [Mod] ID}] [`,´ `...´]
 ```
 
-The optional `val` modifier makes the declaration local to its block.
-Without it, the declaration is a variable of the main chunk, visible in the
-whole program, even if it appears inside a block.
+The optional modifier makes the declaration local to its block, with the
+meaning of a [local variable](#local-variables): `val func f` (immutable),
+`var func f` (mutable), and `pin func f` or `pin var func f` (owned by the
+block).
+Without it, at the top level, the declaration is a variable of the main
+chunk, visible in the whole program, even if it appears inside a block.
 
 The first format supports functions and tasks:
 
 - `func f (<pars>) { <body> }`:
     equivalent to `set f = func (<pars>) { <body> }`
 - `val func f (<pars>) { <body> }`:
+    equivalent to `val f = func (<pars>) { <body> }`
+- `pin func f (<pars>) { <body> }`:
     equivalent to `pin f = func (<pars>) { <body> }`
 
-The declaration of a prototype [pins](#pin) it, in the block of its variable:
-in the block of the declaration in the `val` form, and in the outermost block
-of the program for a variable of the program.
-Therefore, a prototype that captures a value or a variable of an inner block
-cannot be declared as a variable of the program.
+A declaration does not [pin](#pin) its prototype, unless it says `pin`: its
+name holds an unpinned function, which may leave the block, as the result of
+a function that builds it.
 
-In the `val` form, `f` is visible in its own body, such that the function may
+A parameter is a declaration initialized by its argument, and takes the same
+modifiers: `x` or `val x` (immutable, the default), `var x` (mutable),
+`pin x` or `pin val x` (the body owns the argument), and `pin var x`.
+They may be mixed, with `...` last:
+
+```
+func f (var n, pin file, x, ...) {
+    set n = n + 1           ;; ok: `n` is mutable
+    <...>
+}                           ;; `file` is reclaimed here
+```
+
+With a modifier, `f` is visible in its own body, such that the function may
 call itself.
 The same holds for a task, which may spawn or await itself.
 Inside the body, `f` is the function itself, not a captured copy.
@@ -1861,15 +1877,14 @@ Inside the body, `f` is the function itself, not a captured copy.
 Outside functions and tasks, the first form also declares `f` as a variable of
 the program, if it does not exist, such that functions may refer to each other
 regardless of their order.
-Inside a function or task, `f` must already exist, since a new variable of the
-program would be shared by all calls of the enclosing function.
-Otherwise, the declaration is an error, and the `val` form is the one to use:
+Inside a function or task, a new variable of the program would be shared by
+all calls of the enclosing function: if `f` does not exist, the declaration
+is local, as in the `val` form, and assigns `f` otherwise:
 
 ```
-func f (x) {
-    val func g () { x }     ;; ok: local to each call of `f`
-    func h () { x }         ;; error, unless `h` exists
-    g()
+func mk (x) {
+    func g () { x }         ;; local to each call of `mk`, as `val func g`
+    g                       ;; leaves `mk`
 }
 ```
 
@@ -1897,8 +1912,9 @@ func add (x, y) {
 }
 print(add(1,2))     ;; --> 3
 
-val task T (x) {
+task T (var x) {
     await :X
+    set x = x + 1
     x
 }
 ```
@@ -3543,6 +3559,9 @@ As an extension, we use `X*` to mean `{ X ',' }`, but with the leading `,`
 being optional; and a `X+` variation with at least one `X`.
 
 ```
+Mod  : `val´ | `var´ | `pin´ [`val´ | `var´]
+Pars : [[Mod] ID {`,´ [Mod] ID}] [`,´ `...´]
+
 Prog  : { Expr [`;´] }
 Block : `{´ Prog `}´
 Expr  : `do´[TAG]  Block                            ;; explicit block
@@ -3552,11 +3571,12 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
       | `test´ Block                                ;; test block
       | `include´ STR                               ;; include file
 
-      | (`val´ | `var` | `pin`) ID* [`=´ Expr+]     ;; local declarations
+      | Mod ID* [`=´ Expr+]                         ;; local declarations
       | Expr `where´ `{´ (ID* `=´ Expr)* `}´        ;; where clause
-      | (`func´|`task´) ID {`.´ ID} [`::´ ID]       ;; declaration (`::´ func only)
-               `(´ ID* [`...´] `)´
-               Block
+      | [Mod] (`func´|`task´) ID                    ;; declaration
+               `(´ Pars `)´ Block
+      | (`func´|`task´) ID {`.´ ID} [`::´ ID]       ;; (`::´ func only)
+               `(´ Pars `)´ Block
       | `return´ Expr*                              ;; return from function
 
       | `set´ Expr* `=´ Expr+                       ;; assignment
@@ -3571,8 +3591,8 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
                     | ID `=´ Expr
                     | Expr
 
-      | (`func´|`task´) `(´ ID* [`...´] `)´ Block   ;; anon function/task
-      | `\` [ID | `(` ID* `)´] Block                ;; lambda notation
+      | (`func´|`task´) `(´ Pars `)´ Block          ;; anon function/task
+      | `\` [ID | `(` Pars `)´] Block               ;; lambda notation
 
       | `task´                                      ;; running task
       | `tasks´ `(´ [Expr] `)´                      ;; tasks pool
