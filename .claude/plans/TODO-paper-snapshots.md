@@ -76,7 +76,11 @@ Each item has the recommended option.
       the port.
     - `pico-1oom` (session_011eECoiEGgQ6ZBFHUCoxt77): not asked, the
       port is not started. Its plan is `261114-pico-1oom.md`.
-2. **Related work from sources.** Prevayler, record and replay, and
+2. **Related work from sources.** "Prevalent Systems" (2014) was read
+   on 2026-11-17 from a PDF the author uploaded; its examples are in
+   Section 13. Its claim on Age of Empires and StarCraft has no
+   citation: to find a primary source (Bettner and Terrano 2001).
+   Earlier note: Prevayler, record and replay, and
    Freechains were checked on the web on 2026-11-14. Event sourcing,
    Elm and Redux, Raft, lockstep, Bayou, Time Warp, and CRDTs are from
    memory: to check and to

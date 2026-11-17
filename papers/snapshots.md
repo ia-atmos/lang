@@ -316,9 +316,28 @@ state, and case studies.
 
 ## 13. Related Work
 
-- System prevalence: Prevayler
+- System prevalence: Prevayler (Wuestefeld 2001); the pattern language
+  "Prevalent Systems" (Johnson and Wuestefeld, SugarLoafPLoP 2014)
     - the closest: memory, journal of commands, periodic snapshots
-    - no tasks, no user interface
+    - its rules match ours: transactions are Commands (GoF), run one at
+      a time to completion, are deterministic, keep I/O outside, and
+      take the time from the transaction, not from the clock
+    - no tasks; the clients are outside the prevalent system
+    - its examples, each a related work for us
+        - Smalltalk-80: the image is a snapshot, the changes file a
+          journal (Goldberg 1984)
+        - an in-memory database with a journal and one lock
+          (Garcia-Molina et al. 1984)
+        - Akka persistent actors: state changes only by messages,
+          journal and snapshot, migration of an actor
+        - LMAX: 6 million transactions per second (Fowler 2011)
+        - Croquet: replicated 3D worlds; actions are transactions sent
+          through a serializer, rendering is a query done locally
+          (Smith et al. 2003); the closest to Section 8
+        - Age of Empires and StarCraft: a save is a snapshot, a replay
+          is a journal, multiplayer is replication; stated with no
+          citation; the source to cite is Bettner and Terrano, "1500
+          Archers on a 28.8" (GDC 2001), not yet checked
 - Event sourcing and CQRS
     - records facts; ours records intentions, and needs determinism
 - Command and Memento patterns: the two parts, not the architecture
