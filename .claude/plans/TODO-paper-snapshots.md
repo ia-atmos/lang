@@ -54,6 +54,11 @@ Each item has the recommended option.
       of pin". Exact anchors of the rules of store, end of block, and
       result: to ask the `paper-pin` session
       (session_011eECofALi31oSimzbLxYZp) when the text is written.
+      The rules changed on 2026-11-17 (told by the compiler session):
+      a place that owns its value may be assigned a fresh one, and the
+      old one is finalized when its last reference goes. Section 5 now
+      says that a load is `set S = X.load(...)`. Implemented in `main`;
+      see the manual, "Pin".
     - ~~`paper-games`~~ (session_011eECogKyRYMVJJfbmpHYv9): answered
       on 2026-11-15. Its outline claims nothing on the saved game of
       Doom, on determinism, or on replays. It expects determinism only

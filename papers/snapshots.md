@@ -144,6 +144,12 @@ state, and case studies.
       value stored in the table, which is, by definition, state that
       persists
     - what the rules do not see: global state inside a C binding
+    - load is one assignment: `pin S` at the top, then
+      `set S = X.load(...)`; the old snapshot is finalized when its last
+      reference goes (rules of pin as changed on 2026-11-17)
+        - tasks of the old level still hold rows of the old snapshot:
+          abort the level first, and the old table goes at once
+        - so the order of a restart is: abort, replace, spawn
 - Hierarchical tags: one await on `:cmd` sees every command
 
 ## 6. Time, Randomness, and the Outside
