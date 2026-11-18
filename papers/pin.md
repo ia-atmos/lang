@@ -27,8 +27,10 @@ not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
 arena abstraction: the blocks of the program are the regions.
 It bounds the lifetime of a value, but does not collect what becomes garbage
-while its block is alive: reference counting does that underneath, and
-cycles are reclaimed only when pinned, at the end of their block.
+while its block is alive: reference counting does that underneath.
+Cycles are broken at the end of a block: by the pin, for pinned values, and
+by a local trial deletion among the unpinned values that the block's names
+reach, which replaces a cycle collector.
 A tracing collector would still help inside a long-lived block; Atmos leaves
 it out as a design choice, trading that memory for determinism.
 We argue that it is only sound and useful under structured programming, in
@@ -86,7 +88,8 @@ case studies from six ports of libraries and games to Atmos.
     - a value is born unpinned
     - floor from what it is born with: fields, operands, captures, arguments
     - a native declares what it depends on in its binding
-    - the floor never rises after birth
+    - the floor may rise only while just its name refers to it
+      (`val z = [] ; set z.k = k`)
 - Rule 2, pin (adoption)
     - by declaration: `pin val x` or `pin var x` (bare `pin` is `pin val`),
       in the current block
@@ -95,14 +98,17 @@ case studies from six ports of libraries and games to Atmos.
     - by storage: in a pinned value or a `pub`, in the block of the holder
     - by assignment to an owned place: a `pin` variable, a field of a
       pinned table, the `pub` of a pinned task
-    - deep: every unnamed unpinned value it holds is pinned with it;
-      a named one is only referenced, and its ceiling drops to the holder
+    - deep: an unpinned value it holds is pinned with it when the holder
+      outlives the value's name (holder in the name's block or outer);
+      otherwise it is only referenced, and its ceiling drops to the holder
     - only at the ceiling or outside: a name never sees its value finalized
 - Rule 3, store
     - a place accepts a value of the same block or of an outer one
     - places: table field, `pub`, outer variable, captured variable, pool
     - an unpinned place is checked against its floor
-    - `emit` and `throw` follow the same check
+    - `emit` and `throw` follow the same check; an event with a pinned value
+      reaches only targets attached inside the block of the pin, checked by
+      comparing two depths, with no walk of the tree of tasks
     - a captured variable belongs to the block that declares it
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
@@ -123,7 +129,11 @@ case studies from six ports of libraries and games to Atmos.
     - a parameter may receive an unpinned value: store it outside, or return it
     - a constructor builds with `val` and returns it; the caller pins it
     - a pool held by a `val` takes its floor from its tasks, checked at its ceiling
-    - a cyclic structure should be pinned; otherwise reference counting applies
+    - cycles among unpinned values: broken at the end of the block of the names
+      that reach them; `pin` chooses the moment of release
+    - a named argument to a task that outlives its spawner (a task of an outer
+      pool) gets its ceiling at the block that ends the task
+    - `pin var` for values the block creates; `var` for those it refers to
     - natives: a child holds its parent, by rule 3
 - Refinements found in the implementation
     - an emitted event: owned by the emit, at its floor, by no block
@@ -211,6 +221,15 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 3: `a_chk_store`, one comparison of depths per store
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
 - Rule 5: `a_blk_xfer`, refuses a pinned value that would leave; transfers an unpinned one
+- Cycles at block end: local trial deletion
+    - candidates: unpinned values reachable from the block's names
+      (ceiling at that block, or none)
+    - subtract references among candidates and from the names; what keeps a
+      count is alive, with all it reaches; what counting would free is left to it
+    - cut only the edges among the rest (in a cycle, or reached only through one)
+    - runs only if a reference was written into a table, box, or `pub` in the block
+    - soundness rests on the counts, not on the ceiling
+    - escape information by block depth selects the candidates
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
@@ -222,6 +241,8 @@ case studies from six ports of libraries and games to Atmos.
 - Tasks held by pinned data: aborted with the block of the holder
 - Natives from C: `a_nat_holds(child, parent)`, `a_own`
 - Errors: the type of the value and the line of its pin
+- Compile-time warning of a pin given away: in a given constructor, and in
+  `return`, `break`, `escape` with a literal tag
 
 ## 9. Evaluation
 
@@ -242,6 +263,19 @@ case studies from six ports of libraries and games to Atmos.
     - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
     - to measure again: names may hold unpinned values, and owned places may be
       reassigned, so many of those rewrites are no longer needed
+- Cost of the local trial deletion: none on binary-trees or when only numbers
+  are written; +30 to 40% (~150 ns per iteration) on a loop that only writes
+  a new table into a named one; sdl-pingus (suite, 6000-frame demo) and the
+  libuv echo benchmark unchanged
+- Case E, a longer-lived place referring to what a shorter block owns:
+  experiments with a context owned by the block
+    - Flare: 4 of 5 workarounds gone, -32 lines, traces identical
+    - Lessmilk: registry gone, 16 of 22; +3% code; the limit reappears one
+      level down (entities inside the screen)
+    - pico: only its two C globals
+    - conclusion: most of case E is per-scope state kept in globals
+    - what remains: a task outside the block cannot receive its context; a
+      container cannot hold what an inner entity pins; global events carry ids
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
   0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
 - Reports of the migration, so far (`261115-pin.md`)
@@ -285,15 +319,16 @@ case studies from six ports of libraries and games to Atmos.
 - Collection is still needed during the scope: pins do not replace a GC
 - Without a tracing collector, garbage in cycles lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- A cycle among unpinned values that nothing adopts is not reclaimed: only a `pin` breaks it
-  (an unpinned task kept alive only by its own `pub`)
+- Cycles that leak: a cyclic value returned by a call and dropped without a
+  name; a cyclic value given to a task of an outer pool, when that task ends
+- No way for an outer place to hold an inner value (case E); proposals
+  (`with x.k = v {...}`, a `:weak` set) are under discussion, not decided
 - A task cannot publish a value pinned in its body
 - An unpinned value outside its window is an error: `invalid pin : table named at f:N`
 - A native replaced in an owned place is closed when its last holder lets it go:
   deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
 - A value that leaves is transferred deep: cost proportional to its size
-- A named cycle held by a pin is not reclaimed by that pin
 - Requires a language with structured tasks and abortion
 
 ## 11. Related Work
@@ -321,7 +356,7 @@ case studies from six ports of libraries and games to Atmos.
 - Structured concurrency: Trio, Kotlin, Swift, Java Loom, Céu
 - Regions: Tofte-Talpin, MLKit, Cyclone, Real-Time Java scoped memory
 - Ownership: Rust, ownership types, Vale, Lobster
-- Reference counting: Swift ARC, Perceus, cycle collection
+- Reference counting: Swift ARC, Perceus, cycle collection, trial deletion
 - Resource management: RAII, `defer`, `with`, `using`, `try-with-resources`
 - Arenas and zones: Zig, Odin, Apache pools
 - Escape analysis and stack allocation
