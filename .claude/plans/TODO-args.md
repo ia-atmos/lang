@@ -4,11 +4,10 @@ Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`
 
 ## Waiting for the author
 
-1. `f (x), y`: `(` after a callee stays the classic call, with or
-   without a space (`f (x), y` is `(f(x)), y`; `f (a+1)*2` is
-   `f(a+1) * 2`), unlike `return (x), y` which is `return x, y`.
-   Or a space before `(` makes it a juxtaposed argument (CoffeeScript).
-   Recommended: classic call, as today and as in Lua.
+1. Is the comma needed: `f x y` as `f(x, y)`? Asked by the author.
+   It conflicts with nesting, already decided (`print f x` is
+   `print(f(x))`): a juxtaposition is either the next argument or a
+   call. Recommended: keep the comma.
 2. (Resolved by the new standing rule below: atmos-lang measures the
    ports from the branch `args` before the merge.)
 
@@ -55,3 +54,11 @@ Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`
   as `emit`: `await 20min + 1s` is `await(20min + 1s)`, `await t` is
   valid, `await T x` spawns `T(x)`. A comma ends it (one pattern, not a
   list), as it ends `emit` today: `val a, b = await :X, 10`.
+- 2026-11-18: `(` after a callee is the classic call, with or without
+  a space (`f (a+1)*2` is `f(a+1) * 2`).
+- 2026-11-18 (proposed by the author, replaces "a comma ends it"): the
+  comma in a bare `await` is as in the others: `await 10, :frame` is
+  `await(10, :frame)`, the counted pattern. `val a, b = await :X, 10`
+  becomes `await(:X, 10)`: to be a compile error (the count is a tag);
+  write `(await :X), 10`. Locally no program depends on the old
+  reading (only `tst/cases/await-cnt-err-03`, an error case).
