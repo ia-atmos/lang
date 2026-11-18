@@ -783,6 +783,7 @@ typedef struct Blk {
     Defer* defs;
     int ndefs;
     int box;
+    const char* mu;     // the writes of references before the block
 } Blk;
 
 static Blk blk_open (Unit* u) {
@@ -813,6 +814,16 @@ static Blk blk_open (Unit* u) {
     out(u, "{");
     u->ind++;
     out(u, "a_depth = D + %d;", u->level);
+    // the writes of references before the block, for its cycles: in a
+    // local, or in a slot of the block in a task, which may await
+    if (u->task) {
+        int s = slot_new(u);
+        out(u, "L[%d] = a_int(a_muts);", s);
+        b.mu = xfmt("(uint32_t)L[%d].u.i", s);
+    } else {
+        out(u, "uint32_t MU_%d = a_muts;", b.cl);
+        b.mu = xfmt("MU_%d", b.cl);
+    }
     return b;
 }
 
@@ -983,13 +994,13 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     u->ndefs = b.ndefs;
 
     if (*nslots(u) > b.lo) {
-        out(u, "a_unname(&L[%d], %d, D + %d);", b.lo, *nslots(u)-b.lo,
-            u->level);
+        out(u, "a_unname(&L[%d], %d, D + %d, %s);", b.lo, *nslots(u)-b.lo,
+            u->level, b.mu);
         out(u, "a_clrs(&L[%d], %d);", b.lo, *nslots(u)-b.lo);
     }
     // the parameters of a function or task end with its body
     if (u->level==0 && u->npar>0 && u->root==NULL) {
-        out(u, "a_unname(&L[0], %d, D);", u->npar);
+        out(u, "a_unname(&L[0], %d, D, %s);", u->npar, b.mu);
     }
     u->level--;
     out(u, "a_depth = D + %d;", u->level);
@@ -1307,6 +1318,8 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         if (x->boxed) {
             out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v.c,
                 var_raw(u,x));
+            // a box is an object: the write may close a cycle
+            out(u, "a_muts++;");
         } else if (x->global) {
             out_try(u, "a_chk_store(%s, 1)", v.c);
         } else if (x->level < u->level) {
@@ -1315,6 +1328,8 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         opnd_mov(u, v, dst);
         return;
     }
+    // a write into an object may close a cycle
+    out(u, "a_muts++;");
     if (l.e->tag == E_PUB) {
         out_try(u, "a_pub_set(NULL, %s)", v.c);
         opnd_rel(u, v);
@@ -2748,6 +2763,17 @@ char* coder_main (Expr* prog, Var** globals, int nglobals) {
     buf_add(&c, "}\n\n");
 
     buf_add(&c, "void atm_free (void) {\n");
+    // the variables of the program are the names of its block: what
+    // only they reach, in a cycle, is cleared with them
+    if (nglobals > 0) {
+        buf_add(&c, xfmt("    AVal gs[%d] = {", nglobals));
+        for (int i=0; i<nglobals; i++) {
+            buf_add(&c, xfmt("%s%s", (i==0 ? "" : ", "),
+                var_raw(&u,globals[i])));
+        }
+        buf_add(&c, "};\n");
+        buf_add(&c, xfmt("    a_unname(gs, %d, 1, A_MUTS_ANY);\n", nglobals));
+    }
     for (int i=nglobals-1; i>=0; i--) {
         buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
     }

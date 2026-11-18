@@ -25,6 +25,7 @@ static AStatus arg_vec (int argc, AVal* argv, const char* f, int64_t* n) {
 // the elements from `i` on.
 // Both give `v`, which the vector may have just pinned.
 static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
+    a_muts++;     // a reference written or removed
     (void) self;
     int64_t n;
     if (arg_vec(argc, argv, "insert", &n) != A_OK) {
@@ -59,6 +60,7 @@ static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
 
 // vector.clear(t): removes all elements, and keeps the other keys.
 static AStatus vec_clear (AFunc* self, int argc, AVal* argv) {
+    a_muts++;     // a reference written or removed
     (void) self;
     int64_t n;
     if (arg_vec(argc, argv, "clear", &n) != A_OK) {
@@ -75,6 +77,7 @@ static AStatus vec_clear (AFunc* self, int argc, AVal* argv) {
 // vector.remove(t, i): removes and gives the element at position `i`,
 // shifting down the elements after it.
 static AStatus vec_remove (AFunc* self, int argc, AVal* argv) {
+    a_muts++;     // a reference written or removed
     (void) self;
     int64_t n, i;
     if (arg_vec(argc,argv,"remove",&n)!=A_OK ||

@@ -992,8 +992,15 @@ static inline void a_name (AVal v, int d) {
 }
 
 // The names `vs[0..n)` of the block `d` end: an unpinned value that only
-// they held loses its ceiling.
-void a_unname (AVal* vs, int n, int d);
+// they held loses its ceiling. The cycles of unpinned values that only
+// they reach are broken, if a reference was written since the block
+// began (`a_muts` was `mu` then; A_MUTS_ANY if unknown): without a
+// write, no cycle may have formed.
+void a_unname (AVal* vs, int n, int d, uint32_t mu);
+
+// Count of the writes of a reference into a table, a box, or a `pub`.
+extern uint32_t a_muts;
+#define A_MUTS_ANY 0xFFFFFFFFu
 
 // set x = v, with `x` a pin of the block `d`: the new value is pinned
 // there, deep, as by a declaration, and the old one is released (see

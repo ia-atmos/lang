@@ -2187,7 +2187,248 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
     unpinned_kids(v, ceil_up, d, 0);
 }
 
-void a_unname (AVal* vs, int n, int d) {
+// Cycles of unpinned values that end with the names of a block.
+//
+// A value whose ceiling is the block `d` that ends is held by no name
+// of an outer block. What still refers to it, besides the names of `d`,
+// is either outside (a result of the block, a task of an outer pool, an
+// unnamed holder, C) or the values of a cycle that only these names
+// reach. The candidates are the unpinned values reachable from the
+// names, with their ceiling at `d` or none, and the boxes of `d`. A
+// trial deletion counts, for each one, the references that come from
+// the other candidates and from the names: a candidate with more
+// references than those is alive, and so is all it reaches. The others
+// are only referred to among themselves: they are cleared, as a pin
+// clears its value, which breaks the cycle, and reference counting
+// frees them.
+//
+// The ceiling only selects the candidates: the counts alone decide. So
+// a value referred to by something the ceiling does not see (a pool of
+// an outer block, C) is kept.
+
+typedef struct CycM {
+    AObj*    o;
+    uint32_t clin;      // saved: the index of the candidate meanwhile
+    int      ext;       // references from outside the candidates
+    int      live;
+} CycM;
+
+static CycM* CYC     = NULL;
+static int   CYC_N   = 0;
+static int   CYC_CAP = 0;
+
+#define CYC_MARK 0x80
+
+static int cyc_marked (AVal v) {
+    return v.type>=A_TAB && (v.u.o->pinned & CYC_MARK);
+}
+
+static int cyc_cand (AVal v, int d) {
+    AObj* o = v.u.o;
+    switch (v.type) {
+        case A_BOX:
+            return o->pinned==1 && (int)o->depth==d;
+        case A_TAB:
+        case A_FUNC:
+        case A_TASK:
+            return o->pinned==0 && (o->ceil==0 || (int)o->ceil==d);
+        default:
+            return 0;
+    }
+}
+
+static void cyc_add (AVal v, int d) {
+    if (v.type<A_TAB || cyc_marked(v) || !cyc_cand(v,d)) {
+        return;
+    }
+    if (CYC_N == CYC_CAP) {
+        CYC_CAP = (CYC_CAP == 0) ? 32 : CYC_CAP*2;
+        CYC = realloc(CYC, CYC_CAP * sizeof(CycM));
+    }
+    AObj* o = v.u.o;
+    CYC[CYC_N] = (CycM) { o, o->clin, o->rc, 0 };
+    o->clin    = CYC_N++;
+    o->pinned |= CYC_MARK;
+}
+
+// The references that `v` holds, for `f`.
+static void cyc_refs (AVal v, void (*f)(AVal,int), int d) {
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                f(k, d);
+                f(x, d);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* fn = A_FUNC_OF(v);
+            for (int i=0; i<fn->ncap; i++) {
+                f(fn->caps[i], d);
+            }
+            break;
+        }
+        case A_BOX:
+            f(A_BOX_OF(v)->v, d);
+            break;
+        default:
+            break;
+    }
+}
+
+static void cyc_inner (AVal v, int d) {
+    (void) d;
+    if (cyc_marked(v)) {
+        CYC[v.u.o->clin].ext--;
+    }
+}
+
+// the candidates found alive, still to visit
+static int* CYS     = NULL;
+static int  CYS_N   = 0;
+static int  CYS_CAP = 0;
+
+static void cyc_alive (int i) {
+    CYC[i].live = 1;
+    if (CYS_N == CYS_CAP) {
+        CYS_CAP = (CYS_CAP == 0) ? 32 : CYS_CAP*2;
+        CYS = realloc(CYS, CYS_CAP * sizeof(int));
+    }
+    CYS[CYS_N++] = i;
+}
+
+static void cyc_live (AVal v, int d) {
+    (void) d;
+    if (cyc_marked(v) && !CYC[v.u.o->clin].live) {
+        cyc_alive(v.u.o->clin);
+    }
+}
+
+static void cyc_collect (AVal* vs, int n, int d) {
+    CYC_N = 0;
+    for (int i=0; i<n; i++) {
+        if (vs[i].type < A_TAB) {
+            continue;
+        }
+        // a name of an outer block keeps it, and all it reaches
+        if (vs[i].type!=A_BOX && vs[i].u.o->ceil!=0 && (int)vs[i].u.o->ceil<d) {
+            continue;
+        }
+        cyc_add(vs[i], d);
+    }
+    // what the candidates reach, in the order they are found
+    for (int i=0; i<CYC_N; i++) {
+        cyc_refs(a_obj(CYC[i].o), cyc_add, d);
+    }
+    if (CYC_N == 0) {
+        return;
+    }
+    // trial deletion: the references among the candidates and from the
+    // names, which are about to go
+    for (int i=0; i<CYC_N; i++) {
+        cyc_refs(a_obj(CYC[i].o), cyc_inner, d);
+    }
+    for (int i=0; i<n; i++) {
+        cyc_inner(vs[i], d);
+    }
+    CYS_N = 0;
+    for (int i=0; i<CYC_N; i++) {
+        if (CYC[i].ext > 0 && !CYC[i].live) {
+            cyc_alive(i);
+        }
+    }
+    while (CYS_N > 0) {
+        int j = CYS[--CYS_N];
+        cyc_refs(a_obj(CYC[j].o), cyc_live, d);
+    }
+    // the live ones are unmarked; the garbage keeps its mark meanwhile
+    int ngarb = 0;
+    for (int i=0; i<CYC_N; i++) {
+        AObj* o = CYC[i].o;
+        o->clin = CYC[i].clin;
+        if (CYC[i].live) {
+            o->pinned &= ~CYC_MARK;
+        } else {
+            CYC[ngarb++].o = o;
+        }
+    }
+    if (ngarb == 0) {
+        return;
+    }
+    // Only the references among the garbage are cut: that breaks its
+    // cycles, and the rest is released as reference counting releases
+    // it, when the names go. A garbage value in no cycle has no such
+    // reference, and so it is left as it was. The garbage is held
+    // meanwhile, so that no cut frees anything (and no code runs), and
+    // it is copied, since a release may end blocks and reuse CYC.
+    int m = ngarb;
+    AObj** os = malloc(m * sizeof(AObj*));
+    for (int i=0; i<m; i++) {
+        os[i] = CYC[i].o;
+        os[i]->rc++;
+    }
+    for (int i=0; i<m; i++) {
+        AVal v = a_obj(os[i]);
+        switch (v.type) {
+            case A_TAB: {
+                ATab* t = A_TAB_OF(v);
+                // the keys of the entries to cut, then the cut
+                int nk = 0, ck = 0;
+                AVal* ks = NULL;
+                uint32_t pos = 0;
+                AVal k, x;
+                while (a_tab_next(t, &pos, &k, &x)) {
+                    if (cyc_marked(k) || cyc_marked(x)) {
+                        if (nk == ck) {
+                            ck = (ck == 0) ? 8 : ck*2;
+                            ks = realloc(ks, ck * sizeof(AVal));
+                        }
+                        ks[nk++] = k;
+                    }
+                }
+                for (int j=0; j<nk; j++) {
+                    a_tab_set(t, ks[j], a_nil());
+                }
+                free(ks);
+                break;
+            }
+            case A_FUNC:
+            case A_TASK: {
+                AFunc* fn = A_FUNC_OF(v);
+                for (int j=0; j<fn->ncap; j++) {
+                    if (cyc_marked(fn->caps[j])) {
+                        a_clr(&fn->caps[j]);
+                    }
+                }
+                break;
+            }
+            case A_BOX:
+                if (cyc_marked(A_BOX_OF(v)->v)) {
+                    a_clr(&A_BOX_OF(v)->v);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    for (int i=0; i<m; i++) {
+        os[i]->pinned &= ~CYC_MARK;
+    }
+    for (int i=0; i<m; i++) {
+        a_dec(a_obj(os[i]));
+    }
+    free(os);
+}
+
+uint32_t a_muts = 0;
+
+void a_unname (AVal* vs, int n, int d, uint32_t mu) {
+    if (mu==A_MUTS_ANY || mu!=a_muts) {
+        cyc_collect(vs, n, d);
+    }
     for (int i=0; i<n; i++) {
         ceil_up(vs[i], d, 0);
     }
