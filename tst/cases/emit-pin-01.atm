@@ -1,0 +1,39 @@
+;; An event with a pinned value only reaches a target that is attached
+;; inside the block of the pin: the depths of the two blocks are
+;; compared, since both are in the chain of blocks of who emits.
+
+task R (id) {
+    val e = await(:hit)
+    print(id, e.alvo.hp)
+    await(false)
+}
+
+task A () {
+    pin e = [hp=10]
+    pin t = spawn R(:child)             ;; attached inside the block of e
+    pin ts = tasks()
+    spawn @ts R(:pool)
+    emit @t  :hit [alvo=e]              ;; ok
+    emit @ts :hit [alvo=e]              ;; ok
+    spawn {
+        val x = await(:self)
+        print(:self, x.alvo.hp)
+    }
+    emit @:task :self [alvo=e]          ;; ok: pinned in the outermost block of A
+    do {
+        pin f = [hp=20]
+        val ok1, er1 = catch true { emit @t :hit [alvo=f] }     ;; t outlives f
+        print(ok1, er1)
+        val ok2, er2 = catch true { emit @:task :hit [alvo=f] } ;; so does A
+        print(ok2, er2)
+        val ok3, er3 = catch true { emit @:global :hit [alvo=f] }
+        print(ok3, er3)
+    }
+    val ok4, er4 = catch true { emit @:parent :hit [alvo=e] }   ;; outside e
+    print(ok4, er4)
+}
+
+pin G = [hp=30]
+pin r = spawn R(:top)
+pin a = spawn A()
+emit @:global :hit [alvo=G]             ;; ok: pinned in the block of the program

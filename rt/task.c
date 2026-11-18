@@ -1471,9 +1471,11 @@ static AStatus emit_top (ANode* n, AVal evt) {
 
 // Target of an emit: :task (default), :parent, :global, a task or
 // pool, or a number of levels up.
-static AStatus emit_to (ANode** ret, AVal to) {
+// `anc`: the target is the running task or an ancestor.
+static AStatus emit_to (ANode** ret, AVal to, int* anc) {
     ANode* n = (a_cur != NULL) ? &a_cur->node : &ROOT.node;
     double lvl = 0;
+    *anc = 0;
 
     if (to.type == A_NIL) {
         // default
@@ -1501,6 +1503,7 @@ static AStatus emit_to (ANode** ret, AVal to) {
         }
     }
     *ret = n;
+    *anc = 1;
     return A_OK;
 }
 
@@ -1527,67 +1530,59 @@ static int trail_bdepth (ATask* t, int i) {
 }
 
 // A pinned event only reaches tasks that live inside its pin block.
-// Depths only compare along a chain of blocks, so the target must be
-// in the subtree of the trail that owns the pin block.
-static AStatus emit_chk (ANode* n, AVal evt) {
+//
+// Who emits is inside that block, since it holds the value, and it can
+// only name a target that is attached to a block around it, since a
+// reference to a task or pool is confined to the block that owns it.
+// So the two blocks are in the same chain of blocks, that of who
+// emits, where depths compare: the target must be attached at the
+// depth of the pin block or deeper.
+//
+// One more case is valid: the running task or an ancestor (a target
+// given by `:task`, `:parent`, or a number of levels), with the value
+// pinned in the outermost block of its body, which all of its trails
+// are inside. And a value pinned in the outermost block of the
+// program reaches all tasks.
+
+// Depth of the block that ends a target.
+static int emit_depth (ANode* n) {
+    if (n->hdr.type==A_XTASK && ((ATask*)n)->pool!=NULL) {
+        // a task in a pool follows the pool
+        return emit_depth(&((ATask*)n)->pool->node);
+    } else if (n->hdr.pinned) {
+        return n->hdr.depth;
+    } else if (n->hdr.type==A_XTASK && n->up!=NULL &&
+               n->up->hdr.type==A_XTASK)
+    {
+        // an unpinned task ends with the outermost block of the trail
+        // that spawned it
+        return trail_bdepth((ATask*)n->up, n->trail);
+    } else {
+        return 0;
+    }
+}
+
+static AStatus emit_chk (ANode* n, AVal evt, int anc) {
     int p = a_pdepth(evt);
     if (p == 0) {
         return A_OK;
     }
-    // owner: the first trail upwards that starts outside the pin block
-    ATask* t = a_cur;
-    int    i = (a_trl != NULL) ? a_trl->idx : 0;
-    while (t!=NULL && trail_bdepth(t,i)>p) {
-        if (i > 0) {
-            i = t->desc->trails[i].up;
-        } else {
-            // the trail that spawned the task, beyond its pool
-            ANode* x = &t->node;
-            do {
-                i = x->trail;
-                x = x->up;
-            } while (x!=NULL && x->hdr.type!=A_XTASK);
-            t = (ATask*) x;
-        }
+    if (n == &ROOT.node) {
+        return (MAIN!=NULL && p<=MAIN->depth) ? A_OK : a_err_pinned(evt);
     }
-    if (t == NULL) {
-        return a_err_pinned(evt);
+    if (emit_depth(n) >= p) {
+        return A_OK;
     }
-    // all tasks live inside the main task
-    if (n==&ROOT.node && t->node.up==&ROOT.node) {
-        n = &t->node;
+    if (anc && n->hdr.type==A_XTASK && ((ATask*)n)->depth==p) {
+        return A_OK;
     }
-    // the owner itself: only if pinned in the outermost block of the
-    // task
-    if (n == &t->node) {
-        return (i==0 && t->depth==p) ? A_OK : a_err_pinned(evt);
-    }
-    // otherwise, a subtree attached inside the pin block
-    ANode* c = n;
-    while (c!=NULL && c->up!=&t->node) {
-        c = c->up;
-    }
-    if (c == NULL) {
-        return a_err_pinned(evt);
-    }
-    // it is attached to the owner, or to a trail nested in the owner
-    // that starts inside the pin block
-    int j = c->trail;
-    if (j == i) {
-        return (node_adepth(c) >= p) ? A_OK : a_err_pinned(evt);
-    }
-    while (j>0 && t->desc->trails[j].up!=i) {
-        j = t->desc->trails[j].up;
-    }
-    if (j<=0 || trail_bdepth(t,j)-1<p) {
-        return a_err_pinned(evt);
-    }
-    return A_OK;
+    return a_err_pinned(evt);
 }
 
 AStatus a_emit (AVal to, AVal evt) {
     ANode* n = NULL;
-    AStatus st = emit_to(&n, to);
+    int anc = 0;
+    AStatus st = emit_to(&n, to, &anc);
     if (st != A_OK) {
         return st;
     }
@@ -1598,7 +1593,7 @@ AStatus a_emit (AVal to, AVal evt) {
         }
         return chk_aborted(emit_tick(a_dbl(evt)));
     }
-    if (emit_chk(n,evt) != A_OK) {
+    if (emit_chk(n,evt,anc) != A_OK) {
         return A_ERROR;
     }
     evt_own(evt);
