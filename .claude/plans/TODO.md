@@ -146,6 +146,7 @@ What waits for the author in them, as far as this session knows.
 | `iup`, `uv`, `sdl-tux`, `env-sdl` | The items of their plans marked to confirm (items 42, 43, 27, and 55) |
 | `raylib` | A permission to change the remote of its checkout of the compiler (harmless meanwhile: the old address redirects) |
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
+| `pool` | Created on 2026-11-18, to discuss awaits and emits over pools and tasks: items 1, 2, 4, 31, 32, 33, 60 move there. Its material is `261118-pool.md`; its list, `TODO-pool.md` |
 | `envs` | Created on 2026-11-17 (session_011eECofYWTNPACTtUjHN4p6), to discuss the environments with the author: items 46, 47, 52, 56 to 60, 68 move there. Its material is `261117-envs.md`; its list, `TODO-envs.md` |
 
 Each session keeps its own `.claude/plans/TODO.md`, in its repository,
