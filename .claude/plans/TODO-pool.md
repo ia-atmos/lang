@@ -17,7 +17,7 @@ was decided in the compiler session, and item 31 moved to the session
 
 ## B. Work known, not done
 
-- After item 1: the decision and small programs to `ceu-atmos`.
+- After item 1: the decision and small programs to `atmos-lang`.
 - The ports that keep entities in tables (SNKRX, Flare, Lessmilk) gain
   from item 1 only if they move them to pools, which item 40 (rules of
   `pin`) blocks today.
@@ -30,7 +30,7 @@ was decided in the compiler session, and item 31 moved to the session
 
 ## D. Decided by the author
 
-- Item 32 (reported by `ceu-atmos` on 2026-11-18, decided there):
+- Item 32 (reported by `atmos-lang` on 2026-11-18, decided there):
   `await :all ts` over an empty pool is satisfied at once, with
   `nil, nil, ts`; `:any` still waits (`cab49e2`).
 - Item 31 (`await x`) moved to the session `args`, on one rule for
