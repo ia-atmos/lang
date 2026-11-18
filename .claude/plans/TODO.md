@@ -75,6 +75,7 @@ Not started, with no decision needed:
 | 66 | A second paper, on `pin` as a memory mechanism (an idea of the author, 2026-11-15). A session of its own, `paper-pin`, writes the outline in this repository, `papers/pin.md` (in `main` since 2026-11-15, and its session pushes there: `8bb293a`; its list is `.claude/plans/TODO-paper-pin.md`): a name, the idea, why it is relevant as a memory mechanism, and why it only applies to structured programming | Not of this session. It is a third session that writes in `ia-atmos/lang`: pull before any push |
 | 67 | A third paper, on the architecture of snapshots and commands (item 64; asked by the author in the session `snapshots` on 2026-11-15). That session writes the outline, `papers/snapshots.md`, and keeps `.claude/plans/TODO-paper-snapshots.md`. Its closest relative is system prevalence (Prevayler); for action games the author restricts saves to checkpoints | Not of this session |
 | 52 | Environments that the families of Atmos and Céu have and this backend does not: the browser (through WebAssembly; SDL and raylib support it) and embedded boards | Ideas, not asked for |
+| 70 | `pgvalle-research/atmos-esp32` (https://github.com/pgvalle-research/atmos-esp32): Atmos on the ESP32, left here by the author on 2026-11-17 to look at, with a reminder for 2026-11-18 at 13h. Not read yet. Related to item 52 (embedded boards) and to the environments (session `envs`) | To read with the author |
 
 ## C. Reported and not acknowledged
 
