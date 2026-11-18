@@ -5,8 +5,8 @@ Session `args`. Design: `261118-args-rules.md`.
 ## Waiting for the author
 
 1. Constructor arguments (`f "s"`, `f [t]`, `f :X`) under R3: greedy
-   as any other (`type [] == :t` is `type([] == :t)`, `f "a" "b"` is
-   `f("a"("b"))`), or tight as in Lua today. Recommended: greedy (one
+   as any other (`type [] == :t` is `type([] == :t)`, `f "a" "b"` becomes
+   an error), or tight as in Lua today. Recommended: greedy (one
    rule; locally 2 files break).
 2. Access to the ports for this session (attaching was refused), so the
    R3 diff can run on them.
