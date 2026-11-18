@@ -6,8 +6,10 @@ Session `args`. Design: `261118-args-rules.md`.
 
 1. `f -x`: subtraction as today, or a call when `-` is glued to `x`
    and spaced from `f` (Ruby, MoonScript). Recommended: subtraction.
-2. Access to the ports for this session (attaching was refused), so the
-   R3 diff can run on them.
+2. Measuring the ports: attaching them here was refused, and sending
+   atmos-lang a prototype patch so it could run the diff on its clones
+   (its offer) was refused too. The author decides: grant access, or
+   allow the patch to be sent to atmos-lang.
 
 ## Known, not done
 
@@ -18,6 +20,10 @@ Session `args`. Design: `261118-args-rules.md`.
 
 ## Reported, not acknowledged
 
+- atmos-lang (2026-11-18) confirmed it keeps away from the call part of
+  the parser, offered to measure the ports with a prototype patch, and
+  asked for the full suite (tst/run.sh, make test-rt test-env,
+  ATMOS_ASAN=1) before the push.
 - The table and measurements of `261118-args-rules.md`.
 
 ## Decided
