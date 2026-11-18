@@ -58,7 +58,7 @@ Waiting for the author's "ok":
 | # | Work | Note |
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
-| 22 | Mark the plan of Pingus as done, with the link to the port | |
+| 22 | Mark the plan of Pingus as done, with the link to the port | Waits for the author, who wants to test the game himself first (2026-11-18): the session `sdl-pingus` was asked to give him a step by step, from the clones on |
 
 Not started, with no decision needed:
 
