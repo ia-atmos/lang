@@ -102,7 +102,7 @@ sections "Lexical Memory Management", "Pin", "Pub", "Native".
 
 ## What to report
 
-To the compiler session (`ceu-atmos`, session_011eECogKVQ7ZzmWCoMST2wK),
+To the compiler session (`atmos-lang`, session_011eECogKVQ7ZzmWCoMST2wK),
 by message, when the migration is done and pushed. The author asked
 for it, and it goes to him as it is:
 

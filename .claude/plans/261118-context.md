@@ -2,7 +2,7 @@
 
 Material for the session `atmos-context`, where the author discusses
 issue 21 of `atmos-lang/atmos` ("Context primitive"). Gathered on
-2026-11-18 by the session that maintains the compiler (`ceu-atmos`),
+2026-11-18 by the session that maintains the compiler (`atmos-lang`),
 from the code of the ports as it is today. Item 39 of the list of the
 compiler session.
 

@@ -33,7 +33,7 @@ Each has the option recommended by this session.
 | 64 | An architecture for programs in Atmos, proposed by the author on 2026-11-14: one global snapshot (a table) from which everything is spawned; a fixed set of command events (`:cmd.*`) as the only way to change it; so a run can be recorded, resumed, and replayed in any direction and speed from the first snapshot, the commands, and periodic snapshots; later, distributed over a blockchain such as Freechains. It is the conclusion of the saved game of Doom (state that persists is data, and tasks are a function of it) made into a rule | In discussion, in a session of its own (`snapshots`), where he asked whether it makes sense and whether the pattern has a name. Related to item 45 |
 | 46 | The vocabulary of the events of an environment. **Settled by the author on 2026-11-17, in the session `envs`**: one vocabulary for all, that of pico: `:quit`; `:key.dn`/`:key.up` with `key` (name) and `code` (number); `:mouse.motion`, `:mouse.button.dn`/`.up` with `x`, `y`, `button`; `:frame [n, us]` once per frame for the logic, then `:draw`; events of a handle carry `h`. `raylib` renames its binding and games, Lessmilk follows. Left with `envs`: the order inside a frame | Done here; followed by `envs` |
 | 60 | An `emit` to one task (`emit @t (e)`) whose target raises an exception: the exception goes to the task that emitted, and the task that holds the target never sees it. With a broadcast of the same event it goes to the holder. The reference does the same. Found when an environment emitted to one task from C; for that case there is now `atm_emit_to`, which delivers the exception to the holder | To the holder in both, as in a broadcast: where an exception goes should not depend on how the event was emitted. It departs from the reference |
-| 58 | `test` blocks to test a game (asked by the author in the session `pico-sdl`). Today a run with no screen is driven from outside, by environment variables that each binding reads in its `main`, with other names in each | A convention of the bindings, not of the language: one call that puts the environment in the test mode (fixed frames, no real time, no sound), and the rest is plain Atmos in the `test` block (`await(10, :frame)`, an `emit` of an input event, an assertion, a screenshot by a function; the run ends with the block). Polled input needs a function of the binding to set it. To try first in one environment |
+| 58 | `test` blocks to test a game (asked by the author in the session `env-pico`). Today a run with no screen is driven from outside, by environment variables that each binding reads in its `main`, with other names in each | A convention of the bindings, not of the language: one call that puts the environment in the test mode (fixed frames, no real time, no sound), and the rest is plain Atmos in the `test` block (`await(10, :frame)`, an `emit` of an input event, an assertion, a screenshot by a function; the run ends with the block). Polled input needs a function of the binding to set it. To try first in one environment |
 | 59 | How a program selects its environment. The author asked (2026-11-14, in the session of pico) for a compiler of its own per environment (`atmos-pico`, `atmos-iup`), made from this compiler, with `include` still working, and with the examples and documents using the dedicated one. Done here: `make env` builds one, and the option `-e` does the same by hand. Open: it still needs the directory of this compiler, a C compiler, and the development files of the library; a download that needs none of them is another, larger thing | To confirm the mechanism. Each environment then builds its `atmos-<env>` with it and uses it in its examples |
 
 ### Projects and repositories
@@ -61,7 +61,7 @@ Waiting for the author's "ok":
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
 | 22 | Mark the plan of Pingus as done, with the link to the port | |
-| 23 | Ask the session `pingus` to remove the workarounds that the compiler no longer needs | |
+| 23 | Ask the session `sdl-pingus` to remove the workarounds that the compiler no longer needs | |
 
 Not started, with no decision needed:
 
@@ -133,6 +133,21 @@ may be changed.
   and as the social preview of the repository is the author's to do
   (item 49).
 
+## Session names (renamed by the author's decision, 2026-11-18)
+
+| Session | Old title | ID |
+|---|---|---|
+| `atmos-lang` (this one) | `ceu-atmos` | session_011eECogKVQ7ZzmWCoMST2wK |
+| `atmos-pin` | `Pin rules discussion` | session_011eECogSDhkVfyt7qme5DLh |
+| `env-pico` | `pico-sdl` | session_011eECoikzsmBiPNXNF7ffpf |
+| `env-ray` | `raylib` | session_011eECohyySVpgZiuUF17qc2 |
+| `env-iup` | `iup` | session_011eECoiJLW3LfTrKdHtNFvg |
+| `env-uv` | `uv` | session_011eECoeuP2uc6Uge65NF8uL |
+| `sdl-pingus` | `pingus` | session_011eECoent86e4ta3otsCoEa |
+| `sdl-snxkx` | `snxkx` | session_011eECohRKf757Ydp2i9w7Ng |
+| `sdl-flare` | `flare` | session_011eECoegYsZr7nSPxcugGtt |
+| `ray-lessmilk` | `lessmilk` | session_011eECohyasjWkvCHdxGxJ6D |
+
 ## D. Other sessions
 
 What waits for the author in them, as far as this session knows.
@@ -175,14 +190,14 @@ of the sessions still have the old names.
 - If the container restarts, the checkout comes back with the old
   address (`fsantanna/ceu-atmos`): point the remote to `ia-atmos/lang`
   before any push.
-- The cloud environment of this session is still named `ceu-atmos`, and
+- The cloud environment of this session is still named `atmos-lang`, and
   does not reach `lessmilk.com` (the request to add the host could not
   be approved from the phone).
 
 ## Settled, for the record
 
 7, 9, 10, 14, 16, 20, 21 (kept as they are); 8 (became 31); 17 and
-28 (the session `pico-sdl` wrote the binding and its examples); 25 and
+28 (the session `env-pico` wrote the binding and its examples); 25 and
 26 (moved to D); 29 and 30 (the games were chosen; Doom was added); 44
 (`await(n, p)`, done); 48 (`skip`, done by a session of its own on
 2026-11-14: no value, parentheses optional; the author chose no

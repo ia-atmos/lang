@@ -152,10 +152,10 @@ They are the author's, in the session, one at a time.
   Documents and code in English.
 - The events of an environment have no prefix (`:key.dn`), and
   programs are built with the dedicated compiler (`atmos-pico`).
-- What is found in the compiler goes to its session (`ceu-atmos`,
+- What is found in the compiler goes to its session (`atmos-lang`,
   session_011eECogKVQ7ZzmWCoMST2wK) by message, with a small program
   that reproduces it. What pico lacks goes to its session
-  (`pico-sdl`, session_011eECoikzsmBiPNXNF7ffpf).
+  (`env-pico`, session_011eECoikzsmBiPNXNF7ffpf).
 
 ## What the other projects taught
 

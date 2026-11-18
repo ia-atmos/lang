@@ -68,7 +68,7 @@ Rules of the author for all sessions:
   environment has a compiler of its own (`atmos-pico`): programs are
   built with it.
 - What is found in the compiler goes to its session
-  (`ceu-atmos`, session_011eECogKVQ7ZzmWCoMST2wK) by message, with a
+  (`atmos-lang`, session_011eECogKVQ7ZzmWCoMST2wK) by message, with a
   small program that reproduces it.
 
 ## The serial port
@@ -186,7 +186,7 @@ Not decided here. They are the author's, in the session.
 - **What pico lacks**: full screen, the size of a text, a screenshot
   from the program (the report saves one), the date and the time of
   the day for the names of the files. Ask the session of pico
-  (`pico-sdl`, session_011eECoikzsmBiPNXNF7ffpf) before working
+  (`env-pico`, session_011eECoikzsmBiPNXNF7ffpf) before working
   around.
 - **The directory `placar/`**: whether the port lives beside the
   original (`atmos/`) or replaces it. Beside, while fidelity is

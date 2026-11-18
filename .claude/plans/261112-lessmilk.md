@@ -44,7 +44,7 @@ Status: sent to the session that works in the repository
 | Ports to Céu of games 1 and 2 | `leokaplan/lessmilk`, folder `ceu/` | 2015, 954 lines |
 | Port of Pingus, the model | `ia-atmos/sdl-pingus` | complete |
 | Its tips | the section "What the Pingus port taught", below | |
-| The raylib environment | `ia-atmos/env-ray`, `raylib.atm` | in course, by the session `raylib` |
+| The raylib environment | `ia-atmos/env-ray`, `raylib.atm` | in course, by the session `env-ray` |
 | The SDL environment, as a model of one | `ia-atmos/lang`, `lib/sdl.atm`, `exs/rocks/` | |
 
 - The site `lessmilk.com` could not be read when this plan was
@@ -127,7 +127,7 @@ answered: ask, one at a time, before building on them.
   corrected against the original.
 - **Library**: raylib, decided by the author. The port uses the
   environment `raylib.atm` that the port of the raylib games is
-  writing (`ia-atmos/env-ray`, session `raylib`), copied at a fixed
+  writing (`ia-atmos/env-ray`, session `env-ray`), copied at a fixed
   commit and updated when convenient. The two sessions talk directly
   about the library: what this port needs from it (sprites with
   rotation, easings, sounds, text, the test mode), and what it finds.
@@ -180,7 +180,7 @@ Written once, in a folder of the repository, used by the twelve:
 - **Sprite**: an image or a sheet with named animations.
 - **Screen flow, text, sound**: thin helpers.
 
-When they are stable, they are candidates for `lib/` of `ceu-atmos`:
+When they are stable, they are candidates for `lib/` of `atmos-lang`:
 the port of SNKRX needs tweens too.
 
 ## State variables
@@ -381,5 +381,5 @@ Report in `doc/compiler.md`. To watch here:
   recommended option.
 - Installing packages needs the author's permission: ask at L0.
 - Findings in the compiler are reported, not worked around in
-  silence. The compiler is maintained by the session `ceu-atmos`.
+  silence. The compiler is maintained by the session `atmos-lang`.
 - Only measured numbers go into the documents.
