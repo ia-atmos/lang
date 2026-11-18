@@ -1,6 +1,6 @@
 # TODO args
 
-Session `args`. Design: `261118-args-rules.md`.
+Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`.
 
 ## Waiting for the author
 

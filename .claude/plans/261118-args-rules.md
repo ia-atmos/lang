@@ -1,6 +1,6 @@
 # args: candidate rules for arguments without parentheses
 
-Session `args`, 2026-11-18. Material: `261118-args.md`. Decisions and
+Session `atmos-args` (was `args`), 2026-11-18. Material: `261118-args.md`. Decisions and
 open items: `TODO-args.md`.
 
 ## 1. Two independent axes
