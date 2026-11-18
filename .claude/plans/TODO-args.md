@@ -2,14 +2,24 @@
 
 Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`.
 
+## Index of items (`#N`, standing rule of 2026-11-18)
+
+Numbers start with the first item after the rule; what was decided
+before it is under "Decided", by date.
+
+| # | Title | State |
+|---|---|---|
+| #1 | Is the comma needed: `f x y` as `f(x, y)`? | waiting for the author |
+| #2 | Implement the rule on the branch `args` (parser, tests, manual) | waits for #1 |
+| #3 | atmos-lang measures the ports from the branch, before the merge | waits for #2 |
+| #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | to do with #2 |
+
 ## Waiting for the author
 
-1. Is the comma needed: `f x y` as `f(x, y)`? Asked by the author.
-   It conflicts with nesting, already decided (`print f x` is
-   `print(f(x))`): a juxtaposition is either the next argument or a
-   call. Recommended: keep the comma.
-2. (Resolved by the new standing rule below: atmos-lang measures the
-   ports from the branch `args` before the merge.)
+- #1: is the comma needed: `f x y` as `f(x, y)`? Asked by the author.
+  It conflicts with nesting, already decided (`print f x` is
+  `print(f(x))`): a juxtaposition is either the next argument or a
+  call. Recommended: keep the comma.
 
 ## Known, not done
 
