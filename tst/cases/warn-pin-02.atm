@@ -1,5 +1,6 @@
 ;; the warning of a pin given away also sees a pin inside a constructor
-;; that is given, a `break`, an `escape`, and each value of a `return`
+;; that is given, a `break`, an `until`, an `escape`, and each value of a
+;; `return`
 func f () {
     pin ps = []
     [n=1, ps=ps]                    ;; a field of the value of the block
@@ -33,6 +34,12 @@ func n () {
         escape(:X, s)               ;; ok: `s` is outside the `do`
     }
     nil
+}
+func w () {
+    loop {
+        pin r = [n=1]
+        until true, r               ;; a pin of the loop, after the condition
+    }
 }
 val t = [f = do { pin u = [1] ; u }]    ;; the value of a `do` in a field
 print(:ok)
