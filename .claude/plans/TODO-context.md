@@ -39,6 +39,22 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
 - Nothing told to `atmos-grab` yet: both touch the resume of a trail;
   tell it when 1 is decided.
 
+## Input from other sessions
+
+- 2026-11-18, `env-pico` (sent, it says, at the author's request; the
+  author's choice it reports is not checked here, and is no decision of
+  this session): pico dropped its helper `pico.with.layer(l, \{...})`
+  (wrong when the body awaits) to wait for `context`, for the current
+  layer and the pencil. It supports decision 1 = around each resume,
+  and decision 3 = yes, in the form
+  `=> { pico.set.layer(panel) }` / `<= (old) { pico.set.layer(old) }`
+  (setters return the previous state). New argument: a context in the
+  block that owns a pinned layer would keep the current layer from
+  outliving its owner, so the binding could drop the bookkeeping of a
+  current layer whose block ended. Its counts match section 2 of
+  `261118-context-semantics.md` (no case awaits between set and
+  restore today).
+
 ## Reported, not acknowledged
 
 - 2026-11-18: answered the author's question "does every reaction

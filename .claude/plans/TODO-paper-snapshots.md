@@ -1,6 +1,7 @@
 # TODO of the paper on snapshots
 
-Everything pending in the `snapshots` session, which writes
+Everything pending in the `paper-snapshots` session (formerly
+`snapshots`), which writes
 `papers/snapshots.md`: explicit, unanswered, or unacknowledged. Kept
 current by that session.
 
