@@ -30,6 +30,14 @@ by that session.
    values and owned places may be reassigned (2026-11-17), so a new
    count is needed for Section 9.
 
+5. **Rules not declared stable (2026-11-18).** Open with the author:
+   a mechanism for an outer place to hold an inner value (case E); the
+   flag that removes the checks; confirmation of three implementation
+   choices (a task owns its `pub` and final value; an emitted event is
+   owned by the emit; natives declare what they hold) and of `spawn` as
+   the only implicit pin. The session of the rules is now `atmos-pin`
+   (session_011eECogSDhkVfyt7qme5DLh, branch `pin`); it will report.
+
 ## C. Next steps, not started
 
 1. **Experiment: CLBG in Atmos.** Re-implement the 7 programs of Câmara
