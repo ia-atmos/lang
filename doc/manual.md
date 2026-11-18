@@ -338,9 +338,12 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
 - The value cannot escape the block, which is verified when the program
   executes.
 
-A value that nobody pins follows the rules of reference counting: a cycle
-among unpinned values is never reclaimed, so a cyclic structure should be
-pinned.
+A value that nobody pins is reclaimed by its counts, and a cycle among
+unpinned values is broken at the end of the block of the names that reach
+it, if nothing outside still refers to it.
+One case is not reached, and leaks: a cyclic value that a call returns and
+that is dropped without ever receiving a name.
+A cyclic structure whose moment of release matters should still be pinned.
 
 The next example builds a cycle that is reclaimed when the block terminates:
 
@@ -1662,9 +1665,17 @@ A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
 A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-It does not reclaim a cycle among unpinned values, which only a `pin` does:
-without a `pin`, the rules of reference counting apply, and a cyclic
-structure should be pinned.
+A cycle among unpinned values is also reclaimed there: when a block ends,
+the unpinned values that only its names reach, and that only refer to each
+other, have the references among them cut, and the counts free them.
+A value that something outside still refers to (a table of an outer block,
+a task of an outer pool, the result of the block) is kept, with all it
+reaches.
+The search only runs if a reference was written into a table, a captured
+variable, or a `pub` since the block began, since no cycle forms without a
+write.
+A cyclic value that a call returns and that is dropped without a name is
+not reached, and leaks.
 The explicit `pin` is recommended where the moment of finalization matters:
 native values, tasks, and pools.
 A task that a name holds, as in `val t = spawn T()`, is aborted at the end

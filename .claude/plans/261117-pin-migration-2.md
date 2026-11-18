@@ -13,7 +13,7 @@ The compiler (`ia-atmos/lang`, `main` at `84f8627` or later): the rules of `pin`
 7. A pool held by a `val` works: `func mk () { val ts = tasks() ; spawn @ts T() ; ts }`.
 8. A deep pin adopts only unnamed values; a named value stored in or captured by a pinned value is only referenced (e.g. `pin over = \(x,y){ inside(r,x,y) }` with `r` a parameter now works; the `val over` workaround may go back to `pin`).
 9. Declarations of prototypes are names, not pins: `func f`, `task T`, `val func f` hold an unpinned prototype, so a local function (recursive too) can be returned; `pin func f` gives an owner. Inside a function, `func g` with `g` unknown is now a local `val func g` (no longer an error).
-10. Cycles: without a `pin`, reference counting applies, so a cyclic structure should be pinned (a cycle among unpinned values, or through a named value held by a pin, leaks).
+10. Cycles: without a `pin`, reference counting applies. Since `7480111` (2026-11-18), a cycle among unpinned values that only the names of a block reach is broken at the end of that block, also through a named value held by a pin. Still leaks: a cyclic value that a call returns and that is dropped without a name.
 
 Still open (do not work around yet): an unpinned holder whose floor rises (`val z = [] ; set z.k = k` with `k` pinned outside fails: write `val z = [k=k]`), `with`, a flag that removes the checks.
 
@@ -23,8 +23,8 @@ What to do: move your compiler to 84f8627 or later, run your tests, fix what fai
 
 The author declared these rules stable until the next round of
 decisions: no project needs to expect another migration of the same
-lines. What is still open, and may change later: a named cycle held by a
-pin, the scoped assignment `with`, and a flag that removes the checks.
+lines. What is still open, and may change later: the scoped assignment
+`with`, and a flag that removes the checks.
 Since `5da4b8e`: a compile-time warning for a pin given away by its
 block (`c325dd4`); `X.in` is the name of `X.xin` (an alias, to be
 removed); a branch of `par :any` gives only the values its destination
