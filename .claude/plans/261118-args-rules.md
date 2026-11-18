@@ -72,7 +72,27 @@ can be adopted.
 | Haskell/ML | any atom, tightest, curried | `(f x) + 1` | n/a | `f - x` |
 | Ruby | any expression, greedy list | `f(x + 1)` | `f(x, y)` | `f(-x)` with a warning |
 | MoonScript | any expression, greedy list | `f(x + 1)` | `f(x, y)` | `f(-x)` (space before `-`, none after) |
+| CoffeeScript | any expression, greedy list | `f(x + 1)` | `f(x, y)` | `f(-x)`; `f (x)` vs `f(x)` differ: a known pitfall |
+| Elixir | any expression, greedy list | `f(x + 1)` | `f(x, y)` | warns; nested `f g x, y` warns, formatter adds parens |
+| Nim | "command syntax", greedy | `f(x + 1)` | `f(x, y)` | `f(-x)` |
 | Céu / Atmos ref. | `await E`, `emit E` as statements; calls as Lua | | | |
+
+Why C-family languages and Lua avoid `f x`: (1) a juxtaposition that
+is an error catches typos (`a b` for `a + b`, a missing `;`); (2)
+operators that are both prefix and infix (`f -x`, C's `f *p`) and
+brackets that are both call/index and constructor (`f (x)`, `f [x]`)
+become ambiguous, or depend on whitespace; (3) where the arguments end
+(`g(f x, y)`, `f g x`) needs a rule (currying or greediness), each with
+surprises; (4) a name alone must stay the function value, so zero
+arguments still need `f()`; (5) Lua has no statement separator, so
+`f x` would clash with `f` ⏎ `x = 1`: only a string or a table, which
+never start a statement, are safe. Atmos is line-sensitive, so (5) does
+not apply to it.
+
+The greedy languages (Ruby, CoffeeScript, Elixir) converged on the same
+style: no parentheses at the outermost call of a statement (`print x`,
+`puts x, y`), parentheses when nested. Elixir enforces it with
+warnings and its formatter.
 
 ## 5. Recommendation
 
