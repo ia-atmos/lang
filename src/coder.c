@@ -1318,8 +1318,9 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         if (x->boxed) {
             out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v.c,
                 var_raw(u,x));
-            // a box is an object: the write may close a cycle
-            out(u, "a_muts++;");
+            // a box is an object: a reference written into it may close
+            // a cycle
+            out(u, "a_muts += (%s.type >= A_TAB);", v.c);
         } else if (x->global) {
             out_try(u, "a_chk_store(%s, 1)", v.c);
         } else if (x->level < u->level) {
@@ -1328,8 +1329,8 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         opnd_mov(u, v, dst);
         return;
     }
-    // a write into an object may close a cycle
-    out(u, "a_muts++;");
+    // a reference written into an object may close a cycle
+    out(u, "a_muts += (%s.type >= A_TAB);", v.c);
     if (l.e->tag == E_PUB) {
         out_try(u, "a_pub_set(NULL, %s)", v.c);
         opnd_rel(u, v);
@@ -2772,7 +2773,7 @@ char* coder_main (Expr* prog, Var** globals, int nglobals) {
                 var_raw(&u,globals[i])));
         }
         buf_add(&c, "};\n");
-        buf_add(&c, xfmt("    a_unname(gs, %d, 1, A_MUTS_ANY);\n", nglobals));
+        buf_add(&c, xfmt("    a_cycles(gs, %d, 1);\n", nglobals));
     }
     for (int i=nglobals-1; i>=0; i--) {
         buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));

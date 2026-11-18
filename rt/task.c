@@ -2210,7 +2210,8 @@ typedef struct CycM {
     AObj*    o;
     uint32_t clin;      // saved: the index of the candidate meanwhile
     int      ext;       // references from outside the candidates
-    int      live;
+    int      in;        // references from the other candidates
+    int      live;      // 1 alive, 2 freed by counting, 0 in a cycle
 } CycM;
 
 static CycM* CYC     = NULL;
@@ -2246,7 +2247,7 @@ static void cyc_add (AVal v, int d) {
         CYC = realloc(CYC, CYC_CAP * sizeof(CycM));
     }
     AObj* o = v.u.o;
-    CYC[CYC_N] = (CycM) { o, o->clin, o->rc, 0 };
+    CYC[CYC_N] = (CycM) { o, o->clin, o->rc, 0, 0 };
     o->clin    = CYC_N++;
     o->pinned |= CYC_MARK;
 }
@@ -2279,10 +2280,15 @@ static void cyc_refs (AVal v, void (*f)(AVal,int), int d) {
     }
 }
 
+// references found among the candidates: with none, there is no cycle
+static int CYC_IN = 0;
+
 static void cyc_inner (AVal v, int d) {
     (void) d;
     if (cyc_marked(v)) {
         CYC[v.u.o->clin].ext--;
+        CYC[v.u.o->clin].in++;
+        CYC_IN++;
     }
 }
 
@@ -2291,8 +2297,7 @@ static int* CYS     = NULL;
 static int  CYS_N   = 0;
 static int  CYS_CAP = 0;
 
-static void cyc_alive (int i) {
-    CYC[i].live = 1;
+static void cys_push (int i) {
     if (CYS_N == CYS_CAP) {
         CYS_CAP = (CYS_CAP == 0) ? 32 : CYS_CAP*2;
         CYS = realloc(CYS, CYS_CAP * sizeof(int));
@@ -2300,10 +2305,31 @@ static void cyc_alive (int i) {
     CYS[CYS_N++] = i;
 }
 
+static void cyc_alive (int i) {
+    CYC[i].live = 1;
+    cys_push(i);
+}
+
 static void cyc_live (AVal v, int d) {
     (void) d;
     if (cyc_marked(v) && !CYC[v.u.o->clin].live) {
         cyc_alive(v.u.o->clin);
+    }
+}
+
+static void cyc_visit (AVal v, int d) {
+    cyc_add(v, d);
+    cyc_inner(v, d);
+}
+
+static void cyc_freed (AVal v, int d) {
+    (void) d;
+    if (cyc_marked(v)) {
+        CycM* c = &CYC[v.u.o->clin];
+        if (c->live==0 && --c->in==0) {
+            c->live = 2;
+            cys_push(v.u.o->clin);
+        }
     }
 }
 
@@ -2319,20 +2345,28 @@ static void cyc_collect (AVal* vs, int n, int d) {
         }
         cyc_add(vs[i], d);
     }
-    // what the candidates reach, in the order they are found
+    // what the candidates reach, in the order they are found, and,
+    // in the same pass, the references among them (trial deletion)
+    CYC_IN = 0;
     for (int i=0; i<CYC_N; i++) {
-        cyc_refs(a_obj(CYC[i].o), cyc_add, d);
+        cyc_refs(a_obj(CYC[i].o), cyc_visit, d);
     }
     if (CYC_N == 0) {
         return;
     }
-    // trial deletion: the references among the candidates and from the
-    // names, which are about to go
-    for (int i=0; i<CYC_N; i++) {
-        cyc_refs(a_obj(CYC[i].o), cyc_inner, d);
+    if (CYC_IN == 0) {
+        // no reference among the candidates: no cycle
+        for (int i=0; i<CYC_N; i++) {
+            CYC[i].o->pinned &= ~CYC_MARK;
+            CYC[i].o->clin = CYC[i].clin;
+        }
+        return;
     }
+    // and from the names, which are about to go
     for (int i=0; i<n; i++) {
-        cyc_inner(vs[i], d);
+        if (cyc_marked(vs[i])) {
+            CYC[vs[i].u.o->clin].ext--;
+        }
     }
     CYS_N = 0;
     for (int i=0; i<CYC_N; i++) {
@@ -2344,12 +2378,26 @@ static void cyc_collect (AVal* vs, int n, int d) {
         int j = CYS[--CYS_N];
         cyc_refs(a_obj(CYC[j].o), cyc_live, d);
     }
+    // What counting alone would free (as the names go, a value that no
+    // other garbage refers to, and so on) is left to it: what remains
+    // is in a cycle, or reached only through one.
+    CYS_N = 0;
+    for (int i=0; i<CYC_N; i++) {
+        if (!CYC[i].live && CYC[i].in==0) {
+            CYC[i].live = 2;
+            cys_push(i);
+        }
+    }
+    while (CYS_N > 0) {
+        int j = CYS[--CYS_N];
+        cyc_refs(a_obj(CYC[j].o), cyc_freed, d);
+    }
     // the live ones are unmarked; the garbage keeps its mark meanwhile
     int ngarb = 0;
     for (int i=0; i<CYC_N; i++) {
         AObj* o = CYC[i].o;
         o->clin = CYC[i].clin;
-        if (CYC[i].live) {
+        if (CYC[i].live != 0) {
             o->pinned &= ~CYC_MARK;
         } else {
             CYC[ngarb++].o = o;
@@ -2425,10 +2473,11 @@ static void cyc_collect (AVal* vs, int n, int d) {
 
 uint32_t a_muts = 0;
 
-void a_unname (AVal* vs, int n, int d, uint32_t mu) {
-    if (mu==A_MUTS_ANY || mu!=a_muts) {
-        cyc_collect(vs, n, d);
-    }
+void a_cycles (AVal* vs, int n, int d) {
+    cyc_collect(vs, n, d);
+}
+
+void a_unname_x (AVal* vs, int n, int d) {
     for (int i=0; i<n; i++) {
         ceil_up(vs[i], d, 0);
     }
