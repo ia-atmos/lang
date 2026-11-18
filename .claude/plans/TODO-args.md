@@ -9,10 +9,8 @@ Session `args`. Design: `261118-args-rules.md`.
    `f(a+1) * 2`), unlike `return (x), y` which is `return x, y`.
    Or a space before `(` makes it a juxtaposed argument (CoffeeScript).
    Recommended: classic call, as today and as in Lua.
-2. Measuring the ports: attaching them here was refused, and sending
-   atmos-lang a prototype patch so it could run the diff on its clones
-   (its offer) was refused too. The author decides: grant access, or
-   allow the patch to be sent to atmos-lang.
+2. (Resolved by the new standing rule below: atmos-lang measures the
+   ports from the branch `args` before the merge.)
 
 ## Known, not done
 
@@ -44,6 +42,12 @@ Session `args`. Design: `261118-args-rules.md`.
 - 2026-11-18: this session implements the change itself (parser, tests,
   manual), and atmos-lang migrates the ports. atmos-lang was told to keep
   away from the call part of the parser until the push.
+- 2026-11-18 (standing rule, `TODO.md` 58eafba; checked in atmos-lang's
+  transcript: the author asked for branches at 11:40 and answered
+  "1. sim" at 11:45): the compiler change goes on the branch `args`;
+  plans stay on `main`. Before the merge: latest `main` into the branch,
+  full suite (`tst/run.sh`, `make test-rt test-env`, `ATMOS_ASAN=1`),
+  atmos-lang measures the ports, the author approves.
 - 2026-11-18: `f -x` stays a subtraction (`f(-x)` to pass `-x`).
   Prefix `!x`, `#t`, `~n` start an argument (`f #t` is `f(#t)`),
   proposed with no objection.
