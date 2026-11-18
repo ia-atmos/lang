@@ -1,0 +1,22 @@
+;; `await :all ts` over a pool that is already empty is satisfied at once:
+;; the pool has drained (the reference waits forever). `:any` still waits.
+task T () { await :go }
+pin ts = tasks()
+spawn {
+    val v, t, p = await :all ts
+    print(:all, v, t, p == ts)
+}
+spawn {
+    pin us = tasks()
+    spawn @us T()
+    await :all us
+    print(:drained)
+}
+spawn {
+    pin ws = tasks()
+    await :any ws
+    print(:never)
+}
+print(:after)
+emit(:go)
+print(:end)

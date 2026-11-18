@@ -3085,6 +3085,12 @@ val e = await :any ts   ;; awaits any task to terminate
 await :all ts           ;; awaits all tasks (pool drains)
 ```
 
+An `await :all` over a pool that is already empty is satisfied at once, with
+`nil, nil, ts`: the pool has drained.
+(The reference waits forever.)
+An `await :any` over an empty pool waits, since a task spawned in the pool
+later may terminate.
+
 See [Ambiguities](#ambiguities):
     a bare `await :X || :Y` is invalid (combinators need `await<:X || :Y>`);
     `await :X` ⏎ `until c` reads as `await :X ; until c` (not

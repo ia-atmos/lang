@@ -404,6 +404,14 @@ static AStatus leaf_start1 (ARoot* r, int* done) {
             if (r->v.type != A_TASKS) {
                 return a_error("invalid await : expected tasks pool");
             }
+            // a pool that is already empty has drained: no value, no task
+            if (r->kind==PK_ALL && a_tasks_len(A_TASKS_OF(r->v))==0) {
+                a_pay_clear();
+                a_pay_add(a_nil());
+                a_pay_add(a_nil());
+                a_pay_addc(r->v);
+                *done = 1;
+            }
             break;
 
         case PK_TRAILS:
