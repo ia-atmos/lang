@@ -26,6 +26,12 @@ Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`
 - `abort t, 1` parses today as `(call abort t 1)`, although the manual
   says `abort` takes one argument (`emit :X, 1` is an error, as
   expected). To align with `emit` in the implementation.
+- atmos-lang (2026-11-18): the method call `::` was removed from the
+  language in main b4424ff (the `::` branch of `parser_2_suf` is gone;
+  golden 0212 now calls through the field), so the `o::f "v" ::f \{}`
+  break no longer exists. A session `atmos-oo` may propose a tag after
+  a parameter (`func area (c :Shape.Circle)`) and is to agree the
+  grammar with this session.
 - The table and measurements of `261118-args-rules.md`.
 
 ## Decided
