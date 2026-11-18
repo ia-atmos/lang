@@ -1,0 +1,3 @@
+;; a method call is not in the language: `o.f(o, x)`, or a function of a module
+pin o = [v=1]
+o::inc()

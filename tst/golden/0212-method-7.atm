@@ -3,5 +3,6 @@
             self
         }
         pin o = [f=f]
-        print(o::f'v'::f\{})
+        val r = o.f(o, 'v')
+        print(r.f(r, \{}))
     

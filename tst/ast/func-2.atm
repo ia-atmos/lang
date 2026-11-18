@@ -1,5 +1,4 @@
 func f (x) { x }
 func t.x.f () { }
-func o::m (a) { self }
 task T (v) { }
 task t.T () { }

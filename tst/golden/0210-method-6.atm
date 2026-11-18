@@ -1,4 +1,4 @@
         func f (self,v) { self.v+v }
         pin o = [v=10,f=f]
-        print(o::f(20))
+        print(o.f(o, 20))
     

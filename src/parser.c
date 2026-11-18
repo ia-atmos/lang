@@ -447,31 +447,17 @@ static Expr* parser_proto (void) {
 
     accept_tag_err(TK_ID);
     Expr* dst = mk(E_ACC, TK0);
-    int met = 0;
-    while (1) {
-        if (accept_str(".")) {
-            // ok
-        } else if (!task && accept_str("::")) {
-            met = 1;
-        } else {
-            break;
-        }
+    while (accept_str(".")) {
         Expr* idx = mk(E_INDEX, TK0);
         accept_field_err();
         idx->u.index.t    = dst;
         idx->u.index.kind = IDX_EXPR;
         idx->u.index.idx  = mk(E_STR, TK0);
         dst = idx;
-        if (met) {
-            break;
-        }
     }
 
     accept_str_err("(");
     parser_pars(p);
-    if (met) {
-        proto_par(p, tk_id(tk,"self"), 1);
-    }
     p->u.proto.blk = proto_body();
 
     Expr* set = mk(E_SET, tk);
@@ -1368,7 +1354,6 @@ static int is_prefix (Expr* e) {
         case E_ACC:
         case E_NAT:
         case E_CALL:
-        case E_MET:
         case E_INDEX:
         case E_PARENS:
         case E_TAGGED:
@@ -1391,7 +1376,7 @@ static Expr* parser_2_suf (Expr* pre) {
     while (1) {
         int ok = !no && is_prefix(e) && (
             TK0.sep==TK1.sep ||
-            check_str("@") || check_str(".") || check_str("::")
+            check_str("@") || check_str(".")
         );
         if (!ok) {
             return e;
@@ -1419,15 +1404,6 @@ static Expr* parser_2_suf (Expr* pre) {
             ret->u.index.t    = e;
             ret->u.index.kind = IDX_EXPR;
             ret->u.index.idx  = mk(E_STR, TK0);
-        } else if (accept_str("::")) {
-            // o::m
-            ret = mk(E_MET, TK0);
-            accept_field_err();
-            ret->u.met.o   = e;
-            ret->u.met.met = TK0;
-            if (!check_call_arg() && !check_str("(")) {
-                err(TK1, "expected '('");
-            }
         } else if (accept_str("(")) {
             // f(...)
             ret = mk(E_CALL, TK0);

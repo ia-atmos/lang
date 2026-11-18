@@ -402,10 +402,9 @@ Atmos borrows much from Lua, and some differences are worth mentioning:
           `until`, and `while`, which take their [arguments](#statement-arguments) with or
           without parenthesis.
 - Method call:
-    - Lua: `o:f()` (single colon)
-    - Atmos: `o::f()` (double colon)
-        - The reason is to avoid ambiguity with the syntax of tags:
-            - `f () :x ()` is `f():x()` or `f() ; :x()`?
+    - Lua: `o:f()`, with the methods found through a metatable
+    - Atmos: none, as it has no metatables: `m.f(o)` with a function of a
+      module, or `o.f()` with a function that the table holds
 - List of expressions:
     - Lua: `e1,e2,...` (no parenthesis)
     - Atmos: `e1,e2,...` or `(e1,e2,...)`
@@ -638,7 +637,6 @@ The following symbols are designated in Atmos:
     '   "   `       ;; string/native delimiters
     ,               ;; argument/constructor separator
     :               ;; tag prefix
-    ::              ;; method call
     .               ;; field discriminator
     ...             ;; variadic parameters/arguments
 ```
@@ -1922,7 +1920,7 @@ Atmos supports declarations for [functions](#function) and [tasks](#tasks):
 
 ```
 Proto : [Mod] (`func´|`task`) ID `(´ Pars `)´ Block
-      | (`func´|`task`) ID {`.´ ID} [`::´ ID] `(´ Pars `)´ Block
+      | (`func´|`task`) ID {`.´ ID} `(´ Pars `)´ Block
 Mod   : `val´ | `var´ | `pin´ [`val´ | `var´]
 Pars  : [[Mod] ID {`,´ [Mod] ID}] [`,´ `...´]
 ```
@@ -1984,13 +1982,10 @@ val func fact (n) {
 }
 ```
 
-The second format supports two other variations based on
-[Lua functions][lua-function]:
+The second format declares a field, as in [Lua functions][lua-function]:
 
 - `task t.x.y.f (<pars>) { <body> }`:
     equivalent to `set t.x.y.f = task (<pars>) { <body> }`
-- `func o::f (<pars>) { <body> }` (only for `func`):
-    equivalent to `set o.f = func (self, <pars>) { <body> }`
 
 Examples:
 
@@ -2011,10 +2006,10 @@ task T (var x) {
 
 ```
 pin o = [ v=1 ]
-func o::inc () {
+func o.inc (self) {
     set self.v = self.v + 1
 }
-o::inc()
+o.inc(o)
 print(o.v)          ;; --> 2
 ```
 
@@ -2433,7 +2428,7 @@ precedence priority (from higher to lower):
     - declaration:  `func` `val` (etc)
     - parenthesis:  `()`
 2. suffix:
-    - call:         `f()` `o::m()` `f ""` `f []` `f \{}` `f @clk`
+    - call:         `f()` `f ""` `f []` `f \{}` `f @clk`
     - index:        `t@i` `t@(e)`
     - field:        `t.x`
     - tag:          `:X()` `:X []`
@@ -3672,7 +3667,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
       | Expr `where´ `{´ (ID* `=´ Expr)* `}´        ;; where clause
       | [Mod] (`func´|`task´) ID                    ;; declaration
                `(´ Pars `)´ Block
-      | (`func´|`task´) ID {`.´ ID} [`::´ ID]       ;; (`::´ func only)
+      | (`func´|`task´) ID {`.´ ID}                 ;; a field
                `(´ Pars `)´ Block
       | `return´ Expr*                              ;; return from function
 

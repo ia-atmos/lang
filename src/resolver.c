@@ -221,9 +221,6 @@ static void hoist (Expr* e) {
             hoist(e->u.call.f);
             hoist_list(&e->u.call.es);
             break;
-        case E_MET:
-            hoist(e->u.met.o);
-            break;
         case E_PARENS:
             hoist(e->u.parens.e);
             break;
@@ -478,8 +475,6 @@ static int awaits (Expr* e) {
             return awaits(e->u.bin.e1) || awaits(e->u.bin.e2);
         case E_CALL:
             return awaits(e->u.call.f) || awaits_list(&e->u.call.es);
-        case E_MET:
-            return awaits(e->u.met.o);
         case E_PARENS:
             return awaits(e->u.parens.e);
         case E_LIST:
@@ -728,10 +723,6 @@ static void res (Expr* e) {
                     }
                 }
             }
-            break;
-
-        case E_MET:
-            res(e->u.met.o);
             break;
 
         case E_PARENS:

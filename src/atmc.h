@@ -118,7 +118,7 @@ typedef enum {
     // -e  a+b
     E_UNO, E_BIN,
     // f(...)  o::m
-    E_CALL, E_MET,
+    E_CALL,
     // (e)  (e1,e2)
     E_PARENS, E_LIST,
     // e where {...}
@@ -245,7 +245,6 @@ struct Expr {
         struct { Expr* e1; Expr* e2; }                  bin;
         // sp: set by the resolver
         struct { Expr* f; List es; Special sp; }        call;
-        struct { Expr* o; Tk met; }                     met;
         struct { Expr* e; }                             parens;
         struct { List es; }                             list;
         struct { List dcls; Expr* e; }                  where;

@@ -127,11 +127,6 @@ void ast_dump (Expr* e) {
             dump_list(&e->u.call.es);
             printf(")");
             break;
-        case E_MET:
-            printf("(:: ");
-            ast_dump(e->u.met.o);
-            printf(" %s)", e->u.met.met.str);
-            break;
         case E_PARENS:
             printf("(parens ");
             ast_dump(e->u.parens.e);

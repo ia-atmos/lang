@@ -340,8 +340,9 @@ int lexer_token (Tk* tk) {
         // tags:  :X  :a.b.c
         } else if (c == ':') {
             if (SRC[I] == ':') {
+                // `o::f()` was a method call: not in the language
                 read();
-                *tk = mk(TK_SYM, "::", 2, LIN, SEP);
+                err(mk(TK_SYM,"::",2,LIN,SEP), "invalid symbol");
             } else {
                 int n = 1 + read_while(is_tag, 0, 0);
                 *tk = mk(TK_TAG, SRC+i0, n, LIN, SEP);

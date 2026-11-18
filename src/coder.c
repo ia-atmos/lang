@@ -494,8 +494,7 @@ static int is_multi (Expr* e) {
 
 // Pushes the values of a list of expressions: one of each, except the
 // last, which gives all of its values. Sets the count in `n`.
-// An optional operand `self` goes first (method calls).
-static void gen_args (Unit* u, List* es, const char* n, Opnd* self) {
+static void gen_args (Unit* u, List* es, const char* n) {
     List args = { 0, NULL };
     flatten(&args, es);
     int k = args.n;
@@ -504,9 +503,6 @@ static void gen_args (Unit* u, List* es, const char* n, Opnd* self) {
     int fix = multi ? k-1 : k;
     Opnd* xs = xalloc((k+1) * sizeof(Opnd));
     int nx = 0;
-    if (self != NULL) {
-        xs[nx++] = *self;
-    }
     for (int i=0; i<fix; i++) {
         xs[nx++] = gen_expr(u, args.v[i]);
     }
@@ -1634,7 +1630,7 @@ static void gen_break (Unit* u, Expr* e) {
         vals.v++;
     }
     Dst m = dst_multi(u);
-    gen_args(u, &vals, m.n, NULL);
+    gen_args(u, &vals, m.n);
 
     if (sp == SP_UNTIL) {
         // until(c, v, ...) breaks with `v, ...` if `v` holds, else `c`
@@ -1732,7 +1728,7 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
         case SP_DO: {
             // do(...): evaluates and discards
             Dst m = dst_multi(u);
-            gen_args(u, &e->u.call.es, m.n, NULL);
+            gen_args(u, &e->u.call.es, m.n);
             out(u, "a_settop(a_top - %s);", m.n);
             store_void(u, d);
             return;
@@ -1753,7 +1749,7 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
         case SP_RETURN: {
             // the values travel in the payload up to the function
             Dst m = dst_multi(u);
-            gen_args(u, &e->u.call.es, m.n, NULL);
+            gen_args(u, &e->u.call.es, m.n);
             out(u, "a_pay_pull(%s);", m.n);
             out(u, "st = A_RETURN;");
             out(u, "goto CL_%d;", u->cleanup);
@@ -1775,7 +1771,7 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
         }
         case SP_ESCAPE: {
             Dst m = dst_multi(u);
-            gen_args(u, &e->u.call.es, m.n, NULL);
+            gen_args(u, &e->u.call.es, m.n);
             out(u, "a_pay_pull(%s);", m.n);
             out(u, "st = a_escape();");
             out(u, "goto CL_%d;", u->cleanup);
@@ -1784,7 +1780,7 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
         }
         case SP_THROW: {
             Dst m = dst_multi(u);
-            gen_args(u, &e->u.call.es, m.n, NULL);
+            gen_args(u, &e->u.call.es, m.n);
             out(u, "a_pay_pull(%s);", m.n);
             out(u, "st = a_throw();");
             out(u, "goto CL_%d;", u->cleanup);
@@ -1797,18 +1793,8 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
 
     Opnd f;
     Dst  m = dst_multi(u);
-    if (e->u.call.f->tag == E_MET) {
-        // o::m(...) is o.m(o, ...), with `o` evaluated once
-        Expr* met = e->u.call.f;
-        Opnd o = gen_expr(u, met->u.met.o);
-        f = opnd_tmp(u);
-        out_try(u, "a_index(&%s, %s, atm_K[%d])", f.c, o.c,
-            konst(met->u.met.met.str, met->u.met.met.len));
-        gen_args(u, &e->u.call.es, m.n, &o);
-    } else {
-        f = gen_expr(u, e->u.call.f);
-        gen_args(u, &e->u.call.es, m.n, NULL);
-    }
+    f = gen_expr(u, e->u.call.f);
+    gen_args(u, &e->u.call.es, m.n);
 
     out(u, "{");
     u->ind++;
@@ -1834,7 +1820,7 @@ static void gen_call (Unit* u, Expr* e, Dst d) {
 // (e1, e2, ...): all values of the list, or only the first one.
 static void gen_list (Unit* u, Expr* e, Dst d) {
     Dst m = (d.kind == D_MULTI) ? d : dst_multi(u);
-    gen_args(u, &e->u.list.es, m.n, NULL);
+    gen_args(u, &e->u.list.es, m.n);
     switch (d.kind) {
         case D_NONE:
             out(u, "a_settop(a_top - %s);", m.n);
@@ -2139,7 +2125,7 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
         pool = gen_expr(u, e->u.spawn.pool);
     }
     Dst m = dst_multi(u);
-    gen_args(u, &e->u.spawn.args, m.n, NULL);
+    gen_args(u, &e->u.spawn.args, m.n);
 
     Opnd t = opnd_tmp(u);
     out(u, "a_lin = %d;", lin_of(e->tk));
@@ -2354,7 +2340,7 @@ static void patt_eval (Unit* u, Patt* p, Opnd* os, int* n) {
             Opnd t = opnd_tmp(u);
             out(u, "a_set(&%s, a_tab());", t.c);
             Dst m = dst_multi(u);
-            gen_args(u, &p->args, m.n, NULL);
+            gen_args(u, &p->args, m.n);
             out(u, "a_args_pack(%s, %s);", t.c, m.n);
             os[(*n)++] = t;
             break;
@@ -2706,9 +2692,6 @@ static void gen (Unit* u, Expr* e, Dst d) {
             break;
         case E_NAT:
             gen_nat(u, e, d);
-            break;
-        case E_MET:
-            err(e->tk, "expression not implemented");
             break;
         default:
             store(u, gen_expr(u,e), d);
