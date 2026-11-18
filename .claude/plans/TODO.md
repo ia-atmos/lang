@@ -149,6 +149,7 @@ may be changed.
 | `ray-lessmilk` | `lessmilk` | session_011eECohyasjWkvCHdxGxJ6D 42, 43, 27, and 55) |
 | `raylib` | A permission to change the remote of its checkout of the compiler (harmless meanwhile: the old address redirects) |
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
+| `atmos-oo` | Created on 2026-11-18, after the method call (`::`) was removed (`b4424ff`): whether and how to declare and dispatch functions of the same name by tag. Material `261118-oo.md`; list `TODO-oo.md`; branch `oo` |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
 | `atmos-args` (was `args`; its branch stays `args`) | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
