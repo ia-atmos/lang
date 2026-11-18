@@ -812,6 +812,12 @@ void a_task_quit (void);
 
 void atm_init (int argc, char** argv) {
     a_stk = malloc(A_STK_MAX * sizeof(AVal));
+    if (a_stk == NULL) {
+        fprintf(stderr, "atmos : not enough memory for the stack "
+            "(%lu bytes) : build with a smaller A_STK_MAX\n",
+            (unsigned long) (A_STK_MAX * sizeof(AVal)));
+        exit(1);
+    }
     a_top = 0;
     atm_std_init();
     a_task_init(argc, argv);

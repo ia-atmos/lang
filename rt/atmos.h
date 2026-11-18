@@ -250,7 +250,12 @@ extern int   a_top;
 
 void a_stk_overflow (void);
 
+// Slots of the stack of values, allocated once at start (16 bytes each:
+// 4 MB by default). A target with little memory builds the runtime
+// with a smaller one, as in `-DA_STK_MAX=4096`.
+#ifndef A_STK_MAX
 #define A_STK_MAX (1 << 18)
+#endif
 
 // Pushes an owned value.
 static inline void a_push (AVal v) {
