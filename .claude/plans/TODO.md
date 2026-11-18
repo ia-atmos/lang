@@ -22,7 +22,6 @@ Each has the option recommended by this session.
 | 2 | Phases inside a tick, instead of relying on the order of creation | Not in the language: a convention with two events, as the ports did |
 | 3 | 32-bit reals. **Decided by the author on 2026-11-16** (in the session `sdl-tux`, answering "1" to "the compiler gets 32-bit reals"), so that the enemies and blocks of SuperTux are plain Atmos. The form is still open: a build option where every real is a C `float`, or an explicit type `float32`. What Tux needs: each operation between two reals rounds to `float`; a literal `0.1` converts as `0.1f`; integers do not change; `math` uses the `f` functions; `%.9g` prints a float exactly. Its test: `vy = vy + (10*100)*dt` with `dt = 1.0/(1000.0/15.0)` reads 15.000001, 30.0000019, 45.0000038 | The build option (`ATMOS_REAL=float`): one rule for the whole program, no second type in the language, and the runtime only changes the C type of a real. To ask the author, then do |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | Not to change: pass the receiver as an argument, and document it |
-| 5 | An optional `task main` as the entry point | Not to do |
 | 6 | The event of termination of transparent blocks | Remove it. It changes the semantics, and two golden tests must be adapted |
 | 33 | Time emitted to a pool or a task (slow motion in SNKRX) | Not now: a global factor and `:tick` solve it there |
 | 63 | Two limits of the check of spawns (item 36, done): a `pin t = if c { spawn T() }` that is the last statement of a loop body dies at each step and is not flagged; and the check is lexical, so a task that ends in its start through an await that is satisfied at once is flagged (4 of the tests were so) | Extend the check to a `pin` of a task that ends its block. Keep it lexical. On 2026-11-16 the author approved narrowing the check to a spawn that is the very last statement of its block (`c33e02b`, by the session `spawn-check`): a spawn followed by another spawn is no longer flagged, since the second may awake the first. He also decided that the main chunk stays a block of the rule. The session `spawn-check` is done and archived, at his request. What is left of this item is the first limit (a `pin` of a task that ends a loop body) |
@@ -60,7 +59,6 @@ Waiting for the author's "ok":
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
 | 22 | Mark the plan of Pingus as done, with the link to the port | |
-| 23 | Ask the session `sdl-pingus` to remove the workarounds that the compiler no longer needs | |
 
 Not started, with no decision needed:
 
@@ -207,4 +205,5 @@ of the sessions still have the old names.
 2026-11-14: no value, parentheses optional; the author chose no
 dedicated error for `continue`); 36 (the check of spawns, done on
 2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47); 34, 41, and 62 (done with the new rules of `pin` on 2026-11-15: a nested constructor is pinned with the outer one; the message of an escape says the type and the line of the pin; an unpinned task that is dropped is aborted at once); 18, 19, and 24 (on 2026-11-15 the author deleted every branch but `main`: `trails`, the two `ccr-*`, and `claude/paper-pin`, none with work missing from `main`; the README of Pingus already pointed its plan to `main`; a session cannot delete a branch, the push is refused with 403);
+5 (no `task main`: decided by the author on 2026-11-17, in the session `atmos-envs`; the file stays the main task); 23 (the session `sdl-pingus` removed its workarounds in the two migrations of `pin`, 2026-11-17 and 18);
 51 (became 55); 11 (mouse in `lib/sdl.atm`: the library left this repository on 2026-11-16, by the author's decision, with Rocks; both live in `ia-atmos/env-sdl`).
