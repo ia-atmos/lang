@@ -85,3 +85,6 @@ started, no decision needed), **moved** (another session handles it),
 | 71 | The numbering of items: `#N`, never reused, for everything put to the author | done 2026-11-18 (this file) |
 | 72 | The tests of the projects with `test` blocks and emits: what still needs a trick | open (answered on 2026-11-18; the adoption is `atmos-envs`, its A3) |
 | 73 | Two branches with nothing outside `main`, to delete: `lang` `ccr-6e380402-ae5ue6`, `sdl-pingus` `ccr-d59a6b51-1a4san` | open: the author's to do (a session cannot delete a branch) |
+| 74 | No port has a `test` block: the twelve drive their tests from outside, with about ninety environment variables | open (remark; follows `#76`) |
+| 75 | What a `test` block cannot do alone: keep the environment from opening a window or sound, set polled input, read pixels, reach a C callback | open (the adoption is `atmos-envs`, its A3) |
+| 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | open (recommended: `sdl-pingus`, after the author tests it, `#22`) |
