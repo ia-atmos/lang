@@ -9,6 +9,20 @@ repository `ia-atmos/paper-src-games` (session `src-games`), at its
 last commit `7ff8f88`. That repository is to be removed. The list of
 this file was last updated there on 2026-11-14.
 
+## Index of items (`#N`)
+
+Rule of the author, 2026-11-18 (`.claude/plans/TODO.md`, "Standing
+rules"): everything put to him has a number, unique in this session,
+in order, never reused nor changed. From another session:
+`paper-games#N`. The identifiers of the sections below (`A4`, `B6`)
+stay valid for what was written with them; an item gets a number the
+next time it is put to him.
+
+| # | Title | State |
+|---|-------|-------|
+| #1 | Organization of the paper (was A4) | Open. Reminder on 2026-11-24 |
+| #2 | Title and venue of the Pingus paper (E, references) | Open. Reminder on 2026-11-24 |
+
 ## A. Decisions waiting for the author
 
 Each item has the recommended option.
