@@ -27,7 +27,15 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
   `261118-context.md`, not from their code.
 - The three comments of issue 21: not readable (only search reaches
   GitHub outside `ia-atmos/lang`).
-- Nothing sent to `atmos-lang` (formerly `ceu-atmos`) yet (no decision).
+- New rule (2026-11-18, checked in the transcript of `atmos-lang`, and
+  `TODO.md`, "Standing rules", 58eafba): this session implements
+  `context` itself, in the compiler and runtime, on the branch
+  `context`; plans and TODO still go to `main`. Before merging: latest
+  `main` into the branch, full suite (`tst/run.sh`, `make test-rt
+  test-env`, `ATMOS_ASAN=1`), ask `atmos-lang` to measure the ports if
+  existing programs may change, and the author's approval of the
+  design. Nothing implemented yet (no decision). `atmos-grab` and
+  `pool` also touch `rt/task.c`: coordinate.
 - Nothing told to `atmos-grab` yet: both touch the resume of a trail;
   tell it when 1 is decided.
 
