@@ -148,6 +148,9 @@ may be changed.
 | `sdl-snxkx` | `snxkx` | session_011eECohRKf757Ydp2i9w7Ng |
 | `sdl-flare` | `flare` | session_011eECoegYsZr7nSPxcugGtt |
 | `ray-lessmilk` | `lessmilk` | session_011eECohyasjWkvCHdxGxJ6D |
+| `atmos-args` | `args` | session_011eECof9kjXhYKxUtH8Z3Ed |
+| `atmos-pool` | `pool` | session_011eECoj2p8VQMfaFidx4Nfx |
+| `atmos-envs` | `envs` | session_011eECofYWTNPACTtUjHN4p6 |
 
 ## D. Other sessions
 
@@ -160,9 +163,9 @@ What waits for the author in them, as far as this session knows.
 | `raylib` | A permission to change the remote of its checkout of the compiler (harmless meanwhile: the old address redirects) |
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
-| `args` | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
-| `pool` | Created on 2026-11-18, to discuss awaits and emits over pools and tasks: items 1, 2, 4, 33, 60 move there (31 went to `args`, 32 was done here). Its material is `261118-pool.md`; its list, `TODO-pool.md` |
-| `envs` | Created on 2026-11-17 (session_011eECofYWTNPACTtUjHN4p6), to discuss the environments with the author: items 46, 47, 52, 56 to 60, 68 move there. Its material is `261117-envs.md`; its list, `TODO-envs.md` |
+| `atmos-args` (was `args`; its branch stays `args`) | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
+| `atmos-pool` (was `pool`; its branch stays `pool`) | Created on 2026-11-18, to discuss awaits and emits over pools and tasks: items 1, 2, 4, 33, 60 move there (31 went to `args`, 32 was done here). Its material is `261118-pool.md`; its list, `TODO-pool.md` |
+| `atmos-envs` (was `envs`) | Created on 2026-11-17 (session_011eECofYWTNPACTtUjHN4p6), to discuss the environments with the author: items 46, 47, 52, 56 to 60, 68 move there. Its material is `261117-envs.md`; its list, `TODO-envs.md` |
 
 Each session keeps its own `.claude/plans/TODO.md`, in its repository,
 since 2026-11-13: what waits for the author in each is there.
