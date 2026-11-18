@@ -15,7 +15,7 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
 3. Can `leave` receive what `enter` returned (the pico idiom
    `val old = pico.set.layer(l)` ... `pico.set.layer(old)`)?
    Recommendation: yes.
-4. Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang` plan's
+4. Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang/atmos` plan's
    `:init :enter :body :leave`, or `context (enter, leave) { ... }`
    with functions as expressions.
 5. Errors: `emit`, `spawn`, `abort` inside `enter`/`leave`.
@@ -41,7 +41,7 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
   canvas of the stars `STARS`, not `BACK`: the examples here follow
   `261118-context.md`; to check in SNKRX when it can be read.
 
-- 2026-11-18: `lua-atmos` has no `context` (no branch); `atmos-lang`
+- 2026-11-18: `lua-atmos` has no `context` (no branch); `atmos-lang/atmos`
   has only a plan (`260628-context.md`), once per emit.
 - 2026-11-18: no real case awaits between set and restore; `context`
   fixes no bug in the ports today, it saves writing and makes the
