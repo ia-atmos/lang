@@ -17,7 +17,13 @@ was decided in the compiler session, and item 31 moved to the session
 
 ## B. Work known, not done
 
-- After item 1: the decision and small programs to `atmos-lang`.
+- After item 1: implement it here, on the branch `pool` (rule of the
+  author, 2026-11-18, `TODO.md` "Standing rules", checked in the
+  transcript of `atmos-lang`): bring `main` in, run `tst/run.sh`,
+  `make test-rt test-env` with `ATMOS_ASAN=1`, ask `atmos-lang` to
+  measure the ports if existing programs change, merge after the
+  author approves. Tell `atmos-grab` and `atmos-context` what changes
+  in `rt/task.c`.
 - The ports that keep entities in tables (SNKRX, Flare, Lessmilk) gain
   from item 1 only if they move them to pools, which item 40 (rules of
   `pin`) blocks today.
