@@ -1936,7 +1936,7 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
         out(&u, "a_lin = %d;", flin);
     }
     for (int i=0; i<npar; i++) {
-        out(&u, "a_name(L[%d], D);", pars[i]->slot);
+        out(&u, "a_name_arg(L[%d], D);", pars[i]->slot);
     }
     // the value of the main chunk goes nowhere
     gen_block(&u, body, (p == PROTO_MAIN) ? dst_none() : dst_slot("t->ret"));

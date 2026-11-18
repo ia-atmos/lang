@@ -1,4 +1,4 @@
 7
 ==> ERROR:
  v  pin-err-04.atm:17 (throw)
-==> invalid pin : table named at pin-err-04.atm:16
+==> invalid assignment : unexpected pinned value : table pinned at pin-err-04.atm:16

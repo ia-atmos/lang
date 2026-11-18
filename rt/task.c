@@ -2085,9 +2085,9 @@ static void pin_deep (AVal v, int d, int how) {
 // a name already keeps it, and it may no longer be pinned inside `d`.
 static void pin_kid (AVal v, int d) {
     if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&
-        v.u.o->ceil!=0 && d>0)
+        v.u.o->ceil!=0 && d>(int)v.u.o->ceil)
     {
-        a_ceil(v, d, a_lin);
+        // the holder is inside the block of the name
         return;
     }
     pin_deep(v, d, 2);
@@ -2152,6 +2152,22 @@ static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
         default:
             break;
     }
+}
+
+void a_name_arg (AVal v, int d) {
+    if (v.type<A_TAB || v.u.o->pinned) {
+        return;
+    }
+    if (a_cur!=NULL && v.u.o->ceil!=0) {
+        int e = emit_depth(&a_cur->node);
+        if (e < 1) {
+            e = 1;
+        }
+        if (e < d) {
+            d = e;
+        }
+    }
+    a_name(v, d);
 }
 
 void a_ceil (AVal v, int d, uint32_t lin) {
@@ -2505,8 +2521,9 @@ static int adopt_rec (AVal v, int d, int root) {
         return 1;
     }
     AObj* o = v.u.o;
-    // a named value that is held is only referenced
-    if (!root && o->ceil!=0 && d>0) {
+    // a named value that is held by a holder inside the block of its
+    // name is only referenced
+    if (!root && o->ceil!=0 && d>(int)o->ceil) {
         return 1;
     }
     if (o->ceil!=0 && d>o->ceil) {

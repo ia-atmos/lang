@@ -57,8 +57,12 @@ print(out.y.x.self.v)
 task T (t) {
     await(:go)
     print(t.self.v)
+    set t.self = nil            ;; (see below)
 }
 pin ts = tasks()
+;; A cyclic value that is given to a task of an outer pool is kept, but
+;; it is not reached when the task ends (its ceiling is the block of
+;; the pool, and not a block of the task): the task breaks the cycle.
 do {                            ;; kept by a task of an outer pool
     val a = [v=50]
     set a.self = a

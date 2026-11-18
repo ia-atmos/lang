@@ -1607,7 +1607,8 @@ An unpinned value becomes pinned in three ways:
   It is then pinned in the block of the value that holds it.
 
 The pin is deep: the unpinned values that the value holds are pinned with it,
-except those that a name holds (see below), which are only referenced.
+except those that a name of an outer block holds (see below), which are
+only referenced.
 
 A parameter declared with `pin` adopts its argument, as `pin x = x` at the
 top of the body would do, and the body reclaims it when it terminates:
@@ -1644,10 +1645,14 @@ f([7])
 ```
 
 A named value that is stored in a pinned value, or that a pinned value holds
-when it is pinned, is not adopted: the pinned value only refers to it, and
-the name keeps seeing it after the block of the holder ends.
-Its ceiling becomes the block of the holder, if that block is outer, so that
-it can no longer be pinned inside that block:
+when it is pinned, depends on where the holder is.
+If the block of the holder is the block of the name or an outer one, the
+holder outlives the name, and the value is adopted as an unnamed one: so a
+value that arrives through a parameter is adopted as one that is written in
+place.
+If the holder is inside the block of the name, the value is not adopted:
+the pinned value only refers to it, and the name keeps seeing it after the
+block of the holder ends:
 
 ```
 task Item (r) {             ;; `r` is a name
@@ -1674,8 +1679,15 @@ reaches.
 The search only runs if a reference was written into a table, a captured
 variable, or a `pub` since the block began, since no cycle forms without a
 write.
-A cyclic value that a call returns and that is dropped without a name is
-not reached, and leaks.
+Two cases are not reached, and leak: a cyclic value that a call returns
+and that is dropped without a name, and one that is given to a task of a
+pool of an outer block, when that task ends.
+
+A parameter of a task is a name as the others, but the task may outlive the
+block that spawned it, as a task of a pool of an outer block does.
+An unpinned value that already has a name and is given to such a task gets
+its ceiling at the block that ends the task: only a holder there, or
+outside, may adopt it.
 The explicit `pin` is recommended where the moment of finalization matters:
 native values, tasks, and pools.
 A task that a name holds, as in `val t = spawn T()`, is aborted at the end

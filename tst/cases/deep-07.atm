@@ -1,0 +1,41 @@
+;; A named unpinned value that is stored in a pinned holder is adopted
+;; when the block of the holder is the block of the name or an outer
+;; one: the holder outlives the name. So a value that arrives through a
+;; parameter is adopted as one that is written in place.
+
+pin IMG = [ w=1 ]
+func Spr (img) { :Spr [ img=img ] }
+func add (g, n) {
+    set g.kids@+ = n                ;; `n` is a name: adopted by `g`
+    g.kids@(#g.kids - 1)
+}
+task T () {
+    pin level = [ kids=[] ]
+    val snake = add(level, [ kids=[] ])
+    val s = add(snake, Spr(IMG))    ;; snake is pinned: it may hold IMG
+    print(s.img.w)
+}
+pin t = spawn T()
+
+;; built in a name, then given to a holder outside
+pin game = []
+do {
+    val es = []
+    set game.enemies = es
+    set es@+ = IMG                  ;; es is pinned with game
+    print(#game.enemies)
+}
+print((game.enemies@0).w)
+
+;; A value that is given to a task of an outer pool has a name that may
+;; outlive the block that spawned the task: only a holder at the block
+;; of the pool, or outside, may adopt it.
+task K (v) { await(:go) ; print(v@0) }
+pin ts = tasks()
+do {
+    val v = [7]
+    spawn @ts K(v)
+    val ok, e = catch true { pin x = v }
+    print(ok, e)
+}
+emit(:go)

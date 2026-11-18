@@ -1,5 +1,7 @@
-;; a deep pin adopts only the unpinned values that have no name: one with
-;; a name is only referenced, and the name keeps seeing it
+;; A deep pin adopts the unpinned values with no name. One with a name is
+;; only referenced when the holder is inside the block of the name (the
+;; name keeps seeing it), and adopted when the holder is in that block or
+;; outside (see deep-07)
 task Item (r) {
     spawn {
         pin over = \(x, y) { r.x + x + y }
@@ -24,8 +26,7 @@ do {
     print(:t, t@0@0)
 }
 
-;; a name that a pinned holder refers to may not be pinned inside the
-;; block of the holder
+;; a named value that a holder outside adopted may not be pinned again
 pin h2 = []
 do {
     val k = [3]

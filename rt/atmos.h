@@ -988,11 +988,19 @@ static inline AStatus a_chk (AVal v) {
 // unpinned one that has a ceiling gets it too.
 void a_ceil (AVal v, int d, uint32_t lin);
 
+// A parameter of the running task holds `v`, at the depth `d` of its
+// body. A value that already has a name comes from who spawned the
+// task, which may end before the task does (a task of a pool of an
+// outer block): the depth of the body says nothing to that name. The
+// ceiling is then the block that ends the task, so that only a holder
+// there, or outside, which outlives both names, may adopt the value.
+void a_name_arg (AVal v, int d);
+
 static inline void a_name (AVal v, int d) {
-    if (v.type>=A_TAB && !v.u.o->pinned && d>0 &&
-        (v.u.o->ceil==0 || d<v.u.o->ceil))
-    {
-        a_ceil(v, d, a_lin);
+    if (v.type>=A_TAB && !v.u.o->pinned && d>0) {
+        if (v.u.o->ceil==0 || d<v.u.o->ceil) {
+            a_ceil(v, d, a_lin);
+        }
     }
 }
 
