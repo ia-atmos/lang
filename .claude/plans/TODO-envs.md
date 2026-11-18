@@ -16,18 +16,18 @@ One at a time, each with the recommended option.
 | A3 | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time; the environment knows it is under `-t` by a global set in a `test` block of its own file (both checked, no compiler change; `261117-envs-atmos.md`) | Each environment adopts it, and the `*_ATM_*` variables can go. To propose to the environment sessions after the pilot of A1 |
 | A4 | (59) Confirm the mechanism of selection: `make env` builds `atmos-<env>`, `-e` does it by hand | Confirm. With A1, `make env` takes a list of environments |
 | A5 | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
-| A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `ceu-atmos` |
+| A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `atmos-lang` |
 | A7 | (52) New environments: POSIX (serial, fds, signals), the browser (WebAssembly), embedded boards | `env-posix` first, as the first secondary environment of A1 (FrescoGO! is its case) |
-| A8 | (46) The order inside a frame. pico: the time, the input, `:frame`, `:draw`; sdl: the input, `:frame`, the time, `:draw`; ray: the input, the time, `:frame`, `:draw` (SNKRX sets the clock factor in `:frame` for the time of the same frame). Reported by `pico-sdl` with its `:frame` (2026-11-17) | The order of sdl for all, since one game depends on it; pico's traces change once |
-| A9 | What a `true` from `step` means with secondaries. `uv` ends the program as primary when nothing can awake it, which is unsafe with secondaries (they may still have input); it now does so only when alone (reported 2026-11-18) | As in lua-atmos: `true` means "quit requested" (a window closed); "nothing can awake" only from an environment that is alone. A line in the manual, by `ceu-atmos` |
+| A8 | (46) The order inside a frame. pico: the time, the input, `:frame`, `:draw`; sdl: the input, `:frame`, the time, `:draw`; ray: the input, the time, `:frame`, `:draw` (SNKRX sets the clock factor in `:frame` for the time of the same frame). Reported by `env-pico` with its `:frame` (2026-11-17) | The order of sdl for all, since one game depends on it; pico's traces change once |
+| A9 | What a `true` from `step` means with secondaries. `uv` ends the program as primary when nothing can awake it, which is unsafe with secondaries (they may still have input); it now does so only when alone (reported 2026-11-18) | As in lua-atmos: `true` means "quit requested" (a window closed); "nothing can awake" only from an environment that is alone. A line in the manual, by `atmos-lang` |
 
 ## B. Work known and not done
 
 - The pilot passed (`env-uv` `ecc8b48`, `env-iup` `944b9a9`): the pair with
-  two includes, no weak symbols, ASAN clean. Four gaps reported by `uv`
+  two includes, no weak symbols, ASAN clean. Four gaps reported by `env-uv`
   (2026-11-17):
   1. The quits run before `atm_quit`, so globals holding handles are
-     finalized after the library is closed. Fixed in `ceu-atmos` `c12cf52`:
+     finalized after the library is closed. Fixed in `atmos-lang` `c12cf52`:
      quits run inside `atm_free`, after the variables, before the constants
      (a `quit` sees the program's variables as nil).
   2. A primary that waits delays the secondaries (IUP's 10 ms tick is the
@@ -38,16 +38,16 @@ One at a time, each with the recommended option.
   4. Each environment re-invents carrying the error of a C callback out of
      its step. Fixed in `c12cf52`: the first error of an emit from C inside
      a step is kept and becomes the step's status.
-  Added by `iup` (same day; it confirms 1 and 4):
+  Added by `env-iup` (same day; it confirms 1 and 4):
   5. When an environment starts is implicit (`iup.atm` opens the library
      in a top-level native at its include). Recommended: the convention
      "the include is the start", written in the manual.
   6. The primary must bound its wait (at `atmos.next()` or a short tick),
-     or it starves the secondaries. In the manual since `ceu-atmos` `129eb6a`.
+     or it starves the secondaries. In the manual since `atmos-lang` `129eb6a`.
   7. `mode.current` is awkward to reach from the step (the table must be
      unpinned and named). Fixed in `129eb6a`: `step(:primary)` /
      `step(:secondary)`; `mode.current` stays.
-  Cleanups done: `iup` (13 tests, ASAN), `uv` `63ba2a8` (34 tests, ASAN;
+  Cleanups done: `env-iup` (13 tests, ASAN), `env-uv` `63ba2a8` (34 tests, ASAN;
   as primary with secondaries it waits 10 ms at most).
   8. The secondary mode of `iup.atm` has no test (no primary runs before
      IUP).
@@ -63,13 +63,13 @@ One at a time, each with the recommended option.
 
 ## C. Reported and not acknowledged
 
-- `ceu-atmos` `81986e7`: `atmos.env` and the generic `main`, with three changes from the draft: the env table must be unpinned, a missing `mode` is an error, the error of the main chunk is printed before the quits.
+- `atmos-lang` `81986e7`: `atmos.env` and the generic `main`, with three changes from the draft: the env table must be unpinned, a missing `mode` is an error, the error of the main chunk is printed before the quits.
 
 ## D. Decided by the author
 
 | Date | Decision |
 |---|---|
-| 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Done in `ceu-atmos` `81986e7` (the table must be unpinned; a missing `mode` is an error; up to 8). Pilot told to `uv` and `iup` |
-| 2026-11-17 | (46) `:frame` stays, in every environment with frames (pico, sdl, ray), for the logic of a frame, before `:draw`; `:clock` is time only (it awakes once per piece of time, many per frame). Environments with no frames (uv, iup, posix) emit none. Told to `pico-sdl`, `raylib`, `env-sdl`, `ceu-atmos` |
-| 2026-11-17 | (46) Done in `env-ray` `4d5f5b5` (57 of 57 runs identical; no `:mouse.motion`, the games poll the position; Lessmilk told). One vocabulary for all, that of pico: `:quit`; `:key.dn`/`:key.up` with `key` the name and `code` the number; `:mouse.motion`, `:mouse.button.dn`/`.up` with `x`, `y`, `button`; `:frame [n, us]` then `:draw`; events of a handle carry `h`. `env-ray` renames (binding, 23 games; Lessmilk follows). Told to `raylib`, `ceu-atmos` |
+| 2026-11-17 | (57) The interface of an environment in Atmos, as in lua-atmos: `atmos.env [step, quit, mode]`, a generic `main` in the runtime, primary and secondary, and the case with no `step`. Done in `atmos-lang` `81986e7` (the table must be unpinned; a missing `mode` is an error; up to 8). Pilot told to `uv` and `iup` |
+| 2026-11-17 | (46) `:frame` stays, in every environment with frames (pico, sdl, ray), for the logic of a frame, before `:draw`; `:clock` is time only (it awakes once per piece of time, many per frame). Environments with no frames (uv, iup, posix) emit none. Told to `env-pico`, `env-ray`, `env-sdl`, `atmos-lang` |
+| 2026-11-17 | (46) Done in `env-ray` `4d5f5b5` (57 of 57 runs identical; no `:mouse.motion`, the games poll the position; Lessmilk told). One vocabulary for all, that of pico: `:quit`; `:key.dn`/`:key.up` with `key` the name and `code` the number; `:mouse.motion`, `:mouse.button.dn`/`.up` with `x`, `y`, `button`; `:frame [n, us]` then `:draw`; events of a handle carry `h`. `env-ray` renames (binding, 23 games; Lessmilk follows). Told to `env-ray`, `atmos-lang` |
 | 2026-11-17 | No `task main`: the file stays the main task; a game's own task is what tests spawn |

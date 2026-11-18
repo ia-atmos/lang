@@ -1,7 +1,7 @@
 # envs: the C interface of an environment, then and now
 
 The author's first discussion of environments (before 2026-11-13, not in
-the record of `ceu-atmos`), as he gave it to the session `envs` on
+the record of `atmos-lang`), as he gave it to the session `envs` on
 2026-11-17, with what changed since. Checked against `rt/atmos.h`.
 
 ## The interface

@@ -109,7 +109,7 @@ print("end")
 
 Output: `key 1.0`, `key 2.0`, `2ms`, `key 3.0`, `end`.
 
-## To check with `ceu-atmos`
+## To check with `atmos-lang`
 
 1. An exception raised by a task during an `emit` inside `step`: does it
    come back as the status of `a_call`, as from `atm_emit`?
@@ -233,7 +233,7 @@ block itself is the source of input and time (`emit(:key.dn ...)`,
 variables. What is missing is only on the side of the environment: under
 `-t` it should not open the real window, sound, or device at its
 `include`. The reference has `atmos.test`; here there is no such flag
-(the compiler only drops `test` blocks). To ask `ceu-atmos`: a flag
+(the compiler only drops `test` blocks). To ask `atmos-lang`: a flag
 under `-t`, readable by the environment from Atmos and from C.
 
 ### The test flag, with no compiler change (the author, 2026-11-17)
