@@ -176,6 +176,17 @@ of the sessions still have the old names.
 ## Standing rules from the author, for all sessions
 
 - Commit and push straight to `main`, in fine-grained commits.
+- **Language sessions work on branches** (2026-11-18): a session that
+  discusses a part of the language (`atmos-xxx`, `args`, `pool`)
+  implements it in the compiler itself, on a branch named after it
+  (`args`, `pool`, `grab`, `context`, `pin`); its plans and TODO still
+  go straight to `main`. Before merging: bring the latest `main` into
+  the branch and run the full suite (`tst/run.sh`, `make test-rt
+  test-env`, with `ATMOS_ASAN=1`); ask `atmos-lang` to measure the
+  impact on the ports when the change touches existing programs; merge
+  only after the author approved the design and with the suite passing
+  over the current `main`. After the merge, `atmos-lang` migrates the
+  tests if needed and tells the ports.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
