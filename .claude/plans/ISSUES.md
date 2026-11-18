@@ -88,3 +88,4 @@ started, no decision needed), **moved** (another session handles it),
 | 74 | No port has a `test` block: the twelve drive their tests from outside, with about ninety environment variables | open (remark; follows `#76`) |
 | 75 | What a `test` block cannot do alone: keep the environment from opening a window or sound, set polled input, read pixels, reach a C callback | open (the adoption is `atmos-envs`, its A3) |
 | 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | open (recommended: `sdl-pingus`, after the author tests it, `#22`) |
+| 77 | Merge of `pin` b80bcd1 (`atmos-pin#11`: the warning of a pin given away sees `until c, v` and `while c, v`) | open: measured (suite 969 pass; no new warning in any port), waits for the author's approval |
