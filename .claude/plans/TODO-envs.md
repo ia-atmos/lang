@@ -1,11 +1,37 @@
-# TODO of the session `envs`
+# TODO of the session `atmos-envs`
 
 The environments of this implementation: how a program selects one, how
 two share one program, their events, their test mode, and new ones.
 Material: `261117-envs.md`. Numbers in parentheses are those of the
 compiler's list (`TODO.md`), which do not change.
 
-Last update: 2026-11-17.
+Last update: 2026-11-18.
+
+## Index
+
+Items are `#N` (standing rule of the author, 2026-11-18): unique in this
+session, in order, never reused. The earlier `A1`..`A9` map to `#1`..`#9`.
+An item of another session is `session#N` (the compiler's list is
+`atmos-lang#N`).
+
+| # | Title | State |
+|---|-------|-------|
+| #1 | Two environments in one program (`atmos-lang#57`): `atmos.env` | Decided 2026-11-17, done (`81986e7`, pilot uv+iup) |
+| #2 | One vocabulary of events, that of pico (`atmos-lang#46`) | Decided 2026-11-17, done (sdl, pico, ray) |
+| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open, recommended (A3 below) |
+| #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
+| #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
+| #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |
+| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open |
+| #8 | The order inside a frame | Decided 2026-11-18, done (pico, ray; sdl already) |
+| #9 | What `true` from `step` means with secondaries | Open, asked |
+| #10 | A secondary wakes a waiting primary (an `fd`) | Open, design (pilot gap 2) |
+| #11 | A dedicated compiler forces its environment as primary | Open, design (pilot gap 3) |
+| #12 | "The include is the start" of an environment, in the manual | Work (pilot gap 5) |
+| #13 | No test of `iup.atm` as a secondary | Work (pilot gap 8) |
+| #14 | `:frame` stays; `:clock` is time only | Decided 2026-11-17 |
+| #15 | No `task main` | Decided 2026-11-17 |
+
 
 ## A. Decisions waiting for the author
 
@@ -13,12 +39,12 @@ One at a time, each with the recommended option.
 
 | # | Decision | Recommended |
 |---|----------|-------------|
-| A3 | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time; the environment knows it is under `-t` by a global set in a `test` block of its own file (both checked, no compiler change; `261117-envs-atmos.md`) | Each environment adopts it, and the `*_ATM_*` variables can go. To propose to the environment sessions after the pilot of A1 |
-| A4 | (59) Confirm the mechanism of selection: `make env` builds `atmos-<env>`, `-e` does it by hand | Confirm. With A1, `make env` takes a list of environments |
-| A5 | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
-| A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `atmos-lang` |
-| A7 | (52) New environments: POSIX (serial, fds, signals), the browser (WebAssembly), embedded boards | `env-posix` first, as the first secondary environment of A1 (FrescoGO! is its case) |
-| A9 | What a `true` from `step` means with secondaries. `env-uv` ends the program as primary when nothing can awake it, which is unsafe with secondaries (they may still have input); it now does so only when alone (reported 2026-11-18) | As in lua-atmos: `true` means "quit requested" (a window closed); "nothing can awake" only from an environment that is alone. A line in the manual, by `atmos-lang` |
+| #3 (A3) | (58) Tests of a game: a `test` block that spawns the game's own task and emits its input and time; the environment knows it is under `-t` by a global set in a `test` block of its own file (both checked, no compiler change; `261117-envs-atmos.md`) | Each environment adopts it, and the `*_ATM_*` variables can go. To propose to the environment sessions after the pilot of A1 |
+| #4 (A4) | (59) Confirm the mechanism of selection: `make env` builds `atmos-<env>`, `-e` does it by hand | Confirm. With A1, `make env` takes a list of environments |
+| #5 (A5) | (47) `env-ray` holds the binding and its 23 games; `ray-lessmilk` keeps a patched copy (also item 21 of `env-ray`) | Merge Lessmilk's patch into `ray.atm` first; split the games out later |
+| #6 (A6) | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `atmos-lang` |
+| #7 (A7) | (52) New environments: POSIX (serial, fds, signals), the browser (WebAssembly), embedded boards | `env-posix` first, as the first secondary environment of A1 (FrescoGO! is its case) |
+| #9 (A9) | What a `true` from `step` means with secondaries. `env-uv` ends the program as primary when nothing can awake it, which is unsafe with secondaries (they may still have input); it now does so only when alone (reported 2026-11-18) | As in lua-atmos: `true` means "quit requested" (a window closed); "nothing can awake" only from an environment that is alone. A line in the manual, by `atmos-lang` |
 
 ## B. Work known and not done
 
