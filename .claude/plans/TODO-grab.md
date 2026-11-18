@@ -31,8 +31,15 @@ Session `atmos-grab`. Material: `261118-grab.md` (from atmos-lang),
 
 ## Known work, not done
 
-- After the decisions: the design with small programs and their
-  expected output, to `atmos-lang` (formerly ceu-atmos, session_011eECogKVQ7ZzmWCoMST2wK).
+- After the decisions: implement it here, on the branch `grab` (rule
+  of 2026-11-18, `TODO.md` "Standing rules", checked in the transcript
+  of `atmos-lang`): tests with small programs and their expected
+  output; before merging, bring `main` in, run `tst/run.sh`, `make
+  test-rt test-env` with `ATMOS_ASAN=1`; ask `atmos-lang`
+  (session_011eECogKVQ7ZzmWCoMST2wK) to measure the ports if existing
+  programs may change (`toggle` stays, so probably not); merge only
+  after the author approves the design. `atmos-context` and `pool`
+  also touch `rt/task.c`: coordinate.
 - Tell `atmos-context` (issue 21) what is decided about resuming
   (zero tick on release).
 
