@@ -1,6 +1,6 @@
 # TODO: grab (issue 22)
 
-Session `atmos-grab`. Material: `261118-grab.md` (from ceu-atmos),
+Session `atmos-grab`. Material: `261118-grab.md` (from atmos-lang),
 `261118-grab-cases.md` (cases before and after, prior art).
 
 ## Decisions waiting for the author (asked one at a time)
@@ -32,7 +32,7 @@ Session `atmos-grab`. Material: `261118-grab.md` (from ceu-atmos),
 ## Known work, not done
 
 - After the decisions: the design with small programs and their
-  expected output, to `ceu-atmos` (session_011eECogKVQ7ZzmWCoMST2wK).
+  expected output, to `atmos-lang` (formerly ceu-atmos, session_011eECogKVQ7ZzmWCoMST2wK).
 - Tell `atmos-context` (issue 21) what is decided about resuming
   (zero tick on release).
 
@@ -44,3 +44,6 @@ Session `atmos-grab`. Material: `261118-grab.md` (from ceu-atmos),
   is neutral (the pause is already outside the game); SNKRX is the case.
 - SNKRX today: the shop's buttons and cards still answer the mouse
   behind the options modal (the `eng.slow` freezes time, not input).
+- The author pasted the summary of another chat (2026-11-18): it agrees
+  (stack, SNKRX the clearest case) but misses the `grabbable` of his
+  comment and the mouse leaking in the shop; told him. Q1 asked again.
