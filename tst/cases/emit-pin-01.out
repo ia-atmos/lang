@@ -1,8 +1,8 @@
 child	10
 pool	10
 self	10
-false	invalid escape : table pinned at tst/cases/emit-pin-01.atm:24
-false	invalid escape : table pinned at tst/cases/emit-pin-01.atm:24
-false	invalid escape : table pinned at tst/cases/emit-pin-01.atm:24
-false	invalid escape : table pinned at tst/cases/emit-pin-01.atm:12
+false	invalid escape : table pinned at emit-pin-01.atm:24
+false	invalid escape : table pinned at emit-pin-01.atm:24
+false	invalid escape : table pinned at emit-pin-01.atm:24
+false	invalid escape : table pinned at emit-pin-01.atm:12
 top	30
