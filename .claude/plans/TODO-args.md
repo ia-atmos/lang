@@ -4,10 +4,9 @@ Session `args`. Design: `261118-args-rules.md`.
 
 ## Waiting for the author
 
-1. Constructor arguments (`f "s"`, `f [t]`, `f :X`) under R3: greedy
-   as any other (`type [] == :t` is `type([] == :t)`, `f "a" "b"` becomes
-   an error), or tight as in Lua today. Recommended: greedy (one
-   rule; locally 2 files break).
+1. Who implements: this session directly (parser, tests, manual), with
+   a note to atmos-lang, or atmos-lang as the rule says. Asked by the
+   author. Recommended: here, after the sub-questions, with a note.
 2. Access to the ports for this session (attaching was refused), so the
    R3 diff can run on them.
 
@@ -29,3 +28,6 @@ Session `args`. Design: `261118-args-rules.md`.
   `g(f x, y)` is `g(f(x, y))`), as `return` does. Not R4 (outermost
   position only). Not sent to atmos-lang yet: waiting for the
   sub-questions, so the rule goes complete.
+- 2026-11-18: constructor arguments are greedy too (`print "a" ++ s` is
+  `print("a" ++ s)`, `type [] == :t` is `type([] == :t)`; `f "a" "b"`
+  becomes an error).
