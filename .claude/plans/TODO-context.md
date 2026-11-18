@@ -27,7 +27,7 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
   `261118-context.md`, not from their code.
 - The three comments of issue 21: not readable (only search reaches
   GitHub outside `ia-atmos/lang`).
-- Nothing sent to `ceu-atmos` yet (no decision).
+- Nothing sent to `atmos-lang` (formerly `ceu-atmos`) yet (no decision).
 - Nothing told to `atmos-grab` yet: both touch the resume of a trail;
   tell it when 1 is decided.
 
