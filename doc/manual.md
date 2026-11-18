@@ -1696,6 +1696,12 @@ of the block of the name, unless a block outside adopts it.
 A place that owns its value may be assigned an unpinned one: a variable
 declared with `pin var`, a field of a pinned table, and the `pub` of a pinned
 task.
+A `pin var` is for values that the block creates, and a `var` for values
+that it only refers to: a value that already has an owner cannot be
+assigned to a `pin var` (`invalid assignment : unexpected pinned value`).
+A variable that receives a new value at one point and a value of another
+owner at another, such as the result of a call that may give either, is a
+`var`.
 The new value is pinned in the block of the place, deep, as by a
 declaration.
 The old value leaves the place, and is finalized when its last reference

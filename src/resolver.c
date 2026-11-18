@@ -337,26 +337,80 @@ static void res_in (Expr* e, int isvoid, int tail) {
     TAIL = 0;
 }
 
-// A pin of the current block given as its value, which the block may
-// not give away (`invalid escape` when it executes, unless the value
-// is not dynamic, as in `pin x = 10`): a warning.
+// A pin given away by its block, which a block may not do (`invalid
+// escape` when it executes, unless the value is not dynamic, as in
+// `pin x = 10`): a warning. The value of a block gives away the pins of
+// that block; a `return`, those of the function; a `break`, those
+// declared inside the loop; an `escape`, those declared inside the `do`
+// that it reaches. A pin inside a constructor that is given leaves
+// with it.
+
+// The scopes of the function, of the innermost loop, and of the
+// enclosing `do` blocks with a tag.
+static Scope* FUN_SCOPE  = NULL;
+static Scope* LOOP_SCOPE = NULL;
+
+typedef struct DoEsc {
+    const char* tag;
+    Scope* sc;
+    struct DoEsc* up;
+} DoEsc;
+
+static DoEsc* DOS = NULL;
+
+// `v` is declared in a scope from the current one up to `to`.
+static int in_scopes (Var* v, Scope* to) {
+    for (Scope* sc=SCOPE; sc!=NULL; sc=sc->up) {
+        for (int i=0; i<sc->n; i++) {
+            if (sc->vars[i] == v) {
+                return 1;
+            }
+        }
+        if (sc == to) {
+            break;
+        }
+    }
+    return 0;
+}
+
+static void giveaway (Expr* e, Scope* to) {
+    switch (e->tag) {
+        case E_LIST:
+            for (int i=0; i<e->u.list.es.n; i++) {
+                giveaway(e->u.list.es.v[i], to);
+            }
+            break;
+        case E_PARENS:
+            giveaway(e->u.parens.e, to);
+            break;
+        case E_TAGGED:
+            giveaway(e->u.tagged.e, to);
+            break;
+        case E_TABLE:
+            for (int i=0; i<e->u.table.ks.n; i++) {
+                if (e->u.table.ks.v[i] != NULL) {
+                    giveaway(e->u.table.ks.v[i], to);
+                }
+            }
+            for (int i=0; i<e->u.table.vs.n; i++) {
+                if (e->u.table.vs.v[i] != NULL) {
+                    giveaway(e->u.table.vs.v[i], to);
+                }
+            }
+            break;
+        case E_ACC:
+            if (e->var!=NULL && e->var->kind==V_PIN && in_scopes(e->var,to)) {
+                warn(e->tk, "pinned value given away by its block "
+                    "(expected 'val')");
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void chk_giveaway (Expr* e, Scope* sc) {
-    if (e->tag == E_LIST) {
-        for (int i=0; i<e->u.list.es.n; i++) {
-            chk_giveaway(e->u.list.es.v[i], sc);
-        }
-        return;
-    }
-    if (e->tag!=E_ACC || e->var==NULL || e->var->kind!=V_PIN) {
-        return;
-    }
-    for (int i=0; i<sc->n; i++) {
-        if (sc->vars[i] == e->var) {
-            warn(e->tk, "pinned value given away by its block "
-                "(expected 'val')");
-            return;
-        }
-    }
+    giveaway(e, sc);
 }
 
 // `isvoid`: the value of the block is not used.
@@ -647,19 +701,30 @@ static void res (Expr* e) {
                 err(e->u.call.f->tk, "invalid skip : unexpected argument");
             }
             res_list(&e->u.call.es);
-            // return(x), with `x` a pin of the function: as a block value
-            if (e->u.call.sp == SP_RETURN) {
-                for (int i=0; i<e->u.call.es.n; i++) {
-                    Expr* x = e->u.call.es.v[i];
-                    while (x->tag == E_PARENS) {
-                        x = x->u.parens.e;
+            // an exit gives its values away, as the value of a block
+            if (PROTO != NULL) {
+                List* as = &e->u.call.es;
+                if (e->u.call.sp==SP_RETURN && FUN_SCOPE!=NULL) {
+                    for (int i=0; i<as->n; i++) {
+                        giveaway(as->v[i], FUN_SCOPE);
                     }
-                    if (x->tag==E_ACC && x->var!=NULL &&
-                        x->var->kind==V_PIN && x->var->proto==PROTO &&
-                        PROTO!=NULL)
-                    {
-                        warn(x->tk, "pinned value given away by its block "
-                            "(expected 'val')");
+                } else if (e->u.call.sp==SP_BREAK && LOOP_SCOPE!=NULL) {
+                    for (int i=0; i<as->n; i++) {
+                        giveaway(as->v[i], LOOP_SCOPE);
+                    }
+                } else if (e->u.call.sp==SP_ESCAPE && as->n>1 &&
+                           as->v[0]->tag==E_TAG)
+                {
+                    // the innermost `do` with that tag, or a prefix
+                    const char* t = as->v[0]->tk.str;
+                    for (DoEsc* x=DOS; x!=NULL; x=x->up) {
+                        size_t n = strlen(x->tag);
+                        if (strncmp(t,x->tag,n)==0 && (t[n]=='\0' || t[n]=='.')) {
+                            for (int i=1; i<as->n; i++) {
+                                giveaway(as->v[i], x->sc);
+                            }
+                            break;
+                        }
                     }
                 }
             }
@@ -772,7 +837,18 @@ static void res (Expr* e) {
             break;
 
         case E_DO:
-            res_block(e->u.xdo.blk, isvoid);
+            if (e->u.xdo.esc) {
+                // the scope of the block, for an `escape` that reaches it
+                DoEsc x = { e->tk.str, NULL, DOS };
+                scope_push();
+                x.sc = SCOPE;
+                DOS = &x;
+                res_stmts(&e->u.xdo.blk->u.block.es, isvoid);
+                DOS = x.up;
+                scope_pop();
+            } else {
+                res_block(e->u.xdo.blk, isvoid);
+            }
             break;
 
         case E_DEFER: {
@@ -811,7 +887,12 @@ static void res (Expr* e) {
                 e->vars[i] = declare(e->u.loop.ids[i], V_VAL);
             }
             LOOPS++;
-            res_block(e->u.loop.blk, 1);
+            {
+                Scope* ls = LOOP_SCOPE;
+                LOOP_SCOPE = SCOPE;
+                res_block(e->u.loop.blk, 1);
+                LOOP_SCOPE = ls;
+            }
             LOOPS--;
             scope_pop();
             break;
@@ -898,8 +979,21 @@ static void res (Expr* e) {
             }
             // the value of a function goes to its caller, and the one
             // of a lambda expanded in place is the one of its case
-            res_block(e->u.proto.blk,
-                e->u.proto.inl ? isvoid : e->u.proto.task);
+            {
+                Scope* fs = FUN_SCOPE;
+                Scope* ls = LOOP_SCOPE;
+                DoEsc* ds = DOS;
+                if (!e->u.proto.inl) {
+                    FUN_SCOPE  = SCOPE;
+                    LOOP_SCOPE = NULL;
+                    DOS        = NULL;
+                }
+                res_block(e->u.proto.blk,
+                    e->u.proto.inl ? isvoid : e->u.proto.task);
+                FUN_SCOPE  = fs;
+                LOOP_SCOPE = ls;
+                DOS        = ds;
+            }
             scope_pop();
             if (!e->u.proto.inl) {
                 PROTO = PROTO->up;

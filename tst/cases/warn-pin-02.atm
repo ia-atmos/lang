@@ -1,0 +1,38 @@
+;; the warning of a pin given away also sees a pin inside a constructor
+;; that is given, a `break`, an `escape`, and each value of a `return`
+func f () {
+    pin ps = []
+    [n=1, ps=ps]                    ;; a field of the value of the block
+}
+func g () {
+    pin a = [1]
+    val b = [2]
+    return(b, a)                    ;; the second value
+}
+func h () {
+    loop i in 3 {
+        pin p = [i]
+        break(p)                    ;; a pin of the loop
+    }
+}
+func k () {
+    pin q = [0]
+    loop i in 3 {
+        break(q)                    ;; ok: `q` is outside the loop
+    }
+}
+func m () {
+    do :X {
+        pin r = [1]
+        escape(:X, :T [r])          ;; a pin of the `do`, in a tagged value
+    }
+}
+func n () {
+    pin s = [1]
+    do :X {
+        escape(:X, s)               ;; ok: `s` is outside the `do`
+    }
+    nil
+}
+val t = [f = do { pin u = [1] ; u }]    ;; the value of a `do` in a field
+print(:ok)
