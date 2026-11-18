@@ -4,8 +4,10 @@ Session `args`. Design: `261118-args-rules.md`.
 
 ## Waiting for the author
 
-1. `f -x`: subtraction as today, or a call when `-` is glued to `x`
-   and spaced from `f` (Ruby, MoonScript). Recommended: subtraction.
+1. How far a bare `await` pattern extends: one full expression, as
+   `emit` (`await 20min + 1s` is `await(20min + 1s)`, `await t` is
+   valid, a comma ends it), or one primary as today plus names.
+   Recommended: one full expression.
 2. Measuring the ports: attaching them here was refused, and sending
    atmos-lang a prototype patch so it could run the diff on its clones
    (its offer) was refused too. The author decides: grant access, or
@@ -15,8 +17,7 @@ Session `args`. Design: `261118-args-rules.md`.
 
 - Measure R2/R3 on the 9 ports (parser variants ready in the scratchpad;
   rebuild from `261118-args-rules.md` section 2 if lost).
-- Sub-questions, after item 1: prefix `!`/`#`/`~` as argument
-  starts; `f (x), y` vs `return (x), y`; `emit` and `await` vs the rule.
+- Sub-questions, after item 1: `f (x), y` vs `return (x), y`; `emit` and `await` vs the rule.
 
 ## Reported, not acknowledged
 
@@ -39,3 +40,6 @@ Session `args`. Design: `261118-args-rules.md`.
 - 2026-11-18: this session implements the change itself (parser, tests,
   manual), and atmos-lang migrates the ports. atmos-lang was told to keep
   away from the call part of the parser until the push.
+- 2026-11-18: `f -x` stays a subtraction (`f(-x)` to pass `-x`).
+  Prefix `!x`, `#t`, `~n` start an argument (`f #t` is `f(#t)`),
+  proposed with no objection.
