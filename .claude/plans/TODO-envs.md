@@ -19,6 +19,7 @@ One at a time, each with the recommended option.
 | A6 | (60) An `emit @t` whose target throws: the emitter gets it, not the holder | To the holder, as a broadcast does (departs from the reference). Language matter: belongs to `ceu-atmos` |
 | A7 | (52) New environments: POSIX (serial, fds, signals), the browser (WebAssembly), embedded boards | `env-posix` first, as the first secondary environment of A1 (FrescoGO! is its case) |
 | A8 | (46) The order inside a frame. pico: the time, the input, `:frame`, `:draw`; sdl: the input, `:frame`, the time, `:draw` (SNKRX sets the clock factor in `:frame` for the time of the same frame). Reported by `pico-sdl` with its `:frame` (2026-11-17) | The order of sdl for all, since one game depends on it; pico's traces change once |
+| A9 | What a `true` from `step` means with secondaries. `uv` ends the program as primary when nothing can awake it, which is unsafe with secondaries (they may still have input); it now does so only when alone (reported 2026-11-18) | As in lua-atmos: `true` means "quit requested" (a window closed); "nothing can awake" only from an environment that is alone. A line in the manual, by `ceu-atmos` |
 
 ## B. Work known and not done
 
@@ -46,6 +47,8 @@ One at a time, each with the recommended option.
   7. `mode.current` is awkward to reach from the step (the table must be
      unpinned and named). Fixed in `129eb6a`: `step(:primary)` /
      `step(:secondary)`; `mode.current` stays.
+  Cleanups done: `iup` (13 tests, ASAN), `uv` `63ba2a8` (34 tests, ASAN;
+  as primary with secondaries it waits 10 ms at most).
   8. The secondary mode of `iup.atm` has no test (no primary runs before
      IUP).
 
