@@ -24,7 +24,6 @@ Each has the option recommended by this session.
 | 4 | An `emit` that names its receiver, instead of `emit @2` | Not to change: pass the receiver as an argument, and document it |
 | 5 | An optional `task main` as the entry point | Not to do |
 | 6 | The event of termination of transparent blocks | Remove it. It changes the semantics, and two golden tests must be adapted |
-| 31 | `await x` for a variable or a field (today only `await(x)`) | Accept |
 | 33 | Time emitted to a pool or a task (slow motion in SNKRX) | Not now: a global factor and `:tick` solve it there |
 | 63 | Two limits of the check of spawns (item 36, done): a `pin t = if c { spawn T() }` that is the last statement of a loop body dies at each step and is not flagged; and the check is lexical, so a task that ends in its start through an await that is satisfied at once is flagged (4 of the tests were so) | Extend the check to a `pin` of a task that ends its block. Keep it lexical. On 2026-11-16 the author approved narrowing the check to a spawn that is the very last statement of its block (`c33e02b`, by the session `spawn-check`): a spawn followed by another spawn is no longer flagged, since the second may awake the first. He also decided that the main chunk stays a block of the rule. The session `spawn-check` is done and archived, at his request. What is left of this item is the first limit (a `pin` of a task that ends a loop body) |
 | 69 | Make the six exit names keywords of the lexer: `break`, `skip`, `return`, `escape`, `throw`, `abort`, as `until` and `while` already are. Today they are identifiers that the parser and the resolver treat apart, with two exceptions added by hand (accepted as the key of a constructor, rejected in a declaration). Proposed by the session `skip`, which the author asked to pass it on (2026-11-16) | Do it, after the migration of `pin` settles: small (lexer, the parser where it tests `EXITS`, the expected output of the `lex` tests and of `dcl-err-reserved-*`), and it removes the two exceptions. The AST and the coder do not change |
@@ -145,7 +144,8 @@ What waits for the author in them, as far as this session knows.
 | `iup`, `uv`, `sdl-tux`, `env-sdl` | The items of their plans marked to confirm (items 42, 43, 27, and 55) |
 | `raylib` | A permission to change the remote of its checkout of the compiler (harmless meanwhile: the old address redirects) |
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
-| `pool` | Created on 2026-11-18, to discuss awaits and emits over pools and tasks: items 1, 2, 4, 31, 32, 33, 60 move there. Its material is `261118-pool.md`; its list, `TODO-pool.md` |
+| `args` | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
+| `pool` | Created on 2026-11-18, to discuss awaits and emits over pools and tasks: items 1, 2, 4, 33, 60 move there (31 went to `args`, 32 was done here). Its material is `261118-pool.md`; its list, `TODO-pool.md` |
 | `envs` | Created on 2026-11-17 (session_011eECofYWTNPACTtUjHN4p6), to discuss the environments with the author: items 46, 47, 52, 56 to 60, 68 move there. Its material is `261117-envs.md`; its list, `TODO-envs.md` |
 
 Each session keeps its own `.claude/plans/TODO.md`, in its repository,
