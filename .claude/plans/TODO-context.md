@@ -33,6 +33,14 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
 
 ## Reported, not acknowledged
 
+- 2026-11-18: answered the author's question "does every reaction
+  include events that are not drawing?": with the lazy resume, a key
+  costs nothing unless a task inside awakes on it; if one does, that
+  is decision 2 (filter).
+- 2026-11-18: the author's note (from the other session) names the
+  canvas of the stars `STARS`, not `BACK`: the examples here follow
+  `261118-context.md`; to check in SNKRX when it can be read.
+
 - 2026-11-18: `lua-atmos` has no `context` (no branch); `atmos-lang`
   has only a plan (`260628-context.md`), once per emit.
 - 2026-11-18: no real case awaits between set and restore; `context`
