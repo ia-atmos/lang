@@ -10,9 +10,10 @@ numbers are those of `TODO.md` of the compiler session.
 |---|---|---|
 | 1 | An await over a pool with a condition: A (a function of the library, `find(ts, f)`, and the idiom `await :tick until find(...)` in the manual), B (a new pattern `await :some ts until f`), C (re-check on change of `pub`), D (members emit to the pool of zones) | **A**: the cases need the matching task, not a mechanism; C saves nothing since members change every tick; the cost W x P only goes away with a spatial index (a library) |
 
-Next, after item 1: 31 (`await x`), 32 (`await :all` on an empty
-pool), 60 (where the exception of `emit @t` goes), 4, 2, 33, with the
-recommendations of `261118-pool.md`, section 2.
+Next, after item 1: 60 (where the exception of `emit @t` goes), 4, 2,
+33, with the recommendations of `261118-pool.md`, section 2. Item 32
+was decided in the compiler session, and item 31 moved to the session
+`args` (see D).
 
 ## B. Work known, not done
 
@@ -29,4 +30,8 @@ recommendations of `261118-pool.md`, section 2.
 
 ## D. Decided by the author
 
-(none yet)
+- Item 32 (reported by `ceu-atmos` on 2026-11-18, decided there):
+  `await :all ts` over an empty pool is satisfied at once, with
+  `nil, nil, ts`; `:any` still waits (`cab49e2`).
+- Item 31 (`await x`) moved to the session `args`, on one rule for
+  arguments without parentheses.
