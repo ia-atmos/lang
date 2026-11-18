@@ -707,6 +707,13 @@ static void res (Expr* e) {
                     for (int i=0; i<as->n; i++) {
                         giveaway(as->v[i], LOOP_SCOPE);
                     }
+                } else if ((e->u.call.sp==SP_UNTIL || e->u.call.sp==SP_WHILE)
+                           && LOOP_SCOPE!=NULL)
+                {
+                    // until c, v: the values after the condition
+                    for (int i=1; i<as->n; i++) {
+                        giveaway(as->v[i], LOOP_SCOPE);
+                    }
                 } else if (e->u.call.sp==SP_ESCAPE && as->n>1 &&
                            as->v[0]->tag==E_TAG)
                 {
