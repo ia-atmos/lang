@@ -6,7 +6,9 @@ not acknowledged, or known and not done. Keep it current: remove an item
 when it is settled, add one whenever something is left open.
 
 The numbers are the ones used in the conversation with the author, and
-do not change. Numbers that are missing were settled (see the end).
+do not change: an item is `#N` (see `ISSUES.md` for every number and its
+state, and "Standing rules" for the convention). Numbers that are
+missing here were settled or moved.
 
 Last update: 2026-11-17.
 
@@ -166,6 +168,19 @@ of the sessions still have the old names.
 ## Standing rules from the author, for all sessions
 
 - Commit and push straight to `main`, in fine-grained commits.
+- **Items are `#N`** (2026-11-18, `#71`). Everything a session puts to
+  the author has a number: a decision, a question, a remark, a defect, a
+  piece of work. A number is unique in its session, taken in order,
+  never reused and never changed: an item that closes or moves keeps
+  it. `#N` is reserved for this: nothing else in a session is
+  enumerated with bare numbers (no "1, 2, 3" for a local list in a
+  paragraph or a reply: bullets, or letters under an item, `#75a`, for
+  its options and its steps). From another session an item is
+  `session#N` (`atmos-pin#12`); an item that moves keeps the number of
+  the session where it was born. Each session keeps the index of its
+  numbers (title and state): here, `ISSUES.md`; elsewhere, a section of
+  its TODO. Identifiers that sessions already use (`A3`, `F6`, `E5`)
+  stay valid for what was written with them.
 - **Language sessions work on branches** (2026-11-18): a session that
   discusses a part of the language (`atmos-xxx`, `args`, `pool`)
   implements it in the compiler itself, on a branch named after it
