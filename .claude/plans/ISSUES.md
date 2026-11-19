@@ -103,3 +103,4 @@ started, no decision needed), **moved** (another session handles it),
 | 89 | Configurable real and integer types for other systems (ESP32, Arduino) | moved: `atmos-float` (`261119-float.md`) |
 | 90 | Is the await over a pool with a condition (`#1`) still pending? | answered 2026-11-19: yes, in `atmos-pool`, waiting for the author's choice (`#1a` recommended) |
 | 91 | Explain `#60` (where the exception of `emit @t` goes) | answered 2026-11-19 with a program run on main; the decision stays `#60`, in `atmos-pool` |
+| 92 | A loader of data that accepts names, `loadx` (the author, through `pico-slides`) | moved: `atmos-loadx` (`261119-loadx.md`) |
