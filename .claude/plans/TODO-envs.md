@@ -18,7 +18,7 @@ An item of another session is `session#N` (the compiler's list is
 |---|-------|-------|
 | #1 | Two environments in one program (`atmos-lang#57`): `atmos.env` | Decided 2026-11-17, done (`81986e7`, pilot uv+iup) |
 | #2 | One vocabulary of events, that of pico (`atmos-lang#46`) | Decided 2026-11-17, done (sdl, pico, ray) |
-| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open, recommended (A3 below) |
+| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open; pilot in `sdl-pingus` approved 2026-11-19 (`atmos-lang#76`), report awaited |
 | #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
 | #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
 | #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |
