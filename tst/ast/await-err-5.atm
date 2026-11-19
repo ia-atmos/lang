@@ -1,1 +1,1 @@
-await a || b
+await 10, :frame

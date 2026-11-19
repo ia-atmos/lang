@@ -1,5 +1,0 @@
-await 10, :frame
-await n, :X until it.v
-val a, b = (await :X), 10
-await (x)
-await(3, :X)

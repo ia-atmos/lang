@@ -1,5 +1,0 @@
-print "a" ++ s
-type [] == :table
-f :X [1], 2
-f \{ it }, 1
-f "a", "b"

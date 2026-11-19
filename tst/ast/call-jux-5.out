@@ -1,1 +1,0 @@
-(call (call f) (call g))

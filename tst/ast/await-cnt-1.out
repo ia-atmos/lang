@@ -1,5 +1,0 @@
-(await (count 10 :frame))
-(await (count n (until :X (func (it) { (@ it "v") }))))
-(val a b = (list (parens (await :X)) 10))
-(await x)
-(await (count 3 :X))

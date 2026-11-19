@@ -5,17 +5,15 @@ task T (v) {
 spawn {
     pin t = spawn T(10)
     val v = await t
-    print v
+    print(v)
 }
 spawn {
     val v = await T 21
-    print v
+    print(v)
 }
+val s = [t = spawn T(1)]
 spawn {
-    await 2, :tic
-    print :two
+    val v = await s.t
+    print(v)
 }
 emit :go
-emit :tic
-print :one
-emit :tic
