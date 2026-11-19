@@ -14,7 +14,7 @@ started, no decision needed), **moved** (another session handles it),
 |---|------|-------|
 | 1 | `await` over a pool with a condition ("a pingu enters my zone") | moved: `atmos-pool` |
 | 2 | Phases inside a tick, instead of the order of creation | moved: `atmos-pool` |
-| 3 | 32-bit reals (decided to do; the form is open: a build option or a type) | open |
+| 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
 | 6 | The event of termination of transparent blocks | open (recommended: remove) |
@@ -100,3 +100,4 @@ started, no decision needed), **moved** (another session handles it),
 | 86 | Merge of `args` 823d843 (`atmos-args#6`: `f x`, `f t.x`, `f 10`, `await t`) | done 2026-11-19 (approved by the author in `atmos-args`, "Ok, lá"; suite passes after the merge) |
 | 87 | The rules of `pin` declared stable by the author (`atmos-pin#9`): told to the 14 ports and the 6 language sessions | done 2026-11-19 (`TODO-pin.md`, section "Stable", on main 71f7d17) |
 | 88 | How `#58` was settled: the language side closed with no change, the adoption by the environments is not done | done 2026-11-19 (answered; the author asked for the adoption proposal, requested of `atmos-envs`, its #3) |
+| 89 | Configurable real and integer types for other systems (ESP32, Arduino) | moved: `atmos-float` (`261119-float.md`) |
