@@ -15,20 +15,17 @@ written; each such item now has its number below.
 |---|------|-------|
 | #1 | Name and title | Closed: decided 2026-11-15 |
 | #2 | Section 4 follows the approved rules | Closed: done, kept current |
-| #3 | SNKRX bullet in Section 9 is a guess | Open |
+| #3 | SNKRX bullet in Section 9 is a guess | Closed: 2026-11-19 |
 | #4 | Sections 7 and 8 against the implementation | Closed: done 2026-11-15 |
 | #5 | Section 9: reports of the ports | Open: 4 pending |
 | #6 | Cost of the migration under the current rules | Open |
-| #7 | Rules not declared stable | Open: waiting for `atmos-pin` |
+| #7 | Rules not declared stable | Closed: stable 2026-11-19, but #7b |
 | #8 | Experiment: CLBG in Atmos | Planned |
 | #9 | Related work: read dyn-lex | Planned |
 | #10 | Fill the sections with text | Waiting: approval of the outline |
 
 ## Open
 
-- **#3 SNKRX in Section 9** (was B1). The bullet "many short-lived
-  entities and pools" is a guess: item 40 of `TODO.md` names no
-  friction for SNKRX. To confirm with the plan of the port, or remove.
 - **#5 Reports of the ports** (was B3). Five are in (sdl-tux, doom,
   and the environments of SDL, libuv, and IUP), from `261115-pin.md`.
   Pending: pico, Flare, Lessmilk, SNKRX.
@@ -36,17 +33,8 @@ written; each such item now has its number below.
   tests is from the first rules. Names may now hold unpinned values,
   owned places may be reassigned, and more decisions followed
   (2026-11-17), so a new count is needed for Section 9.
-- **#7 Rules not declared stable** (was B5, 2026-11-18). Open with the
-  author, per `atmos-pin` (session_011eECogSDhkVfyt7qme5DLh, branch
-  `pin`), which will report:
-    - #7a ~~a mechanism for an outer place to hold an inner value (case
-      E)~~: decided 2026-11-19, `set :out` (atmos-pin#1, main `8361f88`);
-    - #7b the flag that removes the checks;
-    - #7c confirmation of three implementation choices (a task owns its
-      `pub` and final value; an emitted event is owned by the emit;
-      natives declare what they hold);
-    - #7d `spawn` as the only implicit pin;
-    - #7e the finalizer of native values (atmos-pin#2).
+- **#7b The flag that removes the checks** (part of #7). The author:
+  "not yet". #8 needs it.
 
 ## Planned
 
@@ -64,6 +52,20 @@ written; each such item now has its number below.
   approves the outline.
 
 ## Closed
+
+- **#3 SNKRX in Section 9** (was B1). The guessed bullet is replaced,
+  2026-11-19, by its real cases from `atmos-pin`: a map body as a task in
+  a world made by the caller, and a registry of springs, both by
+  `set :out`.
+- **#7 Rules not declared stable** (was B5). Declared stable by the author
+  on 2026-11-19 (`atmos-pin`, main `8361f88`):
+    - #7a decided: `set :out` (atmos-pin#1);
+    - #7c confirmed: a task owns its `pub` and final value; an emitted
+      event is owned by the emit; natives declare what they hold;
+    - #7d confirmed: the `spawn` statement is the only implicit pin;
+    - #7e the finalizer of native values (atmos-pin#2): not listed as open
+      when the rules were declared stable;
+    - #7b still open, above.
 
 - **#1 Name and title** (was A1). Decided 2026-11-15: "Dynamic Values
   Deserve a Home: Structured Memory with Lexical Pins". The mechanism
