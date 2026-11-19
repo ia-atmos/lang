@@ -1897,6 +1897,43 @@ func f (pin u) {            ;; a function may pin what it receives
 f([1, 2, 3])
 ```
 
+A place of an outer block may refer to a value of an inner one, for as long
+as the inner block lasts, with `set :out`:
+
+```
+pin play = []                       ;; lives for the whole program
+do {                                ;; a map
+    pin es = tasks()                ;; the map owns its enemies
+    set :out play.enemies = es      ;; a table outside refers to them
+    <...>                           ;; `play.enemies` is visible everywhere
+}                                   ;; `play.enemies` is nil again
+```
+
+The place may be a field or an index of a table, or a variable of an outer
+block.
+The assignment has no check of an escape, and the place does not adopt the
+value, which still belongs to its block.
+When the block of the `set :out` terminates, the place goes back to `nil`,
+if it still refers to the value: so a place never refers to a value that
+was finalized.
+
+Code outside the block may read the place while the block lasts.
+If it keeps the value in a name and the block terminates, the name refers
+to a finalized value, and any use of it raises an error:
+
+```
+task Hero () {
+    val es = play.enemies           ;; a name outside the map
+    await(:later)                   ;; the map terminates meanwhile
+    spawn @es Enemy()               ;; ERROR: invalid access : finalized pool ...
+}
+```
+
+The error `invalid access : finalized table pinned at prog.atm:10`, with
+the line of the pin, is raised by an index, an assignment to a field, a
+length, an iteration, a call of a function, and a spawn into a pool.
+A reference to a task that terminated remains valid, as usual: it is dead.
+
 #### Where
 
 An expression can be suffixed with a `where` clause to define contextual
@@ -2069,6 +2106,7 @@ expression in the right of `=`:
 ```
 Set : `set´ Expr* `=´ Expr+
     | `set´ Expr OP`=´ Expr
+    | `set´ `:out´ Expr `=´ Expr
 ```
 
 The only valid locations are
@@ -2080,6 +2118,10 @@ with a binary [operation](#operations): `set x OP= e` is equivalent to
 `set x = x OP (e)`, but evaluates the location only once.
 The valid operators are `+` `-` `*` `/` `//` `%` `++` `&` `|` `^` `<<` `>>`
 `&&` `||`.
+
+The third format, `set :out`, makes a location of an outer block refer to a
+value of the current block until the block terminates, when the location
+goes back to `nil` (see [pin](#pin)).
 
 Examples:
 
@@ -3709,6 +3751,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
 
       | `set´ Expr* `=´ Expr+                       ;; assignment
       | `set´ Expr OP`=´ Expr                       ;; compound assignment
+      | `set´ `:out´ Expr `=´ Expr                  ;; until the block ends
 
       | `nil´ | `false´ | `true´                    ;; literals
       | TAG | NUM | STR | CLK | NAT

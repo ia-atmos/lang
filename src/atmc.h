@@ -255,7 +255,9 @@ struct Expr {
                                                         dcl;
         // proto: `func f () {}` declares `f` if it is unknown
         // op: binary operator of a compound assignment, or NULL
-        struct { List dsts; Expr* src; int proto; const char* op; }
+        // out: `set :out`, a place that refers to a value until the
+        // block ends
+        struct { List dsts; Expr* src; int proto; const char* op; int out; }
                                                         set;
         struct { List es; }                             block;
         // esc: has an escape tag (in tk)

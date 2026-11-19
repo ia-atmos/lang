@@ -296,6 +296,9 @@ AStatus a_index (AVal* dst, AVal t, AVal k) {
         return a_error("invalid index : expected table : got %s",
             a_typename(t));
     }
+    if (a_is_fin(t)) {
+        return a_err_fin(t);
+    }
     a_cpy(dst, a_tab_get(A_TAB_OF(t), k));
     return A_OK;
 }
@@ -308,6 +311,9 @@ AStatus a_setindex (AVal t, AVal k, AVal v) {
         return a_error("invalid index : expected table : got %s",
             a_typename(t));
     }
+    if (a_is_fin(t)) {
+        return a_err_fin(t);
+    }
     if (k.type==A_NIL || (k.type==A_NUM && k.u.n!=k.u.n)) {
         return a_error("invalid index : unexpected %s",
             (k.type == A_NIL) ? "nil" : "nan");
@@ -317,6 +323,35 @@ AStatus a_setindex (AVal t, AVal k, AVal v) {
     }
     a_tab_put(A_TAB_OF(t), k, v);
     return A_OK;
+}
+
+static AStatus check (AVal t);
+
+AStatus a_out_tab (AVal t, AVal k, AVal v) {
+    if (is_pub(t, k)) {
+        return a_error("invalid set :out : unexpected pub");
+    }
+    AStatus st = check(t);
+    if (st != A_OK) {
+        return st;
+    }
+    if (k.type==A_NIL || (k.type==A_NUM && k.u.n!=k.u.n)) {
+        return a_error("invalid index : unexpected %s",
+            (k.type == A_NIL) ? "nil" : "nan");
+    }
+    // a reference written into an object may close a cycle
+    a_muts += (v.type >= A_TAB);
+    a_tab_put(A_TAB_OF(t), k, v);
+    return A_OK;
+}
+
+void a_out_tab_end (AVal t, AVal k, AVal v) {
+    if (t.type!=A_TAB || a_is_fin(t) || v.type<A_STR) {
+        return;
+    }
+    if (a_same(a_tab_get(A_TAB_OF(t),k), v)) {
+        a_tab_set(A_TAB_OF(t), k, a_nil());
+    }
 }
 
 void a_tab_put (ATab* t, AVal k, AVal v) {
@@ -339,6 +374,9 @@ void a_tab_put (ATab* t, AVal k, AVal v) {
 AStatus a_len (AVal* dst, AVal v) {
     switch (v.type) {
         case A_TAB:
+            if (a_is_fin(v)) {
+                return a_err_fin(v);
+            }
             a_set(dst, a_int(A_TAB_OF(v)->an));
             return A_OK;
         case A_STR:
@@ -357,6 +395,9 @@ static AStatus check (AVal t) {
     if (t.type != A_TAB) {
         return a_error("invalid index : expected table : got %s",
             a_typename(t));
+    }
+    if (a_is_fin(t)) {
+        return a_err_fin(t);
     }
     return A_OK;
 }

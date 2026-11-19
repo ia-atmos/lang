@@ -1,0 +1,43 @@
+;; set :out: a place of an outer block refers to a value of this block until
+;; the block ends, when it goes back to nil. A name outside that still refers
+;; to the value may not use it: it is finalized.
+pin play = []
+var atual
+
+task Enemy (id) {
+    defer { print(:enemy, id, :aborted) }
+    await(false)
+}
+
+func count () {
+    var n = 0
+    loop _, t in play.enemies { set n = n + 1 }
+    n
+}
+
+task Hero () {
+    await(:look)
+    val cfg = play.cfg
+    print(:hero, cfg.hp, play.enemies != nil, atual != nil)
+    await(:later)
+    print(:hero, play.enemies == nil, play.cfg == nil, atual == nil)
+    val ok, e = catch true { cfg.hp }
+    print(ok, e)
+}
+pin h = spawn Hero()
+
+do {                                ;; the map
+    pin ts  = tasks()
+    pin cfg = [hp=10]
+    set :out play.enemies = ts
+    set :out play.cfg     = cfg
+    set :out atual        = cfg
+    spawn @ts Enemy(1)
+    spawn @ts Enemy(2)
+    print(:count, count())
+    emit(:look)
+    print(:map, :ends)
+}
+print(:after, play.enemies, play.cfg, atual)
+emit(:later)
+print(:end)

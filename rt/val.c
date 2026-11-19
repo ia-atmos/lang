@@ -86,6 +86,17 @@ AStatus a_err_pinned (AVal v) {
     return st;
 }
 
+AStatus a_err_fin (AVal v) {
+    const char* type = (v.type == A_XTASK) ? "task" :
+                       (v.type == A_TASKS) ? "pool" : a_typename(v);
+    uint32_t lin = v.u.o->lin;
+    if (lin == 0) {
+        return a_error("invalid access : finalized %s", type);
+    }
+    return a_error("invalid access : finalized %s pinned at %s:%d",
+        type, atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
+}
+
 AStatus a_escape (void) {
     TRACE_THROW = a_lin;
     TRACE_N = 0;
@@ -486,6 +497,10 @@ AStatus a_call (AVal f, int base) {
         a_settop(base);
         return a_error("invalid call : expected function : got %s",
             a_typename(f));
+    }
+    if (a_is_fin(f)) {
+        a_settop(base);
+        return a_err_fin(f);
     }
     if (CALLS >= A_CALLS_MAX) {
         a_settop(base);
