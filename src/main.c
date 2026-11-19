@@ -19,6 +19,7 @@
 //   ATMOS_CFLAGS   C flags (default: -O1)
 //   ATMOS_LDFLAGS  linker flags, after the program (e.g. -lSDL2)
 //   ATMOS_ASAN     if set, builds with the address sanitizer
+//   ATMOS_REAL     if `float`, a real is a C float of 32 bits
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,15 +110,25 @@ static const char* home_dir (void) {
 static int build (const char* c, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
+    // reals of 32 bits: the program and the runtime agree on the type
+    const char* real = env("ATMOS_REAL", "double");
+    int f32 = (strcmp(real, "float") == 0);
+    if (!f32 && strcmp(real, "double")!=0) {
+        fprintf(stderr, ATMOS_NAME " : invalid ATMOS_REAL : "
+            "expected 'float' or 'double'\n");
+        return 1;
+    }
     // the flags of the environment of a dedicated compiler, then those
     // of the user
     char* cmd = xfmt(
-        "%s %s %s %s -w -I%s/rt %s %s/build/libatmos%s.a -lm %s %s -o %s",
+        "%s %s %s %s %s -w -I%s/rt %s %s/build/libatmos%s%s.a -lm %s %s -o %s",
         env("ATMOS_CC", "cc"),
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
         asan ? "-fsanitize=address -fno-omit-frame-pointer -g" : "",
+        f32 ? "-DATM_REAL_FLOAT" : "",
         home, c, home,
+        f32 ? "-f32" : "",
         asan ? "-asan" : "",
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),

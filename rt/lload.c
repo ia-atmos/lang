@@ -194,7 +194,7 @@ static AStatus number (Load* l, int neg, AVal* dst) {
             return A_OK;
         }
     }
-    double d = strtod(buf, &stop);
+    AReal d = A_STRTOR(buf, &stop);
     if (*stop != '\0') {
         return fail(l, "invalid number");
     }
@@ -577,7 +577,11 @@ static AStatus dump (Dump* d, AVal v) {
                 dstr(d, (v.u.n > 0) ? "1e999" : "-1e999");
                 return A_OK;
             }
+#ifdef ATM_REAL_FLOAT
+            snprintf(num, sizeof(num), "%.9g", (double)v.u.n);
+#else
             snprintf(num, sizeof(num), "%.17g", v.u.n);
+#endif
             dstr(d, num);
             // a real must read back as a real
             if (strpbrk(num, ".eE") == NULL) {

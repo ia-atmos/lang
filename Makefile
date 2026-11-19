@@ -11,7 +11,10 @@ CC_SRC := src/aux.c src/lexer.c src/parser.c src/ast.c src/resolver.c \
           src/coder.c src/main.c
 CC_HDR := src/atmc.h
 
-all: atmos build/libatmos.a build/libatmos-asan.a
+LIBS := build/libatmos.a build/libatmos-asan.a \
+        build/libatmos-f32.a build/libatmos-f32-asan.a
+
+all: atmos $(LIBS)
 
 atmos: $(CC_SRC) $(CC_HDR)
 	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' -Isrc $(CC_SRC) -o $@
@@ -23,7 +26,7 @@ atmos: $(CC_SRC) $(CC_HDR)
 #
 #   make -C <lang> env OUT=<dir>/atmos-pico ENV=<dir>/pico.atm \
 #        ENV_CFLAGS="-I<dir>/c/src" ENV_LDFLAGS="<dir>/c/libpico.a -lSDL2"
-env: $(CC_SRC) $(CC_HDR) build/libatmos.a build/libatmos-asan.a
+env: $(CC_SRC) $(CC_HDR) $(LIBS)
 	@test -n "$(OUT)" -a -n "$(ENV)" || \
 	    { echo "usage: make env OUT=<executable> ENV=<file.atm> [ENV_CFLAGS=...] [ENV_LDFLAGS=...]"; exit 1; }
 	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' \
@@ -40,6 +43,21 @@ build/rt/%.o: rt/%.c $(RT_HDR)
 build/rt-asan/%.o: rt/%.c $(RT_HDR)
 	@mkdir -p build/rt-asan
 	$(CC) $(CFLAGS) $(ASAN) -Irt -c $< -o $@
+
+# the runtime with reals of 32 bits (`ATMOS_REAL=float`)
+build/rt-f32/%.o: rt/%.c $(RT_HDR)
+	@mkdir -p build/rt-f32
+	$(CC) $(CFLAGS) -DATM_REAL_FLOAT -Irt -c $< -o $@
+
+build/rt-f32-asan/%.o: rt/%.c $(RT_HDR)
+	@mkdir -p build/rt-f32-asan
+	$(CC) $(CFLAGS) $(ASAN) -DATM_REAL_FLOAT -Irt -c $< -o $@
+
+build/libatmos-f32.a: $(RT_SRC:rt/%.c=build/rt-f32/%.o) build/rt-f32/main.o
+	ar rcs $@ $^
+
+build/libatmos-f32-asan.a: $(RT_SRC:rt/%.c=build/rt-f32-asan/%.o) build/rt-f32-asan/main.o
+	ar rcs $@ $^
 
 build/libatmos.a: $(RT_SRC:rt/%.c=build/rt/%.o) build/rt/main.o
 	ar rcs $@ $^

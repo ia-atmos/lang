@@ -38,8 +38,13 @@ for suite in $suites; do
         if [ -f $name.flags ]; then
             more=$(cat $name.flags)
         fi
+        # variables of the environment of the case, as `ATMOS_REAL=float`
+        vars=""
+        if [ -f $name.env ]; then
+            vars=$(cat $name.env)
+        fi
         # addresses change from one build to another
-        out=$($ATMOS $flags $more $atm 2>&1 | sed -E 's/: 0x[0-9a-f]+/: 0x?/g')
+        out=$(env $vars $ATMOS $flags $more $atm 2>&1 | sed -E 's/: 0x[0-9a-f]+/: 0x?/g')
         if [ "$out" == "$(cat $name.out)" ]; then
             pass=$((pass+1))
         else

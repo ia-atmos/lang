@@ -469,6 +469,8 @@ The following environment variables affect the build:
   (e.g., `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer, which
   also reports memory leaks when the program terminates.
+- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits, instead of a
+  `double` (see [Types](#types--values)).
 - `ATMOS_HOME`: the directory with the runtime (`rt/` and `build/`).
   By default, it is the directory of the compiler itself, so a checkout may be
   moved after it is built.
@@ -866,6 +868,15 @@ An operation with two integers results in an integer, except for the division
 Any other operation with numbers results in a real.
 An integer and a real with the same value are equal (`1 == 1.0`), and are
 the same key in a table.
+
+A program built with `ATMOS_REAL=float` (see [Execution](#execution)) has reals
+with single precision, as a C `float` with 32 bits, such that it computes as a
+C program with `float` does: each operation between reals rounds to 32 bits,
+`math` uses the functions for `float`, and a real prints with the fewest
+digits that give it back (`0.1`, `0.33333334`).
+Integers still have 64 bits.
+The option holds for the whole program, with no second type of real in the
+language.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 

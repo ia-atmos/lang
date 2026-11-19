@@ -44,12 +44,29 @@ typedef struct AObj {
     uint32_t clin;
 } AObj;
 
+// The C type of a real: a `double`, or a `float` of 32 bits when the
+// runtime and the program are built with `-DATM_REAL_FLOAT` (the
+// compiler does both under `ATMOS_REAL=float`). Then each operation
+// between reals rounds to `float`, as in C, `math` uses the functions
+// for `float`, and a real prints with the fewest digits that give it
+// back. Integers do not change. `A_RF(fn)` is the function `fn` of
+// <math.h> for the type.
+#ifdef ATM_REAL_FLOAT
+typedef float AReal;
+#define A_RF(fn) fn##f
+#define A_STRTOR strtof
+#else
+typedef double AReal;
+#define A_RF(fn) fn
+#define A_STRTOR strtod
+#endif
+
 typedef struct AVal {
     uint8_t type;
     union {
         int     b;
         int64_t i;
-        double  n;
+        AReal   n;
         AObj*   o;
     } u;
 } AVal;
@@ -75,9 +92,12 @@ static inline AVal a_int (int64_t i) {
     return v;
 }
 
-static inline AVal a_num (double n) {
+static inline AVal a_num (AReal n) {
     AVal v;
     v.type = A_NUM;
+#ifdef ATM_REAL_FLOAT
+    v.u.i  = 0;     // the real does not fill the union
+#endif
     v.u.n  = n;
     return v;
 }
@@ -89,6 +109,11 @@ static inline int a_isnum (AVal v) {
 // A number as a double.
 static inline double a_dbl (AVal v) {
     return (v.type == A_INT) ? (double)v.u.i : v.u.n;
+}
+
+// A number as a real.
+static inline AReal a_real (AVal v) {
+    return (v.type == A_INT) ? (AReal)v.u.i : v.u.n;
 }
 
 // An integer if the value is integral and fits, else a real.

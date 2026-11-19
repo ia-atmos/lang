@@ -115,6 +115,7 @@ Environment variables:
 - `ATMOS_LDFLAGS`: linker flags, which go after the program
   (e.g. `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer.
+- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits.
 
 # Documentation
 

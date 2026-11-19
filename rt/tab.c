@@ -56,7 +56,10 @@ static uint32_t hash (AVal k) {
             x = (uint64_t) k.u.i;
             break;
         case A_NUM:
-            memcpy(&x, &k.u.n, sizeof(x));
+            {
+                double d = k.u.n;
+                memcpy(&x, &d, sizeof(x));
+            }
             break;
         case A_STR:
             return A_STR_OF(k)->hash;

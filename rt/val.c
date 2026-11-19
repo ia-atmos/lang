@@ -666,17 +666,17 @@ AStatus a_arith (AArith op, AVal* dst, AVal a, AVal b) {
     if (a.type==A_INT && b.type==A_INT && op!=A_DIV) {
         return arith_int(op, dst, a.u.i, b.u.i);
     }
-    double x = a_dbl(a);
-    double y = a_dbl(b);
-    double r = 0;
+    AReal x = a_real(a);
+    AReal y = a_real(b);
+    AReal r = 0;
     switch (op) {
-        case A_ADD:  r = x + y;         break;
-        case A_SUB:  r = x - y;         break;
-        case A_MUL:  r = x * y;         break;
-        case A_DIV:  r = x / y;         break;
+        case A_ADD:  r = x + y;                 break;
+        case A_SUB:  r = x - y;                 break;
+        case A_MUL:  r = x * y;                 break;
+        case A_DIV:  r = x / y;                 break;
         // as in C: truncation, and the sign of the dividend
-        case A_IDIV: r = trunc(x / y);  break;
-        case A_MOD:  r = fmod(x, y);    break;
+        case A_IDIV: r = A_RF(trunc)(x / y);    break;
+        case A_MOD:  r = A_RF(fmod)(x, y);      break;
     }
     a_set(dst, a_num(r));
     return A_OK;
@@ -807,7 +807,18 @@ int a_num_fmt (char* buf, size_t n, AVal v) {
     if (v.type == A_INT) {
         return snprintf(buf, n, "%lld", (long long)v.u.i);
     }
+#ifdef ATM_REAL_FLOAT
+    // the fewest digits that give the float back
+    int len = 0;
+    for (int p=6; p<=9; p++) {
+        len = snprintf(buf, n, "%.*g", p, (double)v.u.n);
+        if (strtof(buf, NULL) == v.u.n) {
+            break;
+        }
+    }
+#else
     int len = snprintf(buf, n, "%.14g", v.u.n);
+#endif
     // a real always looks like a real
     if (strspn(buf, "-0123456789") == (size_t)len) {
         len += snprintf(buf+len, n-len, ".0");
