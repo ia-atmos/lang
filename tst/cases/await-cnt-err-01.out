@@ -1,3 +1,1 @@
-==> ERROR:
- v  await-cnt-err-01.atm:2 (throw)
-==> invalid await : expected number
+await-cnt-err-01.atm : line 2 : near '(' : invalid await : expected number

@@ -1,0 +1,21 @@
+task T (v) {
+    await :go
+    v * 2
+}
+spawn {
+    pin t = spawn T(10)
+    val v = await t
+    print v
+}
+spawn {
+    val v = await T 21
+    print v
+}
+spawn {
+    await 2, :tic
+    print :two
+}
+emit :go
+emit :tic
+print :one
+emit :tic
