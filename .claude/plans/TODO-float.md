@@ -17,7 +17,7 @@ Last update: 2026-11-19.
 | `#3` | The clock under integers of 32 bits: milliseconds, or a 64-bit timer apart | Open, depends on `#2` |
 | `#4` | The runtime built on demand, per configuration (`#E`) | Open, needed with the second option |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
-| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Open; neither has run it |
+| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | `env-esp32` built it: -4.5 KB of image, speed not measured; `sdl-tux` has not run it |
 | `#7` | No reals (`#B`) and fixed point (`#C`) | Open; only matter if `#1` includes boards with no FPU as a priority |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open; independent of the options |
 
@@ -27,3 +27,16 @@ Last update: 2026-11-19.
   ./atmos tst/cases/real-f32-01.atm` prints 15.000001 / 30.0000019 /
   45.0000038 with `%.9g`, as section 2 of the material says; without
   the option the same program prints 15.0, 30.0, 45.0.
+
+## Reported by other sessions (not checked here)
+
+- 2026-11-19, `env-esp32` (`#6`): ESP32 (Xtensa LX6, ESP-IDF v6.1.1,
+  gcc 15.2, `-O2`), `app/init.atm` with `env/esp32.atm`, runtime and
+  generated C under `ATM_REAL_FLOAT`. Component (runtime, program,
+  drivers): 156602 B with `double`, 156831 B with `float` (+229 B).
+  `libc.a`: 34764 B to 29985 B (-4779 B, the double math of newlib is
+  not linked). Image: 988698 B to 984130 B (-4568 B). `AVal` stays at
+  16 bytes. Speed not measured (no board; the program has almost no
+  real arithmetic; the PID loop of the robot would be the benchmark,
+  not ported). Its host tests pass under the option. Board option:
+  `idf.py -DATMOS_REAL_FLOAT=ON build`.
