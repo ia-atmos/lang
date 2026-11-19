@@ -11,16 +11,18 @@ before it is under "Decided", by date.
 |---|---|---|
 | #1 | Is the comma needed: `f x y` as `f(x, y)`? | decided 2026-11-19: the comma stays (`f x, y`) |
 | #2 | Implement the rule on the branch `args` (parser, tests, manual) | done on the branch at 6ba7568 (suite pass=980 fail=0, test-rt, test-env); not merged |
-| #3 | atmos-lang measures the ports from the branch, before the merge | asked on 2026-11-19; waiting for atmos-lang |
+| #3 | atmos-lang measures the ports from the branch, before the merge | done 2026-11-19 by atmos-lang (branch 6ba7568 vs main 170ef73): 2105 files of 12 ports, 2100 identical trees, none changes silently, 5 become errors, all in env-pico, from 3 sites of `key = f [...],` inside a table constructor |
 | #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | done on the branch (`expected single argument`) |
 | #5 | May the comma be optional in every list (`[1 2 3]`, `f(a b)`)? Asked by the author | answered: it conflicts with `f x` as a call (`[f x]`). Recommended: no. Waiting for the author |
-| #6 | Merge the branch `args` into main | waits for #3 and the author's approval |
+| #6 | Merge the branch `args` into main | waits for #7 and the author's approval |
+| #7 | Inside `[...]` and `(...)`, does a comma end the juxtaposed arguments? `[a = f [..], b = 1]` breaks today on the branch (env-pico's style). Options: #7a keep (`[f x, y]` is `[f(x, y)]`, rewrite 3 sites as `f([..])`); #7b the comma belongs to the enclosing brackets (`[f x, y]` is `[f(x), y]`, `g(f x, y)` is `g(f(x), y)`), for calls and statements alike | waiting for the author; recommended #7b |
 
 ## Waiting for the author
 
 - #5: the comma optional in every list. Recommended: no (`[f x]`
   would be a call or two elements).
-- #6: approve the merge, after the port count of #3.
+- #7: the comma inside brackets. Recommended: #7b.
+- #6: approve the merge, after #7.
 
 ## Known, not done
 
