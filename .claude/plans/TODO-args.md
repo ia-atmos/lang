@@ -9,17 +9,20 @@ before it is under "Decided", by date.
 
 | # | Title | State |
 |---|---|---|
-| #1 | Is the comma needed: `f x y` as `f(x, y)`? | waiting for the author |
-| #2 | Implement the rule on the branch `args` (parser, tests, manual) | waits for #1 |
-| #3 | atmos-lang measures the ports from the branch, before the merge | waits for #2 |
-| #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | to do with #2 |
+| #1 | Is the comma needed: `f x y` as `f(x, y)`? | decided 2026-11-19: the comma stays (`f x, y`) |
+| #2 | Implement the rule on the branch `args` (parser, tests, manual) | done on the branch at 6ba7568 (suite pass=980 fail=0, test-rt, test-env); not merged |
+| #3 | atmos-lang measures the ports from the branch, before the merge | done 2026-11-19 by atmos-lang (branch 6ba7568 vs main 170ef73): 2105 files of 12 ports, 2100 identical trees, none changes silently, 5 become errors, all in env-pico, from 3 sites of `key = f [...],` inside a table constructor |
+| #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | done on the branch (`expected single argument`) |
+| #5 | May the comma be optional in every list (`[1 2 3]`, `f(a b)`)? Asked by the author | moot after #8 |
+| #6 | Merge the branch `args` into main | approved by the author 2026-11-19 ("Ok, lá": atmos-lang merges); asked atmos-lang; waiting for its commit |
+| #7 | Inside `[...]` and `(...)`, does a comma end the juxtaposed arguments? `[a = f [..], b = 1]` breaks today on the branch (env-pico's style). Options: #7a keep (`[f x, y]` is `[f(x, y)]`, rewrite 3 sites as `f([..])`); #7b the comma belongs to the enclosing brackets (`[f x, y]` is `[f(x), y]`, `g(f x, y)` is `g(f(x), y)`), for calls and statements alike | moot after #8 |
+| #8 | The author reconsiders (2026-11-19, after #3): a list with no closing delimiter eats the commas around it, which is harmless only in escapes (`return`, `break`, `throw`, `escape`), after which nothing comes. Proposal: back to the Lua rule, tight, with one argument and no comma, extended to names and numbers (`f x`, `f 10`, `await t`); lists with no parentheses only in escapes. It replaces R3, the greedy constructors, `await E, P`, and #7 | decided 2026-11-19: yes. One atom (literal, name with fields and indexes, constructor), tight, no comma; `f g x`, `f g()` are errors; `#`, `!`, `-` do not start an argument; `await` follows; escapes keep their lists |
+| #9 | Reimplement the branch `args` for #8 (new commits on top) | done at 823d843 (suite pass=982 fail=0, test-rt, test-env); locally 1051 files, no tree changes; not merged |
+| #10 | atmos-lang measures the ports again, against 823d843 | done 2026-11-19 by atmos-lang (823d843 vs main 41361ea): 2105 files of 12 ports, `--ast` and the generated C identical for all; not covered: pico-frescogo, env-esp32 |
 
 ## Waiting for the author
 
-- #1: is the comma needed: `f x y` as `f(x, y)`? Asked by the author.
-  It conflicts with nesting, already decided (`print f x` is
-  `print(f(x))`): a juxtaposition is either the next argument or a
-  call. Recommended: keep the comma.
+(nothing)
 
 ## Known, not done
 
@@ -29,6 +32,11 @@ before it is under "Decided", by date.
 
 ## Reported, not acknowledged
 
+- What #2 changed beyond the decisions, on the branch: `f() g()` on one
+  line is `f()(g())`; `do 10` is `do(10)`; `watching f {` parses (golden
+  0462 removed); `await(:x, :tic)` is a compile error (was a runtime
+  one); keywords that start an argument: `nil true false ... func if
+  ifs match await`; a tag as a callee only takes a constructor.
 - atmos-lang (2026-11-18) confirmed it keeps away from the call part of
   the parser, offered to measure the ports with a prototype patch, and
   asked for the full suite (tst/run.sh, make test-rt test-env,

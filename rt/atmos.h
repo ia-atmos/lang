@@ -7,6 +7,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Marks a name of the generated code that its function may not use,
+// such that a build with `-Wall` gives no warning about it.
+#if defined(__GNUC__) || defined(__clang__)
+#define A_UNUSED __attribute__((unused))
+#else
+#define A_UNUSED
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // VALUES
 ///////////////////////////////////////////////////////////////////////////////

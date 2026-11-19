@@ -1,0 +1,6 @@
+await t.x
+await ts@i
+await T x
+val a, b = await t, 10
+watching f { }
+loop on t.e { }

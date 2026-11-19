@@ -89,3 +89,12 @@ started, no decision needed), **moved** (another session handles it),
 | 75 | What a `test` block cannot do alone: keep the environment from opening a window or sound, set polled input, read pixels, reach a C callback | open (the adoption is `atmos-envs`, its A3) |
 | 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | done 2026-11-19 (`sdl-pingus#15`, its `tst/bomber-test.atm`): logic, time, frames, keys work with `test` and emits; left: window and audio under `-t` (`atmos-envs` A3), switches read with `getenv` |
 | 77 | Merge of `pin` b80bcd1 (`atmos-pin#11`: the warning of a pin given away sees `until c, v` and `while c, v`) | done 2026-11-19 (907fee9; approved by the author) |
+| 78 | The trick left by the pilot `#76`: the environment opens a window and the audio also under `-t` | moved: `atmos-envs` (its A3) |
+| 79 | What a test may want to set must be a parameter or a global, not `getenv` | open (remark; for the convention of `atmos-envs`) |
+| 80 | The 25 sessions of the project awakened at the author's request | done 2026-11-19 |
+| 81 | Merge of `pin` 4199167 (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | open: measured (suite 972 with ASAN; 2105 files compile the same; no cost; 12 ports pass with no `invalid access : finalized`; `sdl-snxkx` not measurable before its migration); waits for the author's approval |
+| 82 | The measurement of the branch `args` 6ba7568 on the ports (`atmos-args#3`): 2100 of 2105 trees identical, 5 files of `env-pico` become an error (`key = f [...],` in a table) | done 2026-11-19 (sent to `atmos-args`; the design is its) |
+| 83 | The 25 sessions awakened a second time at the author's request | done 2026-11-19 |
+| 84 | The second measurement of `args`, at 823d843 (single-atom rule, `atmos-args#8`): trees and generated C identical for all 2105 files of the ports | done 2026-11-19 (sent to `atmos-args`; the merge waits for the author there) |
+| 85 | Three findings of the board build of `env-esp32`: no `nanosleep` on the host, a manual example that leaks, warnings of `-Wall` in the generated C | done 2026-11-19 (ee17162 `ATM_NO_CLOCK`, dc94c6f `a_set` in the manual, 7b0bf06 `A_UNUSED`) |
+| 86 | Merge of `args` 823d843 (`atmos-args#6`: `f x`, `f t.x`, `f 10`, `await t`) | done 2026-11-19 (approved by the author in `atmos-args`, "Ok, lá"; suite passes after the merge) |

@@ -28,7 +28,7 @@ print(`puts("stmt");`)
 func f (a) {
     var b = 1
     pin g = func () {
-        `$b = a_int($b.u.i + $a.u.i);`
+        `a_set(&$b, a_int($b.u.i + $a.u.i));`
         `:number $b.u.i * 100`
     }
     print(g(), g(), b)

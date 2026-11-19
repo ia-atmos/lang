@@ -1,0 +1,6 @@
+(++ (call f "a") s)
+(== (call type []) :table)
+(call (call f "a") "b")
+(call f (tag :X [1]))
+f
+x
