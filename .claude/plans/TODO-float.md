@@ -17,7 +17,7 @@ Last update: 2026-11-19.
 | `#3` | The clock under integers of 32 bits: milliseconds, or a 64-bit timer apart | Open, depends on `#2` |
 | `#4` | The runtime built on demand, per configuration (`#E`) | Open, needed with the second option |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
-| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | `env-esp32` built it: -4.5 KB of image, speed not measured; `sdl-tux` has not run it |
+| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Both ran it: `env-esp32` built the board image (-4.5 KB, speed not measured); the suite of `sdl-tux` is identical, over `env-sdl` too. Left: Atmos code of Tux doing the float arithmetic |
 | `#7` | No reals (`#B`) and fixed point (`#C`) | Open; only matter if `#1` includes boards with no FPU as a priority |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open; independent of the options |
 
@@ -40,3 +40,10 @@ Last update: 2026-11-19.
   real arithmetic; the PID loop of the robot would be the benchmark,
   not ported). Its host tests pass under the option. Board option:
   `idf.py -DATMOS_REAL_FLOAT=ON build`.
+- 2026-11-19, `sdl-tux` (`#6`): under `ATMOS_REAL=float` (4565af1) the
+  gravity test gives 15.000001, 30.0000019, 45.0000038, and the whole
+  suite of the port is identical with the option on (30 traces
+  compared tick by tick with the C++ game, two runners, one over
+  `env-sdl`, and the screenshots). The float arithmetic of the port is
+  still in C kernels; the blocks and badguys in Atmos with floats come
+  next, and it will report.
