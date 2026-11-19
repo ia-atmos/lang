@@ -22,7 +22,7 @@ An item of another session is `session#N` (the compiler's list is
 | #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
 | #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
 | #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |
-| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open |
+| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open; an `env-esp32` exists (seen 2026-11-19: `ATM_NO_CLOCK` in `rt/main.c`, `ee17162`), not yet read here |
 | #8 | The order inside a frame | Decided 2026-11-18, done (pico, ray; sdl already) |
 | #9 | What `true` from `step` means with secondaries | Open, asked |
 | #10 | A secondary wakes a waiting primary (an `fd`) | Open, design (pilot gap 2) |
