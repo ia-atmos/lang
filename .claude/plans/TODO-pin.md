@@ -6,7 +6,7 @@ decided here and implemented by `atmos-lang`: `261115-pin.md`,
 `261118-pin-handoff.md`). This session cannot push to `main`:
 `atmos-lang` fast-forwards `main` to `pin` after each approved change.
 
-Last update: 2026-11-18.
+Last update: 2026-11-19.
 
 ## Index of the items (`atmos-pin#N`)
 
@@ -16,14 +16,14 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | # | Title | State |
 |---|---|---|
 | #1 | An outer place that holds a value of an inner block (case E) | decided 2026-11-19: `set :out place = value` (the place goes back to `nil` at the end of the block of the `set`), plus the state "finalized" of data, whose use is an error (`invalid access : finalized table pinned at f:N`). Implemented and merged in `main` (`8361f88`, 2026-11-19), after 12 ports passed with no `invalid access : finalized`. See below |
-| #2 | env-pico: the finalizers of a layer and of a font reset the current layer and the pencil's font, instead of the binding's own count | open, with the author (not asked to env-pico yet) |
+| #2 | env-pico: the finalizers of a layer and of a font reset the current layer and the pencil's font, instead of the binding's own count | approved 2026-11-19; asked to `env-pico`, waiting for its report |
 | #3 | A compile flag that removes the checks (the end-of-block finalization stays, it is semantics) | open: "not yet" (2026-11-17). Needed by the experiment of the paper (CLBG, with and without the checks) |
-| #4 | Choices of the implementation that the author did not confirm: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | open, with the author |
-| #5 | The `spawn` statement as the only implicit pin | open, with the author. Recommended: keep |
+| #4 | Choices of the implementation: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | confirmed by the author, 2026-11-19 |
+| #5 | The `spawn` statement as the only implicit pin | confirmed by the author, 2026-11-19: it stays |
 | #6 | sdl-snxkx: the second migration (pins given away) and the contacts sent only to the two tasks | waiting for its session. The experiment of the context is no longer needed: with `set :out w.tasks@(b) = task` in the body of each task, the world made by the caller keeps the map (answered with a tested program, 2026-11-19); `SHARED_SPRINGS` has the same direct form |
 | #7 | Known limits of the collection of cycles (leaks): a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | open, documented in the manual; no plan |
 | #8 | Remarks of the ports for the author: env-uv (a function that creates a handle and gives it away declares it with `val`, the weaker word; on a throw in the middle the handle is closed by the count, not by the block); Doom and env-uv (the same lines changed three times in three days: a change that breaks programs should say what migrates) | relayed on 2026-11-18, not answered |
-| #9 | Declare the rules stable again, and tell `paper-pin` and the ports | waits for #1, #3, #4, #5 |
+| #9 | Declare the rules stable again, and tell `paper-pin` and the ports | every decision of the rules is closed (#1, #4, #5); only #3 (the flag, "not yet") is open, and it changes no rule. Asked to the author, 2026-11-19 |
 | #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | confirmed with no anomaly: sdl-pingus, env-uv, ray-lessmilk, env-ray; the others have not reported |
 | #11 | The warning of a pin given away missed `until c, v` and `while c, v` (found by sdl-pingus: `pin r = await Game(path)` ... `until !again, r`, a live defect that only the replay of the demos reached) | done on `pin` (2026-11-18): the values after the condition are checked against the pins of the loop; test `warn-pin-02` |
 
