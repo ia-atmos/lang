@@ -92,4 +92,6 @@ started, no decision needed), **moved** (another session handles it),
 | 78 | The trick left by the pilot `#76`: the environment opens a window and the audio also under `-t` | moved: `atmos-envs` (its A3) |
 | 79 | What a test may want to set must be a parameter or a global, not `getenv` | open (remark; for the convention of `atmos-envs`) |
 | 80 | The 25 sessions of the project awakened at the author's request | done 2026-11-19 |
-| 81 | Merge of `pin` 4199167 (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | open: measured here (suite 972 with ASAN, sdl-pingus, 2105 files compile the same, no cost); the ports run their suites; waits for the author's approval |
+| 81 | Merge of `pin` 4199167 (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | open: measured (suite 972 with ASAN; 2105 files compile the same; no cost; 12 ports pass with no `invalid access : finalized`; `sdl-snxkx` not measurable before its migration); waits for the author's approval |
+| 82 | The measurement of the branch `args` 6ba7568 on the ports (`atmos-args#3`): 2100 of 2105 trees identical, 5 files of `env-pico` become an error (`key = f [...],` in a table) | done 2026-11-19 (sent to `atmos-args`; the design is its) |
+| 83 | The 25 sessions awakened a second time at the author's request | done 2026-11-19 |
