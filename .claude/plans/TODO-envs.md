@@ -7,6 +7,10 @@ compiler's list (`TODO.md`), which do not change.
 
 Last update: 2026-11-18.
 
+## Standing
+
+- The rules of `pin` are stable (the author, 2026-11-19, `atmos-pin#9`; `TODO-pin.md`, "Stable"). Designs here build on them; a proposal that needs a rule of `pin` changed goes to `atmos-pin` first.
+
 ## Index
 
 Items are `#N` (standing rule of the author, 2026-11-18): unique in this
