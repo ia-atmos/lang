@@ -1,0 +1,5 @@
+(call print (++ "a" s))
+(call type (== [] :table))
+(call f (tag :X [1]) 2)
+(call f (func (it) { it }) 1)
+(call f "a" "b")

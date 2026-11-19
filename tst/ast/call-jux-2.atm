@@ -1,0 +1,6 @@
+print f x
+g(f x, y)
+[f x, y]
+val a, b = f x, y
+x -> f y
+f g h x

@@ -38,7 +38,15 @@ static Expr* parser (void);
 static Expr* parser_1_prim (void);
 static Expr* parser_7_out (Expr* pre);
 static Patt* parser_await (void);
-static Patt* parser_await_blk (int blk);
+// A count with no parentheses, `E, P`, depends on where the pattern is:
+//  CNT_NO:  never: the filters of a toggle, which commas separate
+//  CNT_BLK: before a block (watching, loop on): `watching E, P {...}`
+//           and also `watching (E), P {...}`
+//  CNT_AWT: in an await: `await E, P`, while `await (E), P` is the
+//           list `(await(E)), P`, as `f (x), y` is `(f(x)), y`
+enum { CNT_NO, CNT_BLK, CNT_AWT };
+
+static Patt* parser_await_blk (int cnt);
 static Expr* parser_spawn (void);
 static Expr* parser_at_err (void);
 static Expr* parser_2_suf (Expr* pre);
@@ -554,6 +562,10 @@ static Expr* parser_exit (Tk tk) {
     if (es->n==1 && es->v[0]->tag==E_LIST) {
         *es = es->v[0]->u.list.es;
     }
+    // abort t: a single task, as emit takes a single event
+    if (!strcmp(tk.str,"abort") && es->n>1) {
+        err(tk, "expected single argument");
+    }
     return call;
 }
 
@@ -737,7 +749,7 @@ static Expr* parser_loop (void) {
         // loop e on P {...} is loop { val e = await P ; ... }
         Tk tk = TK0;
         Expr* awt = mk(E_AWAIT, tk);
-        awt->u.await.p = parser_await_blk(1);
+        awt->u.await.p = parser_await_blk(CNT_BLK);
         Expr* fst = awt;
         if (loop->u.loop.n > 0) {
             fst = mk(E_DCL, tk);
@@ -851,6 +863,14 @@ static void chk_cnt (Patt* p) {
 
 // The rest of a count, after its expression `e` and the comma.
 static Patt* parser_await_cnt (Tk tk, Expr* e, Patt* sub) {
+    // await :X, 10 is not (await :X), 10: a count is a number
+    switch (e->tag) {
+        case E_TAG: case E_TAGGED: case E_STR: case E_TABLE:
+        case E_BOOL: case E_NIL: case E_PROTO: case E_CLK:
+            err(tk, "invalid await : expected number");
+        default:
+            break;
+    }
     Patt* p = mkp(PT_CNT, tk);
     p->e = e;
     p->a = sub;
@@ -873,6 +893,8 @@ static Patt* parser_await_parens (void) {
     return p;
 }
 
+static int BARE = 0;
+
 static Patt* parser_await_1_prim (void) {
     // :any ts  :all ts
     if (check_tag(TK_TAG) &&
@@ -891,20 +913,29 @@ static Patt* parser_await_1_prim (void) {
 
     // <p>
     } else if (accept_angle("<")) {
+        int bare = BARE;
+        BARE = 0;
         ANGLE++;
         Patt* p = parser_await_3_bin();
         ANGLE--;
+        BARE = bare;
         accept_angle_close();
         return p;
 
     // (E): a value  |  (E, P): a count
     } else if (accept_str("(")) {
-        return parser_await_parens();
+        int bare = BARE;
+        BARE = 0;
+        Patt* p = parser_await_parens();
+        BARE = bare;
+        return p;
 
     // primary: a call spawns
+    // A bare pattern takes a full expression, as the argument of a
+    // statement: await 20min + 1s, await t, await T x.
     } else {
         Tk tk = TK1;
-        Expr* e = parser_2_suf(NULL);
+        Expr* e = BARE ? parser() : parser_2_suf(NULL);
         if (e->tag == E_CALL) {
             Patt* p = mkp(PT_SPAWN, tk);
             p->e    = e->u.call.f;
@@ -956,18 +987,20 @@ static Patt* parser_await_3_bin (void) {
 }
 
 static Patt* parser_await (void) {
-    return parser_await_blk(0);
+    return parser_await_blk(CNT_NO);
 }
 
-// The pattern before a block (watching, loop on) may be a count with
-// no parentheses: `watching E, P {...}`.
-static Patt* parser_await_blk (int blk) {
+static Patt* parser_await_blk (int cnt) {
+    int bare = BARE;
+    BARE = 0;
+
     // value: await(E)  |  count: await(E, P)
     if (accept_str("(")) {
         Patt* p = parser_await_parens();
-        if (blk && p->kind==PT_VAL && accept_str(",")) {
-            return parser_await_cnt(p->tk, p->e, parser_await_blk(0));
+        if (cnt==CNT_BLK && p->kind==PT_VAL && accept_str(",")) {
+            p = parser_await_cnt(p->tk, p->e, parser_await_blk(CNT_NO));
         }
+        BARE = bare;
         return p;
     }
 
@@ -977,13 +1010,16 @@ static Patt* parser_await_blk (int blk) {
         Patt* p = parser_await_3_bin();
         ANGLE--;
         accept_angle_close();
+        BARE = bare;
         return p;
     }
 
-    // bare: await P, with no combinators and no loose values
+    // bare: await P, with no combinators
+    BARE = 1;
     Patt* p = parser_await_3_bin();
-    if (blk && p->kind==PT_VAL && accept_str(",")) {
-        return parser_await_cnt(p->tk, p->e, parser_await_blk(0));
+    BARE = bare;
+    if (cnt!=CNT_NO && p->kind==PT_VAL && accept_str(",")) {
+        return parser_await_cnt(p->tk, p->e, parser_await_blk(CNT_NO));
     }
     Patt* b = p;
     if ((b->kind==PT_UNTIL || b->kind==PT_WHILE) && b->a!=NULL) {
@@ -991,9 +1027,11 @@ static Patt* parser_await_blk (int blk) {
     }
     int ok;
     if (b->kind == PT_VAL) {
-        ETag t = b->e->tag;
-        ok = (t==E_TAG || t==E_CLK || t==E_STR || t==E_NAT || t==E_BOOL ||
-              t==E_TABLE || t==E_TAGGED || t==E_PROTO);
+        // await a || b, await !a: combinators need await <...>
+        Expr* e = b->e;
+        ok = !(e->tag==E_BIN &&
+                (!strcmp(e->tk.str,"||") || !strcmp(e->tk.str,"&&"))) &&
+             !(e->tag==E_UNO && !strcmp(e->tk.str,"!"));
     } else {
         ok = (b->kind!=PT_AND && b->kind!=PT_OR && b->kind!=PT_NOT);
     }
@@ -1019,11 +1057,40 @@ static int parser_filters (Patt*** fs) {
 // 1_PRIM
 ///////////////////////////////////////////////////////////////////////////////
 
-// Tokens that can start a juxtaposed call argument: f "s", f [t], f :X.
-static int check_call_arg (void) {
-    return check_str("[") || check_str("\\") ||
-           check_tag(TK_STR) || check_tag(TK_TAG) ||
-           check_tag(TK_NAT) || check_tag(TK_CLK);
+// Tokens that can start the arguments of a juxtaposed call, with no
+// parentheses: f x, f 10, f "s", f [t], f :X, f \{...}, f #t, f !x.
+// A `-` is always the binary operator (f -x is f - x), and a `(` is
+// the call with parentheses. A tag only takes a constructor, since
+// `:X v` is not a call.
+static int check_call_arg (Expr* f) {
+    static const char* EXITS_[] = {
+        "return", "break", "escape", "throw", "abort", "until", "while",
+        "skip", NULL
+    };
+    static const char* KEYS_[] = {
+        "nil", "true", "false", "...", "func", "if", "ifs", "match",
+        "await", NULL
+    };
+    static const char* PRE_[] = { "!", "#", "~", NULL };
+    if (check_str("[") || check_str("\\") ||
+        check_tag(TK_STR) || check_tag(TK_TAG) ||
+        check_tag(TK_NAT) || check_tag(TK_CLK))
+    {
+        return 1;
+    }
+    if (f->tag==E_TAG || f->tag==E_TAGGED) {
+        return 0;
+    }
+    if (check_tag(TK_NUM)) {
+        return 1;
+    }
+    if (check_tag(TK_ID)) {
+        return !in(EXITS_, TK1.str);
+    }
+    if (check_tag(TK_OP)) {
+        return in(PRE_, TK1.str);
+    }
+    return in(KEYS_, TK1.str);
 }
 
 // @-qualifier, after '@': @(e) | @num | @id | @:tag.
@@ -1279,7 +1346,7 @@ static Expr* parser_1_prim (void) {
     // await P
     } else if (accept_str("await")) {
         Expr* e = mk(E_AWAIT, TK0);
-        e->u.await.p = parser_await();
+        e->u.await.p = parser_await_blk(CNT_AWT);
         return e;
 
     // toggle t(b) with P  |  toggle on :T with P {...}
@@ -1327,7 +1394,7 @@ static Expr* parser_1_prim (void) {
     } else if (accept_str("watching")) {
         Tk tk = TK0;
         Expr* awt = mk(E_AWAIT, tk);
-        awt->u.await.p = parser_await_blk(1);
+        awt->u.await.p = parser_await_blk(CNT_BLK);
         Expr* e = mk(E_PAR, tk);
         e->u.par.mode = PAR_ANY;
         list_add(&e->u.par.blks, block1(awt));
@@ -1410,11 +1477,16 @@ static Expr* parser_2_suf (Expr* pre) {
             ret->u.call.f  = e;
             ret->u.call.es = parser_list(")");
             accept_str_err(")");
-        } else if (check_call_arg()) {
-            // f "s"  f [t]  f :X
+        } else if (check_call_arg(e)) {
+            // f x  f x, y  f "s"  f [t]  f :X
+            // The arguments extend as far as possible, as those of
+            // a statement (return x, y): they end the expression.
             ret = mk(E_CALL, TK1);
             ret->u.call.f = e;
-            list_add(&ret->u.call.es, parser_1_prim());
+            do {
+                list_add(&ret->u.call.es, parser());
+            } while (accept_str(","));
+            return ret;
         } else {
             return e;
         }
