@@ -89,3 +89,7 @@ started, no decision needed), **moved** (another session handles it),
 | 75 | What a `test` block cannot do alone: keep the environment from opening a window or sound, set polled input, read pixels, reach a C callback | open (the adoption is `atmos-envs`, its A3) |
 | 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | done 2026-11-19 (`sdl-pingus#15`, its `tst/bomber-test.atm`): logic, time, frames, keys work with `test` and emits; left: window and audio under `-t` (`atmos-envs` A3), switches read with `getenv` |
 | 77 | Merge of `pin` b80bcd1 (`atmos-pin#11`: the warning of a pin given away sees `until c, v` and `while c, v`) | done 2026-11-19 (907fee9; approved by the author) |
+| 78 | The trick left by the pilot `#76`: the environment opens a window and the audio also under `-t` | moved: `atmos-envs` (its A3) |
+| 79 | What a test may want to set must be a parameter or a global, not `getenv` | open (remark; for the convention of `atmos-envs`) |
+| 80 | The 25 sessions of the project awakened at the author's request | done 2026-11-19 |
+| 81 | Merge of `pin` 4199167 (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | open: measured here (suite 972 with ASAN, sdl-pingus, 2105 files compile the same, no cost); the ports run their suites; waits for the author's approval |
