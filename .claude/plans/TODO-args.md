@@ -16,12 +16,14 @@ before it is under "Decided", by date.
 | #5 | May the comma be optional in every list (`[1 2 3]`, `f(a b)`)? Asked by the author | answered: it conflicts with `f x` as a call (`[f x]`). Recommended: no. Waiting for the author |
 | #6 | Merge the branch `args` into main | waits for #7 and the author's approval |
 | #7 | Inside `[...]` and `(...)`, does a comma end the juxtaposed arguments? `[a = f [..], b = 1]` breaks today on the branch (env-pico's style). Options: #7a keep (`[f x, y]` is `[f(x, y)]`, rewrite 3 sites as `f([..])`); #7b the comma belongs to the enclosing brackets (`[f x, y]` is `[f(x), y]`, `g(f x, y)` is `g(f(x), y)`), for calls and statements alike | waiting for the author; recommended #7b |
+| #8 | The author reconsiders (2026-11-19, after #3): a list with no closing delimiter eats the commas around it, which is harmless only in escapes (`return`, `break`, `throw`, `escape`), after which nothing comes. Proposal: back to the Lua rule, tight, with one argument and no comma, extended to names and numbers (`f x`, `f 10`, `await t`); lists with no parentheses only in escapes. It replaces R3, the greedy constructors, `await E, P`, and #7 | waiting for the author; recommended: yes |
 
 ## Waiting for the author
 
 - #5: the comma optional in every list. Recommended: no (`[f x]`
   would be a call or two elements).
-- #7: the comma inside brackets. Recommended: #7b.
+- #8: back to one tight argument (Lua extended). Recommended: yes.
+  It makes #5 and #7 moot.
 - #6: approve the merge, after #7.
 
 ## Known, not done
