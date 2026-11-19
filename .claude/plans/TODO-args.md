@@ -10,13 +10,17 @@ before it is under "Decided", by date.
 | # | Title | State |
 |---|---|---|
 | #1 | Is the comma needed: `f x y` as `f(x, y)`? | decided 2026-11-19: the comma stays (`f x, y`) |
-| #2 | Implement the rule on the branch `args` (parser, tests, manual) | in course |
-| #3 | atmos-lang measures the ports from the branch, before the merge | waits for #2 |
-| #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | to do with #2 |
+| #2 | Implement the rule on the branch `args` (parser, tests, manual) | done on the branch at 6ba7568 (suite pass=980 fail=0, test-rt, test-env); not merged |
+| #3 | atmos-lang measures the ports from the branch, before the merge | asked on 2026-11-19; waiting for atmos-lang |
+| #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | done on the branch (`expected single argument`) |
+| #5 | May the comma be optional in every list (`[1 2 3]`, `f(a b)`)? Asked by the author | answered: it conflicts with `f x` as a call (`[f x]`). Recommended: no. Waiting for the author |
+| #6 | Merge the branch `args` into main | waits for #3 and the author's approval |
 
 ## Waiting for the author
 
-(nothing)
+- #5: the comma optional in every list. Recommended: no (`[f x]`
+  would be a call or two elements).
+- #6: approve the merge, after the port count of #3.
 
 ## Known, not done
 
@@ -26,6 +30,11 @@ before it is under "Decided", by date.
 
 ## Reported, not acknowledged
 
+- What #2 changed beyond the decisions, on the branch: `f() g()` on one
+  line is `f()(g())`; `do 10` is `do(10)`; `watching f {` parses (golden
+  0462 removed); `await(:x, :tic)` is a compile error (was a runtime
+  one); keywords that start an argument: `nil true false ... func if
+  ifs match await`; a tag as a callee only takes a constructor.
 - atmos-lang (2026-11-18) confirmed it keeps away from the call part of
   the parser, offered to measure the ports with a prototype patch, and
   asked for the full suite (tst/run.sh, make test-rt test-env,
