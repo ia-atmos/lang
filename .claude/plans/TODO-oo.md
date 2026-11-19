@@ -9,42 +9,42 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 
 | # | Title | State |
 |---|---|---|
-| #1 | Is there a case that justifies syntax, or does a table/library do for now? | waiting for the author (asked 2026-11-18) |
+| #1 | Is there a case that justifies syntax, or does a table/library do for now? | decided 2026-11-19: a table for now ("Tabela por enquanto") |
+| #3 | A paragraph in the manual ("User Types") with the table idiom | waiting for the author (asked 2026-11-19); text on the branch `oo` |
+| #4 | Port a few badguys of SuperTux as the test of inheritance of behavior | not asked yet; belongs to the session of `sdl-tux` |
 | #2 | sdl-flare was not surveyed | closed 2026-11-19: surveyed after the author pointed that it is public; no case that repeats (`261118-oo-cases.md`, 2.5) |
 
 ## Waiting for the author
 
-- **#1** Is there a case that justifies syntax, or does a table/library
-  do for now?
-  Recommended: no syntax now. The two cases that repeat dispatch tasks
-  by a field or bare tag; Pingus already has open dispatch with a
-  table; no entity uses a hierarchical tag. Document the table idiom
-  in the manual and reopen when a port needs hierarchy and openness at
-  once.
+- **#3** Add to the manual, under "User Types", a paragraph and an
+  example of the table idiom (a table from tags to functions or tasks,
+  `AREA@(s.tag)(s)`). Recommended: yes. The text is on the branch `oo`;
+  no change to the compiler.
 
-## Next questions, only if #1 is "syntax"
+## Next, one at a time
 
-Not numbered until put to the author; in this order, one at a time:
-
-- Tasks as clauses (`task Character (u :Char.outlaw, ...)`): both real
-  cases need it, so it comes before the rest.
-- What is dispatched on: the tag of a tagged table only, or also a bare
-  tag as the argument (the actions of Pingus).
-- The parent clause; values with no tag; one argument or several; where
-  clauses may be declared (see `261118-oo.md`, section 4).
-- Grammar of `x :Tag` in a parameter, with `atmos-args`; prototypes as
-  names, with `atmos-pin`.
+- **#4** Port a few badguys of SuperTux (deep inheritance in the
+  original), to see whether inheritance of behavior asks for dispatch
+  by tag or composition of tasks is enough. Recommended: propose it to
+  the session of `sdl-tux`.
+- If syntax is reopened: tasks as clauses first; then what is
+  dispatched on (a tagged table or also a bare tag); the parent clause;
+  values with no tag; one argument or several; where clauses may be
+  declared; the grammar of `x :Tag` with `atmos-args`; prototypes as
+  names with `atmos-pin` (`261118-oo.md`, section 4).
 
 ## Known and not done
 
 - No port has inheritance of behavior: the badguys of SuperTux, the
   typical case, are not ported (`261118-oo-cases.md`, 2.6).
-- Nothing implemented; branch `oo` not created.
+- Nothing implemented in the compiler; the branch `oo` has only the
+  paragraph of #3.
 
 ## Reported and not acknowledged
 
-- The survey and #1 (2026-11-18); Flare added (2026-11-19).
+- #3 (2026-11-19).
 
 ## Decided by the author
 
-- (nothing yet)
+- #1, 2026-11-19: "Tabela por enquanto". No syntax for dispatch by tag
+  now; the table idiom is what the language offers.
