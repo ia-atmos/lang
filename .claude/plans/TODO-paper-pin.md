@@ -39,12 +39,14 @@ written; each such item now has its number below.
 - **#7 Rules not declared stable** (was B5, 2026-11-18). Open with the
   author, per `atmos-pin` (session_011eECogSDhkVfyt7qme5DLh, branch
   `pin`), which will report:
-    - #7a a mechanism for an outer place to hold an inner value (case E);
+    - #7a ~~a mechanism for an outer place to hold an inner value (case
+      E)~~: decided 2026-11-19, `set :out` (atmos-pin#1, main `8361f88`);
     - #7b the flag that removes the checks;
     - #7c confirmation of three implementation choices (a task owns its
       `pub` and final value; an emitted event is owned by the emit;
       natives declare what they hold);
-    - #7d `spawn` as the only implicit pin.
+    - #7d `spawn` as the only implicit pin;
+    - #7e the finalizer of native values (atmos-pin#2).
 
 ## Planned
 
