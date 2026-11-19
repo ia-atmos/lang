@@ -3,8 +3,8 @@
 Survey of 2026-11-18 by the session `atmos-oo`, for the first question of
 `261118-oo.md` (is there a real case for dispatch by tag?). Code only
 (`data/` left out). Read: sdl-snxkx `00cca2c`, sdl-pingus `513617c`,
-sdl-tux `a8bd119`, ray-lessmilk `bfa53a1`, env-ray `4daa572`.
-**Not read: sdl-flare** (attaching it was refused in this session).
+sdl-tux `a8bd119`, ray-lessmilk `bfa53a1`, env-ray `4daa572`, and, on
+2026-11-19, sdl-flare `49f593e`.
 
 ## 1. Counts
 
@@ -13,6 +13,7 @@ sdl-tux `a8bd119`, ray-lessmilk `bfa53a1`, env-ray `4daa572`.
 | sdl-snxkx | 12,740 | 63 | 34 | 1: `u.character` (52 characters) |
 | sdl-pingus | 4,259 | 11 | 22 | 1: the 22 actions, already a table |
 | sdl-tux | 1,075 (+ C headers) | 10 | 2 | 1, weak: `o.tag` of sector objects in view and session |
+| sdl-flare | 4,795 | 27 | 13 | 0: `pw.type`, `fx.type`, `a.type` are matched in one function each (2.5) |
 | ray-lessmilk | 9,138 | 1 | 62 | 0 |
 | env-ray | 11,034 | 6 | 30 | 0 |
 
@@ -21,7 +22,7 @@ kind of an entity.
 
 | Fact | Count |
 |---|---|
-| Entities built as tagged tables with a dotted tag (`:Enemy.Boss [...]`) | 0 in all five |
+| Entities built as tagged tables with a dotted tag (`:Enemy.Boss [...]`) | 0 in all six |
 | Dotted tagged tables at all | 15, all events of SNKRX (`:Shop.buy`, `:Button.click`) |
 | Kind of an entity kept as | a field: `kind=:enemy`, `character="outlaw"`, `elite="shooter"`; or the tag of a data record loaded from a level (`:exit`, `:tilemap`) |
 | Choice by kind that walks a hierarchy | 0 |
@@ -69,6 +70,38 @@ kinds. One `match` each: nothing repeats.
 
 SNKRX `match e.elite` (elite.atm:181), `match c.kind` (seeker.atm:90),
 `base_stats` (unit.atm:50): one function each.
+
+### 2.5 Flare: powers, effects, animations (data, one site each)
+
+Powers, effects and enemies are records read from `.ini` files, with
+the kind in a string field, as in the original.
+
+| Field | Kinds | Where |
+|---|---|---|
+| `pw.type` | fixed, missile, repeater, ... | one `match` in `combat.atm:155`, one `if` (`"missile"` reflects) |
+| `pw.starting_pos` | 3 | three `match` in `combat.atm`, the same computation: a helper function, not a dispatch |
+| `fx.type` | 5 | `effect.atm:35` (a resist name) and `:69` (a status), other subsets |
+| `a.type` (animation) | 3 | one `match` and 6 `if` in `anim.atm` |
+| `c.type` (event component) | ~8 | one `match` and 7 `if` in `event.atm` |
+
+There are no kinds of enemy in code: one `task Enemy (st, me)` over a
+stat block, whose states are tasks chosen by `match next.act`
+(`ai.atm:542`): a state machine, as the actions of Pingus.
+
+### 2.6 What the originals are
+
+From memory of the originals and the `Class::method` comments of the
+ports; the original sources were not read in this session.
+
+| Game | Original | In the port |
+|---|---|---|
+| Pingus (C++) | `PinguAction` with virtual `update`/`draw`, ~22 subclasses, one level | a task per subclass, a table by tag |
+| SuperTux (C++) | deep inheritance (`BadGuy`, `WalkingBadguy`, ...) with overrides | **not ported yet**: the port spawns `Coin` and two triggers |
+| SNKRX (Lua) | one class `Player` with a chain of `if self.character == ...` | the same chain, as a `match` |
+| Flare (C++) | classes, but powers and enemies are data with a type field | the same |
+
+So no port has exercised inheritance of behavior yet. The badguys of
+SuperTux are the missing test.
 
 ## 3. A case three ways
 

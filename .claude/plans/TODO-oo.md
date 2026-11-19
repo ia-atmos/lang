@@ -10,7 +10,7 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | # | Title | State |
 |---|---|---|
 | #1 | Is there a case that justifies syntax, or does a table/library do for now? | waiting for the author (asked 2026-11-18) |
-| #2 | sdl-flare was not surveyed | open: reported 2026-11-18, not acknowledged |
+| #2 | sdl-flare was not surveyed | closed 2026-11-19: surveyed after the author pointed that it is public; no case that repeats (`261118-oo-cases.md`, 2.5) |
 
 ## Waiting for the author
 
@@ -37,14 +37,13 @@ Not numbered until put to the author; in this order, one at a time:
 
 ## Known and not done
 
-- **#2** sdl-flare was not surveyed: attaching it was refused in this
-  session (the other five are public and were cloned). Its powers and
-  enemies are a likely candidate.
+- No port has inheritance of behavior: the badguys of SuperTux, the
+  typical case, are not ported (`261118-oo-cases.md`, 2.6).
 - Nothing implemented; branch `oo` not created.
 
 ## Reported and not acknowledged
 
-- The survey, #1 and #2 (2026-11-18).
+- The survey and #1 (2026-11-18); Flare added (2026-11-19).
 
 ## Decided by the author
 
