@@ -10,6 +10,17 @@
 
 #include "atmos.h"
 
+// A host with no `nanosleep` builds with `-DATM_NO_CLOCK`: then, with
+// no environment, no time passes and the program ends with its main
+// chunk.
+#ifdef ATM_NO_CLOCK
+
+static AStatus run_clock (AStatus st) {
+    return st;
+}
+
+#else
+
 static double now_us (void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -35,6 +46,8 @@ static AStatus run_clock (AStatus st) {
     }
     return st;
 }
+
+#endif
 
 // The function `name` of the environment `i`, or nil.
 static AVal env_fn (int i, const char* name) {
