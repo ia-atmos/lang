@@ -1,0 +1,66 @@
+;; set :out: two trails on the same place; names that outlive the block (a
+;; function, a table, a pool); an unpinned value; a place overwritten by hand
+pin play = []
+task T (id) { defer { print(:t, id, :end) } ; await(false) }
+
+;; two trails write the same field
+par :all {
+    pin a = [n=1]
+    set :out play.x = a
+    await(:one)
+    print(:A, play.x.n)
+} with {
+    pin b = [n=2]
+    set :out play.x = b
+    await(:two)
+    print(:B, play.x && play.x.n)
+} with {
+    emit(:one)                  ;; A ends: the field is b's, and stays
+    print(:mid, play.x.n)
+    emit(:two)
+}
+print(:x, play.x)
+
+;; names that outlive the block: a pool, a function, a table
+task Keeper () {
+    await(:look)
+    val es = play.es
+    val f  = play.f
+    val t  = play.u
+    await(:later)
+    print(catch true { f() })
+    print(catch true { #t })
+    print(catch true { t@0 })
+    print(catch true { set t@0 = 1 })
+    print(catch true { loop _, x in t { } })
+    print(catch true { spawn @es T(2) })
+    print(catch true { #es })
+}
+pin kp = spawn Keeper()
+do {
+    pin ts = tasks()
+    pin g  = func () { 1 }
+    pin u  = [1]
+    set :out play.es = ts
+    set :out play.f  = g
+    set :out play.u  = u
+    spawn @ts T(1)
+    emit(:look)
+}
+emit(:later)
+
+;; an unpinned value: only the reset
+do {
+    val w = [5]
+    set :out play.w = w
+    print(play.w@0)
+}
+print(play.w)
+
+;; overwritten by hand: it stays
+do {
+    pin v = [6]
+    set :out play.v = v
+    set play.v = 7
+}
+print(play.v)

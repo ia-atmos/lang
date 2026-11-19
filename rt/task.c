@@ -1739,9 +1739,18 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
         return a_error("invalid spawn : expected task prototype");
     }
 
+    if (a_is_fin(proto)) {
+        a_settop(base);
+        return a_err_fin(proto);
+    }
     ANode* up = (a_cur != NULL) ? &a_cur->node : &ROOT.node;
     if (pool.type == A_TASKS) {
         ATasks* ts = A_TASKS_OF(pool);
+        // a pool that its block ended takes no more tasks
+        if (ts->node.dead || pool.u.o->pinned==3) {
+            a_settop(base);
+            return a_err_fin(pool);
+        }
         up = &ts->node;
         // the task lives as long as the pool: so must its prototype
         // and its arguments
@@ -3228,12 +3237,13 @@ static void clr_deep (AVal v, uint32_t d) {
     if (NRETS > 0) {
         a_ret_end(o);
     }
-    // each value once: what is left of data is unpinned, and a task or
-    // pool stays as finalized (3), not to be pinned again
+    // each value once: a task or pool stays as finalized (3), not to be
+    // pinned again, and so does data (A_FIN), which may no longer be
+    // used by what still refers to it
     if (v.type==A_XTASK || v.type==A_TASKS) {
         o->pinned = 3;
     } else {
-        o->pinned = 0;
+        o->pinned = A_FIN;
         o->depth  = 0;
     }
     switch (v.type) {

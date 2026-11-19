@@ -15,7 +15,7 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 
 | # | Title | State |
 |---|---|---|
-| #1 | An outer place that holds a value of an inner block (case E): nothing new, a block `with x.k = v {...}` that resets to `nil`, or a `set :weak` | open, with the author. Recommended: nothing new. See below |
+| #1 | An outer place that holds a value of an inner block (case E) | decided 2026-11-19: `set :out place = value` (the place goes back to `nil` at the end of the block of the `set`), plus the state "finalized" of data, whose use is an error (`invalid access : finalized table pinned at f:N`). Implemented on `pin`, waits for the measurement on the ports and the merge. See below |
 | #2 | env-pico: the finalizers of a layer and of a font reset the current layer and the pencil's font, instead of the binding's own count | open, with the author (not asked to env-pico yet) |
 | #3 | A compile flag that removes the checks (the end-of-block finalization stays, it is semantics) | open: "not yet" (2026-11-17). Needed by the experiment of the paper (CLBG, with and without the checks) |
 | #4 | Choices of the implementation that the author did not confirm: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | open, with the author |
@@ -27,28 +27,33 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | confirmed with no anomaly: sdl-pingus, env-uv, ray-lessmilk, env-ray; the others have not reported |
 | #11 | The warning of a pin given away missed `until c, v` and `while c, v` (found by sdl-pingus: `pin r = await Game(path)` ... `until !again, r`, a live defect that only the replay of the demos reached) | done on `pin` (2026-11-18): the values after the condition are checked against the pins of the loop; test `warn-pin-02` |
 
-## #1, as it stands
+## #1, as decided
 
-- The cases left after the experiments of the contexts (sdl-flare
-  `exp-map-context`, ray-lessmilk `exp-screen-context`, env-pico): a task
-  outside the block cannot receive its context (the hero of Flare); a
-  container cannot hold what an inner entity pins (Lessmilk); a global
-  event carries an id instead of a value; the two C globals of pico (#2).
-- #1a, nothing new: ids, requests, and contexts, as today.
-- #1b, `with x.k = v { ... }`: a `set` checked against the block of the
-  `with`, plus a reset to `nil` at its end if the place still holds `v`.
-  Sound for the place, also with `par` (the form that restored the
-  previous value was not). No list in the runtime.
-- #1c, `set :weak x.k = v`: the place becomes `nil` when `v` is
-  finalized. Needs a list of places per value.
-- Both #1b and #1c let code outside the block name the value (`val es =
-  play.enemies`, then an await, then the block ends). To refuse that
-  name, the runtime must know whether who reads is inside the block of
-  the value, and depths do not say it (two sibling tasks use the same
-  numbers): each pinned value would record its owner, and a read would
-  walk the tasks.
-- The author (2026-11-18): an event with a pinned value makes sense
-  for the children, not outwards; the hierarchy should not be broken.
+- The path: the block form that restored the previous value was unsound
+  with `par`; a `:weak` set needed a list of places per value; a check
+  of who reads needed the owner in each pinned value; a context
+  (`atmos-context`) keeps the hierarchy but does not serve a reader
+  outside (the hero of Flare); the author's own form (the value born in
+  the field of the outer table, plus a `defer` that sets `nil`) works
+  today with no mechanism, but a reader outside keeps the value alive
+  and running, silently.
+- Decided: `set :out place = value` (the author chose `:out`; the other
+  names were `:weak`, `:lend`, `:export`, `with`, `val place = value`).
+  The place is a field or index of a table, or a variable of an outer
+  block (not a pin, not a whole `pub`). No check of an escape and no
+  adoption. At the end of the block of the `set`, the place goes back to
+  `nil` if it still refers to the value.
+- A name outside that outlives the block refers to a finalized value.
+  Data that its block finalized is now marked (`A_FIN`, one more value
+  of the state byte of the header, no new field): an index, a write, a
+  length, an iteration, a call, and a spawn into a finalized pool raise
+  `invalid access : finalized <type> pinned at f:N`. A dead task stays
+  as it was.
+- Measured: no cost (20 million table reads: 0.70 s before, 0.68 s
+  after; binary-trees and the write loop unchanged). Tests: `out-01`,
+  `out-02`, `out-err-01`.
+- Not done: `set :out pub = v` (the whole `pub`); #1d (the context) is
+  with `atmos-context`.
 
 ## Done on the branch `pin` (all in `main`)
 

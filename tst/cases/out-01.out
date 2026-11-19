@@ -1,0 +1,9 @@
+count	2
+hero	10	true	true
+map	ends
+enemy	1	aborted
+enemy	2	aborted
+after	nil	nil	nil
+hero	true	true	true
+false	invalid access : finalized table pinned at out-01.atm:31
+end

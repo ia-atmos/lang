@@ -170,6 +170,9 @@ AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {
         case A_TAB: {
+            if (a_is_fin(it)) {
+                return a_err_fin(it);
+            }
             uint32_t i = (uint32_t) p;
             AVal x, y;
             if (a_tab_next(A_TAB_OF(it), &i, &x, &y)) {

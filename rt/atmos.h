@@ -1109,6 +1109,36 @@ AStatus a_err_owned (AVal v);
 // with its type and the line of the pin that confines it.
 AStatus a_err_pinned (AVal v);
 
+// The state of data (a table, a function, a native value) that its block
+// finalized: it was cleared, and what still refers to it (a name
+// outside the block, which got it through a place written with `set
+// :out`) may not use it: "invalid access : finalized table pinned at
+// f:10".
+#define A_FIN 6
+
+AStatus a_err_fin (AVal v);
+
+static inline int a_is_fin (AVal v) {
+    return v.type>=A_TAB && v.u.o->pinned==A_FIN;
+}
+
+// set :out t.k = v: the field refers to the value with no check of an
+// escape and no adoption. At the end of the block of the `set`, the
+// field goes back to nil if it still refers to the value; so does a
+// variable.
+AStatus a_out_tab (AVal t, AVal k, AVal v);
+void a_out_tab_end (AVal t, AVal k, AVal v);
+
+static inline int a_same (AVal a, AVal b) {
+    return a.type==b.type && (a.type<A_STR || a.u.o==b.u.o);
+}
+
+static inline void a_out_var_end (AVal* dst, AVal v) {
+    if (v.type>=A_STR && a_same(*dst, v)) {
+        a_clr(dst);
+    }
+}
+
 // A pinned value may only be stored where it cannot outlive its pin
 // block: here, into something that lives at depth `d`.
 static inline AStatus a_chk_store (AVal v, int d) {
