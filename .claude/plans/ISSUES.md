@@ -101,3 +101,5 @@ started, no decision needed), **moved** (another session handles it),
 | 87 | The rules of `pin` declared stable by the author (`atmos-pin#9`): told to the 14 ports and the 6 language sessions | done 2026-11-19 (`TODO-pin.md`, section "Stable", on main 71f7d17) |
 | 88 | How `#58` was settled: the language side closed with no change, the adoption by the environments is not done | done 2026-11-19 (answered; the author asked for the adoption proposal, requested of `atmos-envs`, its #3) |
 | 89 | Configurable real and integer types for other systems (ESP32, Arduino) | moved: `atmos-float` (`261119-float.md`) |
+| 90 | Is the await over a pool with a condition (`#1`) still pending? | answered 2026-11-19: yes, in `atmos-pool`, waiting for the author's choice (`#1a` recommended) |
+| 91 | Explain `#60` (where the exception of `emit @t` goes) | answered 2026-11-19 with a program run on main; the decision stays `#60`, in `atmos-pool` |
