@@ -3,10 +3,10 @@
 Name of the mechanism: **structured memory**. Its construct is the
 **lexical pin** (`pin`), which gives a dynamic value a home: a block.
 
-> Status: outline. The rules in Section 4 were approved by the author on
-> 2026-11-15 and are implemented in `main` since `98ad03a` (compiler,
-> runtime, tests, manual). See `.claude/plans/261115-pin.md` and
-> `.claude/plans/261115-pin-migration.md`.
+> Status: outline. The rules in Section 4 were declared stable by the
+> author on 2026-11-19, as implemented in `main` at `8361f88` and described
+> in `doc/manual.md` ("Lexical Memory Management", "Pin", "Set"). History:
+> `.claude/plans/261115-pin.md`, `.claude/plans/TODO-pin.md`.
 
 ## Abstract
 
@@ -21,7 +21,8 @@ The block finalizes what it pins when it terminates or aborts, in reverse
 order and interleaved with `defer`, which reclaims cycles and releases
 resources at a known point of the program.
 A dynamic check, a block depth per value compared on every store, guarantees
-that no reference to a pinned value outlives its block.
+that no use of a pinned value outlives its block: a reference may outlive it
+only through an explicit `set :out`, and using it then is an error.
 A pinned value never leaves its block; a block gives away only values it has
 not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
@@ -76,7 +77,8 @@ case studies from six ports of libraries and games to Atmos.
 - Principle
     - every dynamic value belongs to a block
     - it may only be stored where its block lasts at least as long
-    - protects finalization order and forbids references to finalized values
+    - protects finalization order and forbids any use of a finalized value
+    - invariant: no use outlives the block; a reference may, only by `set :out`
     - same rules for tables, functions, natives, tasks, and pools
 - Two states
     - pinned: owned by a block, which finalizes it at its end
@@ -248,7 +250,7 @@ case studies from six ports of libraries and games to Atmos.
 - Natives from C: `a_nat_holds(child, parent)`, `a_own`
 - Errors: the type of the value and the line of its pin
 - Compile-time warning of a pin given away: in a given constructor, and in
-  `return`, `break`, `escape` with a literal tag
+  `return`, `break`, `escape` with a literal tag, `until c, v`, `while c, v`
 
 ## 9. Evaluation
 
@@ -257,7 +259,8 @@ case studies from six ports of libraries and games to Atmos.
     - IUP: tables in await patterns and events, modal dialogs
     - Flare: tables of modules, `pub` of the task itself
     - Lessmilk: variables captured by functions
-    - SNKRX: many short-lived entities and pools
+    - SNKRX: a map body that is a task in a world made by the caller;
+      a registry of springs (both by `set :out`)
     - libuv: accepted connections pinned in a loop, living in a pool
 - Friction found under the first rules, and how the new rules answer it
 - Workarounds removed in each port after the migration
@@ -282,7 +285,12 @@ case studies from six ports of libraries and games to Atmos.
     - conclusion: most of case E is per-scope state kept in globals
     - what remains: a task outside the block cannot receive its context; a
       container cannot hold what an inner entity pins; global events carry ids
-    - answered by `set :out` (2026-11-19)
+    - answered by `set :out` (2026-11-19): SNKRX's map body and springs,
+      Flare's hero keeping the enemy under the mouse, Lessmilk's registries
+    - alternatives the author rejected: a `with` block restoring the old value
+      (unsound with `par`); a `:weak` set; a check of who reads; a context
+      owned by the block; a field plus `defer` to nil (a reader outside keeps
+      the value alive and running, silently)
 - Cost of `set :out` and the mark of finalized data: none measured
   (2,000,000 pinned tables, 0.68 s against 0.72 s); 12 ports pass unchanged
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
