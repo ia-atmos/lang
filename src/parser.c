@@ -554,6 +554,10 @@ static Expr* parser_exit (Tk tk) {
     if (es->n==1 && es->v[0]->tag==E_LIST) {
         *es = es->v[0]->u.list.es;
     }
+    // abort t: a single task, as emit takes a single event
+    if (!strcmp(tk.str,"abort") && es->n>1) {
+        err(tk, "expected single argument");
+    }
     return call;
 }
 
@@ -992,8 +996,10 @@ static Patt* parser_await_blk (int blk) {
     int ok;
     if (b->kind == PT_VAL) {
         ETag t = b->e->tag;
+        // await t  await t.x  await ts@i: a name, as in a call
         ok = (t==E_TAG || t==E_CLK || t==E_STR || t==E_NAT || t==E_BOOL ||
-              t==E_TABLE || t==E_TAGGED || t==E_PROTO);
+              t==E_TABLE || t==E_TAGGED || t==E_PROTO ||
+              t==E_ACC || t==E_INDEX);
     } else {
         ok = (b->kind!=PT_AND && b->kind!=PT_OR && b->kind!=PT_NOT);
     }
@@ -1019,11 +1025,30 @@ static int parser_filters (Patt*** fs) {
 // 1_PRIM
 ///////////////////////////////////////////////////////////////////////////////
 
-// Tokens that can start a juxtaposed call argument: f "s", f [t], f :X.
-static int check_call_arg (void) {
+// A juxtaposed call argument, with no parentheses, is a single atom:
+//  - a constructor, as in Lua: f "s", f :X, f [t], f \{...}, f 1s
+//  - a name, a number, nil, true, false:  f x, f 10, f nil
+// A name may carry fields and indexes, but not a call: f t.x is f(t.x).
+// The argument binds tighter than any operator: f x + 1 is f(x) + 1.
+static int check_call_cons (void) {
     return check_str("[") || check_str("\\") ||
            check_tag(TK_STR) || check_tag(TK_TAG) ||
            check_tag(TK_NAT) || check_tag(TK_CLK);
+}
+
+static int check_call_name (void) {
+    static const char* LITS[] = { "nil", "true", "false", NULL };
+    if (check_tag(TK_NUM)) {
+        return 1;
+    }
+    if (check_tag(TK_ID)) {
+        return !in(EXITS, TK1.str);
+    }
+    return !is_lit(TK1.tag) && in(LITS, TK1.str);
+}
+
+static int check_call_arg (void) {
+    return check_call_cons() || check_call_name();
 }
 
 // @-qualifier, after '@': @(e) | @num | @id | @:tag.
@@ -1364,6 +1389,33 @@ static int is_prefix (Expr* e) {
     }
 }
 
+// t@(e)  t@1  t@i  t@#  t@+  t.id
+static Expr* parser_idx (Expr* e) {
+    Expr* ret;
+    if (accept_str("@")) {
+        ret = mk(E_INDEX, TK0);
+        ret->u.index.t = e;
+        ret->u.index.idx = parser_at();
+        if (ret->u.index.idx != NULL) {
+            ret->u.index.kind = IDX_EXPR;
+        } else if (accept_str("#")) {
+            ret->u.index.kind = IDX_LAST;
+        } else if (accept_str("+")) {
+            ret->u.index.kind = IDX_NEXT;
+        } else {
+            err(TK1, "expected name, number, or '('");
+        }
+    } else {
+        accept_str_err(".");
+        ret = mk(E_INDEX, TK0);
+        accept_field_err();
+        ret->u.index.t    = e;
+        ret->u.index.kind = IDX_EXPR;
+        ret->u.index.idx  = mk(E_STR, TK0);
+    }
+    return ret;
+}
+
 static Expr* parser_2_suf (Expr* pre) {
     int no = check_str("emit") || check_str("spawn") ||
              check_str("toggle") || check_str("thread");
@@ -1372,6 +1424,9 @@ static Expr* parser_2_suf (Expr* pre) {
         // it has taken the whole expression
         return e;
     }
+
+    // the last suffix was a juxtaposed argument: 1=constructor, 2=name
+    int jux = 0;
 
     while (1) {
         int ok = !no && is_prefix(e) && (
@@ -1383,38 +1438,43 @@ static Expr* parser_2_suf (Expr* pre) {
         }
 
         Expr* ret;
-        if (accept_str("@")) {
-            // t@(e)  t@1  t@i  t@#  t@+
-            ret = mk(E_INDEX, TK0);
-            ret->u.index.t = e;
-            ret->u.index.idx = parser_at();
-            if (ret->u.index.idx != NULL) {
-                ret->u.index.kind = IDX_EXPR;
-            } else if (accept_str("#")) {
-                ret->u.index.kind = IDX_LAST;
-            } else if (accept_str("+")) {
-                ret->u.index.kind = IDX_NEXT;
-            } else {
-                err(TK1, "expected name, number, or '('");
-            }
-        } else if (accept_str(".")) {
-            // t.id
-            ret = mk(E_INDEX, TK0);
-            accept_field_err();
-            ret->u.index.t    = e;
-            ret->u.index.kind = IDX_EXPR;
-            ret->u.index.idx  = mk(E_STR, TK0);
+        if (check_str("@") || check_str(".")) {
+            ret = parser_idx(e);
+            jux = 0;
+        } else if (jux==2 && (check_str("(") || check_call_arg())) {
+            // f g x  f g()  f x (y): f(g(x)) or f(g)(x)?
+            err(TK1, "invalid call : expected parentheses");
+            return NULL;
+        } else if (jux==1 && check_call_name()) {
+            // f "a" x
+            err(TK1, "invalid call : expected parentheses");
+            return NULL;
         } else if (accept_str("(")) {
             // f(...)
             ret = mk(E_CALL, TK0);
             ret->u.call.f  = e;
             ret->u.call.es = parser_list(")");
             accept_str_err(")");
-        } else if (check_call_arg()) {
+            jux = 0;
+        } else if (check_call_cons()) {
             // f "s"  f [t]  f :X
             ret = mk(E_CALL, TK1);
             ret->u.call.f = e;
             list_add(&ret->u.call.es, parser_1_prim());
+            jux = 1;
+        } else if (e->tag!=E_TAG && e->tag!=E_TAGGED && check_call_name()) {
+            // f x  f t.x  f 10  f nil
+            ret = mk(E_CALL, TK1);
+            ret->u.call.f = e;
+            int id = check_tag(TK_ID);
+            Expr* arg = parser_1_prim();
+            while (id && TK0.sep==TK1.sep &&
+                   (check_str("@") || check_str(".")))
+            {
+                arg = parser_idx(arg);
+            }
+            list_add(&ret->u.call.es, arg);
+            jux = 2;
         } else {
             return e;
         }

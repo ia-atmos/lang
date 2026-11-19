@@ -1,0 +1,6 @@
+(await (@ t "x"))
+(await (@ ts i))
+(await (spawn T x))
+(val a b = (list (await t) 10))
+(par :any { (await f) } { })
+(loop { (await (@ t "e")) })
