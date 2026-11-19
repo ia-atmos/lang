@@ -96,3 +96,4 @@ started, no decision needed), **moved** (another session handles it),
 | 82 | The measurement of the branch `args` 6ba7568 on the ports (`atmos-args#3`): 2100 of 2105 trees identical, 5 files of `env-pico` become an error (`key = f [...],` in a table) | done 2026-11-19 (sent to `atmos-args`; the design is its) |
 | 83 | The 25 sessions awakened a second time at the author's request | done 2026-11-19 |
 | 84 | The second measurement of `args`, at 823d843 (single-atom rule, `atmos-args#8`): trees and generated C identical for all 2105 files of the ports | done 2026-11-19 (sent to `atmos-args`; the merge waits for the author there) |
+| 85 | Three findings of the board build of `env-esp32`: no `nanosleep` on the host, a manual example that leaks, warnings of `-Wall` in the generated C | done 2026-11-19 (ee17162 `ATM_NO_CLOCK`, dc94c6f `a_set` in the manual, 7b0bf06 `A_UNUSED`) |
