@@ -110,10 +110,16 @@ case studies from six ports of libraries and games to Atmos.
       reaches only targets attached inside the block of the pin, checked by
       comparing two depths, with no walk of the tree of tasks
     - a captured variable belongs to the block that declares it
+    - exception, `set :out place = value`: an outer place refers to a pinned
+      value of the current block, with no check and no adoption, and is reset
+      to `nil` when the block of the `set` ends (case E)
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
     - a dropped unpinned value is finalized at once
     - table released, native closed, task aborted
+    - finalized data is marked: any later use raises
+      `invalid access : finalized <type> pinned at f:N`, so a reference that
+      outlived its scope is caught instead of reading an empty value
     - a value replaced in an owned place is retired: finalized when its last
       reference goes, at the latest at the end of the block (cycles broken)
 - Rule 5, result
@@ -276,6 +282,9 @@ case studies from six ports of libraries and games to Atmos.
     - conclusion: most of case E is per-scope state kept in globals
     - what remains: a task outside the block cannot receive its context; a
       container cannot hold what an inner entity pins; global events carry ids
+    - answered by `set :out` (2026-11-19)
+- Cost of `set :out` and the mark of finalized data: none measured
+  (2,000,000 pinned tables, 0.68 s against 0.72 s); 12 ports pass unchanged
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
   0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
 - Reports of the migration, so far (`261115-pin.md`)
@@ -321,8 +330,8 @@ case studies from six ports of libraries and games to Atmos.
 - A long-lived block (the main loop, a module) may accumulate such garbage
 - Cycles that leak: a cyclic value returned by a call and dropped without a
   name; a cyclic value given to a task of an outer pool, when that task ends
-- No way for an outer place to hold an inner value (case E); proposals
-  (`with x.k = v {...}`, a `:weak` set) are under discussion, not decided
+- `set :out` refers outward with no check: its place is reset only at the end
+  of the block, so a reader in between must not keep what it reads
 - A task cannot publish a value pinned in its body
 - An unpinned value outside its window is an error: `invalid pin : table named at f:N`
 - A native replaced in an owned place is closed when its last holder lets it go:
