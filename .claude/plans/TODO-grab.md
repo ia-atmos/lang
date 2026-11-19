@@ -26,6 +26,7 @@ the rule are `#1`..`#8`.
 | #12 | The summary pasted from another chat | reported |
 | #13 | Implement on the branch `grab` | after the decisions |
 | #14 | Tell `atmos-context` about resuming | after #5 |
+| #15 | `set :out` (branch `pin`, merged) as an alternative to a dynamic `grabbable` | noted, bears on #1 |
 
 ## Decisions waiting for the author (asked one at a time)
 
@@ -80,3 +81,9 @@ the rule are `#1`..`#8`.
   agrees (stack, SNKRX the clearest case) but misses the `grabbable` of
   his comment and the mouse leaking in the shop; told him. #1 asked
   again.
+- #15 `atmos-lang` (2026-11-19): `main` merged `pin`, with `set :out
+  place = value` (a place outside refers to a pinned value until the
+  block of the `set` ends). It gives a lexical way to hand a
+  `grabbable` to an inner block. It does not change the recommendation
+  of #1: `Options` is spawned by a task that does not hold the
+  `grabbable`, so the dynamic lookup is still what SNKRX needs.
