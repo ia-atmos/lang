@@ -817,7 +817,7 @@ static Blk blk_open (Unit* u) {
         out(u, "L[%d] = a_int(a_muts);", s);
         b.mu = xfmt("(uint32_t)L[%d].u.i", s);
     } else {
-        out(u, "uint32_t MU_%d = a_muts;", b.cl);
+        out(u, "uint32_t MU_%d A_UNUSED = a_muts;", b.cl);
         b.mu = xfmt("MU_%d", b.cl);
     }
     return b;
@@ -841,7 +841,7 @@ static const char* pin_ref (const char* slot) {
 // to `d` when it ends normally.
 static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     u->ind--;
-    out0(u, "CL_%d:", b.cl);
+    out0(u, "CL_%d: A_UNUSED;", b.cl);
     u->ind++;
 
     // an exit may arrive from a deeper block
@@ -968,7 +968,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
         gen_block(u, &mine[i].e->u.defer.blk->u.block.es, dst_none());
         u->indefer--;
         u->ind--;
-        out0(u, "CL_%d: ;", id);
+        out0(u, "CL_%d: A_UNUSED;", id);
         out(u, "}");
         out(u, "if (st == A_OK) {");
         out(u, "    st = st_%d;", id);
@@ -1851,7 +1851,7 @@ static void unit_emit (Unit* u, Buf* c) {
     // depth of the body block
     if (u->task) {
         buf_add(c, "    AVal* L = t->L;\n");
-        buf_add(c, "    AFunc* self = t->proto;\n");
+        buf_add(c, "    AFunc* self A_UNUSED = t->proto;\n");
         buf_add(c, "    int D = t->depth;\n");
     } else {
         buf_add(c, xfmt("    AVal L[%d];\n", n));
@@ -1865,7 +1865,7 @@ static void unit_emit (Unit* u, Buf* c) {
     buf_add(c, "    AStatus st = A_OK;\n");
     buf_add(c, "    int base = a_top;\n");
     for (int i=0; i<u->ncnts; i++) {
-        buf_add(c, xfmt("    int n%d = 0;\n", i));
+        buf_add(c, xfmt("    int n%d A_UNUSED = 0;\n", i));
     }
     if (u->task) {
         buf_add(c, "    switch (tr->pc) {\n");
