@@ -18,7 +18,7 @@ An item of another session is `session#N` (the compiler's list is
 |---|-------|-------|
 | #1 | Two environments in one program (`atmos-lang#57`): `atmos.env` | Decided 2026-11-17, done (`81986e7`, pilot uv+iup) |
 | #2 | One vocabulary of events, that of pico (`atmos-lang#46`) | Decided 2026-11-17, done (sdl, pico, ray) |
-| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open, recommended (A3 below) |
+| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open; pilot `sdl-pingus#15` passed 2026-11-19 (byte-identical trace; `SDL_ATM_FRAMES`, `_KEYS`, `PINGUS_ORDERS` no longer needed). Left: the environment still opens window and audio under `-t` (needs the test flag of `261117-envs-atmos.md`); switches read by `getenv` cannot be set by a test (must be parameters or settable globals). Not covered: polled input, pixels, C callbacks. Ready to put to the author |
 | #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
 | #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
 | #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |

@@ -87,5 +87,5 @@ started, no decision needed), **moved** (another session handles it),
 | 73 | Two branches with nothing outside `main`, to delete: `lang` `ccr-6e380402-ae5ue6`, `sdl-pingus` `ccr-d59a6b51-1a4san` | open: the author's to do (a session cannot delete a branch) |
 | 74 | No port has a `test` block: the twelve drive their tests from outside, with about ninety environment variables | open (remark; follows `#76`) |
 | 75 | What a `test` block cannot do alone: keep the environment from opening a window or sound, set polled input, read pixels, reach a C callback | open (the adoption is `atmos-envs`, its A3) |
-| 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | open: approved 2026-11-19, asked of `sdl-pingus` |
+| 76 | A pilot: one port moves one test from a variable to a `test` block, to measure what is left | done 2026-11-19 (`sdl-pingus#15`, its `tst/bomber-test.atm`): logic, time, frames, keys work with `test` and emits; left: window and audio under `-t` (`atmos-envs` A3), switches read with `getenv` |
 | 77 | Merge of `pin` b80bcd1 (`atmos-pin#11`: the warning of a pin given away sees `until c, v` and `while c, v`) | done 2026-11-19 (907fee9; approved by the author) |
