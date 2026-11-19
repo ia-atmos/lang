@@ -14,14 +14,15 @@ before it is under "Decided", by date.
 | #3 | atmos-lang measures the ports from the branch, before the merge | done 2026-11-19 by atmos-lang (branch 6ba7568 vs main 170ef73): 2105 files of 12 ports, 2100 identical trees, none changes silently, 5 become errors, all in env-pico, from 3 sites of `key = f [...],` inside a table constructor |
 | #4 | `abort t, 1` is accepted as a list; align with `emit` (one argument) | done on the branch (`expected single argument`) |
 | #5 | May the comma be optional in every list (`[1 2 3]`, `f(a b)`)? Asked by the author | moot after #8 |
-| #6 | Merge the branch `args` into main | waits for #9, the ports again, and the author's approval |
+| #6 | Merge the branch `args` into main | waits for #10 and the author's approval |
 | #7 | Inside `[...]` and `(...)`, does a comma end the juxtaposed arguments? `[a = f [..], b = 1]` breaks today on the branch (env-pico's style). Options: #7a keep (`[f x, y]` is `[f(x, y)]`, rewrite 3 sites as `f([..])`); #7b the comma belongs to the enclosing brackets (`[f x, y]` is `[f(x), y]`, `g(f x, y)` is `g(f(x), y)`), for calls and statements alike | moot after #8 |
 | #8 | The author reconsiders (2026-11-19, after #3): a list with no closing delimiter eats the commas around it, which is harmless only in escapes (`return`, `break`, `throw`, `escape`), after which nothing comes. Proposal: back to the Lua rule, tight, with one argument and no comma, extended to names and numbers (`f x`, `f 10`, `await t`); lists with no parentheses only in escapes. It replaces R3, the greedy constructors, `await E, P`, and #7 | decided 2026-11-19: yes. One atom (literal, name with fields and indexes, constructor), tight, no comma; `f g x`, `f g()` are errors; `#`, `!`, `-` do not start an argument; `await` follows; escapes keep their lists |
-| #9 | Reimplement the branch `args` for #8 (new commits on top) | in course |
+| #9 | Reimplement the branch `args` for #8 (new commits on top) | done at 823d843 (suite pass=982 fail=0, test-rt, test-env); locally 1051 files, no tree changes; not merged |
+| #10 | atmos-lang measures the ports again, against 823d843 | asked 2026-11-19; waiting for atmos-lang |
 
 ## Waiting for the author
 
-(nothing)
+- #6: approve the merge, after #10.
 
 ## Known, not done
 
