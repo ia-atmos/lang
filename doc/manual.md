@@ -771,6 +771,8 @@ The tags `:number.integer` and `:number.float` force one of them.
 
 In the code, `$x` refers to the Atmos variable `x`, which is a value of type
 `AVal` that can be read and assigned.
+An assignment goes through `a_set(&$x, v)`, which releases the value that the
+variable holds: a plain `$x = v` leaks a string or a table that is there.
 Only a variable can follow the `$`: what comes after its name is C, such that
 `$t.x` is the member `x` of the `AVal`, and not the field `x` of the table `t`,
 which must be read into a variable first.
@@ -807,7 +809,7 @@ Examples:
 val s = "hello"
 val n = `:number strlen(A_STR_OF($s)->s)`       ;; 5
 var x = 1
-`$x = a_int($x.u.i + 1);`               ;; x becomes 2
+`a_set(&$x, a_int($x.u.i + 1));`        ;; x becomes 2
 print(n, x)                             ;; --> 5, 2
 ```
 
