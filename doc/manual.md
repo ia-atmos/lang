@@ -945,6 +945,27 @@ print(p ?? :table)      ;; --> true
 print(p ?? :Pos)        ;; --> true
 ```
 
+Atmos has no classes or methods.
+To choose a function by the type of a value, keep the functions in a table
+indexed by tags, and index it with the tag of the value.
+The same holds for [tasks](#tasks):
+
+```
+pin AREA = []                               ;; tag -> function
+set AREA.Circle = func (s) { 3 * s.r * s.r }
+set AREA.Rect   = func (s) { s.w * s.h }
+
+func area (s) {
+    AREA@(s.tag)(s)                         ;; chooses by the tag
+}
+
+print(area(:Circle [r=1]))                  ;; --> 3
+print(area(:Rect [w=2, h=3]))               ;; --> 6
+```
+
+A new type adds its entry to the table, in its own file, with no change to
+`area`.
+
 See [Ambiguities](#ambiguities):
     `:X` ⏎ `[]` reads as two statements `:X ; []` (not constructor `:X []`).
 
