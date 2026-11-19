@@ -97,3 +97,4 @@ started, no decision needed), **moved** (another session handles it),
 | 83 | The 25 sessions awakened a second time at the author's request | done 2026-11-19 |
 | 84 | The second measurement of `args`, at 823d843 (single-atom rule, `atmos-args#8`): trees and generated C identical for all 2105 files of the ports | done 2026-11-19 (sent to `atmos-args`; the merge waits for the author there) |
 | 85 | Three findings of the board build of `env-esp32`: no `nanosleep` on the host, a manual example that leaks, warnings of `-Wall` in the generated C | done 2026-11-19 (ee17162 `ATM_NO_CLOCK`, dc94c6f `a_set` in the manual, 7b0bf06 `A_UNUSED`) |
+| 86 | Merge of `args` 823d843 (`atmos-args#6`: `f x`, `f t.x`, `f 10`, `await t`) | done 2026-11-19 (approved by the author in `atmos-args`, "Ok, lá"; suite passes after the merge) |
