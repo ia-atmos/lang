@@ -401,12 +401,6 @@ Atmos borrows much from Lua, and some differences are worth mentioning:
         - The same holds for `abort`, `emit`, `escape`, `skip`, `throw`,
           `until`, and `while`, which take their [arguments](#statement-arguments) with or
           without parenthesis.
-- Calls with no parenthesis:
-    - Lua: `f "s"` and `f {...}`, a single string or table, which binds
-      tighter than any operator
-    - Atmos: `f x, y`, a list of any expressions, which extends as far as
-      possible, like the arguments of `return`
-        - `f "a" ++ s` is `f("a" ++ s)`, and `f "a" "b"` is an error.
 - Method call:
     - Lua: `o:f()`, with the methods found through a metatable
     - Atmos: none, as it has no metatables: `m.f(o)` with a function of a
@@ -2313,33 +2307,19 @@ Atmos supports many formats to call functions:
 
 ```
 Expr : Expr `(´ Expr* `)´
-     | Expr Expr+       ;; arguments with no parenthesis
+     | Expr Expr ;; single constructor argument
+                 ;; (STR | TAG | `[´ | `\` | CLK | NAT)
 ```
 
 A call expects an expression of type [func](#function) and an optional list of
 expressions as arguments enclosed by parenthesis.
 
-The parenthesis are optional when there is at least one argument, which
-starts in the same line of the function: `f x, y` is the same as `f(x, y)`.
-The arguments with no parenthesis follow the rules for
-[statement arguments](#statement-arguments): they are a list of expressions
-separated by commas, which extends as far as possible.
-Therefore, `f x + 1, y` is `f(x + 1, y)`, `print f x` is `print(f(x))`, and
-`g(f x, y)` is `g(f(x, y))`.
-This departs from [Lua calls][lua-call], in which only a single string or
-table may go with no parenthesis, and binds tighter: `f "a" ++ s` is
-`f("a" ++ s)` in Atmos.
+Like in [Lua calls][lua-call], if there is a single
+[constructor](#types--values) argument, then the parenthesis are optional.
+This is valid for strings, tags, tables, lambdas, clocks, and native literals.
 
-Two tokens never start arguments with no parenthesis:
-
-- A `(` always opens the list of arguments: `f (a+1)*2` is `f(a+1) * 2`.
-- A `-` is always the binary operator: `f -x` is `f - x`.
-  To pass a negative value, use `f(-x)`.
-
-A function alone is a value, not a call: a call with no arguments requires
-the parenthesis, as in `f()`.
-
-The call formats are also valid for the statement `do`.
+The call formats are also valid for the statements `await`, `do`, and
+`tasks`.
 
 #### Statement Arguments
 
@@ -2357,8 +2337,7 @@ The statements `abort`, `break`, `emit`, `escape`, `return`, `skip`, `throw`,
   `return (f())` returns the first value of `f()`, while `return f()` returns
   all of them.
 
-The statements `abort` and `emit` expect a single argument: `abort t, 1` and
-`emit :X, 1` are errors.
+The statements `abort` and `emit` expect a single argument.
 The statement `skip` expects no arguments: `skip` and `skip()` are the same.
 
 Examples:
@@ -2370,16 +2349,11 @@ print(1,2,3)    ;; --> 1 2 3
 print "Hello"   ;; --> Hello
 print :ok       ;; --> ok
 type []         ;; :table
-print 1, 2, 3   ;; --> 1 2 3
-print type []   ;; --> table
 ```
 
 See [Ambiguities](#ambiguities):
-    `f` ⏎ `(x)` reads as two statements `f ; (x)` (not `f(x)`);
-    `f :X []` reads as `f(:X [])` (not `f(:X) []`);
-    `f x + 1` reads as `f(x + 1)` (not `f(x) + 1`);
-    `f (x) + 1` reads as `f(x) + 1` (not `f((x) + 1)`); and
-    `f -x` reads as `f - x` (not `f(-x)`).
+    `f` ⏎ `(x)` reads as two statements `f ; (x)` (not `f(x)`); and
+    `f :X []` reads as `f(:X [])` (not `f(:X) []`).
 
 [lua-call]: https://www.lua.org/manual/5.4/manual.html#3.4.10
 
@@ -2436,7 +2410,7 @@ Examples:
 <!-- exs/exp-16-parenthesis.atm -->
 
 ```
-(f '1') ++ '2'      ;; instead of f('1' ++ '2')
+f ('1' ++ '2')      ;; instead of (f '1') ++ '2'
 (1,2,3)             ;; multi-valued (1,2,3)
 ((1,2,3))           ;; single value 1
 ```
@@ -2454,7 +2428,7 @@ precedence priority (from higher to lower):
     - declaration:  `func` `val` (etc)
     - parenthesis:  `()`
 2. suffix:
-    - call:         `f()`
+    - call:         `f()` `f ""` `f []` `f \{}` `f @clk`
     - index:        `t@i` `t@(e)`
     - field:        `t.x`
     - tag:          `:X()` `:X []`
@@ -2468,9 +2442,6 @@ precedence priority (from higher to lower):
     - double pipe:  `v-->f` `f<--v`
 7. outer where:
     - where:        `v where {...}`
-
-A call with no parenthesis, as in `f x, y`, is not a suffix: its arguments
-are full expressions, which extend as far as possible.
 
 Prefix operations are right associative, all others are left associative.
 
@@ -2968,7 +2939,6 @@ Await : `await´ Patt
 Patt  : Bare | `<´ Full `>´                 ;; bare or full patterns
       | `(´ Expr `,´ Full `)´               ;; counted pattern
 Bare  : [`:any´ | `:all´] Expr [ Pred ]
-      | Expr `,´ Bare                       ;; counted pattern
       | Pred
 Full  : Full Pred                           ;; (5) lower precedence
       | Full `||´ Full                      ;; (4)
@@ -2985,16 +2955,11 @@ Pred  : (`until´ | `while´) Expr
 The bare form accepts one of the following atomic patterns, with an optional
 predicate:
 
-- a value or event to match (`:X`, `:X [v]`, `x`, `t.x`, `true`)
+- a value or event to match (`:X`, `:X [v]`, `(x)`, `true`)
 - a clock duration (`1h`)
-- a task to spawn (`T()`, `T x`)
+- a task to spawn (`T()`)
 - a pool (`:any ts`, `:all ts`)
 - a base-less predicate alone (`until c`)
-
-The bare pattern is a full expression, which extends as far as possible, like
-the [arguments of a statement](#statement-arguments): `await 20min + 1s`
-awaits the sum, and `await t` awaits the task in `t`, like `await(t)`.
-An expression that is a call spawns it: `await T x` is `await T(x)`.
 
 A predicate is an expression over the event, which is bound to `it`, or a
 function that receives the event.
@@ -3038,13 +3003,10 @@ the compiler rejects it with the error `invalid await : unexpected task`.
 The parentheses of a counted pattern are optional in the statements that are
 followed by a block, [watching](#watching) and [loop on](#loop):
 `watching 150, :tic {...}` and `loop on 35, :tic {...}`.
-The parentheses are also optional in a bare `await`, in which a comma
-separates the count from its pattern: `await 10, :frame` is
-`await(10, :frame)`.
-Therefore, an `await` in a list of values requires parentheses:
-`val a, b = (await :X), 10`.
-With no parentheses, `await :X, 10` is a count that is not a number, which
-the compiler rejects with the error `invalid await : expected number`.
+In this form, the count is a literal, a name with fields and indexes, or an
+expression in parentheses.
+The parentheses are mandatory in an `await`, where a comma separates the
+values of a list, as in `val a, b = await :X, 10`.
 
 An `await` is only valid in the body of a task, which includes the main chunk
 and [transparent tasks](#tasks).
@@ -3120,8 +3082,6 @@ await <:X until it.n==3>        ;; awaits :X until its field n equals 3
 await :X until it.n > 3         ;; no delimiters: `>` is the operator
 await(3, :X)                    ;; awakes on the third :X
 await(n, 1s)                    ;; awakes after `n` periods of 1s
-await 10, :frame                ;; awakes on the tenth :frame
-await t                         ;; awakes when the task `t` terminates
 await <(2, :X) || :Y>           ;; awakes on the second :X, or on :Y
 ```
 
@@ -3739,7 +3699,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
       | Expr `@´ (`#´ | `+´)                        ;; tip index t@# t@+
 
       | Expr `(´ Expr* `)´                          ;; call
-      | Expr Expr+                                  ;; call with no parenthesis
+      | Expr Expr                                   ;; single-constructor call
       | Expr (`<--` | `<-` | `->` | `-->` ) Expr    ;; pipe calls
 
       | `if´ Expr (Block | `=>´ Lambda)             ;; if block
@@ -3784,8 +3744,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
 At    : `@´ (`(´ Expr `)´ | NUM | ID)   ;; @-qualifier (index/key/pool/target)
 
 Patt  : Bare | `<´ Full `>´             ;; bare or full pattern
-Bare  : [`:any´|`:all´] Expr [Pred]     ;; bare: one expression + predicate
-      | Expr `,´ Bare                   ;; counted pattern
+Bare  : [`:any´|`:all´] Expr [Pred]     ;; bare: one primary + predicate
       | Pred                            ;; base-less predicate
 Full  : Full Pred                       ;; <> combinators, by precedence
       | Full `||´ Full
@@ -3812,20 +3771,13 @@ may surprise a naive reading:
 
 | #                 | case                  | what it is              | what it is **not**       |
 |-------------------|-----------------------|-------------------------|--------------------------|
-| [await](#await)   | `await 20min + 1s`    | `await(20min + 1s)`     | `(await 20min) + 1s`     |
-| [await](#await)   | `await :X, 10`        | error: expected number  | `(await :X), 10`         |
-| [await](#await)   | `await (x), y`        | `(await(x)), y`         | `await(x, y)`            |
+| [await](#await)   | `await 20min + 1s`    | `(await 20min) + 1s`    | `await(20min + 1s)`      |
 | [await](#await)   | `await P` ⏎ `until c` | `await P ; until c`     | `await<P until c>`       |
 | [await](#await)   | `<P until a > b>`     | error: use parenthesis  | `<P until (a > b)>`      |
 | [await](#await)   | `<P until a \|\| Q>`  | error: use parenthesis  | `<<P until a> \|\| Q>`   |
 | [table](#table)   | `:X` ⏎ `[]`           | `:X ; []`               | `:X []`                  |
 | [calls](#calls)   | `f` ⏎ `(x)`           | `f ; (x)`               | `f(x)`                   |
 | [calls](#calls)   | `f :X []`             | `f(:X [])`              | `f(:X) []`               |
-| [calls](#calls)   | `f x + 1`             | `f(x + 1)`              | `f(x) + 1`               |
-| [calls](#calls)   | `f (x) + 1`           | `f(x) + 1`              | `f((x) + 1)`             |
-| [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
-| [calls](#calls)   | `f g x`               | `f(g(x))`               | `f(g, x)`, `f(g)(x)`     |
-| [calls](#calls)   | `[f x, y]`            | `[f(x, y)]`             | `[f(x), y]`              |
 | [pipes](#pipes)   | `x<-y`                | `y(x)`                  | `x < (-y)`               |
 | [tasks](#tasks)   | `task` ⏎ `(x)`        | `task ; (x)`            | `task(x)`                |
 | [lambda](#lambda) | `\-`                  | `\(a,b){ a - b }`       | `\(a){ -a }`             |

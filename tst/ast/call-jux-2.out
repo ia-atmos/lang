@@ -1,6 +1,6 @@
-(call print (call f x))
-(call g (call f x y))
-[(call f x y)]
-(val a b = (call f x y))
-(call f x y)
-(call f (call g (call h x)))
+(++ (call f "a") s)
+(== (call type []) :table)
+(call (call f "a") "b")
+(call f (tag :X [1]))
+f
+x

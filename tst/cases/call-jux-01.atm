@@ -1,12 +1,14 @@
 func f (a, b) { a + (b || 0) }
 func g (x) { x * 2 }
-print f 1, 2
-print f g 3
-print g 3 + 1
-val a, b = f 10, 20
-print a, b
-print "a" ++ "b"
-print type [] == :table
-print [f 1, 2]
-print f (1)*2, 5
-print g(-1)
+val t = [x=10]
+print(g 3)
+print(g t.x)
+print(g 3 + 1)
+print(f(g 1, g 2))
+val a, b = g 10, g 20
+print(a, b)
+val u = [a = g 1, b = g 2]
+print(u.a, u.b)
+print "a"
+print 10
+print nil
