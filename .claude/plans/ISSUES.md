@@ -99,3 +99,4 @@ started, no decision needed), **moved** (another session handles it),
 | 85 | Three findings of the board build of `env-esp32`: no `nanosleep` on the host, a manual example that leaks, warnings of `-Wall` in the generated C | done 2026-11-19 (ee17162 `ATM_NO_CLOCK`, dc94c6f `a_set` in the manual, 7b0bf06 `A_UNUSED`) |
 | 86 | Merge of `args` 823d843 (`atmos-args#6`: `f x`, `f t.x`, `f 10`, `await t`) | done 2026-11-19 (approved by the author in `atmos-args`, "Ok, lá"; suite passes after the merge) |
 | 87 | The rules of `pin` declared stable by the author (`atmos-pin#9`): told to the 14 ports and the 6 language sessions | done 2026-11-19 (`TODO-pin.md`, section "Stable", on main 71f7d17) |
+| 88 | How `#58` was settled: the language side closed with no change, the adoption by the environments is not done | done 2026-11-19 (answered; the author asked for the adoption proposal, requested of `atmos-envs`, its #3) |
