@@ -23,9 +23,40 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #6 | sdl-snxkx: the second migration (pins given away) and the contacts sent only to the two tasks | waiting for its session. The experiment of the context is no longer needed: with `set :out w.tasks@(b) = task` in the body of each task, the world made by the caller keeps the map (answered with a tested program, 2026-11-19); `SHARED_SPRINGS` has the same direct form |
 | #7 | Known limits of the collection of cycles (leaks): a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | open, documented in the manual; no plan |
 | #8 | Remarks of the ports for the author: env-uv (a function that creates a handle and gives it away declares it with `val`, the weaker word; on a throw in the middle the handle is closed by the count, not by the block); Doom and env-uv (the same lines changed three times in three days: a change that breaks programs should say what migrates) | relayed on 2026-11-18, not answered |
-| #9 | Declare the rules stable again, and tell `paper-pin` and the ports | every decision of the rules is closed (#1, #4, #5); only #3 (the flag, "not yet") is open, and it changes no rule. Asked to the author, 2026-11-19 |
+| #9 | Declare the rules stable again, and tell `paper-pin` and the ports | done: the author declared the rules of `pin` stable on 2026-11-19, as they are in `main` `8361f88` (see "Stable" below). Told to `paper-pin` and, through `atmos-lang`, to the ports. The flag (#3) is outside: it changes no rule |
 | #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | confirmed with no anomaly: sdl-pingus, env-uv, ray-lessmilk, env-ray; the others have not reported |
 | #11 | The warning of a pin given away missed `until c, v` and `while c, v` (found by sdl-pingus: `pin r = await Game(path)` ... `until !again, r`, a live defect that only the replay of the demos reached) | done on `pin` (2026-11-18): the values after the condition are checked against the pins of the loop; test `warn-pin-02` |
+
+## Stable (2026-11-19)
+
+The author declared the rules of `pin` stable, as implemented in `main`
+at `8361f88` and described in `doc/manual.md` ("Lexical Memory
+Management", "Pin", "Set"). No project needs to expect another migration
+of the same lines. A later change that breaks programs says what
+migrates (the remark of Doom and env-uv, #8).
+
+- Two states: pinned (owned by a block) and unpinned, with a floor (what
+  it holds) and a ceiling (who names it). `pin` is optional: `val` and
+  `var` hold unpinned values, and `pin val` / `pin var` / a parameter
+  `pin x` / `pin func` own. A bare `pin` is `pin val`.
+- A store only goes where the block of the value lasts at least as long
+  as the place. A pinned value never leaves its block, not even as its
+  result. The pin is deep; a named value is adopted by a holder at the
+  block of its name or outside, and only referenced by one inside.
+- Reassigning an owned place retires the old value. The floor of an
+  unpinned value may rise while only its name refers to it. An
+  argument of a task that outlives its spawner has its ceiling at the
+  block that ends the task.
+- A cycle of unpinned values is broken at the end of the block of its
+  names (two known leaks, #7).
+- An event with a pinned value only reaches a target attached inside
+  the block of the pin. An emitted event is owned by the emit. A task
+  owns its `pub` and its final value. A native declares what it holds.
+  The `spawn` statement is the only implicit pin.
+- `set :out place = value`: a place outside refers to a value until the
+  block of the `set` ends. Finalized data may not be used (`invalid
+  access : finalized ...`).
+- Open, and no rule: the flag that removes the checks (#3).
 
 ## #1, as decided
 
