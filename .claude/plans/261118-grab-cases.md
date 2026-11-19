@@ -200,9 +200,39 @@ task adjust (c) {
 }
 ```
 
-Weak case: the grey look of a disabled dialog is IUP's and would be
-lost; the toolkit already does modality. Kept for the filter
-(`<!:action [h=cnv]>`).
+Revised (2026-11-19, from a summary the author pasted): not a weak
+case but the clearest statement of the need. The branch that awaits
+the dialog is deaf by sequence alone; its siblings (undo, redo) are
+not, and only IUP's `ACTIVE` silences them. Without that resource of
+the toolkit, the program would wrap the siblings in a `toggle on`
+driven from inside one of them, which breaks the structure. A `grab`
+says "while I await this, my siblings do not react", from the branch
+that awaits, with no cooperation from the others. The canvas must
+still be redrawn, so the grab needs a filter (`<!:action [h=cnv]>`),
+which supports #2. Written at the branch, the grab is lexically inside
+the `par`:
+
+```
+grabbable true {
+    par {
+        loop e on :button [h=cnv] {
+            ...
+            grab <!:action [h=cnv]> {
+                await adjust(c)
+            }
+        }
+    } with {
+        loop on :action [h=undo] { ... }    ;; silenced while adjusting
+    } with {
+        loop on :action [h=redo] { ... }
+    } with {
+        loop on :action [h=cnv] { draw() }  ;; passes the filter
+    }
+}
+```
+
+The grey look of a disabled dialog stays IUP's: `iup.set(dlg, "ACTIVE",
+...)` may remain for the looks only.
 
 ## 5. env-ray: pause of the classics (`classics/classic.atm`)
 
