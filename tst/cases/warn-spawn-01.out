@@ -1,0 +1,8 @@
+warn-spawn-01.atm : line 9 : near 'spawn' : warning : task aborted at end of block (a pin that ends its block)
+warn-spawn-01.atm : line 20 : near 'spawn' : warning : task aborted at end of block (a pin that ends its block)
+warn-spawn-01.atm : line 23 : near 'spawn' : warning : task aborted at end of block (a pin that ends its block)
+0
+1
+x
+y
+end

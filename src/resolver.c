@@ -438,10 +438,60 @@ static void res_block (Expr* e, int isvoid) {
 // declared after the spawn.
 static Expr** SPAWNS  = NULL;
 static int    NSPAWNS = 0;
+// The spawn is the value of a `pin` that ends its block: a warning.
+static int*   SPAWNS_PIN = NULL;
+
+static void spawns_add_x (Expr* e, int pin) {
+    SPAWNS = realloc(SPAWNS, (NSPAWNS+1) * sizeof(Expr*));
+    SPAWNS_PIN = realloc(SPAWNS_PIN, (NSPAWNS+1) * sizeof(int));
+    SPAWNS[NSPAWNS] = e;
+    SPAWNS_PIN[NSPAWNS++] = pin;
+}
 
 static void spawns_add (Expr* e) {
-    SPAWNS = realloc(SPAWNS, (NSPAWNS+1) * sizeof(Expr*));
-    SPAWNS[NSPAWNS++] = e;
+    spawns_add_x(e, 0);
+}
+
+// The spawns that give the value of `e`: itself, or the last expression
+// of the branches of an `if`, of a `do`, of a block.
+static void spawns_of (Expr* e) {
+    if (e == NULL) {
+        return;
+    }
+    switch (e->tag) {
+        case E_PARENS:
+            spawns_of(e->u.parens.e);
+            break;
+        case E_SPAWN:
+            if (e->u.spawn.pool == NULL) {
+                spawns_add_x(e, 1);
+            }
+            break;
+        case E_SPAWN_BLK:
+            spawns_add_x(e, 1);
+            break;
+        case E_DO:
+            spawns_of(e->u.xdo.blk);
+            break;
+        case E_BLOCK:
+            if (e->u.block.es.n > 0) {
+                spawns_of(e->u.block.es.v[e->u.block.es.n-1]);
+            }
+            break;
+        case E_PROTO:
+            // a lambda of an if/ifs/match, expanded in place
+            if (e->u.proto.inl) {
+                spawns_of(e->u.proto.blk);
+            }
+            break;
+        case E_IFS:
+            for (int i=0; i<e->u.ifs.n; i++) {
+                spawns_of(e->u.ifs.cases[i].body);
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 static int awaits (Expr* e);
@@ -552,8 +602,13 @@ static void chk_spawns (void) {
             blk = (p == NULL) ? NULL : p->u.proto.blk;
         }
         if (awaits(blk)) {
-            err(e->tk,
-                "invalid spawn : task aborted at end of block");
+            if (SPAWNS_PIN[i]) {
+                warn(e->tk, "task aborted at end of block "
+                    "(a pin that ends its block)");
+            } else {
+                err(e->tk,
+                    "invalid spawn : task aborted at end of block");
+            }
         }
     }
 }
@@ -781,6 +836,11 @@ static void res (Expr* e) {
                 e->u.dcl.set->tag==E_PROTO)
             {
                 e->vars[0]->def = e->u.dcl.set;
+            }
+            // pin t = spawn T(), as the last statement of its block: the
+            // task is aborted at once, as a spawn in that position
+            if (kind==V_PIN && isvoid && tail) {
+                spawns_of(e->u.dcl.set);
             }
             break;
         }

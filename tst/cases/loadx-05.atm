@@ -1,0 +1,11 @@
+;; X.loadx under the options of the numbers: the names hold what X.load
+;; reads, in definitions, in included files, and after a dump
+val s = "N = 2147483647 M = -2147483647 R = 0.1 C = 1h30min H = 0x10\n[N, M, R, C, H, 1.5, 250ms]"
+val v = X.loadx(s)
+X.print(v)
+print(type(v@0), type(v@2), v@0 == 2147483647, v@2 == 0.1, v@3 == 1h30min, v@6 == 250ms)
+print(X.eq(v, X.load("[2147483647, -2147483647, 0.1, 1h30min, 0x10, 1.5, 250ms]")))
+print(X.eq(X.loadx("inc/loadx", "include 'nums.atm'\nV"), v))
+print(X.eq(X.load(X.dump(v)), v), X.dump(v))
+print(catch true { X.loadx("N = 3000000000\nN") })
+print(catch true { X.load("3000000000") })

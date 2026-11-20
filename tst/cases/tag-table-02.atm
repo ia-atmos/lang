@@ -1,0 +1,26 @@
+;; a table of tasks by tag: the behavior of a value is chosen by its tag
+pin ACT = []                                ;; tag -> task
+task Walker (p) {
+    await :step
+    print("walk", p.x)
+    :faller
+}
+task Faller (p) {
+    await :step
+    print("fall", p.x)
+    :done
+}
+set ACT.walker = Walker
+set ACT.faller = Faller
+
+spawn {
+    pin p = [x=10]
+    var act = :walker
+    loop {
+        set act = await ACT@(act)(p)        ;; the next action
+        until act == :done
+    }
+    print("done")
+}
+emit :step
+emit :step

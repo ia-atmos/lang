@@ -1,3 +1,4 @@
+task-06.atm : line 10 : near 'spawn' : warning : task aborted at end of block (a pin that ends its block)
 aborted 3
 aborted 2
 aborted 1
