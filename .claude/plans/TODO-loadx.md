@@ -25,11 +25,11 @@ the design.
 | 6 | A name that uses an earlier name; the errors (undefined, twice, after the value) | **decided (2026-11-20, #6a)**: a name sees only the names defined before it (so no recursion); errors with the line: `undefined name : A`, `name already defined : A`, and `expected value` when there is no final value |
 | 7 | Names given from the program: `X.loadx(s, [TITLE=...])` | **decided (2026-11-20, #7a)**: not now; `X.loadx(s)` takes the text only |
 | 8 | The spread in the language too (`[t...]`), with `atmos-args` | closed with #4: nothing for the language |
-| 9 | `X.dump` of a value read with names: written expanded | part of #10 |
-| 10 | Approval of the whole design, to implement on the branch `loadx` | asked |
-| 11 | No limit on the expanded size (`A=[1,1]`, `B=[A,A]`, ...): `X.loadx` is for texts the program trusts, `X.load` for the others | part of #10 |
+| 9 | `X.dump` of a value read with names: written expanded | approved with #10 |
+| 10 | Approval of the whole design, to implement on the branch `loadx` | **approved (2026-11-20)**; implemented on the branch `loadx` |
+| 11 | No limit on the expanded size (`A=[1,1]`, `B=[A,A]`, ...): `X.loadx` is for texts the program trusts, `X.load` for the others | approved with #10 |
 
-## The design, as put to the author in #10
+## The design, as approved in #10
 
 ```
 Text  : { ID `=´ Value } Value
@@ -47,3 +47,18 @@ Value : (as in X.load) | ID
 - A name sees the names defined before it. Errors, with the line:
   `undefined name : A`, `name already defined : A`, `expected value`.
 - `X.dump` does not change: a value read with names is written expanded.
+| 12 | Merge of the branch `loadx` into `main` | asked |
+
+## State (2026-11-20)
+
+- Branch `loadx`, three commits over `main`: `rt/lload.c` (the loader),
+  `tst/cases/loadx-01` (with `inc/slides.atm`), and the manual ("Load
+  with Names") with one line in the README.
+- `make test` with ASAN passes on the branch: rt, lex 32, ast 90, cases
+  422, golden 443, env 1, no failure.
+- `X.load` reads and rejects the same texts as before (its test did not
+  change), so no measurement on the ports was asked.
+- A value nested through names obeys the same limit of 200 nested
+  tables (`too many nested tables`).
+- `pico-slides` was told the final syntax and semantics, and that there
+  is no spread.
