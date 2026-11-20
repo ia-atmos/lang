@@ -1,0 +1,119 @@
+;; (A) as the port: one function, the class tested inside. `s` is the
+;; badguy (`cls`, `b` and `pub` of the original in one table), `o` is
+;; the other object, `w` is the world.
+func collision (s, o, bits, w) {
+    if (s.kind == :iceblock) && (s.ice == :grabbed) {
+        return HIT.FORCE
+    }
+    if !s.active {
+        return HIT.ABORT
+    }
+    if s.grabbed {
+        return HIT.FORCE
+    }
+    if o.kind == :badguy {
+        if o.active && o.moving {
+            if s.kind == :iceblock {
+                match s.ice {
+                    :flat   => return HIT.FORCE
+                    :waking => return HIT.FORCE
+                    :kicked => {
+                        kill_other(o)
+                        return HIT.FORCE
+                    }
+                    else => nil     ;; as a walking badguy, below
+                }
+            }
+            if s.kind == :stalactite {
+                ifs {
+                    s.st == :squished => return HIT.ABORT
+                    o.cls == :stalactite => return HIT.FORCE
+                    s.st != :falling => return HIT.FORCE
+                    else => {
+                        if o.freezable {
+                            log("freeze")
+                        } else {
+                            kill_other(o)
+                        }
+                        return HIT.FORCE
+                    }
+                }
+            }
+            if s.kind == :jumpy {
+                return jumpy_hit(s, bits)
+            }
+            if s.kind == :flying {
+                return HIT.FORCE
+            }
+            if s.kind == :bouncing {
+                if (((bits & HIT.LEFT) != 0) && (s.dir == DIR.LEFT)) ||
+                   (((bits & HIT.RIGHT) != 0) && (s.dir == DIR.RIGHT))
+                {
+                    turn_around(s)
+                } else {
+                    collision_solid(s)
+                }
+                return HIT.CONTINUE
+            }
+            if s.sleep != :walking {
+                return HIT.FORCE
+            }
+            if (bits & HIT.TOP) != 0 {
+                return HIT.FORCE
+            }
+            if (((bits & HIT.LEFT) != 0) && (s.dir == DIR.LEFT)) ||
+               (((bits & HIT.RIGHT) != 0) && (s.dir == DIR.RIGHT))
+            {
+                turn_around(s)
+            }
+            return HIT.CONTINUE
+        }
+    }
+    if o.kind == :player {
+        if w.above {
+            if w.stone {
+                kill_fall(s)
+                return HIT.FORCE
+            }
+            if s.kind == :iceblock {
+                ice_squished(s)
+                return HIT.FORCE
+            }
+            if s.squish {
+                set_action(s, "squished-" ++ s.dir)
+                if s.kind == :flying {
+                    flying_fall(s)
+                }
+                kill_squished(s)
+                return HIT.FORCE
+            }
+        }
+        if (s.kind == :iceblock) && ((s.ice == :waking) || (s.ice == :flat)) && (s.state == BG.ACTIVE) {
+            if (bits & HIT.LEFT) != 0 {
+                set_dir(s, DIR.RIGHT)
+                player_kick()
+                ice_state(s, :kicked)
+                return HIT.FORCE
+            }
+            if (bits & HIT.RIGHT) != 0 {
+                set_dir(s, DIR.LEFT)
+                player_kick()
+                ice_state(s, :kicked)
+                return HIT.FORCE
+            }
+        }
+        if s.kind == :stalactite {
+            if s.st != :squished {
+                player_kill()
+            }
+            return HIT.FORCE
+        }
+        if w.invincible {
+            kill_fall(s)
+            return HIT.ABORT
+        }
+        player_kill()
+        return HIT.FORCE
+    }
+    HIT.FORCE
+}

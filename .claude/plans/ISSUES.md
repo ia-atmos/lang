@@ -17,7 +17,7 @@ started, no decision needed), **moved** (another session handles it),
 | 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
-| 6 | The event of termination of transparent blocks | open (recommended: remove). Tried on 2026-11-20: dropping the event alone breaks 7 cases (`par :all`, `toggle`, `return` of a block wait on it), so it needs the wait of `par` redone first; not prepared |
+| 6 | The event of termination of transparent blocks | moved 2026-11-20: `atmos-blocks` (`261120-blocks.md`); the plain removal breaks 7 cases, since the wait of a `par` rides on the event |
 | 7 | Iterating a tagged table gives the field `tag` | closed: kept, as the reference |
 | 8 | `await x` needs `await(x)`; `loop n {}` is not a counted loop | closed: became #31 |
 | 9 | Indexing a string is an error (the reference gives `nil`) | closed: kept |
@@ -115,3 +115,5 @@ started, no decision needed), **moved** (another session handles it),
 | 101 | The frame loop of `sdl-snxkx` about 12% slower since the ceiling of 2026-11-17: `a_unname_x` called for every slot of a block at the end of each step | done 2026-11-20 by `atmos-pin` (#14, main 23a063e): the slots are tested inline |
 | 102 | `set :out` written in a function or an `if` is cleared when that block ends, silently (`atmos-pin#16`); the alternative, the place lasts until the value ends, is on the branch `pin-out` (8eb364d) | open: the author's, in `atmos-pin` |
 | 103 | The command line of the language (asked by the author) | moved: `atmos-cli` (`261120-cli.md`) |
+| 104 | Explain `find` / `filter` of `atmos-pool` | answered 2026-11-20 |
+| 105 | The measurement of `float` 1bb1edf (the variables renamed: `ATMOS_FLOAT`, `ATMOS_INTEGER`, `ATMOS_CLOCK`): the default build is untouched (2197 files); `sdl-tux` (three scripts) and `env-esp32` (its Makefile) set the old names and must change at the merge | done 2026-11-20 (sent to `atmos-float`; the merge is asked there) |

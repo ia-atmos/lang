@@ -1,0 +1,21 @@
+;; A harness for `collision` of sdl-tux/game/badguy.atm (dcd65d8): the
+;; world and the actions are stubs that log what was done.
+pin HIT = [FORCE="force", ABORT="abort", CONTINUE="continue", LEFT=1, RIGHT=2, TOP=4, BOTTOM=8]
+pin DIR = [LEFT="left", RIGHT="right"]
+pin BG  = [ACTIVE=2]
+pin LOG = [s=""]
+func log (x) { set LOG.s = LOG.s ++ x ++ " " }
+
+func kill_fall (s)        { log("kill_fall") }
+func kill_squished (s)    { log("kill_squished") }
+func ice_squished (s)     { log("ice_squished") }
+func ice_state (s, st)    { log("ice:" ++ st) }
+func set_dir (s, d)       { log("dir:" ++ d) }
+func set_action (s, a)    { log("action:" ++ a) }
+func turn_around (s)      { log("turn") }
+func collision_solid (s)  { log("solid") }
+func jumpy_hit (s, bits)  { log("jumpy_hit") ; HIT.CONTINUE }
+func player_kick ()       { log("kick") }
+func player_kill ()       { log("kill_player") }
+func kill_other (o)       { log("kill_other") }
+func flying_fall (s)      { log("gravity") }
