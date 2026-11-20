@@ -727,7 +727,8 @@ A `number` literal starts with a digit and is followed by digits, letters, and
 dots (`.`).
 
 A `clock` duration literal is a straight sequence of numbers and time units
-(e.g. `1min30s`), which is converted into a number in microseconds.
+(e.g. `1min30s`), which is converted into a number in microseconds (or in
+milliseconds, see [Types](#types--values)).
 
 A `string` literal is a sequence of characters enclosed by an odd number
 of matching double (`"`) or single (`'`) quotes.
@@ -895,9 +896,24 @@ In either unit, a clock is an integer, or a real if it has a fraction of the
 unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
 integer is a compile error: with integers of 32 bits, a clock holds up to 35
 minutes in microseconds, and up to 24 days in milliseconds.
+A program that computes with time as a number should use a clock as the unit,
+which is right in every build: `t / 1s` is a time in seconds, and `2 * 1ms` is
+two milliseconds.
+A bare number is not: `t / 1000000` is wrong in milliseconds, and
+`t * 1000000` overflows with integers of 32 bits.
+
+With integers of 32 bits, `os.time()` wraps in the year 2038.
+As with 64 bits, the least integer has no literal (`-2147483648` is the
+negation of a real), and is written as `-2147483647 - 1`.
+
 The environment of a program must be built with the same options.
-The runtime is built once for each combination of the options, when a program
-first asks for it.
+
+Only the runtime of the default options is built with the compiler.
+The runtime of another combination is built once, when a program first asks for
+it, which requires `make`, the sources of the runtime, and permission to write
+to the directory `build/` of the compiler.
+Otherwise, the compiler shows the command that builds it
+(`make -C <dir> build/libatmos-i32.a`), to be run by who has the permission.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 

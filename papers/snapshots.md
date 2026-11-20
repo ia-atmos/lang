@@ -19,6 +19,7 @@ title above is a placeholder. Alternative titles:
 > implemented or measured: the sketches were not compiled, and no port
 > follows the architecture yet. What waits for the author and for other
 > sessions is in `.claude/plans/TODO-paper-snapshots.md`.
+> Draft text of Sections 3 and 9: `papers/snapshots-draft.md`.
 
 ## Abstract
 
@@ -102,9 +103,13 @@ state, and case studies.
     - resume: load the last snapshot, spawn, apply the commands after it
     - go to an instant: the nearest snapshot before it, then the commands
     - backwards at a speed: a sequence of such jumps, with a cache
-- A small example: notes on a board
+- A small example: notes on a board (`papers/snapshots/board.atm`,
+  compiled and run on `main` on 2026-11-20; `test.sh` checks it)
     - a note is a row; a drag is disposable; the drop is `:cmd.move`
     - one task applies commands and writes the journal
+    - the program checks the claims: resume, any instant, R6, and the
+      hidden-state test of Section 9, which finds a note that keeps
+      state in a local
 - Figure: the table, the applier, the tasks, the journal
 
 ## 4. The Rules
@@ -237,8 +242,12 @@ state, and case studies.
 
 - The risk: a local variable that the table does not know
 - The test
-    - at any point: dump, abort all, load, spawn
-    - the same commands must give the same table afterwards
+    - at a point between two gestures: dump, abort all, load, spawn
+    - the same input must give the same table afterwards
+    - not at any point: a cut in the middle of a gesture loses it, by
+      design, and the input after the cut means something else (found
+      by the example, 2026-11-20)
+    - it finds only the hidden state that the recorded input exercises
 - Automatic under determinism: any recorded run is a test
 - What a compiler could check
     - writes to the table outside the applier
@@ -407,28 +416,60 @@ state, and case studies.
           plus a list of events (sc2reader documentation)
     - the lesson for us: a journal is tied to the version of the code
       (Section 10, Versions)
-- Event sourcing and CQRS
+- Event sourcing (Fowler 2005, martinfowler.com/eaaDev/EventSourcing.html,
+  read on 2026-11-20) and CQRS (Fowler 2011, after Greg Young)
+    - "Complete Rebuild", "Temporal Query" (the state at any point,
+      rerunning the events up to it), and "Event Replay" (a wrong or
+      late event: reverse and replay): our resume, go to an instant,
+      and Section 8
+    - its open problems are ours: external queries (the exchange rate
+      of the day of the event), external updates, and code changes
     - records facts; ours records intentions, and needs determinism
 - Command and Memento patterns: the two parts, not the architecture
-- The Elm architecture and Redux
-    - one state, actions, time travel
+- The Elm architecture and Redux (guide.elm-lang.org/architecture,
+  redux.js.org "Three Principles", read on 2026-11-20)
+    - Elm: model, view, update from messages
+    - Redux: "single source of truth" in one tree; "the only way to
+      change the state is to emit an action ... an intent"; reducers are
+      pure functions; changes "happen one by one in a strict order"
+    - time travel: claimed for both, not yet read in a primary source
+      (the Elm page is rendered by script)
     - the view is a pure function; our tasks have a life of their own
-- Replicated state machines: Raft
-    - a log of commands, snapshots to compact it
+- Replicated state machines: Raft (Ongaro and Ousterhout 2014,
+  raft.github.io/raft.pdf, Section 7, read on 2026-11-20)
+    - "Snapshotting is the simplest approach to compaction": the whole
+      state to stable storage, and the log up to it is discarded; a
+      leader sends a snapshot to a follower that lags (InstallSnapshot)
     - a fixed set of members, an order that is final
-- Optimistic replication: Bayou, Time Warp
-    - tentative writes, undone and applied again when the order settles
-    - the closest to Section 8
+- Optimistic replication: Bayou (Terry et al., SOSP 1995, read on
+  2026-11-20); Time Warp (Jefferson 1985, not read)
+    - Bayou: servers apply writes at once, and "must be able to undo the
+      effects of some previous tentative execution of a Write operation
+      and reapply it in a different order"; an Undo Log rolls back to
+      the first write inserted, then the following writes run again
+    - two states of a write, tentative and committed; a write is
+      "stable" when the writes before it are fixed; commit by a primary
+      server
+    - each write carries a dependency check and a merge procedure,
+      deterministic, written by the application
+    - the closest to Section 8: our reordering is Bayou's, with a
+      snapshot instead of an Undo Log, a rejection by the table instead
+      of a merge procedure, and a consensus instead of a primary; its
+      tentative and stable are our open #2b
 - Blockchains and smart contracts
     - a state machine over a consensus, with reorganizations of the chain
     - ours: a whole reactive program, not a contract, and no currency
-- CRDTs and local-first software
+- CRDTs and local-first software (Shapiro et al. 2011, not read: the
+  report would not download)
     - commands that commute, so that the order does not matter
     - the alternative we do not take: it constrains the data, ours the
       order
 - Deterministic lockstep and replays in games; rollback netcode
     - records raw input, not commands
-- Record and replay debugging: rr, QEMU, TARDIS
+- Record and replay debugging: rr (O'Callahan et al., USENIX ATC
+  2017, arXiv 1705.05937, read on 2026-11-20), QEMU, TARDIS
+    - rr records unmodified user programs on stock Linux, for reverse
+      debugging and hard failures
     - machine level; no separation of what matters
 - Snapshots of processes and continuations
     - the way we do not take
