@@ -1,4 +1,5 @@
 other
 ==> ERROR:
+ |  par-err-02.atm:2 (await)
  v  par-err-02.atm:4 (throw)
 ==> E, 1

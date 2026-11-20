@@ -1,0 +1,6 @@
+;; a dot belongs to a number only before a digit
+val t = [[x=1],[x=2]]
+print(t@0.x, t@1.x)
+print(1.5, 0x1.8p1, 2.5e-1, 1e3, 0xFF, 10.25, 1.5e2)
+val n = 3
+print(t@(n-2).x)
