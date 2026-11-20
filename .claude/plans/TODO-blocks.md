@@ -49,4 +49,13 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 - `lang` (merged in `61979ce`): `a_resumed` records the `(await)` line
   of a trace on `R_EXIT`, on the path of an error leaving a branch of a
   `par`.
-- `pool`: changes `a_emit` (told by `atmos-lang`). `grab`: not told yet.
+- `pool`: changes `a_emit` (told by `atmos-lang`). 
+- `grab` (`ad74bc3`, told by `atmos-grab` on 2026-11-20): does not
+  touch `trail_end` nor the wake-up of a `par`. It hooks `trail_off`
+  (`grab_off`), wraps `emit_trail` (capture conditions `cap_out`,
+  `cap_skip` in `emit_kids` and `emit_node`), adds `a_trail_grab`. A
+  grab trail is an ordinary transparent block: it ends through
+  `trail_end` and its parent awaits it with `a_await_trails(tr, id,
+  1)`, so it also depends on the wake-up of the waiting trail. Tell
+  `atmos-grab` when the way a transparent trail ends changes; whoever
+  merges second rebases.
