@@ -1,0 +1,10 @@
+screen	a
+outside	a
+screen	esc
+outside	esc
+modal	b
+outside	b
+modal	esc
+outside	esc
+screen	c
+outside	c

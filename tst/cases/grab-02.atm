@@ -1,0 +1,21 @@
+;; #2: patterns in both; an event is captured if it matches the
+;; grabbable's and the grab's: `<!:draw>` lets :draw pass, as
+;; `toggle ... with :draw`, and the grabbable only lends :key and :draw
+spawn {
+    grabbable <:key || :draw> {
+        par {
+            loop e on true {
+                print("behind", e)
+            }
+        } with {
+            grab <!:draw> {
+                loop e on true {
+                    print("modal", e)
+                }
+            }
+        }
+    }
+}
+emit :key       ;; captured
+emit :draw      ;; the grab lets it pass
+emit :tick      ;; the grabbable does not lend it
