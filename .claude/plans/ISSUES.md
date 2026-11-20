@@ -118,3 +118,5 @@ started, no decision needed), **moved** (another session handles it),
 | 104 | Explain `find` / `filter` of `atmos-pool` | answered 2026-11-20 |
 | 105 | The measurement of `float` 1bb1edf (the variables renamed: `ATMOS_FLOAT`, `ATMOS_INTEGER`, `ATMOS_CLOCK`): the default build is untouched (2197 files); `sdl-tux` (three scripts) and `env-esp32` (its Makefile) set the old names and must change at the merge | done 2026-11-20 (sent to `atmos-float`; the merge is asked there) |
 | 106 | A library for iterables, instead of `find`/`filter` as globals; iterators, loops and functions to be organized (asked by the author) | moved: `atmos-iter` (`261120-iter.md`) |
+| 107 | Archive `atmos-args` (asked by the author in it) | done 2026-11-20: checked in its transcript, all closed, branch equal to main |
+| 108 | The C names renamed too on `float` 8fc3b85 (`A_TIME_US` to `A_CLOCK_US`, `AReal` to `AFloat`, the `-D` macros): seven repositories have lines that would fail to build (env-ray, env-pico, env-sdl, env-iup, env-uv, env-esp32, and sdl-tux by its variable) | open: listed to `atmos-float`; the merge and the order of the renames are the author's |
