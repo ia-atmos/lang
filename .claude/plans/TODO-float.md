@@ -16,17 +16,17 @@ Last update: 2026-11-19.
 | `#2` | How the types are configured | Decided 2026-11-20 (`#2a`): two independent options with fixed sizes, `ATMOS_REAL=double\|float` and `ATMOS_INT=64\|32`. On `main` (692af43) |
 | `#3` | The clock under integers of 32 bits (a clock is a number of microseconds: 2^31 us is 35 min) | Decided 2026-11-20 (`#3a`): a third option for the unit of time, `ATMOS_TIME=us\|ms` (default `us`); a clock literal that does not fit the integer is a compile error. On `main` (692af43). See `#9` |
 | `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). On `main` (692af43) |
-| `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
+| `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Settled by the session on 2026-11-20, to be confirmed: the fewest digits stay. See "Screens" |
 | `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Both ran it: `env-esp32` built the board image (-4.5 KB, speed not measured); the suite of `sdl-tux` is identical, over `env-sdl` too. Left: Atmos code of Tux doing the float arithmetic |
-| `#7` | No reals (`#B`) and fixed point (`#C`) | Open; only matter if `#1` includes boards with no FPU as a priority |
-| `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open; independent of the options |
+| `#7` | No reals (`#B`) and fixed point (`#C`) | Open. The measurement that decides was asked of `env-esp32` (the software floating point linked on a target with no FPU). See "Screens" |
+| `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open, not recommended now. See "Screens" |
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
-| `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Candidate from `env-sdl`: no new constant, the clock literal is the unit (`t / 1s` is right in every build; `t / 1000000` is wrong under `ms`, `t * 1000000` overflows under 32 bits). To write in the manual if the author agrees |
-| `#11` | Limits of integers of 32 bits to document: `os.time()` wraps in 2038; the least integer has no literal (as with 64 bits) | Open, minor |
+| `#10` | A portable way to compute with time as a number | Done 2026-11-20 as documentation (d96b8b0): a clock is the unit (`t / 1s`); no new constant. By the session, to be confirmed |
+| `#11` | Limits of integers of 32 bits to document | Done 2026-11-20 (d96b8b0): `os.time()` wraps in 2038; the least integer is written `-2147483647 - 1` |
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
-| `#14` | Each environment must say which numeric options it supports (`env-uv` has C that assumes microseconds and 64 bits); the compiler could refuse an option the environment does not declare | Asked 2026-11-20; recommended: the environment declares, the compiler refuses the rest. `env-sdl` (85b23cc) and a scratch of `env-esp32` already support the three options with a small change to the clock |
-| `#15` | The build on demand needs `make`, the sources and a writable `<home>/build`: an installed read-only compiler cannot build a configuration. The error names the command; the manual does not say it yet | Open, minor |
+| `#14` | Each environment says which numeric options it supports; its compiler refuses the rest | Prepared by the session on the branch `float` (2447d5f), to be confirmed, NOT merged: `make env ... ENV_NUM="float 32 ms"`; a dedicated compiler refuses an option that is not declared; the plain compiler with `-e` checks nothing. Suite passes with ASAN. `env-sdl` (85b23cc) and a scratch of `env-esp32` support the three options |
+| `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
 
 ## Checked by this session
 
@@ -95,3 +95,55 @@ Last update: 2026-11-19.
   rest carried). Colors `0xRRGGBBAA` survive `float` and 32-bit
   integers. Its 23 tests pass under each option and the three together,
   except one whose trace is of the default unit.
+
+## Work with no input (2026-11-20)
+
+The author, in `atmos-lang` (checked in its transcript, 2026-11-20
+14:51 UTC): "I want you to review all sessions and propose them changes
+that need no input. The sessions may also work suggest by themselves.
+No input form me. Go ahead". What this session settled itself is marked
+"by the session, to be confirmed" in the index.
+
+## Screens
+
+### `#5` Print of a 32-bit real
+
+- Today: the fewest digits, from 6 to 9, that read back as the same
+  float (`0.1`, `0.33333334`); `string.format("%.9g", x)` gives nine.
+- The fewest digits identify the float exactly, as nine do, so nothing
+  is lost for a comparison of traces; nine digits print `0.1` as
+  `0.100000001`.
+- Nothing to measure. Settled by the session: the fewest digits stay.
+  To undo: one line in `a_num_fmt` (`rt/val.c`).
+
+### `#7` No reals, or fixed point
+
+- What it would buy: on a board with no FPU (ESP32-C3, RP2040), no
+  software floating point in the image, and integer speed.
+- What it costs: a second arithmetic in the language (`/` changes
+  meaning, real literals and most of `math` go away), so libraries and
+  environments written with reals do not load.
+- The measurement that decides: the code of the software floating
+  point linked on such a target with `float` reals (libgcc and the `f`
+  functions of libm). A few KB: not worth it. Tens of KB on a board
+  with 256 KB or less: worth a discussion. Asked of `env-esp32` for the
+  esp32c3.
+- Reading until then: not recommended; `ATMOS_REAL=float` already
+  removes the double math (-4.6 KB on the ESP32).
+
+### `#8` An 8-byte value on 64-bit hosts (NaN boxing)
+
+- Measured here (64-bit host): `sizeof(AVal)` 16; the value stack is
+  static, `A_STK_MAX` (2^18) values, 4 MB of address space (only the
+  pages touched are resident); `ATab` 80 bytes, `ATask` 184.
+- What it would buy: half the memory of locals, stack and table
+  entries on the desktop, where no port has reported a lack of memory.
+- What it costs: a rewrite of the representation (`v.type`, `v.u.x`
+  are read all over the runtime, the generated C and the C of every
+  environment), 48-bit pointers assumed, integers reduced to 51 bits or
+  boxed, and it excludes `ATMOS_REAL=float`.
+- The measurement that decides: the peak resident memory of a large
+  port against its count of live values. If values are under half of
+  it, the gain is under a quarter. No port asked for it.
+- Reading: not recommended now; the boards get the 8-byte value by the
+  options (`#12`).
