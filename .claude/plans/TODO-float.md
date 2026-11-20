@@ -13,8 +13,8 @@ Last update: 2026-11-19.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Which systems the numeric options must serve | Closed 2026-11-20 by the author: the architectures may be any, nobody knows who will use it; the question is that the types can be configured. No list of target systems |
-| `#2` | How the types are configured: two independent options (`ATMOS_INT`, `ATMOS_REAL`), one option for both, or any C type | Asked 2026-11-20; recommended: two independent options with fixed sizes |
-| `#3` | The clock under integers of 32 bits: milliseconds, or a 64-bit timer apart | Open, depends on `#2` |
+| `#2` | How the types are configured | Decided 2026-11-20 (`#2a`): two independent options with fixed sizes, `ATMOS_REAL=double\|float` (exists) and `ATMOS_INT=64\|32`. Not implemented yet: waits for `#3` |
+| `#3` | The clock under integers of 32 bits (a clock is a number of microseconds: 2^31 us is 35 min) | Asked 2026-11-20; recommended: a third option for the unit of time, `ATMOS_TIME=us\|ms`, and a clock literal that does not fit is a compile error |
 | `#4` | The runtime built on demand, per configuration (`#E`) | Open, needed with the second option |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
 | `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Both ran it: `env-esp32` built the board image (-4.5 KB, speed not measured); the suite of `sdl-tux` is identical, over `env-sdl` too. Left: Atmos code of Tux doing the float arithmetic |
