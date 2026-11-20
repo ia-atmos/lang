@@ -1,0 +1,33 @@
+;; atm_emit_to through a chain of holders deeper than the fixed array
+```:prelude
+static struct ATask* WHO = NULL;
+static void wake (void) {
+    if (WHO != NULL) {
+        struct ATask* w = WHO;
+        WHO = NULL;
+        AVal x = a_strz("x");
+        atm_emit_to(a_obj(&w->node.hdr), x);
+        a_dec(x);
+    }
+}
+```
+task Inner () {
+    `WHO = a_cur;`
+    await :x
+}
+task Mid (n) {
+    if n == 0 {
+        await Inner()
+        throw :E
+    } else {
+        await Mid(n-1)
+    }
+}
+atmos.env([
+    mode = [primary=true],
+    step = func (mode) { `wake();` },
+])
+val ok = catch :E {
+    await Mid(20)
+}
+print("caught", ok)
