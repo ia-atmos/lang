@@ -382,3 +382,20 @@ and to `atmos-lang` for the other ports.
 - To do: rewrite the cells and sentences of SNKRX from the new
   documents, when the ports have answered and run on the new `main`
   (one refresh of the two files, not one per answer).
+- `env-ray` (2026-11-20, not read at the source yet): the logic alone,
+  by the method of #4, in its `doc/bench.md`, "The logic alone". The
+  switch `RL_NODRAW=1` writes no pixel and copies no screen, in the
+  original and in the port; the draw calls stay. The value is the CPU
+  of the run of 1200 frames minus that of a run of 1 frame. Over the
+  23 games the logic of the ports is 2.14 times that of the originals
+  in sum (3069 against 1432 microseconds for one frame of each game),
+  while the whole frames are 1.02 times. Per game from 0.66 to 3.97,
+  and one outlier, koala_seasons, at 24.24 (24 against 589
+  microseconds: hundreds of fields in tables, and each float operation
+  rounded by hand). Values under some 20 microseconds carry the noise.
+  It is the first measure of the two numbers side by side, and it
+  bears on the expectation of the outline (a loss below 10% to 20%
+  against a static original): that holds for the whole frame, and not
+  for the logic alone, which is about twice. The absolute cost is
+  small (microseconds in a frame of 16 ms): the argument of Sweeney
+  applies to the frame.
