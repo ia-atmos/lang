@@ -11,6 +11,15 @@
 // It is data only: there are no variables, operations, functions, or
 // calls. Comments are accepted: `;; ...` up to the end of the line,
 // and `;;; ... ;;;` over multiple lines.
+//
+// X.loadx: reads the same, with names defined before the value.
+//
+//      Text  : { ID `=´ Value } Value
+//      Value : ... | ID
+//
+// A name is used as a value only, and each use is a deep copy of what
+// it holds: the result is what X.load gives for the text with each
+// name replaced by its value. A name sees the names defined before it.
 
 #include <ctype.h>
 #include <stdio.h>
@@ -20,11 +29,24 @@
 // Nested tables allowed, to protect the C stack.
 #define DEPTH_MAX 200
 
+// A name of X.loadx: its text, its value, and how deep the value nests.
+typedef struct Name {
+    const char* s;
+    size_t n;
+    AVal v;
+    int depth;
+} Name;
+
 typedef struct Load {
     const char* s;
     const char* end;
     int lin;
     int depth;
+    int x;          // X.loadx: names are accepted
+    int top;        // deepest table since the value in course started
+    Name* names;
+    int names_n;
+    int names_max;
 } Load;
 
 static AStatus fail (Load* l, const char* msg) {
@@ -102,6 +124,16 @@ static int accept (Load* l, char c) {
 }
 
 static AStatus value (Load* l, AVal* dst);
+
+static Name* name_get (Load* l, const char* s, size_t n) {
+    for (int i=0; i<l->names_n; i++) {
+        Name* nm = &l->names[i];
+        if (nm->n==n && !strncmp(nm->s,s,n)) {
+            return nm;
+        }
+    }
+    return NULL;
+}
 
 // CLK: digits and units in descending order (day h min s ms us), as
 // in `1h30min`. Returns the duration in microseconds, or -1 if the
@@ -318,6 +350,9 @@ static AStatus table (Load* l, AVal t) {
     if (++l->depth > DEPTH_MAX) {
         return fail(l, "too many nested tables");
     }
+    if (l->depth > l->top) {
+        l->top = l->depth;
+    }
     int64_t n = 0;
     while (1) {
         if (!skip(l)) {
@@ -468,6 +503,24 @@ static AStatus value (Load* l, AVal* dst) {
             a_set(dst, a_bool(1));
         } else if (n==5 && !strncmp(l->s,"false",5)) {
             a_set(dst, a_bool(0));
+        } else if (l->x) {
+            // a copy of the name: no table is shared
+            Name* nm = name_get(l, l->s, n);
+            if (nm == NULL) {
+                return a_error("invalid load : line %d : undefined name : %.*s",
+                    l->lin, (int)n, l->s);
+            }
+            if (l->depth+nm->depth > DEPTH_MAX) {
+                return fail(l, "too many nested tables");
+            }
+            if (l->depth+nm->depth > l->top) {
+                l->top = l->depth + nm->depth;
+            }
+            AVal v = a_nil();
+            if (a_xcopy(&v, nm->v) != A_OK) {
+                return A_ERROR;
+            }
+            a_set(dst, v);
         } else {
             return fail(l, "unexpected name : expected value");
         }
@@ -477,17 +530,70 @@ static AStatus value (Load* l, AVal* dst) {
     return fail(l, "expected value");
 }
 
-// Reads the single value in `s[0..len)`.
-static AStatus load (const char* s, size_t len) {
-    Load l = { s, s+len, 1, 0 };
+// X.loadx: `ID = Value` before the value defines a name.
+static AStatus names (Load* l) {
+    while (1) {
+        if (!skip(l)) {
+            return fail(l, "unterminated comment");
+        }
+        if (!(l->s<l->end && is_id1(*l->s))) {
+            return A_OK;
+        }
+        const char* p = l->s;
+        while (p<l->end && is_id(*p)) {
+            p++;
+        }
+        const char* q = p;
+        while (q<l->end && (*q==' ' || *q=='\t')) {
+            q++;
+        }
+        if (!(q<l->end && *q=='=')) {
+            return A_OK;
+        }
+        const char* s = l->s;
+        size_t n = p - s;
+        if ((n==3 && !strncmp(s,"nil",3)) || (n==4 && !strncmp(s,"true",4)) ||
+            (n==5 && !strncmp(s,"false",5)))
+        {
+            return fail(l, "invalid name");
+        }
+        if (name_get(l,s,n) != NULL) {
+            return a_error("invalid load : line %d : name already defined : %.*s",
+                l->lin, (int)n, s);
+        }
+        l->s = q + 1;
+        l->top = 0;
+        AVal v = a_nil();
+        if (value(l,&v) != A_OK) {
+            a_dec(v);
+            return A_ERROR;
+        }
+        if (l->names_n == l->names_max) {
+            l->names_max = l->names_max*2 + 8;
+            l->names = realloc(l->names, l->names_max * sizeof(Name));
+        }
+        l->names[l->names_n++] = (Name) { s, n, v, l->top };
+    }
+}
+
+// Reads the single value in `s[0..len)`, after its names if `x`.
+static AStatus load (const char* s, size_t len, int x) {
+    Load l = { s, s+len, 1, 0, x, 0, NULL, 0, 0 };
     AVal v = a_nil();
-    AStatus st = value(&l, &v);
+    AStatus st = x ? names(&l) : A_OK;
+    if (st == A_OK) {
+        st = value(&l, &v);
+    }
     if (st==A_OK && !skip(&l)) {
         st = fail(&l, "unterminated comment");
     }
     if (st==A_OK && l.s<l.end) {
         st = fail(&l, "expected end of input");
     }
+    for (int i=0; i<l.names_n; i++) {
+        a_dec(l.names[i].v);
+    }
+    free(l.names);
     if (st == A_OK) {
         a_push(v);
     } else {
@@ -503,7 +609,17 @@ static AStatus x_load (AFunc* self, int argc, AVal* argv) {
     if (arg_str(argc, argv, 0, "load", &s) != A_OK) {
         return A_ERROR;
     }
-    return load(s->s, s->len);
+    return load(s->s, s->len, 0);
+}
+
+// X.loadx(s): the same, with names defined before the value.
+static AStatus x_loadx (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AStr* s;
+    if (arg_str(argc, argv, 0, "loadx", &s) != A_OK) {
+        return A_ERROR;
+    }
+    return load(s->s, s->len, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -708,5 +824,6 @@ char* a_dump_text (AVal v) {
 
 void atm_lib_load_init (void) {
     field(atm_g_X, "load", x_load);
+    field(atm_g_X, "loadx", x_loadx);
     field(atm_g_X, "dump", x_dump);
 }
