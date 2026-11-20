@@ -245,6 +245,8 @@ From the [original implementation][atmos-lua], which compiles to Lua:
   language, as a JSON of Atmos: tables, vectors, tags, numbers,
   durations, strings, and comments. No expressions. `X.dump(v)` writes
   it back.
+  `X.loadx(s)` also accepts names defined before the value
+  (`T = [1]  [T, T]`), each use being a copy.
 - Native literals are C code, not Lua: `` `:number strlen("abc")` ``.
     - A leading tag converts the expression: `:number`, `:boolean`,
       `:string`, `:atmos`. With no tag, the code is a statement.

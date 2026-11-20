@@ -3574,6 +3574,7 @@ tables recursively.
 - `X.print(...)`: `print` using `X.tostring` on each argument
 - `X.copy(v)`: deep copy of `v`
 - `X.load(s)`: reads a value written as data
+- `X.loadx(s)`: reads a value written as data, with names
 - `X.dump(v)`: writes a value as data
 - `X.in(v, t)`, `X.nin(v, t)`: membership ("in" and "not in"); `X.xin` is a
   former name of `X.in`, to be removed
@@ -3644,6 +3645,65 @@ print(X.load("[1, [2, 3]]")@1@0)            ;; --> 2
 val s = X.dump(:Pos [x=10, y=20, "a"])
 print(s)                                    ;; --> :Pos ["a", x=10, y=20]
 io.write(io.open("pos.atm", "w"), s)        ;; saves it
+```
+
+### Load with Names
+
+The function `X.loadx(s)` reads what `X.load` reads, and also accepts
+definitions of names before the value:
+
+```
+Text  : { ID `=´ Value } Value
+Value : ... | ID
+```
+
+A definition `ID = Value` gives a name to a value.
+The value that has no name is the result, and nothing may follow it.
+A name holds any value, such as a number or a table, and is used wherever a
+value is expected: as a positional entry, as the value of a field or of a key,
+or as the result itself.
+A name may have any identifier, except `nil`, `true`, and `false`.
+
+Each use of a name is a copy of its value.
+Therefore, the result is the same that `X.load` gives for the text with each
+name replaced by its value: the names do not exist in the result, and no table
+is shared between two uses.
+
+A definition may use the names defined before it, and not itself.
+A name that is not defined, or that is defined twice, is an error with the line
+of the problem.
+
+There are still no operations, functions, or calls: a text with names is data.
+A text may grow much larger when it is read, since a name may be used many
+times: `X.loadx` is meant for texts that the program trusts, and `X.load` for
+any other.
+
+The function `X.dump` writes no names: a value that was read with names is
+written in full.
+
+Examples:
+
+```
+;; slides.atm
+TITLE = [ color=[fg=:blue], anchor=:C ]
+LOGO  = :image ["logo.png", style=TITLE]
+
+:Slides [
+    :Slide [ :text ["Cultura", style=TITLE], LOGO ],
+    :Slide [ LOGO ],
+]
+```
+
+```
+pin f = io.open("slides.atm")
+val s = X.loadx(io.read(f, :all))
+print(s ?? :Slides, (s@1@0).style.anchor)   ;; --> true, C
+
+val v = X.loadx("T = [1]  [T, T]")
+set v@0@0 = 9                               ;; each use is a copy
+X.print(v)                                  ;; --> [[9], [1]]
+
+X.loadx("[T]")          ;; error: invalid load : line 1 : undefined name : T
 ```
 
 ### Membership
