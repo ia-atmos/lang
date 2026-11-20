@@ -1,0 +1,2 @@
+;; integers of 32 bits: a clock that does not fit is an error
+print(1h)

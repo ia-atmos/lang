@@ -1,0 +1,4 @@
+;; integers of 32 bits, reals of 32 bits and time in milliseconds
+print(1h, 24day, 0.1 + 0.2, 2147483647 + 1)
+await 5ms
+print('ok')

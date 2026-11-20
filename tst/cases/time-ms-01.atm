@@ -1,0 +1,22 @@
+;; time in milliseconds (ATMOS_TIME=ms): a clock is a number of
+;; milliseconds, and so are the times of an emit and of the timers
+print(1ms, 1s, 1min30s, 1h, 2000us)
+do {
+    var n = 0
+    spawn {
+        loop ms, late on :clock {
+            set n = n + ms
+        }
+    }
+    spawn {
+        loop { await 10ms ; print(:tick, n) }
+    }
+    emit @:global (25ms)
+    emit @:global (5)
+    print(n, n == 30ms)
+}
+;; the clock of the host
+watching 20ms {
+    await 1s
+}
+print('ok')
