@@ -10,9 +10,9 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | # | Title | State |
 |---|---|---|
 | #1 | Is there a case that justifies syntax, or does a table/library do for now? | decided 2026-11-19: a table for now ("Tabela por enquanto") |
-| #3 | A paragraph in the manual ("User Types") with the table idiom | by the session, to be confirmed (2026-11-20): text and two test cases on the branch `oo` (`484869b`), suite passing over main `c4e99c4`; sent to `atmos-lang`, through which it goes to main |
+| #3 | A paragraph in the manual ("User Types") with the table idiom | by the session, to be confirmed (2026-11-20): text and two test cases, merged into main by `atmos-lang` (`513767c`, rebased) after the suite passed there |
 | #4 | The badguys of SuperTux as the test of inheritance of behavior | done 2026-11-20 by reading the port of `sdl-tux` (`261118-oo-inherit.md`): #1 stands |
-| #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed to `atmos-lang` on 2026-11-20; it is of `sdl-tux` to take or not |
+| #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed by `atmos-lang` to `sdl-tux` on 2026-11-20; it is of `sdl-tux` to take or not |
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 
 ## Waiting for the author
@@ -21,8 +21,7 @@ Nothing blocks. To confirm or undo when he reads:
 
 - **#3**, settled by the session under the rule "Work with no input":
   the paragraph and the tests `tst/cases/tag-table-01` and `-02` are on
-  the branch `oo`. To undo: do not merge the branch, or revert the
-  commit.
+  main (`513767c`). To undo: revert that commit.
 - **#1** was re-examined against SuperTux (#4) and stands.
 
 ## Next
@@ -37,8 +36,11 @@ Nothing blocks. To confirm or undo when he reads:
 
 ## Known and not done
 
-- Nothing implemented in the compiler; the branch `oo` has the
-  paragraph of #3 and its two tests.
+- Nothing implemented in the compiler. The branch `oo` still has the
+  old commits of #3 (`484869b`), whose content is on main rebased: the
+  reset of the branch to main needs a forced push, which was refused to
+  this session. Before new work on it: merge main into it, or have the
+  author reset it.
 - The originals (C++, Lua) were not read: what is said of them comes
   from the `Class::method` comments of the ports and from memory.
 
