@@ -601,6 +601,8 @@ The following keywords are reserved in Atmos:
     escape              ;; escape block
     false               ;; false value
     func                ;; function                         (10)
+    grab                ;; grab block
+    grabbable           ;; grabbable block
     if                  ;; if block
     ifs                 ;; ifs block
     in                  ;; in iterator
@@ -608,28 +610,28 @@ The following keywords are reserved in Atmos:
     it                  ;; implicit parameter
     loop                ;; loop block
     match               ;; match block
-    nil                 ;; nil value
+    nil                 ;; nil value                        (20)
     on                  ;; on event clause
     par                 ;; par block
-    pin                 ;; pin declaration                  (20)
+    pin                 ;; pin declaration
     pub                 ;; public variable
     return              ;; escape prototype
     set                 ;; assign expression
     skip                ;; loop skip
     spawn               ;; spawn task
     task                ;; task prototype
-    tasks               ;; task pool
+    tasks               ;; task pool                        (30)
     test                ;; test block
     throw               ;; throw error
-    toggle              ;; toggle task                      (30)
+    toggle              ;; toggle task
     true                ;; true value
     until               ;; until loop condition
     val                 ;; constant declaration
     var                 ;; variable declaration
     watching            ;; watching block
     where               ;; where block
-    while               ;; while loop condition
-    with                ;; with block                       (38)
+    while               ;; while loop condition             (40)
+    with                ;; with block
 ```
 
 ## Symbols
@@ -3356,6 +3358,64 @@ spawn {
 emit(:Ok [false])
 emit(:Tick)         ;; (nop)
 emit(:Draw)         ;; --> draw
+```
+
+### Grab
+
+A `grab` captures the events that match its patterns: while its block
+runs, only the block reacts to them, inside the nearest `grabbable`
+above it:
+
+```
+Grab : (`grabbable´ | `grab´) Patt {`,´ Patt} Block
+```
+
+Both spawn and await their block as a [transparent task](#tasks), as a
+`toggle on`. A `grabbable` lends to the grabs below it the events that
+match any of its patterns. A `grab` takes the nearest `grabbable` above
+it in the tree of tasks, which may be in another task, as a modal that
+is spawned deep inside what it silences. A `grab` with no `grabbable`
+above it raises `invalid grab : expected enclosing grabbable`.
+
+While a `grab` is active, an emit that traverses its `grabbable`, and
+that matches the patterns of both, only follows the path down to the
+`grab`, and then the whole block of the `grab` (its trails, its tasks
+and the pools it declares). The rest of the subtree of the `grabbable`
+does not see the event, nor do the trails on the path; outside the
+`grabbable`, nothing changes. An emit that does not traverse the
+`grabbable`, as one aimed at a task below it, is not captured.
+
+The grabs of a `grabbable` form a stack: the most recent one whose
+patterns match the event captures it, and its end gives the events back
+to the previous one. A `grab` that captures the time (as `<!:draw>`)
+stops the timers outside it, which go on from where they were. A
+`grab` evaluates to the value of its block.
+
+Examples:
+
+```
+spawn {
+    grabbable true {
+        par {
+            loop e on :key {
+                print("behind", e@0)    ;; deaf while the modal is open
+            }
+        } with {
+            await :open
+            grab :key {
+                loop e on :key {
+                    print("modal", e@0)
+                    until e@0 == :esc
+                }
+            }
+        }
+    }
+}
+emit :key [:a]      ;; --> behind a
+emit :open
+emit :key [:b]      ;; --> modal b
+emit :key [:esc]    ;; --> modal esc
+emit :key [:c]      ;; --> behind c
 ```
 
 ### Parallel
