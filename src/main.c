@@ -20,6 +20,8 @@
 //   ATMOS_LDFLAGS  linker flags, after the program (e.g. -lSDL2)
 //   ATMOS_ASAN     if set, builds with the address sanitizer
 //   ATMOS_REAL     if `float`, a real is a C float of 32 bits
+//   ATMOS_INT      if `32`, an integer has 32 bits (default `64`)
+//   ATMOS_TIME     if `ms`, time is in milliseconds (default `us`)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,30 +108,57 @@ static const char* home_dir (void) {
     return ATMOS_HOME;
 }
 
+// An option of the build with two values: 0 for `v0` (the default), 1
+// for `v1`. Any other value is an error.
+static int opt2 (const char* name, const char* v0, const char* v1) {
+    const char* v = env(name, v0);
+    if (strcmp(v, v1) == 0) {
+        return 1;
+    }
+    if (strcmp(v, v0) != 0) {
+        fprintf(stderr, ATMOS_NAME " : invalid %s : "
+            "expected '%s' or '%s'\n", name, v1, v0);
+        exit(1);
+    }
+    return 0;
+}
+
+// The numeric types of the build: the program and the runtime agree on
+// them.
+static int OPT_F32 = 0;
+
+static void opts_num (void) {
+    OPT_F32     = opt2("ATMOS_REAL", "double", "float");
+    OPT_INT32   = opt2("ATMOS_INT",  "64",     "32");
+    OPT_TIME_MS = opt2("ATMOS_TIME", "us",     "ms");
+}
+
 // Builds the C source into an executable. Returns 0 on success.
 static int build (const char* c, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
-    // reals of 32 bits: the program and the runtime agree on the type
-    const char* real = env("ATMOS_REAL", "double");
-    int f32 = (strcmp(real, "float") == 0);
-    if (!f32 && strcmp(real, "double")!=0) {
-        fprintf(stderr, ATMOS_NAME " : invalid ATMOS_REAL : "
-            "expected 'float' or 'double'\n");
+    // the runtime of the configuration
+    char* lib = xfmt("%s/build/libatmos%s%s%s%s.a", home,
+        OPT_F32     ? "-f32" : "",
+        OPT_INT32   ? "-i32" : "",
+        OPT_TIME_MS ? "-ms"  : "",
+        asan        ? "-asan" : "");
+    if (access(lib, R_OK) != 0) {
+        fprintf(stderr, ATMOS_NAME " : runtime not found : %s\n", lib);
         return 1;
     }
     // the flags of the environment of a dedicated compiler, then those
     // of the user
     char* cmd = xfmt(
-        "%s %s %s %s %s -w -I%s/rt %s %s/build/libatmos%s%s.a -lm %s %s -o %s",
+        "%s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
         env("ATMOS_CC", "cc"),
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
         asan ? "-fsanitize=address -fno-omit-frame-pointer -g" : "",
-        f32 ? "-DATM_REAL_FLOAT" : "",
-        home, c, home,
-        f32 ? "-f32" : "",
-        asan ? "-asan" : "",
+        OPT_F32     ? "-DATM_REAL_FLOAT" : "",
+        OPT_INT32   ? "-DATM_INT_32"     : "",
+        OPT_TIME_MS ? "-DATM_TIME_MS"    : "",
+        home, c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
         exe
@@ -160,6 +189,7 @@ int main (int argc, char** argv) {
     const char* exe = NULL;
     const char* inp = NULL;
     OPT_ENV = ATMOS_ENV;
+    opts_num();
     int i = 1;
     for (; i<argc && inp==NULL; i++) {
         if (!strcmp(argv[i], "--lex")) {

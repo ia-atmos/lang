@@ -178,7 +178,11 @@ static AVal norm (AVal k) {
 
 // Array index of a normalized key, or -1.
 static int64_t aidx (AVal k) {
-    if (k.type==A_INT && k.u.i>=0 && k.u.i<4294967296LL) {
+    if (k.type==A_INT && k.u.i>=0
+#if A_INT_BITS > 32
+        && k.u.i<4294967296LL
+#endif
+    ) {
         return k.u.i;
     }
     return -1;

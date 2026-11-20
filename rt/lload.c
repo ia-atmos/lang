@@ -22,6 +22,7 @@
 // name replaced by its value. A name sees the names defined before it.
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "lib.h"
@@ -202,13 +203,18 @@ static AStatus number (Load* l, int neg, AVal* dst) {
     memcpy(buf, s, n);
     buf[n] = '\0';
 
-    // a clock is a number of microseconds
+    // a clock is a number of units of time: an integer, which must fit,
+    // or a real if it has a fraction of the unit
     double us = neg ? -1 : clock_us(buf);
     if (us >= 0) {
-        if (us==(double)(long long)us && us<9e18) {
-            a_set(dst, a_int((int64_t)us));
+        double t = us / A_TIME_US;
+        if (t >= A_INT_LIM) {
+            return fail(l, "invalid clock : out of range");
+        }
+        if (t == floor(t)) {
+            a_set(dst, a_int((AInt)t));
         } else {
-            a_set(dst, a_num(us));
+            a_set(dst, a_num(t));
         }
         l->s = p;
         return A_OK;
@@ -220,8 +226,8 @@ static AStatus number (Load* l, int neg, AVal* dst) {
         if (*stop != '\0') {
             return fail(l, "invalid number");
         }
-        if (hex || (n<=19 && v<=9223372036854775807ULL)) {
-            a_set(dst, a_int(neg ? (int64_t)(0 - v) : (int64_t)v));
+        if (hex || (n<=19 && v<=(unsigned long long)A_INT_MAX)) {
+            a_set(dst, a_int(neg ? (AInt)(0 - v) : (AInt)v));
             l->s = p;
             return A_OK;
         }

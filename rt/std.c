@@ -77,8 +77,14 @@ static AStatus std_tonumber (AFunc* self, int argc, AVal* argv) {
     char* end;
     AVal ret;
     if (strpbrk(s, hex ? ".pP" : ".eEnN") == NULL) {
+        // as a literal: a decimal that does not fit the integer is a
+        // real, a hexadecimal wraps
         uint64_t u = strtoull(d, &end, 0);
-        ret = a_int((int64_t)((*s == '-') ? 0 - u : u));
+        if (hex || u<=(uint64_t)A_INT_MAX) {
+            ret = a_int((AInt)((*s == '-') ? 0 - u : u));
+        } else {
+            ret = a_num(A_STRTOR(s, &end));
+        }
     } else {
         ret = a_num(A_STRTOR(s, &end));
     }
@@ -206,8 +212,8 @@ static AStatus math_abs (AFunc* self, int argc, AVal* argv) {
         return A_ERROR;
     }
     if (argv[0].type == A_INT) {
-        int64_t i = argv[0].u.i;
-        a_push(a_int((i < 0) ? (int64_t)(0 - (uint64_t)i) : i));
+        AInt i = argv[0].u.i;
+        a_push(a_int((i < 0) ? (AInt)(0 - (AUInt)i) : i));
     } else {
         a_push(a_num(A_RF(fabs)(x)));
     }

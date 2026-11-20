@@ -16,6 +16,8 @@
 #include "atmc.h"
 
 int OPT_TEST = 0;
+int OPT_INT32 = 0;
+int OPT_TIME_MS = 0;
 const char* OPT_ENV = NULL;
 
 static Tk TK0;

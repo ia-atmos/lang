@@ -571,8 +571,8 @@ const char* a_typename (AVal v) {
 static const char* ARITH[] = { "+", "-", "*", "/", "//", "%" };
 
 AVal a_numi (double n) {
-    if (n==floor(n) && n>=-9223372036854775808.0 && n<9223372036854775808.0) {
-        return a_int((int64_t) n);
+    if (n==floor(n) && n>=-A_INT_LIM && n<A_INT_LIM) {
+        return a_int((AInt) n);
     }
     return a_num(n);
 }
@@ -593,17 +593,17 @@ int a_toint (AVal v, int64_t* i) {
 }
 
 // An integer against a real, with no loss of precision.
-static int cmp_id (int64_t i, double d) {
+static int cmp_id (AInt i, double d) {
     if (d != d) {
         return 2;
     }
-    if (d >= 9223372036854775808.0) {
+    if (d >= A_INT_LIM) {
         return -1;
     }
-    if (d < -9223372036854775808.0) {
+    if (d < -A_INT_LIM) {
         return 1;
     }
-    int64_t t = (int64_t) d;
+    AInt t = (AInt) d;
     if (i != t) {
         return (i < t) ? -1 : 1;
     }
@@ -629,14 +629,14 @@ int a_num_cmp (AVal a, AVal b) {
 }
 
 // Integer arithmetic wraps on overflow.
-static AStatus arith_int (AArith op, AVal* dst, int64_t x, int64_t y) {
-    uint64_t ux = (uint64_t) x;
-    uint64_t uy = (uint64_t) y;
-    int64_t r = 0;
+static AStatus arith_int (AArith op, AVal* dst, AInt x, AInt y) {
+    AUInt ux = (AUInt) x;
+    AUInt uy = (AUInt) y;
+    AInt r = 0;
     switch (op) {
-        case A_ADD: r = (int64_t)(ux + uy); break;
-        case A_SUB: r = (int64_t)(ux - uy); break;
-        case A_MUL: r = (int64_t)(ux * uy); break;
+        case A_ADD: r = (AInt)(ux + uy); break;
+        case A_SUB: r = (AInt)(ux - uy); break;
+        case A_MUL: r = (AInt)(ux * uy); break;
         case A_IDIV:
         case A_MOD:
             if (y == 0) {
@@ -645,7 +645,7 @@ static AStatus arith_int (AArith op, AVal* dst, int64_t x, int64_t y) {
             }
             // the only overflow: the minimum integer by -1
             if (y == -1) {
-                r = (op == A_IDIV) ? (int64_t)(0 - ux) : 0;
+                r = (op == A_IDIV) ? (AInt)(0 - ux) : 0;
             } else {
                 r = (op == A_IDIV) ? x / y : x % y;
             }
@@ -684,7 +684,7 @@ AStatus a_arith (AArith op, AVal* dst, AVal a, AVal b) {
 
 AStatus a_neg (AVal* dst, AVal a) {
     if (a.type == A_INT) {
-        a_set(dst, a_int((int64_t)(0 - (uint64_t)a.u.i)));
+        a_set(dst, a_int((AInt)(0 - (AUInt)a.u.i)));
         return A_OK;
     }
     if (a.type != A_NUM) {
@@ -709,36 +709,38 @@ static AStatus bit_int (const char* op, AVal v, int64_t* i) {
     return A_OK;
 }
 
-static int64_t shl (int64_t x, int64_t n);
+static AInt shl (AInt x, AInt n);
 
 // Arithmetic shift to the right.
-static int64_t shr (int64_t x, int64_t n) {
+static AInt shr (AInt x, AInt n) {
     if (n < 0) {
-        return (n == INT64_MIN) ? 0 : shl(x, -n);
+        return (n == A_INT_MIN) ? 0 : shl(x, -n);
     }
-    if (n >= 64) {
+    if (n >= A_INT_BITS) {
         return (x < 0) ? -1 : 0;
     }
     return (x < 0) ? ~(~x >> n) : x >> n;
 }
 
-static int64_t shl (int64_t x, int64_t n) {
+static AInt shl (AInt x, AInt n) {
     if (n < 0) {
-        return (n == INT64_MIN) ? ((x < 0) ? -1 : 0) : shr(x, -n);
+        return (n == A_INT_MIN) ? ((x < 0) ? -1 : 0) : shr(x, -n);
     }
-    if (n >= 64) {
+    if (n >= A_INT_BITS) {
         return 0;
     }
-    return (int64_t)((uint64_t)x << n);
+    return (AInt)((AUInt)x << n);
 }
 
 AStatus a_bit (ABit op, AVal* dst, AVal a, AVal b) {
-    int64_t x = 0;
-    int64_t y = 0;
-    if (bit_int(BITS[op],a,&x)!=A_OK || bit_int(BITS[op],b,&y)!=A_OK) {
+    int64_t x64 = 0;
+    int64_t y64 = 0;
+    if (bit_int(BITS[op],a,&x64)!=A_OK || bit_int(BITS[op],b,&y64)!=A_OK) {
         return A_ERROR;
     }
-    int64_t r = 0;
+    AInt x = (AInt) x64;
+    AInt y = (AInt) y64;
+    AInt r = 0;
     switch (op) {
         case A_BAND: r = x & y;     break;
         case A_BOR:  r = x | y;     break;
@@ -755,7 +757,7 @@ AStatus a_bnot (AVal* dst, AVal a) {
     if (bit_int("~", a, &x) != A_OK) {
         return A_ERROR;
     }
-    a_set(dst, a_int(~x));
+    a_set(dst, a_int((AInt)~x));
     return A_OK;
 }
 

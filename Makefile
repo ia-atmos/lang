@@ -11,8 +11,14 @@ CC_SRC := src/aux.c src/lexer.c src/parser.c src/ast.c src/resolver.c \
           src/coder.c src/main.c
 CC_HDR := src/atmc.h
 
-LIBS := build/libatmos.a build/libatmos-asan.a \
-        build/libatmos-f32.a build/libatmos-f32-asan.a
+# The runtime, once per configuration of the numeric types, and once
+# more with the address sanitizer: `libatmos[-f32][-i32][-ms][-asan].a`
+# (`ATMOS_REAL=float`, `ATMOS_INT=32`, `ATMOS_TIME=ms`, `ATMOS_ASAN`).
+# `_` stands for an option that is off.
+CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
+            $(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(a))+))))
+CFGS := $(patsubst %+,%,$(CFGS))
+LIBS := $(foreach c,$(CFGS),build/libatmos$(c).a)
 
 all: atmos $(LIBS)
 
@@ -36,34 +42,22 @@ env: $(CC_SRC) $(CC_HDR) $(LIBS)
 	    -DATMOS_ENV_LDFLAGS='"$(ENV_LDFLAGS)"' \
 	    -Isrc $(CC_SRC) -o $(OUT)
 
-build/rt/%.o: rt/%.c $(RT_HDR)
-	@mkdir -p build/rt
-	$(CC) $(CFLAGS) -Irt -c $< -o $@
+# $(1): the suffix of a configuration
+define RT_RULES
+build/rt$(1)/%.o: rt/%.c $$(RT_HDR)
+	@mkdir -p build/rt$(1)
+	$$(CC) $$(CFLAGS) \
+	    $$(if $$(findstring -asan,$(1)),$$(ASAN)) \
+	    $$(if $$(findstring -f32,$(1)),-DATM_REAL_FLOAT) \
+	    $$(if $$(findstring -i32,$(1)),-DATM_INT_32) \
+	    $$(if $$(findstring -ms,$(1)),-DATM_TIME_MS) \
+	    -Irt -c $$< -o $$@
 
-build/rt-asan/%.o: rt/%.c $(RT_HDR)
-	@mkdir -p build/rt-asan
-	$(CC) $(CFLAGS) $(ASAN) -Irt -c $< -o $@
+build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o
+	ar rcs $$@ $$^
+endef
 
-# the runtime with reals of 32 bits (`ATMOS_REAL=float`)
-build/rt-f32/%.o: rt/%.c $(RT_HDR)
-	@mkdir -p build/rt-f32
-	$(CC) $(CFLAGS) -DATM_REAL_FLOAT -Irt -c $< -o $@
-
-build/rt-f32-asan/%.o: rt/%.c $(RT_HDR)
-	@mkdir -p build/rt-f32-asan
-	$(CC) $(CFLAGS) $(ASAN) -DATM_REAL_FLOAT -Irt -c $< -o $@
-
-build/libatmos-f32.a: $(RT_SRC:rt/%.c=build/rt-f32/%.o) build/rt-f32/main.o
-	ar rcs $@ $^
-
-build/libatmos-f32-asan.a: $(RT_SRC:rt/%.c=build/rt-f32-asan/%.o) build/rt-f32-asan/main.o
-	ar rcs $@ $^
-
-build/libatmos.a: $(RT_SRC:rt/%.c=build/rt/%.o) build/rt/main.o
-	ar rcs $@ $^
-
-build/libatmos-asan.a: $(RT_SRC:rt/%.c=build/rt-asan/%.o) build/rt-asan/main.o
-	ar rcs $@ $^
+$(foreach c,$(CFGS),$(eval $(call RT_RULES,$(c))))
 
 # runtime unit tests, built with the address sanitizer
 RT_TST := $(wildcard tst/rt/*.c)
