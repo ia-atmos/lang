@@ -9,7 +9,7 @@ prefix; those born here are `atmos-pool#N`.
 
 | Item | Title | State |
 |---|---|---|
-| `atmos-lang#1` | An await over a pool with a condition | `#1a` on the branch `pool`, by the session, to be confirmed |
+| `atmos-lang#1` | An await over a pool with a condition | Waits for `atmos-iter`: `find`/`filter` moved there by the author (2026-11-20), on the branch `pool-find` |
 | `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
@@ -26,10 +26,6 @@ prefix; those born here are `atmos-pool#N`.
 All of it is prepared on the branch `pool` (`261120-pool-work.md`); his
 answer to each is a merge or a revert.
 
-- `atmos-lang#1`: merge `#1a` (`find`, `filter`, the idiom)? The other
-  options were `#1b` (a pattern `await :some ts until f`), `#1c`
-  (re-check on change of `pub`), `#1d` (members emit to the zones).
-  Recommended: yes.
 - `atmos-lang#60`: merge "to the holder"? See `atmos-pool#3` first.
   Recommended: yes; it departs from the reference.
 - `atmos-pool#1`: acknowledge the three behaviours. Recommended: yes.
@@ -71,13 +67,16 @@ answer to each is a merge or a revert.
 
 All on the branch `pool`, reversible by not merging:
 
-- `atmos-lang#1`: `#1a`, with `find` and `filter` as globals, `f(v, k)`,
-  `find` giving the member and its key.
 - `atmos-lang#60`: to the holder.
-- `atmos-pool#2`: the grid in `lib/grid.atm`, with `grid_find` in the
-  shape of `find`.
+- `atmos-pool#2`: the grid in `lib/grid.atm`, `grid_find` with a plain
+  loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#1` (2026-11-20, in `atmos-lang`): `find`/`filter` belong
+  to a library over iterables, in the session `atmos-iter`. Done: the
+  branch split, `pool` (75911fa) without them, `pool-find` (0c1a6ec,
+  on main) with only them, handed to `atmos-iter` with notes.
 
 - `atmos-lang#32` (decided in `atmos-lang`): `await :all ts` over an
   empty pool is satisfied at once, with `nil, nil, ts`; `:any` still
