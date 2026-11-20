@@ -23,6 +23,7 @@ next time it is put to him.
 | #1 | Organization of the paper (was A4) | Open. Reminder on 2026-11-24 |
 | #2 | Title and venue of the Pingus paper (E, references) | Checked on the web on 2026-11-20 (`papers/games-related.md`, 2.1): SBGames 2018, single author, pp. 591-600, DOI 10.1109/SBGAMES.2018.00036. By the session, to be confirmed by him |
 | #3 | Work with no input (`atmos-lang#95`, 2026-11-20): data of the ports, references checked, drafts, changes of the language | Done on 2026-11-20, by the session, to be reviewed. See G |
+| #4 | Common method for the CPU of the game logic alone (part of A3) | Set on 2026-11-20, by the session, to be confirmed. See G |
 
 ## A. Decisions waiting for the author
 
@@ -332,3 +333,28 @@ on 2026-11-20.
   with `ATMOS_REAL=float`.
 - All but Flare: a statement in the README of how the port was
   written (AI agents under the direction of the author).
+
+### The CPU of the game logic alone (#4, by the session, to be confirmed)
+
+Asked by `env-ray` on 2026-11-20, which proposed it; told to `env-ray`
+and to `atmos-lang` for the other ports.
+
+- The same run as the whole-frame measure (same scripted input, same
+  frames, no cap), with the rasterizer and the presentation skipped in
+  the original and in the port alike: a frame costs its logic plus the
+  draw calls with no pixels. Doom already does it ("no rendering").
+  In-process timers (SNKRX) only exist in the port.
+- CPU time of the process, median of 3 runs, same machine; ms per
+  frame and the ratio of port to original, next to the whole-frame
+  number of the same run. Each `doc/bench.md` says what is skipped.
+
+### Answers of the ports
+
+- `env-ray` (2026-11-20): the control variables left are 38 of 134 in
+  the faithful ports (branch `faithful`, `e0b6a01`) and 35 on `main`
+  (`9f5d069`), with 14 games relaxed: both were right. Its README,
+  "State", now says how the port was written. Logic alone: not
+  measured yet (`env-ray#45`); it has the whole run (1.02 times the C
+  on average) and one stress (space_invaders, 1.4 against 0.75
+  microseconds per enemy). `papers/games-data.md` still has the state
+  of `0d8b477`: to refresh when the ports settle.
