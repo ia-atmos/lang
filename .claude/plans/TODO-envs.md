@@ -5,10 +5,11 @@ two share one program, their events, their test mode, and new ones.
 Material: `261117-envs.md`. Numbers in parentheses are those of the
 compiler's list (`TODO.md`), which do not change.
 
-Last update: 2026-11-18.
+Last update: 2026-11-20.
 
 ## Standing
 
+- **Work with no input** (the author, 2026-11-20, `atmos-lang#95`; his words checked in that session's transcript): do the work that needs no decision of his; where his decision is pending and there is a recommendation, go on with it if reversible and on a branch, marked "by the session, to be confirmed"; do not ask, do not wait. Language changes on `main` stay his.
 - The rules of `pin` are stable (the author, 2026-11-19, `atmos-pin#9`; `TODO-pin.md`, "Stable"). Designs here build on them; a proposal that needs a rule of `pin` changed goes to `atmos-pin` first.
 
 ## Index
@@ -22,20 +23,20 @@ An item of another session is `session#N` (the compiler's list is
 |---|-------|-------|
 | #1 | Two environments in one program (`atmos-lang#57`): `atmos.env` | Decided 2026-11-17, done (`81986e7`, pilot uv+iup) |
 | #2 | One vocabulary of events, that of pico (`atmos-lang#46`) | Decided 2026-11-17, done (sdl, pico, ray) |
-| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open; pilot `sdl-pingus#15` passed 2026-11-19 (byte-identical trace; `SDL_ATM_FRAMES`, `_KEYS`, `PINGUS_ORDERS` no longer needed). Left: the environment still opens window and audio under `-t` (needs the test flag of `261117-envs-atmos.md`); switches read by `getenv` cannot be set by a test (must be parameters or settable globals). Not covered: polled input, pixels, C callbacks. Put to the author 2026-11-19 (asked through `atmos-lang`), proposal `261117-envs-tests.md`, decisions #3a..#3d |
+| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | #3a by the session, to be confirmed (2026-11-20): `env-sdl` first, asked to adopt it on a branch; `sdl-pingus` to rerun `bomber-test` over it. Manual section on branch `envs` (`2d6cc00`). `env-pico` did it on its `main` (env-pico#9, by that session, to be confirmed): a `test` block at the end of `pico.atm` sets `SDL_VIDEODRIVER=dummy`, `SDL_AUDIODRIVER=dummy`, `PICO_TESTS=1` and `pico.test = true`; `atmos-pico -t` needs no display, screenshots byte-identical to xvfb; test `tst/t-test.atm`, doc `doc/api.md` "Tests". Before: pilot `sdl-pingus#15` passed 2026-11-19 (byte-identical trace; `SDL_ATM_FRAMES`, `_KEYS`, `PINGUS_ORDERS` no longer needed). Left: the environment still opens window and audio under `-t` (needs the test flag of `261117-envs-atmos.md`); switches read by `getenv` cannot be set by a test (must be parameters or settable globals). Not covered: polled input, pixels, C callbacks. Put to the author 2026-11-19 (asked through `atmos-lang`), proposal `261117-envs-tests.md`, decisions #3a..#3d |
 | #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
 | #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
 | #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |
-| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open; an `env-esp32` exists (seen 2026-11-19: `ATM_NO_CLOCK` in `rt/main.c`, `ee17162`), not yet read here |
+| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open; `env-esp32` read 2026-11-20: `261117-envs-boards.md` (what a board needs: no clock, done; a wake that is not an `fd`, see #10; one env or many is `env-esp32#16`) |
 | #8 | The order inside a frame | Decided 2026-11-18, done (pico, ray; sdl already) |
-| #9 | What `true` from `step` means with secondaries | Open, asked |
-| #10 | A secondary wakes a waiting primary (an `fd`) | Open, design (pilot gap 2) |
-| #11 | A dedicated compiler forces its environment as primary | Open, design (pilot gap 3) |
-| #12 | "The include is the start" of an environment, in the manual | Work (pilot gap 5) |
-| #13 | No test of `iup.atm` as a secondary | Work (pilot gap 8) |
+| #9 | What `true` from `step` means with secondaries | By the session, to be confirmed: quit requested, from any environment; "nothing can awake" only for a primary alone. Test `env-true-01` (passes today) and manual line, branch `envs`. Alternative from `env-uv#4` (2026-11-20): each step reports "I may still be awoken" and the runtime ends when none can; case `env-uv` `tst/env-primary.atm` |
+| #10 | A secondary wakes a waiting primary (an `fd`) | By the session, to be confirmed: `fd` in a secondary, `atm_env_fds` for the primary; failing test `env-fd-01`, branch `envs`. Case of `env-uv#2`: a primary that waits 100 ms makes a loopback echo take 100-200 ms (`env-uv` `tst/pair/iup-echo.atm`; `uv_backend_fd` is its `fd`). Alternative for boards (a `wake` of the primary, `atm_env_wake`) in `261117-envs-boards.md`: to weigh before it is built |
+| #11 | A dedicated compiler forces its environment as primary | By the session, to be confirmed: modes settled when the main chunk ends; the primary is the first with `mode.prefer=:primary`, else the first. Failing test `env-prefer-01`, branch `envs`. Case of `env-uv#3`: `atmos-uv prog.atm` with `include "iup.atm"` |
+| #12 | "The include is the start" of an environment, in the manual | Done on branch `envs` (`2d6cc00`), to merge by `atmos-lang` |
+| #13 | No test of `iup.atm` as a secondary | Asked of `env-iup` 2026-11-20 |
 | #14 | `:frame` stays; `:clock` is time only | Decided 2026-11-17 |
 | #15 | No `task main` | Decided 2026-11-17 |
-| #16 | Build configurations (`ATMOS_INT`, `ATMOS_REAL`, `ATMOS_TIME`; `atmos-lang` `692af43`) and the environments: unit of the time emitted, C types in the glue, libraries built apart. Open with the author as `atmos-float#14`; touches the API of environments (where an environment declares or checks the configuration) | Waiting on `atmos-float#14`; nothing to do yet |
+| #16 | Build configurations (`ATMOS_INT`, `ATMOS_REAL`, `ATMOS_TIME`; `atmos-lang` `692af43`) and the environments: unit of the time emitted, C types in the glue, libraries built apart. Open with the author as `atmos-float#14`; touches the API of environments (where an environment declares or checks the configuration) | Table of facts in `261117-envs-float.md` (sdl, iup, pico follow the unit; uv, ray, esp32 emit µs), the input for `atmos-float#14` |
 
 
 ## A. Decisions waiting for the author

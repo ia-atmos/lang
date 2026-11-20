@@ -22,6 +22,7 @@ next time it is put to him.
 |---|-------|-------|
 | #1 | Organization of the paper (was A4) | Open. Reminder on 2026-11-24 |
 | #2 | Title and venue of the Pingus paper (E, references) | Open. Reminder on 2026-11-24 |
+| #3 | Work with no input (`atmos-lang#95`, 2026-11-20): data of the ports, references checked, drafts, changes of the language | In course, by the session. See G |
 
 ## A. Decisions waiting for the author
 
@@ -249,3 +250,42 @@ memory or from search snippets, and is to be checked before use.
   in the method of the case studies; no claim on save, resume, or
   replay. To do: tell that session the names of the sections when A4 is
   decided.
+
+## G. Work with no input (#3, 2026-11-20)
+
+The author, in `atmos-lang`, on 2026-11-20 (read in its transcript):
+"I want you to review all sessions and propose them changes that need no
+input. The sessions may also work suggest by themselves. No input form
+me. Go ahead". The rule is in `.claude/plans/TODO.md`, "Work with no
+input". Everything below was done by the session, to be reviewed by
+him; nothing outward, and the outline `papers/games.md` keeps both
+organizations (#1 is still his).
+
+### Changes of the language since 2026-11-15 that bear on the paper
+
+Read from the log of `doc/manual.md`. The outline has no code yet; the
+code in `papers/games-drafts.md` is copied from the ports as they were
+on 2026-11-20.
+
+- `pin`: the rules are stable (`pin val`, `pin var`, modifiers on
+  parameters, a pinned value never leaves its block, `set :out` for a
+  place outside that refers to a value until the block ends). Any
+  explanation of memory in the paper follows the manual, "Pin", and
+  points to the paper on `pin` for the rules.
+- No method calls: `o::f()`, `func o::f`, and the implicit `self` left
+  the language. A sample with `::` no longer compiles.
+- Calls with a single atom and no parentheses (`f x`), and the bare
+  `await` of a name (`await x`).
+- `X.in` instead of `X.xin`; the native tag `:atmos` instead of
+  `:value`; `await :all` over an empty pool is satisfied at once; only
+  the last spawn of a block is the compile error.
+- `X.loadx`: data with names and includes. It bears on the ports that
+  keep content as data (SNKRX, Flare).
+- Numeric options: `ATMOS_REAL=float` (reals with 32 bits) and
+  `ATMOS_INT=32`. They bear on a threat to validity: Pingus and
+  SuperTux kept exact `float` math in C because reals were doubles. To
+  check with each port whether its formulas went back to Atmos before
+  the paper says what stayed in C.
+- Environments may be written in Atmos (`atmos.env`), with a generic
+  `main`; Rocks and the SDL library left for `ia-atmos/env-sdl`. The
+  README no longer has `lib/sdl.atm`.
