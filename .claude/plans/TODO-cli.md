@@ -49,3 +49,14 @@ becomes an item only if the author takes it up.
   supports). Seen in `origin/float` (`src/main.c`, `Makefile`); not on
   `main` yet. Anything proposed here about the variables starts from
   those names, and `cli` will be rebased over it once merged.
+- `atmos-envs`, 2026-11-20, on the selection of an environment (its
+  recommendations, none decided by the author): for `atmos-envs#4`,
+  keep both mechanisms and let them take a list, in order
+  (`make env ENV="a.atm b.atm"`, `-e a.atm -e b.atm`), the first being
+  the primary; for `atmos-envs#11` (`atmos-uv prog.atm` with
+  `include "iup.atm"` makes uv the primary whatever the program
+  wants), settle the modes when the main chunk ends, with
+  `mode.prefer`, or, from the command line, an option that names the
+  primary (`-p iup`), or register the environment of the dedicated
+  compiler after those of the program. Dedicated compilers in use:
+  `atmos-pico`, `atmos-sdl`, `atmos-ray`, `atmos-uv`.
