@@ -366,3 +366,19 @@ and to `atmos-lang` for the other ports.
   broadcast. It bears on the claim of cost: tasks in the simulation
   have a price that grows with the broadcast. To read at the source
   before it enters `papers/games-data.md`.
+- `sdl-snkrx` (2026-11-20, relayed by `atmos-lang`, read at `07f5905`):
+  a correction. The old benchmark ran the port with no audio. Now:
+  1.07 to 1.22 times the ticks of the original (not 1.8 to 3.0), CPU
+  at 83% to 91% (not 56% to 71%), peak memory 546 against 946 MB, both
+  of decoded sounds (not a gain of the language). Logic alone: 0.089
+  ms per tick (level 1), 2.77 (stress), port only, in process, which
+  is not the method of #4. One count of size: 9455 lines and 91671
+  tokens against 10381 and 134827. Its README says how it was
+  written. A note of correction is at the top of
+  `papers/games-data.md` and `papers/games-drafts.md`, and under the
+  line of SNKRX in the outline, which expected "even more in memory
+  and CPU": that expectation of the author does not hold as measured,
+  to tell him.
+- To do: rewrite the cells and sentences of SNKRX from the new
+  documents, when the ports have answered and run on the new `main`
+  (one refresh of the two files, not one per answer).

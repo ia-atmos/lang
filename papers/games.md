@@ -34,6 +34,11 @@ Holds the evaluation and the discussion (no separate section).
   and exploration.
 - Complete dynamic: SNKRX (`ia-atmos/sdl-snxkx`). Gains in expressiveness
   even here, and even more in memory and CPU.
+  Note of the session (2026-11-20, to be reviewed): as measured, the
+  gain in CPU is small (1.07 to 1.22 times the ticks of the original,
+  with the sound of both mixed), and memory is not a gain (both peaks
+  are decoded sounds). The gain to claim is in tokens (68%) and in
+  control state. See `papers/games-data.md`.
 - Static: Pingus (`ia-atmos/sdl-pingus`), Flare (`ia-atmos/sdl-flare`).
   Expectation of the author, to be measured: the loss against C++ stays
   below 10-20%, which would already be an unexpectedly positive result.
