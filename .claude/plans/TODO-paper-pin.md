@@ -17,12 +17,14 @@ written; each such item now has its number below.
 | #2 | Section 4 follows the approved rules | Closed: done, kept current |
 | #3 | SNKRX bullet in Section 9 is a guess | Closed: 2026-11-19 |
 | #4 | Sections 7 and 8 against the implementation | Closed: done 2026-11-15 |
-| #5 | Section 9: reports of the ports | Open: 4 pending |
+| #5 | Section 9: reports of the ports | Partly: 12 pass (atmos-lang#81); SNKRX migrating |
 | #6 | Cost of the migration under the current rules | Open |
 | #7 | Rules not declared stable | Closed: stable 2026-11-19, but #7b |
-| #8 | Experiment: CLBG in Atmos | Planned |
-| #9 | Related work: read dyn-lex | Planned |
+| #8 | Experiment: CLBG in Atmos | Blocked: no Lua here; build denied |
+| #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Waiting: approval of the outline |
+| #11 | Draft of Sections 3, 4, 8, 9 (`papers/pin-draft.md`) | By the session, to be confirmed |
+| #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open
 
@@ -50,6 +52,26 @@ written; each such item now has its number below.
   side-by-side with the rules.
 - **#10 Fill the sections with text** (was C3), after the author
   approves the outline.
+
+## By the session, to be confirmed (rule "Work with no input", 2026-11-20)
+
+- **#11 Draft text.** `papers/pin-draft.md`: Sections 3, 4, 8, and the
+  measured costs of 9, written on the stable rules while the outline (#10)
+  waits. Reversible: it is a separate file; the outline is unchanged.
+- **#12 Remark on Câmara (2024).** The scripts in
+  `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
+  `./x.exe`, ten runs each. The flaw the author reported (recompilation in
+  every timed run) is not in these scripts. The outline still says not to
+  cite the numbers; whether the flaw lies elsewhere is for the author.
+- **#8 blocked.** No Lua 5.4 interpreter here (only the library). Building
+  Lua 5.4.6 from lua.org in the scratchpad was denied by the permission
+  classifier, so neither Lua nor the C references of the benchmark were
+  built. Needed: a Lua 5.4 interpreter in the environment.
+- **#6 not done.** The ports are in other repositories, not in this
+  session; the count from their history needs their sessions.
+- **#5 partly.** 12 ports pass their suites on the final rules
+  (atmos-lang#81, merge `64005fd`); sdl-snkrx is migrating and reports to
+  atmos-pin. Per-port numbers are not in `ISSUES.md`.
 
 ## Closed
 
