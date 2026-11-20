@@ -14,8 +14,9 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #4 | The badguys of SuperTux as the test of inheritance of behavior | done 2026-11-20 by reading the port of `sdl-tux` (`261118-oo-inherit.md`): #1 stands |
 | #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed by `atmos-lang` to `sdl-tux` on 2026-11-20; it is of `sdl-tux` to take or not |
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
-| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; **the merge into main waits for his approval** and for the measurement on the ports by `atmos-lang` (`261118-oo-clauses.md`) |
+| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; measured by `atmos-lang` on 2026-11-20 (2197 files of 15 clones: no port changes; `atmos-lang#99`); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | open: the one thing missing in the rewrite of `collision` of SuperTux; to design |
+| #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | fixed on `oo`; split as the branch `oo-own` (`35cc6e9`, over main) and offered to `atmos-lang` on 2026-11-20; no reproducer on main |
 
 ## Waiting for the author
 
