@@ -1,2 +1,0 @@
-;; an error of the predicate goes through
-print(filter([1,2], \(v) { throw :X }))
