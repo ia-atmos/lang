@@ -17,14 +17,14 @@ started, no decision needed), **moved** (another session handles it),
 | 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
-| 6 | The event of termination of transparent blocks | open (recommended: remove) |
+| 6 | The event of termination of transparent blocks | open (recommended: remove). Tried on 2026-11-20: dropping the event alone breaks 7 cases (`par :all`, `toggle`, `return` of a block wait on it), so it needs the wait of `par` redone first; not prepared |
 | 7 | Iterating a tagged table gives the field `tag` | closed: kept, as the reference |
 | 8 | `await x` needs `await(x)`; `loop n {}` is not a counted loop | closed: became #31 |
 | 9 | Indexing a string is an error (the reference gives `nil`) | closed: kept |
 | 10 | The names `:value`, `X.nin`, `include` | closed; later `:value` became `:atmos` and `X.xin` became `X.in` (2026-11-17) |
 | 11 | Mouse events in `lib/sdl.atm` | closed 2026-11-16: the library left for `env-sdl` |
 | 12 | Tweens and springs as a library | work |
-| 13 | The trace of an error with the tasks it crossed | open (recommended: one line per await) |
+| 13 | The trace of an error with the tasks it crossed | prepared 2026-11-20 on the branch `lang` (f946501): `file:N (await)` for each await crossed, no field in a trail; four expected outputs gain a line; suite and sdl-pingus pass. The merge waits for the author |
 | 14 | `X.dump` with indentation | closed: not until someone needs it |
 | 15 | Faster compilation (24 s in Pingus) | work |
 | 16 | Slimmer `ATask` and `ANode` | closed: not now |
@@ -74,13 +74,13 @@ started, no decision needed), **moved** (another session handles it),
 | 60 | Where the exception of `emit @t` goes | moved: `atmos-pool` |
 | 61 | Master of Orion (`pico-1oom`) | moved: `pico-1oom` |
 | 62 | A task whose value is dropped outlives its block | done 2026-11-15 |
-| 63 | A `pin` of a task that ends a loop body is not flagged | open (recommended: extend the check) |
+| 63 | A `pin` of a task that ends a loop body is not flagged | moved 2026-11-20: `atmos-pin` (asked to prepare it on `pin`) |
 | 64 | An architecture of snapshots and commands | moved: `paper-snapshots` |
-| 65 | `t@0.x` does not compile | open (recommended: a dot belongs to a number only before a digit) |
+| 65 | `t@0.x` does not compile | prepared 2026-11-20 on the branch `lang` (28e909b): `t@0.x` is the field `x` of `t@0`; `5.` and `1.e2` are no longer numbers; no file of the ports lexes differently (2116). The merge waits for the author |
 | 66 | A paper on `pin` | moved: `paper-pin` |
 | 67 | A paper on snapshots and commands | moved: `paper-snapshots` |
 | 68 | FrescoGO! over pico | moved: `pico-frescogo` |
-| 69 | The six exit names as keywords of the lexer | open (recommended: do it, after `atmos-args` merges) |
+| 69 | The six exit names as keywords of the lexer | moved 2026-11-20: `atmos-args` (asked to prepare it on `args`) |
 | 70 | Atmos on the ESP32 | moved: `env-esp32` |
 | 71 | The numbering of items: `#N`, never reused, for everything put to the author | done 2026-11-18 (this file) |
 | 72 | The tests of the projects with `test` blocks and emits: what still needs a trick | open (answered on 2026-11-18; the adoption is `atmos-envs`, its A3) |
@@ -106,4 +106,4 @@ started, no decision needed), **moved** (another session handles it),
 | 92 | A loader of data that accepts names, `loadx` (the author, through `pico-slides`) | done 2026-11-20 by `atmos-loadx`: `X.loadx(s)` on main (d27805c), names as values with a deep copy per use, no spread; suite checked here |
 | 93 | The measurement of the branch `float` 3bec041 (`ATMOS_INT`, `ATMOS_TIME`, libraries built on demand) on the ports, default configuration: nothing changes | done 2026-11-20 (sent to `atmos-float`; the merge waits for the author there) |
 | 94 | The branch `float` merged by `atmos-float` (692af43: `ATMOS_INT`, `ATMOS_TIME`, libraries on demand): main checked, the 15 ports and the 8 language sessions told | done 2026-11-20 |
-| 95 | Work with no input: review every session and propose work that needs no decision of the author; the sessions may also go on with their own suggestions | open: rule written (`TODO.md`, "Standing rules"), proposals sent to the sessions on 2026-11-20 |
+| 95 | Work with no input: review every session and propose work that needs no decision of the author; the sessions may also go on with their own suggestions | done 2026-11-20: rule written (`TODO.md`, "Standing rules"); proposals sent to the 28 sessions; here, `#13` and `#65` prepared on the branch `lang` |
