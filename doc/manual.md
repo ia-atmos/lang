@@ -768,6 +768,8 @@ The literals for `nil`, `boolean` and `number` follow the same
 [lexical conventions of Lua][lua-lexical].
 A number with no fractional part and no exponent is an integer (e.g., `10`,
 `0xFF`), and any other is a real (e.g., `1.5`, `1e3`).
+A dot belongs to a number only before a digit, such that `t@0.x` is the field
+`x` of `t@0`, and `5.` is not a number.
 
 The literal `nil` is the single value of the `nil` type.
 
@@ -3082,13 +3084,25 @@ val ok, v = catch \{(true,42)} {    ;; catches any error, transforms into 42
 print(ok, v)                        ;; --> false, 42
 ```
 
+An error that no `catch` handles terminates the program with a trace: the line
+that raised it, and then the lines of the calls and of the awaits that it
+crossed, from the innermost to the outermost:
+
 ```
-throw :X
+func g () {
+    throw :X
+}
+task T () {
+    await 1ms
+    g()
+}
+await T()
 
 ;;; error stack trace
 ==> ERROR:
- |  atmos:9 (call)
- v  test.atm:1 (throw) <- atmos:9 (task)
+ |  test.atm:8 (await)
+ |  test.atm:6 (call)
+ v  test.atm:2 (throw)
 ==> X
 ;;;
 ```
@@ -4102,4 +4116,4 @@ may surprise a naive reading:
 | [return](#statement-arguments) | `return (a+1)*2` | `return ((a+1)*2)`     | `(return (a+1)) * 2`     |
 | [return](#statement-arguments) | `[return a, b]`  | `[return (a, b)]`      | `[(return a), b]`        |
 | [locals](#local-variables) | `val x = 1, y`      | `val x = (1, y)`        | `(val x = 1), y`         |
-| [indexing](#indexing) | `t@0.x`             | error: invalid number `0.x` | `(t@0).x`         |
+| [indexing](#indexing) | `t@0.5`             | `t@(0.5)`               | `(t@0).5`                |

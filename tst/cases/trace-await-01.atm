@@ -1,0 +1,15 @@
+func g () {
+    throw :boom
+}
+task U () {
+    await 1ms
+    g()
+}
+task T () {
+    await U()
+}
+task Main () {
+    val v = await T()
+    print(v)
+}
+await Main()
