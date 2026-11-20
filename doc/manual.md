@@ -471,6 +471,10 @@ The following environment variables affect the build:
   also reports memory leaks when the program terminates.
 - `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits, instead of a
   `double` (see [Types](#types--values)).
+- `ATMOS_INT`: if `32`, an integer has 32 bits, instead of 64 (see
+  [Types](#types--values)).
+- `ATMOS_TIME`: if `ms`, the unit of time is the millisecond, instead of the
+  microsecond (`us`, see [Types](#types--values)).
 - `ATMOS_HOME`: the directory with the runtime (`rt/` and `build/`).
   By default, it is the directory of the compiler itself, so a checkout may be
   moved after it is built.
@@ -874,9 +878,24 @@ with single precision, as a C `float` with 32 bits, such that it computes as a
 C program with `float` does: each operation between reals rounds to 32 bits,
 `math` uses the functions for `float`, and a real prints with the fewest
 digits that give it back (`0.1`, `0.33333334`).
-Integers still have 64 bits.
 The option holds for the whole program, with no second type of real in the
 language.
+
+A program built with `ATMOS_INT=32` has integers with 32 bits: integer
+arithmetic wraps at 32 bits, a decimal literal that does not fit is a real, and
+a hexadecimal one wraps.
+The two options are independent.
+With both, on a target with pointers of 32 bits, a value takes 8 bytes instead
+of 16.
+
+A program built with `ATMOS_TIME=ms` counts time in milliseconds instead of
+microseconds: the value of a clock (`1s` is `1000`), the time of an emit, and
+the time to the nearest timer.
+In either unit, a clock is an integer, or a real if it has a fraction of the
+unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
+integer is a compile error: with integers of 32 bits, a clock holds up to 35
+minutes in microseconds, and up to 24 days in milliseconds.
+The environment of a program must be built with the same options.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 
