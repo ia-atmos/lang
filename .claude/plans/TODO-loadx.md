@@ -58,7 +58,7 @@ Value : (as in X.load) | ID
 | 20 | The reach of #19c: when a repeated definition is ignored and when it is still an error | **decided (2026-11-20, #20b)**: always ignored, anywhere. A later definition of a name is read (so its syntax and its names are checked) and ignored. The error `name already defined` of #6 no longer exists. Implemented on the branch `loadx` |
 | 21 | Defect: an include of a directory (or of an empty name) was read as an empty file, with no error | fixed: `include not found : PATH`. By the session, under the rule "Work with no input". On `main` since `513767c`, taken by `atmos-lang` after the suite (2026-11-20) |
 | 22 | Tests of the reader, by the session under the same rule: `loadx-03` (missing file, directory, empty file, cycle of includes, 2^15 leaves, nesting at the limit, 2000 names, dump read back), `loadx-04` and `loadx-05` (the same numbers under `ATMOS_INT=32 ATMOS_REAL=float ATMOS_TIME=ms` and without them) | on `main` since `513767c` |
-| 23 | Asked `pico-slides` whether its documents load as written | waits for its answer |
+| 23 | Asked `pico-slides` whether its documents load as written | closed (2026-11-20): it reads every document with `X.loadx(s)` (one argument, after changing to the directory of the file), its 39 tests load, one with an include and a name defined before it, one with the message of an undefined name; no text failed, as it reported |
 
 ## State (2026-11-20)
 
