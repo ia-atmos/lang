@@ -644,6 +644,7 @@ The example `exs/stdin.atm` emits each line of the standard input as an event.
 The following keywords are reserved in Atmos:
 
 ```
+    abort               ;; abort task
     await               ;; await event
     break               ;; loop break
     catch               ;; catch exception
