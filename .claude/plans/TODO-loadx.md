@@ -47,11 +47,11 @@ Value : (as in X.load) | ID
 - A name sees the names defined before it. Errors, with the line:
   `undefined name : A`, `name already defined : A`, `expected value`.
 - `X.dump` does not change: a value read with names is written expanded.
-| 12 | Merge of the branch `loadx` into `main` | asked |
+| 12 | Merge of the branch `loadx` into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN over the current `main` |
 
 ## State (2026-11-20)
 
-- Branch `loadx`, three commits over `main`: `rt/lload.c` (the loader),
+- Merged into `main`. The branch `loadx` had three commits: `rt/lload.c` (the loader),
   `tst/cases/loadx-01` (with `inc/slides.atm`), and the manual ("Load
   with Names") with one line in the README.
 - `make test` with ASAN passes on the branch: rt, lex 32, ast 90, cases
