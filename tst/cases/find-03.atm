@@ -1,0 +1,19 @@
+;; find stops at the first match, and skips a task that the predicate
+;; aborts.
+task P (x) {
+    set pub = [x=x]
+    await(false)
+}
+pin ts = tasks()
+val a = spawn @ts P(1)
+val b = spawn @ts P(2)
+val c = spawn @ts P(3)
+var n = 0
+val t = find(ts, \(t) {
+    set n += 1
+    if t.pub.x == 1 {
+        abort(b)
+    }
+    t.pub.x > 1
+})
+print(t.pub.x, n)                               ;; 3 2
