@@ -1317,6 +1317,17 @@ static Expr* parser_1_prim (void) {
         e->u.await.p = parser_await();
         return e;
 
+    // context (enter, leave) {...}
+    } else if (accept_str("context")) {
+        Expr* e = mk(E_CONTEXT, TK0);
+        accept_str_err("(");
+        e->u.context.enter = parser_6_pip(NULL);
+        accept_str_err(",");
+        e->u.context.leave = parser_6_pip(NULL);
+        accept_str_err(")");
+        e->u.context.blk = parser_block();
+        return e;
+
     // toggle t(b) with P  |  toggle on :T with P {...}
     } else if (accept_str("toggle")) {
         Tk tk = TK0;

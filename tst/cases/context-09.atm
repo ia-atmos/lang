@@ -1,0 +1,14 @@
+;; #5: an error in enter is raised at the await of the trail it resumes
+var X = false
+spawn {
+    catch :E {
+        context (\{ if X { throw(:E) } }, \{ nil }) {
+            loop on :draw { print "draw" }
+        }
+    }
+    print "caught"
+}
+emit :draw
+set X = true
+emit :draw
+print "end"

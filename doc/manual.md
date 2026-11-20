@@ -594,13 +594,14 @@ The following keywords are reserved in Atmos:
     await               ;; await event
     break               ;; loop break
     catch               ;; catch exception
+    context             ;; context block
     defer               ;; defer block
     do                  ;; do block
     else                ;; else block
     emit                ;; emit event
     escape              ;; escape block
-    false               ;; false value
-    func                ;; function                         (10)
+    false               ;; false value                      (10)
+    func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
     in                  ;; in iterator
@@ -609,9 +610,9 @@ The following keywords are reserved in Atmos:
     loop                ;; loop block
     match               ;; match block
     nil                 ;; nil value
-    on                  ;; on event clause
+    on                  ;; on event clause                  (20)
     par                 ;; par block
-    pin                 ;; pin declaration                  (20)
+    pin                 ;; pin declaration
     pub                 ;; public variable
     return              ;; escape prototype
     set                 ;; assign expression
@@ -619,9 +620,9 @@ The following keywords are reserved in Atmos:
     spawn               ;; spawn task
     task                ;; task prototype
     tasks               ;; task pool
-    test                ;; test block
+    test                ;; test block                       (30)
     throw               ;; throw error
-    toggle              ;; toggle task                      (30)
+    toggle              ;; toggle task
     true                ;; true value
     until               ;; until loop condition
     val                 ;; constant declaration
@@ -629,7 +630,7 @@ The following keywords are reserved in Atmos:
     watching            ;; watching block
     where               ;; where block
     while               ;; while loop condition
-    with                ;; with block                       (38)
+    with                ;; with block                       (40)
 ```
 
 ## Symbols
@@ -3356,6 +3357,64 @@ spawn {
 emit(:Ok [false])
 emit(:Tick)         ;; (nop)
 emit(:Draw)         ;; --> draw
+```
+
+### Context
+
+A `context` sets a state of a library (a canvas, a layer, a color) while the
+code that lives in its block runs, and restores it before any other code
+runs:
+
+```
+Context : `context´ `(´ Expr `,´ Expr `)´ Block
+```
+
+The first expression is a function `enter`, which sets the state and returns
+what `leave` needs to restore it.
+The second is a function `leave`, which receives that value.
+The block runs as a [transparent task](#tasks), as in a
+[toggle](#toggle) block.
+
+The runtime calls `enter` before it resumes a task or block that lives in the
+context, and `leave` before code outside the context runs again: an `emit`
+from inside, the end of a traversal of an `emit`, or the context itself
+terminating.
+Where a task lives decides its context, not where it was spawned from: the
+tasks of a pool declared inside a context run inside it, and a task spawned
+from inside a context into a pool declared outside does not.
+Contexts nest: the inner one is entered after the outer one, and left before
+it.
+
+The switch is lazy: two tasks of the same context that awake in a row, such
+as the tasks of a pool, call `enter` and `leave` only once around both, and an
+event that awakes no task in the context calls neither.
+
+An error in `enter` or `leave` is raised in the task being resumed, or in the
+code that resumed it.
+It is an error to `emit` or to `spawn` inside `enter` or `leave`.
+
+Examples:
+
+```
+var layer = :world
+func set_layer (l) {        ;; returns the previous layer
+    val old = layer
+    set layer = l
+    old
+}
+spawn {
+    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
+spawn {
+    loop on :draw {
+        print(layer)        ;; --> world
+    }
+}
+emit :draw
 ```
 
 ### Parallel

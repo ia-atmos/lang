@@ -1,0 +1,4 @@
+;; #4: the two functions are in parentheses
+context \{ f() } {
+    await :X
+}

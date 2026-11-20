@@ -1,0 +1,15 @@
+;; #1: nested contexts; a task spawned inside into a pool outside runs outside
+pin ts = tasks()
+task T () {
+    loop on :draw { print "t" }
+}
+spawn {
+    context (\{ print "+A" }, \{ print "-A" }) {
+        context (\{ print "+B" }, \{ print "-B" }) {
+            spawn @ts T()
+            loop on :draw { print "b" }
+        }
+    }
+}
+print "draw"
+emit :draw

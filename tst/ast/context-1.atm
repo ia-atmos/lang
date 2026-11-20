@@ -1,0 +1,4 @@
+;; #4 (by the session, to be confirmed): context (enter, leave) {...}
+context (\{ f() }, \(old) { g(old) }) {
+    await :X
+}
