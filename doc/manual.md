@@ -3574,7 +3574,7 @@ tables recursively.
 - `X.print(...)`: `print` using `X.tostring` on each argument
 - `X.copy(v)`: deep copy of `v`
 - `X.load(s)`: reads a value written as data
-- `X.loadx(s)`: reads a value written as data, with names
+- `X.loadx([dir,] s)`: reads a value written as data, with names and includes
 - `X.dump(v)`: writes a value as data
 - `X.in(v, t)`, `X.nin(v, t)`: membership ("in" and "not in"); `X.xin` is a
   former name of `X.in`, to be removed
@@ -3653,7 +3653,9 @@ The function `X.loadx(s)` reads what `X.load` reads, and also accepts
 definitions of names before the value:
 
 ```
-Text  : { ID `=´ Value } Value
+Text  : { Def } Value
+Def   : ID `=´ Value
+      | `include´ STR
 Value : ... | ID
 ```
 
@@ -3662,7 +3664,7 @@ The value that has no name is the result, and nothing may follow it.
 A name holds any value, such as a number or a table, and is used wherever a
 value is expected: as a positional entry, as the value of a field or of a key,
 or as the result itself.
-A name may have any identifier, except `nil`, `true`, and `false`.
+A name may have any identifier, except `nil`, `true`, `false`, and `include`.
 
 Each use of a name is a copy of its value.
 Therefore, the result is the same that `X.load` gives for the text with each
@@ -3672,6 +3674,17 @@ is shared between two uses.
 A definition may use the names defined before it, and not itself.
 A name that is not defined, or that is defined twice, is an error with the line
 of the problem.
+
+An `include` reads the definitions of another file, as if they were written in
+its place.
+The included file only has definitions and other includes, with no value of its
+own.
+A file is only included once: other occurrences have no effect.
+
+The file name is relative to the directory `dir` in `X.loadx(dir, s)`, or to
+the current directory in `X.loadx(s)`.
+Inside an included file, the name is relative to that file.
+An error inside an included file shows its name before the line.
 
 There are still no operations, functions, or calls: a text with names is data.
 A text may grow much larger when it is read, since a name may be used many
@@ -3704,6 +3717,26 @@ set v@0@0 = 9                               ;; each use is a copy
 X.print(v)                                  ;; --> [[9], [1]]
 
 X.loadx("[T]")          ;; error: invalid load : line 1 : undefined name : T
+```
+
+```
+;; decks/theme.atm
+BLUE  = :blue
+TITLE = [ color=BLUE, anchor=:C ]
+```
+
+```
+;; decks/talk.atm
+include "theme.atm"
+:Slides [
+    :Slide [ :text ["Cultura", style=TITLE] ],
+]
+```
+
+```
+pin f = io.open("decks/talk.atm")
+val s = X.loadx("decks", io.read(f, :all))  ;; includes decks/theme.atm
+print((s@0@0).style.color)                  ;; --> blue
 ```
 
 ### Membership
