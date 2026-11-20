@@ -14,6 +14,8 @@ AVal atm_g_tostring;
 AVal atm_g_tonumber;
 AVal atm_g_assert;
 AVal atm_g_next;
+AVal atm_g_find;
+AVal atm_g_filter;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -136,6 +138,96 @@ static AStatus std_next (AFunc* self, int argc, AVal* argv) {
     } else {
         a_push(a_nil());
     }
+    return A_OK;
+}
+
+// Walks a pool or a table for `find` and `filter`: calls `f(v, k)` on
+// each member, and `hit` on those it accepts. `hit` stops the walk by
+// returning 1.
+static AStatus walk (const char* name, int argc, AVal* argv,
+    int (*hit) (AVal k, AVal v, void* ud), void* ud)
+{
+    AVal xs = arg(argc, argv, 0);
+    AVal f  = arg(argc, argv, 1);
+    if (xs.type!=A_TAB && xs.type!=A_TASKS) {
+        return a_error("invalid argument to '%s' : expected table or tasks : got %s",
+            name, a_typename(xs));
+    }
+    if (f.type != A_FUNC) {
+        return a_error("invalid argument to '%s' : expected function : got %s",
+            name, a_typename(f));
+    }
+    AVal pos=a_nil(), k=a_nil(), v=a_nil();
+    AStatus st = A_OK;
+    while (1) {
+        st = a_next(xs, a_nil(), &pos, &k, &v);
+        if (st!=A_OK || k.type==A_NIL) {
+            break;
+        }
+        int base = a_top;
+        a_pushc(v);
+        a_pushc(k);
+        st = a_call(f, base);
+        if (st != A_OK) {
+            break;
+        }
+        int yes = (a_top > base) && a_truthy(a_stk[base]);
+        a_settop(base);
+        if (yes && hit(k, v, ud)) {
+            break;
+        }
+    }
+    a_clr(&k);
+    a_clr(&v);
+    return st;
+}
+
+static int find_hit (AVal k, AVal v, void* ud) {
+    *((int*) ud) = 1;
+    a_pushc(v);
+    a_pushc(k);
+    return 1;
+}
+
+// find(xs, f): the first member of the pool or table `xs` for which
+// `f(v, k)` is truthy, and its key. Gives nil if there is none.
+static AStatus std_find (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    int found = 0;
+    AStatus st = walk("find", argc, argv, find_hit, &found);
+    if (st==A_OK && !found) {
+        a_push(a_nil());
+    }
+    return st;
+}
+
+typedef struct {
+    AVal    t;
+    int64_t n;
+    AStatus st;
+} Filter;
+
+static int filter_hit (AVal k, AVal v, void* ud) {
+    (void) k;
+    Filter* fl = ud;
+    fl->st = a_setindex(fl->t, a_int(fl->n++), v);
+    return (fl->st != A_OK);
+}
+
+// filter(xs, f): a new vector with the members of the pool or table
+// `xs` for which `f(v, k)` is truthy, in the order of the walk.
+static AStatus std_filter (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    Filter fl = { a_tab(), 0, A_OK };
+    AStatus st = walk("filter", argc, argv, filter_hit, &fl);
+    if (st == A_OK) {
+        st = fl.st;
+    }
+    if (st != A_OK) {
+        a_dec(fl.t);
+        return st;
+    }
+    a_push(fl.t);
     return A_OK;
 }
 
@@ -714,6 +806,8 @@ void atm_std_init (void) {
     atm_g_tonumber = a_func(std_tonumber, 0);
     atm_g_assert   = a_func(std_assert, 0);
     atm_g_next     = a_func(std_next, 0);
+    atm_g_find     = a_func(std_find, 0);
+    atm_g_filter   = a_func(std_filter, 0);
 
     atm_g_X = a_tab();
     field(atm_g_X, "tostring", x_tostring);
@@ -769,6 +863,8 @@ void atm_std_init (void) {
     a_own(atm_g_tonumber);
     a_own(atm_g_assert);
     a_own(atm_g_next);
+    a_own(atm_g_find);
+    a_own(atm_g_filter);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -785,6 +881,8 @@ void atm_std_quit (void) {
     a_clr(&atm_g_tonumber);
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
+    a_clr(&atm_g_find);
+    a_clr(&atm_g_filter);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {
         a_clr(&atm_envs[i]);
