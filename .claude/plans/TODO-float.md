@@ -18,7 +18,7 @@ Last update: 2026-11-19.
 | `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). On `main` (692af43) |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Settled by the session on 2026-11-20, to be confirmed: the fewest digits stay. See "Screens" |
 | `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` | Done 2026-11-20: the badguys of `sdl-tux` are plain Atmos with real arithmetic under `ATMOS_REAL=float` (a6cdb0b) and 69 runs are identical to the official game tick by tick, 29 with badguys; `env-esp32` built the board image |
-| `#7` | No reals (`#B`) and fixed point (`#C`) | Open. The measurement that decides was asked of `env-esp32` (the software floating point linked on a target with no FPU). See "Screens" |
+| `#7` | No reals (`#B`) and fixed point (`#C`) | Settled by the session on 2026-11-20, to be confirmed: not done. Measured by `env-esp32` on the esp32c3 (no FPU): the software arithmetic costs no flash (it is in the ROM) and the `f` functions of libm 15 KB of a 379 KB image. See "Screens" |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open, not recommended now. See "Screens" |
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
 | `#10` | A portable way to compute with time as a number | Done 2026-11-20 as documentation (d96b8b0): a clock is the unit (`t / 1s`); no new constant. By the session, to be confirmed |
@@ -29,6 +29,10 @@ Last update: 2026-11-19.
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
 | `#16` | `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf`, "because Atmos has no fmod" | Answered 2026-11-20: nothing is missing. `%` on reals is `fmod` (`fmodf` under `float`), and `math.pow`, `math.sin` exist. Told `sdl-tux`; a divergence, if it tries, would be a defect to report here |
 | `#17` | A time field of an event of an environment (`:frame [us=]` of `env-pico`, `time` of `env-esp32`): the unit of the build, or the unit in its name | Open, his to decide, with `atmos-envs#16`. Reading of the session: a field named after a unit keeps it |
+| `#18` | The names: subtypes `integer` and `float` as in Lua (the manual said "real"); the options `ATMOS_FLOAT=64\|32`, `ATMOS_INTEGER=64\|32`, `ATMOS_CLOCK=us\|ms` | Decided 2026-11-20 by the author ("sim tudo", with `ATMOS_INTEGER`). On the branch `float` (1bb1edf), suite passing with ASAN, NOT merged: a former name is refused with the new one. Measured by `atmos-lang`: the default build is untouched (2197 files of 15 clones give the same C). At the merge two ports must rename: `sdl-tux` (3 scripts with `ATMOS_REAL=float`) and `env-esp32` (`Makefile:60` reads `$ATMOS_TIME`); six files only name the variables in text. The merge waits for the author |
+| `#19` | The C names follow the language too | Decided 2026-11-20 by the author (`#19b`). On the branch `float` (8fc3b85), suite passing with ASAN, NOT merged: `ATM_FLOAT_32`, `ATM_INTEGER_32`, `ATM_CLOCK_MS`, `A_CLOCK_US`, `AFloat`, `a_float`; the former names fail to compile with the new name; two messages say "got float". The six environments must rename with the merge: `atmos-lang` asked for the lines |
+| `#20` | Other sizes (`ATMOS_INTEGER=16`, `ATMOS_FLOAT=80`) | Open, asked by the author 2026-11-20. Reading: the form already takes them; none added until a target asks, each value is one more axis of tests |
+| `#21` | Merge of the branch `float` (the renaming `#18`, `#19`, and `ENV_NUM` `#14`) | Asked 2026-11-20; recommended: all of it, with the environments renaming and declaring in the same hour. Waits for the author and for the second measurement |
 
 ## Checked by this session
 
@@ -139,6 +143,20 @@ Last update: 2026-11-19.
   `float` only the digits of a printed real differ. Pushed to its main.
   All six environments (sdl, pico, ray, uv, iup, esp32) had the same
   defect of the unit of time and now support the three options.
+- 2026-11-20, `env-esp32` (`#7`), lang 844053e, the three options,
+  `app/init.atm`, built for both targets with no warnings (its drivers
+  build on the esp32c3 unchanged):
+
+  | | esp32 (FPU) | esp32c3 (no FPU) |
+  |---|---|---|
+  | Soft-float routines in flash | 89 B | 0 B (resolved to the ROM) |
+  | libm `f` functions | 10857 B | 15248 B |
+  | Component (`libmain.a`) | 127172 B | 148875 B |
+  | Image | 341453 B | 379349 B |
+
+  Most of the libm is the math library itself (`powf`, the trig), which
+  a fixed-point build would still need or drop as a feature. Speed not
+  measured (needs a board).
 
 ## The matrix of configurations (2026-11-20)
 
@@ -201,8 +219,12 @@ No input form me. Go ahead". What this session settled itself is marked
   functions of libm). A few KB: not worth it. Tens of KB on a board
   with 256 KB or less: worth a discussion. Asked of `env-esp32` for the
   esp32c3.
-- Reading until then: not recommended; `ATMOS_REAL=float` already
-  removes the double math (-4.6 KB on the ESP32).
+- Result (2026-11-20, `env-esp32`, esp32c3): the arithmetic costs no
+  flash (the routines are in the ROM of the chip) and the `f` functions
+  of libm 15 KB, 4% of the image, most of it `pow` and the trig.
+- Settled by the session, to be confirmed: not done. The size does not
+  justify a second arithmetic; only the speed of software reals could,
+  and it needs a board and a program that computes (the PID loop).
 
 ### `#8` An 8-byte value on 64-bit hosts (NaN boxing)
 

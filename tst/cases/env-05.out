@@ -1,6 +1,7 @@
 callback goes on
 step goes on
 ==> ERROR:
+ |  env-05.atm:27 (await)
  v  env-05.atm:25 (throw)
 ==> boom
 quit
