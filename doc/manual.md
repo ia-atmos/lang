@@ -729,7 +729,8 @@ A `number` literal starts with a digit and is followed by digits, letters, and
 dots (`.`).
 
 A `clock` duration literal is a straight sequence of numbers and time units
-(e.g. `1min30s`), which is converted into a number in microseconds.
+(e.g. `1min30s`), which is converted into a number in microseconds (or in
+milliseconds, see [Types](#types--values)).
 
 A `string` literal is a sequence of characters enclosed by an odd number
 of matching double (`"`) or single (`'`) quotes.
@@ -897,9 +898,24 @@ In either unit, a clock is an integer, or a real if it has a fraction of the
 unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
 integer is a compile error: with integers of 32 bits, a clock holds up to 35
 minutes in microseconds, and up to 24 days in milliseconds.
+A program that computes with time as a number should use a clock as the unit,
+which is right in every build: `t / 1s` is a time in seconds, and `2 * 1ms` is
+two milliseconds.
+A bare number is not: `t / 1000000` is wrong in milliseconds, and
+`t * 1000000` overflows with integers of 32 bits.
+
+With integers of 32 bits, `os.time()` wraps in the year 2038.
+As with 64 bits, the least integer has no literal (`-2147483648` is the
+negation of a real), and is written as `-2147483647 - 1`.
+
 The environment of a program must be built with the same options.
-The runtime is built once for each combination of the options, when a program
-first asks for it.
+
+Only the runtime of the default options is built with the compiler.
+The runtime of another combination is built once, when a program first asks for
+it, which requires `make`, the sources of the runtime, and permission to write
+to the directory `build/` of the compiler.
+Otherwise, the compiler shows the command that builds it
+(`make -C <dir> build/libatmos-i32.a`), to be run by who has the permission.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 
@@ -986,6 +1002,27 @@ pin p = :Pos [         ;; a tagged table:
 print(p ?? :table)      ;; --> true
 print(p ?? :Pos)        ;; --> true
 ```
+
+Atmos has no classes or methods.
+To choose a function by the type of a value, keep the functions in a table
+indexed by tags, and index it with the tag of the value.
+The same holds for [tasks](#tasks):
+
+```
+pin AREA = []                               ;; tag -> function
+set AREA.Circle = func (s) { 3 * s.r * s.r }
+set AREA.Rect   = func (s) { s.w * s.h }
+
+func area (s) {
+    AREA@(s.tag)(s)                         ;; chooses by the tag
+}
+
+print(area(:Circle [r=1]))                  ;; --> 3
+print(area(:Rect [w=2, h=3]))               ;; --> 6
+```
+
+A new type adds its entry to the table, in its own file, with no change to
+`area`.
 
 See [Ambiguities](#ambiguities):
     `:X` ⏎ `[]` reads as two statements `:X ; []` (not constructor `:X []`).
@@ -4016,6 +4053,7 @@ may surprise a naive reading:
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |
 | [calls](#calls)   | `f g x`               | error: use parenthesis  | `f(g(x))`, `f(g)(x)`     |
+| [operations](#operations) | `x` ⏎ `-1`    | `x - 1`                 | `x ; -1`                 |
 | [pipes](#pipes)   | `x<-y`                | `y(x)`                  | `x < (-y)`               |
 | [tasks](#tasks)   | `task` ⏎ `(x)`        | `task ; (x)`            | `task(x)`                |
 | [lambda](#lambda) | `\-`                  | `\(a,b){ a - b }`       | `\(a){ -a }`             |

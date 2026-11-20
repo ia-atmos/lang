@@ -1,0 +1,16 @@
+false	invalid load : line 1 : include not found : inc/loadx/none.atm
+false	invalid load : line 1 : include not found : inc/loadx/dir
+false	invalid load : line 2 : include not found : inc/loadx
+false	invalid load : line 1 : include not found : .
+false	invalid load : line 1 : include not found : inc/none/base.atm
+1
+[[2], 2]
+false	invalid load : inc/loadx/cycle/a.atm : line 2 : undefined name : B
+false	invalid load : inc/loadx/cycle/a.atm : line 2 : undefined name : B
+15	163836
+true
+false	invalid load : line 201 : too many nested tables
+false	invalid load : line 201 : too many nested tables
+[0, 999, 1999]
+true	true	true
+:Slides [:Slide [:text ["Cultura", style=[color=[fg="blue"], anchor="C"]], :image ["logo.png", style=[color=[fg="blue"], anchor="C"]]], :Slide [:image ["logo.png", style=[color=[fg="blue"], anchor="C"]]]]
