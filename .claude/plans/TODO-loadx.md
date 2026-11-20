@@ -20,9 +20,9 @@ the design.
 | 1 | One function or two: `X.load` extended, or a new `X.loadx` | **decided (2026-11-20, #1a)**: a new `X.loadx`, a superset of `X.load`, which stays as it is |
 | 2 | The syntax of a definition, and what marks the final value | **decided (2026-11-20, #2a)**: `ID = Value` at the top level, no keyword; the one value with no name is the result, and only the end of the text may follow it; a name is any identifier but `nil`, `true`, `false` |
 | 3 | A name as a value: a copy at each use, no shared node | **decided (2026-11-20, #3a)**: a copy at each use, so the result is a tree; a name may hold any value, not only a table |
-| 4 | The spread `NAME...`: where it may appear, and its positional entries | asked, recommended: anywhere among the entries; fields enter as fields, positionals enter at that position, as if the text were pasted |
-| 5 | A field in conflict: the later wins; shallow replace or deep merge | to ask |
-| 6 | A name that uses an earlier name; the errors (undefined, twice, after the value) | to ask |
+| 4 | The spread `NAME...`: where it may appear, and its positional entries | **closed (2026-11-20): no spread.** The author said the `...` of his sketch (`[X...]`) was an ellipsis, a hidden continuation, not an operator. A name is only used as a value (#3) |
+| 5 | A field in conflict: the later wins; shallow replace or deep merge | closed with #4: no spread, so nothing to merge. A field written twice stays as in `X.load` (the later wins) |
+| 6 | A name that uses an earlier name; the errors (undefined, twice, after the value) | asked, recommended: a name sees only the names defined before it; undefined, defined twice, and no final value are errors with the line |
 | 7 | Names given from the program: `X.loadx(s, [TITLE=...])` | to ask |
-| 8 | The spread in the language too (`[t...]`), with `atmos-args` | to ask |
+| 8 | The spread in the language too (`[t...]`), with `atmos-args` | closed with #4: nothing for the language |
 | 9 | `X.dump` of a value read with names: written expanded | to confirm |
