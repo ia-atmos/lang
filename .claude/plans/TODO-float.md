@@ -27,7 +27,7 @@ Last update: 2026-11-19.
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
 | `#14` | Each environment says which numeric options it supports; its compiler refuses the rest | Prepared by the session on the branch `float` (2447d5f), to be confirmed, NOT merged: `make env ... ENV_NUM="float 32 ms"`; a dedicated compiler refuses an option that is not declared; the plain compiler with `-e` checks nothing. Suite passes with ASAN. `env-sdl` (85b23cc) and a scratch of `env-esp32` support the three options |
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
-| `#16` | `math` has no `fmod` (nor a few others): `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf` | Open. `%` on reals is `fmod` and `math.sin` exists; to check what is really missing with `sdl-tux` |
+| `#16` | `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf`, "because Atmos has no fmod" | Answered 2026-11-20: nothing is missing. `%` on reals is `fmod` (`fmodf` under `float`), and `math.pow`, `math.sin` exist. Told `sdl-tux`; a divergence, if it tries, would be a defect to report here |
 | `#17` | A time field of an event of an environment (`:frame [us=]` of `env-pico`, `time` of `env-esp32`): the unit of the build, or the unit in its name | Open, his to decide, with `atmos-envs#16`. Reading of the session: a field named after a unit keeps it |
 
 ## Checked by this session
