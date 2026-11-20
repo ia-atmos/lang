@@ -35,6 +35,7 @@ An item of another session is `session#N` (the compiler's list is
 | #13 | No test of `iup.atm` as a secondary | Work (pilot gap 8) |
 | #14 | `:frame` stays; `:clock` is time only | Decided 2026-11-17 |
 | #15 | No `task main` | Decided 2026-11-17 |
+| #16 | Build configurations (`ATMOS_INT`, `ATMOS_REAL`, `ATMOS_TIME`; `atmos-lang` `692af43`) and the environments: unit of the time emitted, C types in the glue, libraries built apart. Open with the author as `atmos-float#14`; touches the API of environments (where an environment declares or checks the configuration) | Waiting on `atmos-float#14`; nothing to do yet |
 
 
 ## A. Decisions waiting for the author
