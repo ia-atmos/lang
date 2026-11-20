@@ -353,6 +353,10 @@ void a_tab_free (ATab* t);
 void a_node_free (ANode* n);
 
 void a_free (AObj* o) {
+    // no place written with `set :out` keeps a freed value
+    if (a_nouts>0 && o->type>=A_TAB) {
+        a_out_ended(o);
+    }
     // what left this holder and is still alive is no longer its
     if (a_nrets>0 && o->type>=A_TAB) {
         a_ret_forget(o);

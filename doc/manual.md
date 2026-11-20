@@ -2037,9 +2037,14 @@ The place may be a field or an index of a table, or a variable of an outer
 block.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
-When the block of the `set :out` terminates, the place goes back to `nil`,
-if it still refers to the value: so a place never refers to a value that
-was finalized.
+The place goes back to `nil`, if it still refers to the value, when the
+value ends: pinned data, when its block finalizes it; a task, when it
+terminates; a pool, when it is aborted.
+So a place never refers to a value that was finalized, wherever the
+`set :out` is written: in the block that owns the value, or in a function
+that this block calls.
+A value with no end of its own (unpinned data) leaves the place when the
+block of the `set :out` terminates.
 
 Code outside the block may read the place while the block lasts.
 If it keeps the value in a name and the block terminates, the name refers

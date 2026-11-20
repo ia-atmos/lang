@@ -1,0 +1,55 @@
+;; set :out: the place refers to the value until the VALUE ends, when the
+;; value has an end of its own (pinned data, a task, a pool), wherever
+;; the `set :out` is written: here, in a function of a module, called
+;; from the block that owns the value.
+pin combat = []
+
+func hit (e) {
+    set :out combat.last_enemy = e          ;; in a function: it stays
+}
+
+task Enemy (id) {
+    set pub = [id=id]
+    defer { print(:enemy, id, :ends) }
+    await(:die)
+}
+
+task Map () {
+    pin es = tasks()
+    val a = spawn @es Enemy(1)
+    hit(a.pub)
+    print(:after_call, combat.last_enemy && combat.last_enemy.id)
+    await(:next)                            ;; another frame
+    print(:next_frame, combat.last_enemy && combat.last_enemy.id)
+    emit @a :die                            ;; the enemy ends; its pub stays
+    print(:enemy_gone, combat.last_enemy.id)    ;; until the pool ends
+    val b = spawn @es Enemy(2)
+    hit(b.pub)
+    print(:before_end, combat.last_enemy.id)
+    await(:end)
+}
+do {
+    pin m = spawn Map()
+    emit(:next)
+    emit(:end)
+}
+print(:map_gone, combat.last_enemy)
+
+;; a task as the value: until it terminates
+task T () { await(:t) }
+do {
+    pin t = spawn T()
+    val reg = func () { set :out combat.task = t }
+    reg()
+    print(:task, combat.task != nil)
+    emit(:t)
+    print(:task_done, combat.task)
+}
+
+;; a value with no end of its own (unpinned): until the block of the set
+func tmp () {
+    set :out combat.tmp = [1]
+    print(:in, combat.tmp@0)
+}
+tmp()
+print(:out, combat.tmp)

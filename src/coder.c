@@ -1476,6 +1476,10 @@ static void gen_set_out (Unit* u, Expr* e) {
         out(u, "a_cpy(&L[%d], %s);", d.ot, l.t.c);
         out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
         out_try(u, "a_out_tab(L[%d], L[%d], L[%d])", d.ot, d.ok, d.ov);
+        // until the value ends, if it has an end of its own; else, until
+        // this block ends
+        out(u, "a_set(&L[%d], a_bool(!a_out_reg_tab(L[%d], L[%d], L[%d])));",
+            d.flag, d.ot, d.ok, d.ov);
     } else {
         Var* x = dst->var;
         d.out  = 2;
@@ -1483,8 +1487,10 @@ static void gen_set_out (Unit* u, Expr* e) {
         out(u, "a_name(L[%d], %s);", d.ov, var_depth(u, x));
         out(u, "a_muts += (L[%d].type >= A_TAB);", d.ov);
         out(u, "a_cpy(&%s, L[%d]);", d.odst, d.ov);
+        out(u, "a_set(&L[%d], a_bool(!a_out_reg_var(&%s, %s, L[%d], %s)));",
+            d.flag, d.odst, x->boxed ? var_raw(u,x) : "a_nil()", d.ov,
+            var_depth(u, x));
     }
-    out(u, "a_set(&L[%d], a_bool(1));", d.flag);
     u->defs = realloc(u->defs, (u->ndefs+1) * sizeof(Defer));
     u->defs[u->ndefs++] = d;
     opnd_rel(u, v);
