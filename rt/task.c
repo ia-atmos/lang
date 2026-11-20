@@ -541,8 +541,9 @@ static AStatus patt_start1 (APatt* p, int* done) {
     *done = 0;
     switch (p->r.kind) {
         case PK_SPAWN: {
-            // the task runs inside the awaiting task
-            if (p->r.v.type != A_TASK) {
+            // the task runs inside the awaiting task (a function may
+            // have clauses that are tasks: `a_spawn` chooses)
+            if (p->r.v.type!=A_TASK && !a_clause_is(p->r.v)) {
                 return a_error("invalid spawn : expected task prototype");
             }
             int base = a_top;
@@ -551,7 +552,9 @@ static AStatus patt_start1 (APatt* p, int* done) {
             st = a_spawn(&t, p->r.v, a_nil(), base);
             a_set(&p->r.v, t);
             p->r.kind = PK_TASK;
-            p->r.own  = 1;
+            // no task, if the spawn failed before it was created (as
+            // with no clause for the arguments)
+            p->r.own  = (t.type != A_NIL);
             if (st != A_OK) {
                 return st;
             }
@@ -1734,6 +1737,14 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
 }
 
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
+    // a task with clauses: the one chosen by the arguments
+    if (proto.type == A_FUNC) {
+        AStatus st = a_clause_pick(proto, a_top-base, &a_stk[base], &proto);
+        if (st != A_OK) {
+            a_settop(base);
+            return st;
+        }
+    }
     if (proto.type != A_TASK) {
         a_settop(base);
         return a_error("invalid spawn : expected task prototype");

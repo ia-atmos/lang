@@ -14,6 +14,7 @@ AVal atm_g_tostring;
 AVal atm_g_tonumber;
 AVal atm_g_assert;
 AVal atm_g_next;
+AVal atm_g_clause;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -707,7 +708,201 @@ AStatus arg_int (int argc, AVal* argv, int i, const char* f, int opt,
     return A_OK;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// CLAUSES
+///////////////////////////////////////////////////////////////////////////////
+
+// A function with clauses, as declared by `func f (x :T, y) {...}`, is
+// a function whose captures hold them:
+//
+//      caps[0]               its name
+//      caps[i]               the function (or task prototype) of a clause
+//      caps[i+1]             n, the number of its parameters
+//      caps[i+2 .. i+2+n)    their tags (nil: any value)
+//
+// It is immutable: a new clause makes a new function, which the
+// declaration assigns to the name.
+//
+// A call chooses the clause whose tags all match the arguments
+// (`arg ?? tag`). Among those, the most specific one: the parameters
+// are compared from the left, and a longer tag wins over a shorter one,
+// which wins over the name of a type (`:table`), which wins over no tag.
+
+static AStatus clause_call (AFunc* self, int argc, AVal* argv);
+
+static int clause_is (AVal f) {
+    return f.type==A_FUNC && A_FUNC_OF(f)->fn==clause_call;
+}
+
+int a_clause_is (AVal f) {
+    return clause_is(f);
+}
+
+// How specific a tag is for an argument: 0 if it does not match.
+static int clause_score (AVal tag, AVal arg) {
+    if (tag.type == A_NIL) {
+        return 1;
+    }
+    if (!a_is(arg, tag)) {
+        return 0;
+    }
+    if (tag.type != A_STR) {
+        return 3;
+    }
+    AStr* s = A_STR_OF(tag);
+    const char* type = a_typename(arg);
+    if (!strcmp(type, s->s)) {
+        if (arg.type!=A_STR || strcmp(A_STR_OF(arg)->s, s->s)) {
+            return 2;               // the name of its type
+        }
+    }
+    return 3 + s->len;
+}
+
+// The tag by which an argument is chosen, for an error message.
+static const char* clause_argname (AVal arg) {
+    if (arg.type == A_TAB) {
+        AVal k = a_strz("tag");
+        AVal tag = a_tab_get(A_TAB_OF(arg), k);
+        a_dec(k);
+        if (tag.type == A_STR) {
+            return A_STR_OF(tag)->s;
+        }
+    }
+    return a_typename(arg);
+}
+
+AStatus a_clause_pick (AVal f, int argc, AVal* argv, AVal* out) {
+    if (!clause_is(f)) {
+        *out = f;
+        return A_OK;
+    }
+    AFunc* g = A_FUNC_OF(f);
+    int best  = -1;
+    int bestn = 0;
+    for (int i=1; i<g->ncap; ) {
+        int n = (int) g->caps[i+1].u.i;
+        // applies?
+        int ok = 1;
+        for (int j=0; ok && j<n; j++) {
+            ok = clause_score(g->caps[i+2+j], arg(argc,argv,j)) > 0;
+        }
+        // more specific than the best so far?
+        if (ok) {
+            int cmp = (best == -1);
+            for (int j=0; cmp==0 && (j<n || j<bestn); j++) {
+                AVal a = arg(argc, argv, j);
+                int s1 = (j < n)     ? clause_score(g->caps[i+2+j], a)    : 1;
+                int s2 = (j < bestn) ? clause_score(g->caps[best+2+j], a) : 1;
+                cmp = s1 - s2;
+            }
+            if (cmp > 0) {
+                best  = i;
+                bestn = n;
+            }
+        }
+        i += 2 + n;
+    }
+    if (best == -1) {
+        char buf[256];
+        size_t len = 0;
+        buf[0] = '\0';
+        for (int j=0; j<argc && len<sizeof(buf)-1; j++) {
+            len += snprintf(buf+len, sizeof(buf)-len, "%s%s",
+                (j > 0) ? ", " : "", clause_argname(argv[j]));
+        }
+        return a_error("invalid call : no clause of '%s' for (%s)",
+            A_STR_OF(g->caps[0])->s, buf);
+    }
+    *out = g->caps[best];
+    return A_OK;
+}
+
+static AStatus clause_call (AFunc* self, int argc, AVal* argv) {
+    AVal f = a_nil();
+    AVal g = a_obj(&self->hdr);
+    g.type = A_FUNC;
+    AStatus st = a_clause_pick(g, argc, argv, &f);
+    if (st != A_OK) {
+        return st;
+    }
+    if (f.type != A_FUNC) {
+        return a_error("invalid call : expected function : got %s",
+            a_typename(f));
+    }
+    return A_FUNC_OF(f)->fn(A_FUNC_OF(f), argc, argv);
+}
+
+// $clause(cur, name, f, tag1, ..., tagN): the function `cur` (nil, a
+// function with clauses, or a plain function, which becomes the default
+// clause) with one more clause `f`, of N parameters.
+static AStatus std_clause (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal cur  = arg(argc, argv, 0);
+    AVal name = arg(argc, argv, 1);
+    AVal f    = arg(argc, argv, 2);
+    int  n    = (argc > 3) ? argc-3 : 0;
+    const char* id = A_STR_OF(name)->s;
+
+    int old = 0;                // captures taken from `cur`
+    int def = 0;                // `cur` is a plain function: the default
+    if (clause_is(cur)) {
+        old = A_FUNC_OF(cur)->ncap - 1;
+        // the same tags twice
+        AFunc* g = A_FUNC_OF(cur);
+        for (int i=1; i<g->ncap; ) {
+            int m = (int) g->caps[i+1].u.i;
+            int same = 1;
+            for (int j=0; same && (j<m || j<n); j++) {
+                AVal t1 = (j < m) ? g->caps[i+2+j] : a_nil();
+                AVal t2 = (j < n) ? argv[3+j]      : a_nil();
+                same = a_eq(t1, t2);
+            }
+            if (same) {
+                return a_error("invalid clause : '%s' already has it", id);
+            }
+            i += 2 + m;
+        }
+    } else if (cur.type==A_FUNC || cur.type==A_TASK) {
+        def = 1;
+        int any = 0;
+        for (int j=0; j<n; j++) {
+            any = any || (argv[3+j].type != A_NIL);
+        }
+        if (!any) {
+            return a_error("invalid clause : '%s' already has it", id);
+        }
+    } else if (cur.type != A_NIL) {
+        return a_error("invalid clause : '%s' is not a function : got %s",
+            id, a_typename(cur));
+    }
+
+    AVal v = a_func(clause_call, 1 + old + 2*def + 2 + n);
+    AFunc* g = A_FUNC_OF(v);
+    int k = 0;
+    g->caps[k++] = name;
+    for (int i=0; i<old; i++) {
+        g->caps[k++] = A_FUNC_OF(cur)->caps[1+i];
+    }
+    if (def) {
+        g->caps[k++] = cur;
+        g->caps[k++] = a_int(0);
+    }
+    g->caps[k++] = f;
+    g->caps[k++] = a_int(n);
+    for (int j=0; j<n; j++) {
+        g->caps[k++] = argv[3+j];
+    }
+    for (int i=0; i<g->ncap; i++) {
+        a_inc(g->caps[i]);
+    }
+    a_func_scope(v);
+    a_push(v);
+    return A_OK;
+}
+
 void atm_std_init (void) {
+    atm_g_clause   = a_func(std_clause, 0);
     atm_g_print    = a_func(std_print, 0);
     atm_g_type     = a_func(std_type, 0);
     atm_g_tostring = a_func(std_tostring, 0);
@@ -769,6 +964,7 @@ void atm_std_init (void) {
     a_own(atm_g_tonumber);
     a_own(atm_g_assert);
     a_own(atm_g_next);
+    a_own(atm_g_clause);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -785,6 +981,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_tonumber);
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
+    a_clr(&atm_g_clause);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {
         a_clr(&atm_envs[i]);

@@ -48,6 +48,8 @@ static const char* BUILTINS[][2] = {
     { "os",       "atm_g_os"       },
     { "io",       "atm_g_io"       },
     { "next",     "atm_g_next"     },
+    // of the compiler: a clause of a function (`func f (x :T)`)
+    { "$clause",  "atm_g_clause"   },
     { NULL, NULL }
 };
 

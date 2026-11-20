@@ -1498,6 +1498,15 @@ extern AVal atm_g_vector;
 extern AVal atm_g_os;
 extern AVal atm_g_io;
 extern AVal atm_g_next;
+extern AVal atm_g_clause;
+
+// A function with clauses (`func f (x :T)`): the clause that a call
+// chooses by its arguments, borrowed in `out`, or an error if none
+// applies. A value that is not such a function is returned as it is.
+AStatus a_clause_pick (AVal f, int argc, AVal* argv, AVal* out);
+
+// Whether `f` is a function with clauses.
+int a_clause_is (AVal f);
 
 // Deep string representation: tables as `:Tag [v, k=v]`, with sorted
 // keys (owned). Fails on keys that are neither numbers nor strings.
