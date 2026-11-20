@@ -23,6 +23,27 @@ the design.
 | 4 | The spread `NAME...`: where it may appear, and its positional entries | **closed (2026-11-20): no spread.** The author said the `...` of his sketch (`[X...]`) was an ellipsis, a hidden continuation, not an operator. A name is only used as a value (#3) |
 | 5 | A field in conflict: the later wins; shallow replace or deep merge | closed with #4: no spread, so nothing to merge. A field written twice stays as in `X.load` (the later wins) |
 | 6 | A name that uses an earlier name; the errors (undefined, twice, after the value) | **decided (2026-11-20, #6a)**: a name sees only the names defined before it (so no recursion); errors with the line: `undefined name : A`, `name already defined : A`, and `expected value` when there is no final value |
-| 7 | Names given from the program: `X.loadx(s, [TITLE=...])` | asked, recommended: not now (not asked by the author; it can be added later with no text changing) |
+| 7 | Names given from the program: `X.loadx(s, [TITLE=...])` | **decided (2026-11-20, #7a)**: not now; `X.loadx(s)` takes the text only |
 | 8 | The spread in the language too (`[t...]`), with `atmos-args` | closed with #4: nothing for the language |
-| 9 | `X.dump` of a value read with names: written expanded | to confirm |
+| 9 | `X.dump` of a value read with names: written expanded | part of #10 |
+| 10 | Approval of the whole design, to implement on the branch `loadx` | asked |
+| 11 | No limit on the expanded size (`A=[1,1]`, `B=[A,A]`, ...): `X.loadx` is for texts the program trusts, `X.load` for the others | part of #10 |
+
+## The design, as put to the author in #10
+
+```
+Text  : { ID `=´ Value } Value
+Value : (as in X.load) | ID
+```
+
+- `X.loadx(s)`: a new function; `X.load` does not change. Every text
+  that `X.load` reads, `X.loadx` reads to the same value.
+- A definition is `ID = Value` at the top level; the one value with no
+  name is the result, and only the end of the text follows it.
+- A name is used as a value only (a positional entry, the value of a
+  field, the value of a key, the result itself). There is no spread.
+- Each use is a deep copy: the result is a tree, equal to what `X.load`
+  gives for the text with the names replaced by their values.
+- A name sees the names defined before it. Errors, with the line:
+  `undefined name : A`, `name already defined : A`, `expected value`.
+- `X.dump` does not change: a value read with names is written expanded.
