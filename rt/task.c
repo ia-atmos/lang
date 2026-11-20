@@ -2244,6 +2244,13 @@ static int cyc_marked (AVal v) {
     return v.type>=A_TAB && (v.u.o->pinned & CYC_MARK);
 }
 
+// With CYC_ANY, a candidate may have any ceiling (an argument of a
+// task that ends: its ceiling is the block that ends the task, see
+// `a_name_arg`), and the search gives up beyond CYC_MAX candidates,
+// since it may then be walking data of an outer block.
+static int CYC_ANY = 0;
+#define CYC_MAX 256
+
 static int cyc_cand (AVal v, int d) {
     AObj* o = v.u.o;
     switch (v.type) {
@@ -2252,7 +2259,8 @@ static int cyc_cand (AVal v, int d) {
         case A_TAB:
         case A_FUNC:
         case A_TASK:
-            return o->pinned==0 && (o->ceil==0 || (int)o->ceil==d);
+            return o->pinned==0 &&
+                   (CYC_ANY || o->ceil==0 || (int)o->ceil==d);
         default:
             return 0;
     }
@@ -2360,7 +2368,9 @@ static void cyc_collect (AVal* vs, int n, int d) {
             continue;
         }
         // a name of an outer block keeps it, and all it reaches
-        if (vs[i].type!=A_BOX && vs[i].u.o->ceil!=0 && (int)vs[i].u.o->ceil<d) {
+        if (!CYC_ANY && vs[i].type!=A_BOX && vs[i].u.o->ceil!=0 &&
+            (int)vs[i].u.o->ceil<d)
+        {
             continue;
         }
         cyc_add(vs[i], d);
@@ -2370,6 +2380,11 @@ static void cyc_collect (AVal* vs, int n, int d) {
     CYC_IN = 0;
     for (int i=0; i<CYC_N; i++) {
         cyc_refs(a_obj(CYC[i].o), cyc_visit, d);
+        if (CYC_ANY && CYC_N>CYC_MAX) {
+            // too much: it gives up
+            CYC_IN = 0;
+            break;
+        }
     }
     if (CYC_N == 0) {
         return;
@@ -2495,6 +2510,39 @@ uint32_t a_muts = 0;
 
 void a_cycles (AVal* vs, int n, int d) {
     cyc_collect(vs, n, d);
+}
+
+void a_orphan_x (AVal v) {
+    // a value that refers to no object is in no cycle
+    int ref = 0;
+    if (v.type == A_TAB) {
+        uint32_t pos = 0;
+        AVal k, x;
+        while (!ref && a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+            ref = (k.type>=A_TAB || x.type>=A_TAB);
+        }
+    } else {
+        AFunc* f = A_FUNC_OF(v);
+        for (int i=0; !ref && i<f->ncap; i++) {
+            ref = (f->caps[i].type >= A_TAB);
+        }
+    }
+    if (ref) {
+        cyc_collect(&v, 1, 0);
+    }
+}
+
+void a_args_end (AVal* vs, int n) {
+    for (int i=0; i<n; i++) {
+        AVal v = vs[i];
+        if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
+            v.u.o->pinned==0 && v.u.o->rc>1)
+        {
+            CYC_ANY = 1;
+            cyc_collect(&vs[i], 1, 0);
+            CYC_ANY = 0;
+        }
+    }
 }
 
 void a_unname_x (AVal* vs, int n, int d) {

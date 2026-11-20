@@ -341,8 +341,8 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
 A value that nobody pins is reclaimed by its counts, and a cycle among
 unpinned values is broken at the end of the block of the names that reach
 it, if nothing outside still refers to it.
-One case is not reached, and leaks: a cyclic value that a call returns and
-that is dropped without ever receiving a name.
+So is a cycle with no name, when the last reference from outside it goes:
+a value that a call returns and that is dropped, for instance.
 A cyclic structure whose moment of release matters should still be pinned.
 
 The next example builds a cycle that is reclaimed when the block terminates:
@@ -1717,9 +1717,11 @@ reaches.
 The search only runs if a reference was written into a table, a captured
 variable, or a `pub` since the block began, since no cycle forms without a
 write.
-Two cases are not reached, and leak: a cyclic value that a call returns
-and that is dropped without a name, and one that is given to a task of a
-pool of an outer block, when that task ends.
+A cycle with no name is broken in the same way when the last reference
+from outside it goes: a temporary, a result that is dropped, an entry of a
+value that is freed, or the parameter of a task that ends.
+For a parameter of a task, the search gives up on a value that reaches
+more than a few hundred others, which is then left to the counts.
 
 A parameter of a task is a name as the others, but the task may outlive the
 block that spawned it, as a task of a pool of an outer block does.

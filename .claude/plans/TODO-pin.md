@@ -6,7 +6,7 @@ decided here and implemented by `atmos-lang`: `261115-pin.md`,
 `261118-pin-handoff.md`). This session cannot push to `main`:
 `atmos-lang` fast-forwards `main` to `pin` after each approved change.
 
-Last update: 2026-11-19.
+Last update: 2026-11-20.
 
 ## Index of the items (`atmos-pin#N`)
 
@@ -21,10 +21,10 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #4 | Choices of the implementation: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | confirmed by the author, 2026-11-19 |
 | #5 | The `spawn` statement as the only implicit pin | confirmed by the author, 2026-11-19: it stays |
 | #6 | sdl-snxkx: the second migration (pins given away) and the contacts sent only to the two tasks | waiting for its session. The experiment of the context is no longer needed: with `set :out w.tasks@(b) = task` in the body of each task, the world made by the caller keeps the map (answered with a tested program, 2026-11-19); `SHARED_SPRINGS` has the same direct form |
-| #7 | Known limits of the collection of cycles (leaks): a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | open, documented in the manual; no plan |
+| #7 | The two leaks of the collection of cycles: a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | fixed on `pin`, 2026-11-20 (by the session, under the rule "work with no input"; a defect, no rule changes): a reference that goes and is not a name (a temporary, a result that is dropped, an entry of a value that is freed) runs the same trial deletion on a value with no name that something else still holds; the parameters of a task do it when the task ends, whatever the ceiling, giving up beyond 256 values. No measurable cost. Test `cycle-02`. Waits for the measurement on the ports and the merge by `atmos-lang` |
 | #8 | Remarks of the ports for the author: env-uv (a function that creates a handle and gives it away declares it with `val`, the weaker word; on a throw in the middle the handle is closed by the count, not by the block); Doom and env-uv (the same lines changed three times in three days: a change that breaks programs should say what migrates) | relayed on 2026-11-18, not answered |
 | #9 | Declare the rules stable again, and tell `paper-pin` and the ports | done: the author declared the rules of `pin` stable on 2026-11-19, as they are in `main` `8361f88` (see "Stable" below). Told to `paper-pin` and, through `atmos-lang`, to the ports. The flag (#3) is outside: it changes no rule |
-| #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | confirmed with no anomaly: sdl-pingus, env-uv, ray-lessmilk, env-ray; the others have not reported |
+| #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | closed, 2026-11-20: no anomaly in sdl-pingus, env-uv, ray-lessmilk, env-ray (reported here), and in sdl-flare, doom, sdl-tux, env-iup, env-sdl, env-pico, pico-frescogo, pico-1oom (their suites on `4199167` or later, reported to `atmos-lang` for `atmos-lang#81`). sdl-snxkx is #6 |
 | #11 | The warning of a pin given away missed `until c, v` and `while c, v` (found by sdl-pingus: `pin r = await Game(path)` ... `until !again, r`, a live defect that only the replay of the demos reached) | done on `pin` (2026-11-18): the values after the condition are checked against the pins of the loop; test `warn-pin-02` |
 
 ## Stable (2026-11-19)
@@ -48,7 +48,7 @@ migrates (the remark of Doom and env-uv, #8).
   argument of a task that outlives its spawner has its ceiling at the
   block that ends the task.
 - A cycle of unpinned values is broken at the end of the block of its
-  names (two known leaks, #7).
+  names, and when the last reference from outside it goes (#7).
 - An event with a pinned value only reaches a target attached inside
   the block of the pin. An emitted event is owned by the emit. A task
   owns its `pub` and its final value. A native declares what it holds.
