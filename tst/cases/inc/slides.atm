@@ -1,0 +1,8 @@
+;; names, then the value
+TITLE = [ color=[fg=:blue], anchor=:C ]
+LOGO  = :image ["logo.png", style=TITLE]    ;; a name sees the earlier ones
+
+:Slides [
+    :Slide [ :text ["Cultura", style=TITLE], LOGO ],
+    :Slide [ LOGO ],
+]

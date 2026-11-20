@@ -17,6 +17,7 @@
 // of the enclosing block, which releases its slots and propagates the
 // status. The values of an exit travel in the payload.
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -545,8 +546,10 @@ static const char* gen_num (const char* str) {
     int hex = (str[0]=='0' && (str[1]=='x' || str[1]=='X'));
     if (strpbrk(str, hex ? ".pP" : ".eE") == NULL) {
         unsigned long long v = strtoull(str, NULL, 0);
-        if (hex || (strlen(str)<=19 && v<=9223372036854775807ULL)) {
-            return xfmt("a_int((int64_t)%lluULL)", v);
+        unsigned long long max = OPT_INT32 ?
+            2147483647ULL : 9223372036854775807ULL;
+        if (hex || (strlen(str)<=19 && v<=max)) {
+            return xfmt("a_int((AInt)%lluULL)", v);
         }
     }
     return xfmt("a_num(%.17g)", strtod(str, NULL));
@@ -2142,7 +2145,7 @@ static void gen_nat (Unit* u, Expr* e, Dst d) {
 
     static const char* CONV[] = {
         NULL, NULL,
-        "a_int((int64_t)(", "a_num((double)(", "a_bool(0 != (",
+        "a_int((AInt)(", "a_num((double)(", "a_bool(0 != (",
         "a_strn((", "((", "a_number(("
     };
     Opnd t = opnd_tmp(u);
@@ -2624,12 +2627,17 @@ static Opnd gen_expr (Unit* u, Expr* e) {
         case E_NUM:
             return opnd_c(gen_num(e->tk.str));
         case E_CLK: {
-            // a clock is a number of microseconds
-            double us = e->tk.clk;
-            if (us==(double)(long long)us && us<9e18) {
-                return opnd_c(xfmt("a_int(%lldLL)", (long long)us));
+            // a clock is a number of units of time (microseconds or
+            // milliseconds): an integer, which must fit the integer of
+            // the build, or a real if it has a fraction of the unit
+            double t = OPT_TIME_MS ? e->tk.clk/1000 : e->tk.clk;
+            if (t >= (OPT_INT32 ? 2147483648.0 : 9223372036854775808.0)) {
+                err(e->tk, "invalid clock : out of range");
             }
-            return opnd_c(xfmt("a_num(%.17g)", us));
+            if (t != floor(t)) {
+                return opnd_c(xfmt("a_num(%.17g)", t));
+            }
+            return opnd_c(xfmt("a_int((AInt)%.0f)", t));
         }
         case E_STR: {
             // only quoted single-line literals have escapes

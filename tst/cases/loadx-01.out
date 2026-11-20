@@ -1,0 +1,32 @@
+[1, :T [3], x=2]
+10	s	a.b	nil	1000000
+[[1], t=[1]]
+[[[1], x=2], [1]]
+:X [1]
+[a, a=10, b=true, size=10]
+-1	60000000
+[T=[1], x=[1]]
+[1, [1]]
+false	invalid load : line 3 : expected ',' or ']'
+false	invalid load : line 2 : undefined name : B
+[[[9], 2], [[1]]]
+true	true	true	blue
+:S [[a=1], t=[a=1]]
+2
+false	invalid load : line 1 : undefined name : A
+false	invalid load : line 1 : undefined name : A
+false	invalid load : line 3 : undefined name : B
+false	invalid load : line 2 : expected value
+false	invalid load : line 3 : expected end of input
+false	invalid load : line 2 : expected ',' or ']'
+false	invalid load : line 2 : expected end of input
+false	invalid load : line 1 : invalid name
+false	invalid load : line 2 : expected value
+false	invalid load : line 2 : expected ',' or ']'
+false	invalid load : line 1 : expected value
+false	invalid load : line 1 : expected value
+false	invalid argument to 'loadx' : expected string : got number
+false	invalid load : line 1 : unexpected name : expected value
+false	invalid load : line 1 : unexpected name : expected value
+false	invalid load : line 2 : too many nested tables
+true

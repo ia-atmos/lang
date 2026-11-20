@@ -1,0 +1,13 @@
+;; integers of 32 bits (ATMOS_INT=32): arithmetic wraps at 32 bits, a
+;; decimal that does not fit is a real, a hexadecimal wraps
+print(2147483647 + 1, 65536 * 65536, 100000 * 100000, -(-2147483647 - 1))
+print(2147483648, 3000000000, 0xFFFFFFFF, 0x1FFFFFFFF)
+print(1 << 31, 1 << 32, -1 >> 1, 1 << 30, ~0, 5 // 2, -7 % 3)
+print(tonumber("2147483647"), tonumber("2147483648"), tonumber("0xFFFFFFFF"), tonumber("-5"))
+print(math.abs(-5), math.floor(3e9), math.floor(2.7), 2147483647 < 2147483648.0, 1 == 1.0)
+print(7 / 2, 10 // 3, 2147483647 + 0.5)
+val t = []
+set t@(2.0) = 'b'
+set t@(3e9) = 'c'
+print(t@2, t@(3e9), string.format("%d %x", -1, 255))
+print(1s, 30min, 1us)

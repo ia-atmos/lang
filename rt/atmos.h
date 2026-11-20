@@ -44,12 +44,61 @@ typedef struct AObj {
     uint32_t clin;
 } AObj;
 
+// The C type of a real: a `double`, or a `float` of 32 bits when the
+// runtime and the program are built with `-DATM_REAL_FLOAT` (the
+// compiler does both under `ATMOS_REAL=float`). Then each operation
+// between reals rounds to `float`, as in C, `math` uses the functions
+// for `float`, and a real prints with the fewest digits that give it
+// back. Integers do not change. `A_RF(fn)` is the function `fn` of
+// <math.h> for the type.
+#ifdef ATM_REAL_FLOAT
+typedef float AReal;
+#define A_RF(fn) fn##f
+#define A_STRTOR strtof
+#else
+typedef double AReal;
+#define A_RF(fn) fn
+#define A_STRTOR strtod
+#endif
+
+// The C type of an integer: 64 bits, or 32 bits when the runtime and
+// the program are built with `-DATM_INT_32` (`ATMOS_INT=32`). Integer
+// arithmetic wraps at the size. With integers of 32 bits and reals of
+// 32 bits, on a target with pointers of 32 bits, a value has 8 bytes
+// instead of 16.
+#ifdef ATM_INT_32
+typedef int32_t  AInt;
+typedef uint32_t AUInt;
+#define A_INT_BITS 32
+#define A_INT_MIN  INT32_MIN
+#define A_INT_MAX  INT32_MAX
+#else
+typedef int64_t  AInt;
+typedef uint64_t AUInt;
+#define A_INT_BITS 64
+#define A_INT_MIN  INT64_MIN
+#define A_INT_MAX  INT64_MAX
+#endif
+// 2^(A_INT_BITS-1): an integral real `d` fits if -A_INT_LIM <= d < A_INT_LIM
+#define A_INT_LIM  (-(double)A_INT_MIN)
+
+// The unit of time of a program: a clock (`1h30min`, the time of an
+// emit, the time to the nearest timer) is a number of microseconds, or
+// of milliseconds when the runtime and the program are built with
+// `-DATM_TIME_MS` (`ATMOS_TIME=ms`). `A_TIME_US` is the unit in
+// microseconds.
+#ifdef ATM_TIME_MS
+#define A_TIME_US 1000
+#else
+#define A_TIME_US 1
+#endif
+
 typedef struct AVal {
     uint8_t type;
     union {
         int     b;
-        int64_t i;
-        double  n;
+        AInt    i;
+        AReal   n;
         AObj*   o;
     } u;
 } AVal;
@@ -68,16 +117,23 @@ static inline AVal a_bool (int b) {
     return v;
 }
 
-static inline AVal a_int (int64_t i) {
+static inline AVal a_int (AInt i) {
     AVal v;
     v.type = A_INT;
+#ifdef ATM_INT_32
+    v.u.o  = NULL;  // the integer may not fill the union
+#endif
     v.u.i  = i;
     return v;
 }
 
-static inline AVal a_num (double n) {
+static inline AVal a_num (AReal n) {
     AVal v;
     v.type = A_NUM;
+#ifdef ATM_REAL_FLOAT
+    v.u.i  = 0;     // the real may not fill the union
+    v.u.o  = NULL;
+#endif
     v.u.n  = n;
     return v;
 }
@@ -89,6 +145,11 @@ static inline int a_isnum (AVal v) {
 // A number as a double.
 static inline double a_dbl (AVal v) {
     return (v.type == A_INT) ? (double)v.u.i : v.u.n;
+}
+
+// A number as a real.
+static inline AReal a_real (AVal v) {
+    return (v.type == A_INT) ? (AReal)v.u.i : v.u.n;
 }
 
 // An integer if the value is integral and fits, else a real.
@@ -1248,9 +1309,9 @@ AStatus a_arith (AArith op, AVal* dst, AVal a, AVal b);
 #define A_ARITH_FAST(name, OP, op)                                  \
     static inline AStatus name (AVal* dst, AVal a, AVal b) {        \
         if (a.type==A_INT && b.type==A_INT) {                       \
-            uint64_t x = (uint64_t) a.u.i;                          \
-            uint64_t y = (uint64_t) b.u.i;                          \
-            a_set(dst, a_int((int64_t)(x op y)));                   \
+            AUInt x = (AUInt) a.u.i;                                \
+            AUInt y = (AUInt) b.u.i;                                \
+            a_set(dst, a_int((AInt)(x op y)));                      \
             return A_OK;                                            \
         }                                                           \
         if (a.type==A_NUM && b.type==A_NUM) {                       \

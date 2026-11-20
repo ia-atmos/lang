@@ -56,7 +56,10 @@ static uint32_t hash (AVal k) {
             x = (uint64_t) k.u.i;
             break;
         case A_NUM:
-            memcpy(&x, &k.u.n, sizeof(x));
+            {
+                double d = k.u.n;
+                memcpy(&x, &d, sizeof(x));
+            }
             break;
         case A_STR:
             return A_STR_OF(k)->hash;
@@ -175,7 +178,11 @@ static AVal norm (AVal k) {
 
 // Array index of a normalized key, or -1.
 static int64_t aidx (AVal k) {
-    if (k.type==A_INT && k.u.i>=0 && k.u.i<4294967296LL) {
+    if (k.type==A_INT && k.u.i>=0
+#if A_INT_BITS > 32
+        && k.u.i<4294967296LL
+#endif
+    ) {
         return k.u.i;
     }
     return -1;
