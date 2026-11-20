@@ -51,7 +51,8 @@ Value : (as in X.load) | ID
 | 13 | An `include` in the text of `X.loadx` (asked by the author: "faz sentido um include?") | **decided (2026-11-20, #13b)**: an `include "file"` in the text. Its details are #14 on; nothing is implemented before they are settled |
 | 14 | The include: relative to what, since `X.loadx` receives a text and not a file | **decided (2026-11-20)**: first #14a, then the author went back to #14b with a change: the directory of the includes is an argument of `X.loadx`, and it is the FIRST one, `X.loadx(dir, s)`. No function that receives a path |
 | 15 | The name of the function that receives the path | closed with #14: no new function |
-| 16 | `X.loadx` with one argument, now that the directory comes first | asked, recommended: `X.loadx(s)` stays valid, a text with no directory, where an include is an error |
+| 16 | `X.loadx` with one argument, now that the directory comes first | **decided (2026-11-20, #16a with a change)**: `X.loadx(s)` stays valid, and its includes are relative to the current directory, as `io.open` |
+| 17 | What an include is: where it may appear, what the included file holds, a file included twice, a nested include | asked, recommended: at the top level before the value; the file holds definitions only; once per file, as in the language; a nested include is relative to the file that has it |
 
 ## State (2026-11-20)
 
