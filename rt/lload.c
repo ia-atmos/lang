@@ -22,6 +22,8 @@
 // A name is used as a value only, and each use is a deep copy of what
 // it holds: the result is what X.load gives for the text with each
 // name replaced by its value. A name sees the names defined before it.
+// The first definition of a name wins: a later one is read and ignored,
+// so a text replaces a name of a file by defining it before the include.
 // An include reads the definitions of another file, which has no value
 // of its own. The file is relative to the directory given to X.loadx
 // (or to the current one), and inside an included file, to that file.
@@ -714,15 +716,17 @@ static AStatus names (Load* l) {
         {
             return fail(l, "invalid name");
         }
-        if (name_get(l,s,n) != NULL) {
-            return failn(l, "name already defined", s, n);
-        }
         l->s = q + 1;
         l->top = 0;
         AVal v = a_nil();
         if (value(l,&v) != A_OK) {
             a_dec(v);
             return A_ERROR;
+        }
+        if (name_get(l,s,n) != NULL) {
+            // the first definition wins: this one is read and ignored
+            a_dec(v);
+            continue;
         }
         Env* e = l->e;
         if (e->names_n == e->names_max) {
