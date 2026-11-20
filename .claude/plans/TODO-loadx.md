@@ -91,3 +91,12 @@ Value : ... | ID
   an included file, `FILE : line N : expected definition`.
 - `make test` with ASAN passes: cases 423 (`loadx-02` added), the rest
   as before.
+
+## For the next change (note of 2026-11-20)
+
+- `main` got the branch `float` (`692af43`), which touched the number
+  reader of `rt/lload.c` (`AInt`, `AReal`, `ATMOS_INT=32`,
+  `ATMOS_REAL=float`, `ATMOS_TIME=ms`). `X.loadx` reads numbers through
+  the same `number` function, so it follows the options. Before another
+  change to the file: bring `main` into the branch, and add one case
+  under `NAME.env` (`ATMOS_INT=32`), as `atmos-lang` suggested.
