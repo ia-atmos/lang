@@ -308,13 +308,17 @@ print(t ?? :T)              ;; --> true
 Atmos has no tracing garbage collector: no pauses and no scans of the heap.
 Values are reference counted underneath, and the blocks of the program add
 what counting alone cannot do: they reclaim cycles, they give each value a
-lexical point of death, and they rule out dangling references.
+lexical point of death, and they rule out the use of a value that was
+reclaimed.
 
 Every dynamic value (a table, a function, a native value, a task, or a pool
 of tasks) belongs to a block of the program, which reclaims the value when
 it terminates.
 A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
+The one exception is explicit: a place written with [`set :out`](#pin)
+refers to a value of an inner block until that block terminates, and a
+name that kept the value by then may not use it.
 
 The counts remain in use for what has no block, or ends before its block:
 an unpinned value that is dropped is reclaimed at once; an event that is emitted
@@ -336,7 +340,7 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
 - The value is reclaimed when the block terminates, even if it is part of a
   cycle.
 - The value cannot escape the block, which is verified when the program
-  executes.
+  executes (`invalid escape : table pinned at prog.atm:10`).
 
 A value that nobody pins is reclaimed by its counts, and a cycle among
 unpinned values is broken at the end of the block of the names that reach

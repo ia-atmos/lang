@@ -59,6 +59,31 @@ migrates (the remark of Doom and env-uv, #8).
   access : finalized ...`).
 - Open, and no rule: the flag that removes the checks (#3).
 
+### Cases of the suite for each sentence (audit of 2026-11-20)
+
+| Sentence | Cases (`tst/cases/`) |
+|---|---|
+| Pinned and unpinned, floor and ceiling | `floor-01`, `floor-02`, `ceil-01`, `pin-err-01`, `pin-err-04` to `06` |
+| `pin` is optional; `val` and `var` hold unpinned values | `pin-val-01`, `pin-val-02`, `ceil-01` |
+| `pin val`, `pin var`, a parameter `pin x`, `pin func` | `pin-val-01`, `par-mod-01`, `par-mod-02`, `pool-val-01` |
+| A bare `pin` is `pin val` | `stable-01` |
+| A store only goes where the block of the value lasts | `pin-01` to `03`, `pin-err-02`, `pin-err-03` |
+| A pinned value never leaves its block | `xfer-01`, `xfer-02`, `warn-pin-01`, `warn-pin-02` |
+| The pin is deep | `deep-01` to `05` |
+| A named value: adopted at the block of its name or outside, referenced inside | `deep-06`, `deep-07` |
+| Reassigning an owned place retires the old value | `repin-01` to `04` |
+| The floor rises while only the name refers to the value | `floor-up-01` |
+| An argument of a task that outlives its spawner | `deep-07` |
+| A cycle of unpinned values is broken | `cycle-01`, `cycle-02` |
+| An event with a pinned value reaches a target inside the block of the pin | `emit-pin-01` |
+| An emitted event is owned by the emit | `stable-01` |
+| A task owns its `pub` and its final value | `stable-01`, `pin-await-01`, `deep-04` |
+| A native declares what it holds | none here (it needs C): covered by `env-pico` (`tst/life`, `tst/life-loop`) |
+| The `spawn` statement is the only implicit pin | `stable-01`, `task-06`, `warn-spawn-01` |
+| `set :out` | `out-01`, `out-02`, `out-err-01` |
+| Finalized data may not be used | `out-02` |
+| An unpinned pool held by a `val` | `pool-val-01` |
+
 ## #1, as decided
 
 - The path: the block form that restored the previous value was unsound
