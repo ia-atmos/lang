@@ -4039,6 +4039,7 @@ may surprise a naive reading:
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |
 | [calls](#calls)   | `f g x`               | error: use parenthesis  | `f(g(x))`, `f(g)(x)`     |
+| [operations](#operations) | `x` ⏎ `-1`    | `x - 1`                 | `x ; -1`                 |
 | [pipes](#pipes)   | `x<-y`                | `y(x)`                  | `x < (-y)`               |
 | [tasks](#tasks)   | `task` ⏎ `(x)`        | `task ; (x)`            | `task(x)`                |
 | [lambda](#lambda) | `\-`                  | `\(a,b){ a - b }`       | `\(a){ -a }`             |
