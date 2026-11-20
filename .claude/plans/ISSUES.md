@@ -116,3 +116,4 @@ started, no decision needed), **moved** (another session handles it),
 | 102 | `set :out` written in a function or an `if` is cleared when that block ends, silently (`atmos-pin#16`); the alternative, the place lasts until the value ends, is on the branch `pin-out` (8eb364d) | open: the author's, in `atmos-pin` |
 | 103 | The command line of the language (asked by the author) | moved: `atmos-cli` (`261120-cli.md`) |
 | 104 | Explain `find` / `filter` of `atmos-pool` | answered 2026-11-20 |
+| 105 | The measurement of `float` 1bb1edf (the variables renamed: `ATMOS_FLOAT`, `ATMOS_INTEGER`, `ATMOS_CLOCK`): the default build is untouched (2197 files); `sdl-tux` (three scripts) and `env-esp32` (its Makefile) set the old names and must change at the merge | done 2026-11-20 (sent to `atmos-float`; the merge is asked there) |
