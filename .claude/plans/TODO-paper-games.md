@@ -358,3 +358,44 @@ and to `atmos-lang` for the other ports.
   on average) and one stress (space_invaders, 1.4 against 0.75
   microseconds per enemy). `papers/games-data.md` still has the state
   of `0d8b477`: to refresh when the ports settle.
+- `doom` (2026-11-20, reported by `atmos-lang`, its item
+  `atmos-lang#96`; not read in `doom/doc/bench.md` yet): with no
+  rendering, on demo1, 263.4 M instructions for the main build against
+  230.2 M of the C; 711.7 M for the variant with the door and the
+  zombieman as tasks (2.7 times), about 40% of it the traversal of a
+  broadcast. It bears on the claim of cost: tasks in the simulation
+  have a price that grows with the broadcast. To read at the source
+  before it enters `papers/games-data.md`.
+- `sdl-snkrx` (2026-11-20, relayed by `atmos-lang`, read at `07f5905`):
+  a correction. The old benchmark ran the port with no audio. Now:
+  1.07 to 1.22 times the ticks of the original (not 1.8 to 3.0), CPU
+  at 83% to 91% (not 56% to 71%), peak memory 546 against 946 MB, both
+  of decoded sounds (not a gain of the language). Logic alone: 0.089
+  ms per tick (level 1), 2.77 (stress), port only, in process, which
+  is not the method of #4. One count of size: 9455 lines and 91671
+  tokens against 10381 and 134827. Its README says how it was
+  written. A note of correction is at the top of
+  `papers/games-data.md` and `papers/games-drafts.md`, and under the
+  line of SNKRX in the outline, which expected "even more in memory
+  and CPU": that expectation of the author does not hold as measured,
+  to tell him.
+- To do: rewrite the cells and sentences of SNKRX from the new
+  documents, when the ports have answered and run on the new `main`
+  (one refresh of the two files, not one per answer).
+- `env-ray` (2026-11-20, not read at the source yet): the logic alone,
+  by the method of #4, in its `doc/bench.md`, "The logic alone". The
+  switch `RL_NODRAW=1` writes no pixel and copies no screen, in the
+  original and in the port; the draw calls stay. The value is the CPU
+  of the run of 1200 frames minus that of a run of 1 frame. Over the
+  23 games the logic of the ports is 2.14 times that of the originals
+  in sum (3069 against 1432 microseconds for one frame of each game),
+  while the whole frames are 1.02 times. Per game from 0.66 to 3.97,
+  and one outlier, koala_seasons, at 24.24 (24 against 589
+  microseconds: hundreds of fields in tables, and each float operation
+  rounded by hand). Values under some 20 microseconds carry the noise.
+  It is the first measure of the two numbers side by side, and it
+  bears on the expectation of the outline (a loss below 10% to 20%
+  against a static original): that holds for the whole frame, and not
+  for the logic alone, which is about twice. The absolute cost is
+  small (microseconds in a frame of 16 ms): the argument of Sweeney
+  applies to the frame.

@@ -1,6 +1,6 @@
-xfer-01.atm : line 88 : near 't' : warning : pinned value given away by its block (expected 'val')
-xfer-01.atm : line 93 : near 't' : warning : pinned value given away by its block (expected 'val')
-xfer-01.atm : line 99 : near 't' : warning : pinned value given away by its block (expected 'val')
+xfer-01.atm : line 88 : near 't' : warning : pinned value given away by its block (expected 'val' at line 87)
+xfer-01.atm : line 93 : near 't' : warning : pinned value given away by its block (expected 'val' at line 92)
+xfer-01.atm : line 99 : near 't' : warning : pinned value given away by its block (expected 'val' at line 98)
 1	true	true
 1
 2

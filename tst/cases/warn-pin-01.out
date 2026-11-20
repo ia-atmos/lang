@@ -1,5 +1,5 @@
-warn-pin-01.atm : line 5 : near 't' : warning : pinned value given away by its block (expected 'val')
-warn-pin-01.atm : line 9 : near 'n' : warning : pinned value given away by its block (expected 'val')
-warn-pin-01.atm : line 18 : near 't' : warning : pinned value given away by its block (expected 'val')
+warn-pin-01.atm : line 5 : near 't' : warning : pinned value given away by its block (expected 'val' at line 4)
+warn-pin-01.atm : line 9 : near 'n' : warning : pinned value given away by its block (expected 'val' at line 8)
+warn-pin-01.atm : line 18 : near 't' : warning : pinned value given away by its block (expected 'val' at line 17)
 10
 false	invalid escape : table pinned at warn-pin-01.atm:4

@@ -41,9 +41,11 @@ answer to each is a merge or a revert.
 
 ## B. Work known, not done
 
-- When `atmos-lang` fixes `atm_emit_to` on `main` (a defect found by
-  env-uv, in `emit_to1`): bring `main` in, solve the conflict with
-  `emit_held`, run the suite again.
+- `main` (`8c46149`, with the fix of `atm_emit_to` and the changes of
+  atmos-pin) is in the branch, `15766e9`, and then `5509fa1` (the chain of holders on the stack), tip `d8a82a9`: the merge took the new body
+  of `emit_to1` into `emit_held` with no conflict; `tst/run.sh`
+  pass=1018 fail=0 on `d8a82a9`, `make test-rt test-env` pass (ASAN). `atmos-lang`
+  reruns the suite and Pingus on it.
 - After his approval: bring `main` into the branch again, run the full
   suite, merge. `atmos-lang` then migrates and tells the ports.
 - `atmos-lang#2a`: the paragraph of the convention in the manual, if he
