@@ -1,5 +1,11 @@
 # TODO args
 
+**Closed on 2026-11-20.** Everything here is done and on `main` (the
+single-atom call and the bare `await` of a name at 826e219, the exit names
+as keywords at 61979ce). The author asked for the session to be archived;
+the branch `args` equals `main`. A new question on arguments goes to
+atmos-lang.
+
 Session `atmos-args` (was `args`); branch `args`. Design: `261118-args-rules.md`.
 
 ## Index of items (`#N`, standing rule of 2026-11-18)
