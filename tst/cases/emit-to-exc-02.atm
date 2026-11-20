@@ -1,0 +1,27 @@
+;; The task that emits is not held by who holds the target: it goes on
+;; after the emit, and the holder handles the exception.
+task T (v) {
+    await :X
+    if v == 2 {
+        throw :boom
+    }
+    print(:ok, v)
+}
+task Emitter (ts) {
+    await :go
+    loop _, t in ts {
+        emit @t :X
+        print(:emitted)
+    }
+    print(:emitter, :end)
+}
+pin ts = tasks()
+spawn @ts T(1)
+spawn @ts T(2)
+spawn @ts T(3)
+pin m = spawn Emitter(ts)
+val e = catch :boom {
+    emit :go
+    :none
+}
+print(:main, e)
