@@ -896,6 +896,8 @@ unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
 integer is a compile error: with integers of 32 bits, a clock holds up to 35
 minutes in microseconds, and up to 24 days in milliseconds.
 The environment of a program must be built with the same options.
+The runtime is built once for each combination of the options, when a program
+first asks for it.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 

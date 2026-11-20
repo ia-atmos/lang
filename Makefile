@@ -18,7 +18,11 @@ CC_HDR := src/atmc.h
 CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
             $(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(a))+))))
 CFGS := $(patsubst %+,%,$(CFGS))
-LIBS := $(foreach c,$(CFGS),build/libatmos$(c).a)
+# Only the default configuration is built in advance: the compiler
+# builds another one when a program first asks for it, and those that
+# exist are kept up to date.
+LIBS := $(sort build/libatmos.a build/libatmos-asan.a \
+               $(wildcard build/libatmos-*.a))
 
 all: atmos $(LIBS)
 
@@ -57,6 +61,8 @@ build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o
 	ar rcs $$@ $$^
 endef
 
+# the default configuration has an empty suffix
+$(eval $(call RT_RULES,))
 $(foreach c,$(CFGS),$(eval $(call RT_RULES,$(c))))
 
 # runtime unit tests, built with the address sanitizer

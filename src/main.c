@@ -138,14 +138,21 @@ static int build (const char* c, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
     // the runtime of the configuration
-    char* lib = xfmt("%s/build/libatmos%s%s%s%s.a", home,
+    char* rel = xfmt("build/libatmos%s%s%s%s.a",
         OPT_F32     ? "-f32" : "",
         OPT_INT32   ? "-i32" : "",
         OPT_TIME_MS ? "-ms"  : "",
         asan        ? "-asan" : "");
+    char* lib = xfmt("%s/%s", home, rel);
+    // only the default configuration is built in advance: another one
+    // is built when a program first asks for it
     if (access(lib, R_OK) != 0) {
-        fprintf(stderr, ATMOS_NAME " : runtime not found : %s\n", lib);
-        return 1;
+        char* mk = xfmt("make -s -C %s %s >&2", home, rel);
+        if (system(mk)!=0 || access(lib, R_OK)!=0) {
+            fprintf(stderr, ATMOS_NAME " : runtime not found : %s\n"
+                "    build it with : make -C %s %s\n", lib, home, rel);
+            return 1;
+        }
     }
     // the flags of the environment of a dedicated compiler, then those
     // of the user
