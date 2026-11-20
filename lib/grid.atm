@@ -56,7 +56,9 @@ func grid_find (g, x1, y1, x2, y2, f) {
     loop cx in (math.floor(x1 / g.cell), math.floor(x2 / g.cell)) {
         val v = loop cy in (math.floor(y1 / g.cell), math.floor(y2 / g.cell)) {
             val c = g.cells@(grid_key(cx, cy))
-            val u = c && find(c, f)
+            val u = c && loop _, m in c {
+                until f(m), m
+            }
             until u, u
         }
         until v, v

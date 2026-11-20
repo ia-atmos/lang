@@ -31,9 +31,9 @@ func move () {
 func scan () {
     var hits = 0
     loop _, z in zs {
-        val p = find(ps, \(p) {
-            (p.x >= z.x) && (p.x < z.x+32) && (p.y >= z.y) && (p.y < z.y+32)
-        })
+        val p = loop _, p in ps {
+            until (p.x >= z.x) && (p.x < z.x+32) && (p.y >= z.y) && (p.y < z.y+32), p
+        }
         if p { set hits += 1 }
     }
     hits
