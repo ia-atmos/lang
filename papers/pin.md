@@ -238,6 +238,9 @@ case studies from six ports of libraries and games to Atmos.
     - runs only if a reference was written into a table, box, or `pub` in the block
     - soundness rests on the counts, not on the ceiling
     - escape information by block depth selects the candidates
+    - also when the last outside reference to a nameless value goes (a
+      temporary, a dropped result, an entry of a freed value, the parameter
+      of a task that ends); for a task parameter, gives up beyond 256 values
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
@@ -337,8 +340,10 @@ case studies from six ports of libraries and games to Atmos.
 - Collection is still needed during the scope: pins do not replace a GC
 - Without a tracing collector, garbage in cycles lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- Cycles that leak: a cyclic value returned by a call and dropped without a
-  name; a cyclic value given to a task of an outer pool, when that task ends
+- Cycles: the two known leaks (a cyclic value returned by a call and dropped
+  without a name; one given to a task of an outer pool) were fixed on
+  2026-11-20 (`daab0b7`, atmos-pin#7); a parameter of a task gives up beyond
+  a few hundred values, left to the counts
 - `set :out` refers outward with no check: its place is reset only at the end
   of the block, so a reader in between must not keep what it reads
 - A task cannot publish a value pinned in its body

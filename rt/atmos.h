@@ -234,6 +234,7 @@ extern int a_depth;
 // Shows the pending error and its trace: the calls it crossed, from
 // the outermost one, then the line that raised it.
 void a_error_dump (void);
+void a_trace_await (int lin);
 
 // The text of `X.dump(v)` (owned), or NULL if the value cannot be
 // written (then an error is left pending).
