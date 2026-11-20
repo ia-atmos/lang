@@ -1,0 +1,64 @@
+;; grid: a uniform grid of points, to ask "who is in this rectangle?"
+;; without looking at every member.
+;;
+;;      pin g = grid_new(64)                    ;; cells of 64x64
+;;      loop on :tick {
+;;          grid_clear(g)
+;;          loop _, t in pingus {               ;; once per tick
+;;              grid_add(g, t.pub.x, t.pub.y, t)
+;;          }
+;;          <...>
+;;      }
+;;      val t = grid_find(g, x1, y1, x2, y2, \(t) { <...> })
+;;
+;; The grid holds what it is given until the next `grid_clear`: it is
+;; filled again in each tick, since the members move.
+;; A member is a point: one with an area is added with its center, and
+;; the rectangle of a query grows by half of the largest member.
+
+;; A grid with square cells of side `cell`.
+func grid_new (cell) {
+    [cell=cell, cells=[], used=[]]
+}
+
+;; Empties the grid, and keeps its cells to be filled again.
+func grid_clear (g) {
+    loop _, c in g.used {
+        vector.clear(c)
+    }
+    vector.clear(g.used)
+}
+
+;; The key of the cell at column `cx` and row `cy`.
+func grid_key (cx, cy) {
+    (cx + 32768) * 65536 + (cy + 32768)
+}
+
+;; Adds the member `v` at the point `(x,y)`.
+func grid_add (g, x, y, v) {
+    val k = grid_key(math.floor(x / g.cell), math.floor(y / g.cell))
+    var c = g.cells@(k)
+    if c == nil {
+        set c = []
+        set g.cells@(k) = c
+    }
+    if #c == 0 {
+        set g.used@+ = c
+    }
+    set c@+ = v
+}
+
+;; The first member `v` in the cells that touch the rectangle
+;; `(x1,y1)-(x2,y2)` for which `f(v)` is truthy, or nil.
+;; `f` also tests the rectangle itself: a cell that touches it holds
+;; members outside it.
+func grid_find (g, x1, y1, x2, y2, f) {
+    loop cx in (math.floor(x1 / g.cell), math.floor(x2 / g.cell)) {
+        val v = loop cy in (math.floor(y1 / g.cell), math.floor(y2 / g.cell)) {
+            val c = g.cells@(grid_key(cx, cy))
+            val u = c && find(c, f)
+            until u, u
+        }
+        until v, v
+    } || nil
+}

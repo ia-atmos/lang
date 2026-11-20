@@ -1,0 +1,72 @@
+;; W zones against P members that move in every tick: a scan of all
+;; members per zone, against a grid filled once per tick.
+;;      atmos grid-bench.atm <W> <P> <ticks> <side of the world>
+include "grid.atm"
+
+val args = [...]
+val W, P, N, SIDE = tonumber(args@0), tonumber(args@1), tonumber(args@2), tonumber(args@3)
+
+var seed = 12345
+func rnd (n) {
+    set seed = (seed * 1103515245 + 12345) % 2147483648
+    seed % n
+}
+
+pin ps = []
+loop _ in P {
+    set ps@+ = [x=rnd(SIDE), y=rnd(SIDE), dx=rnd(5)-2, dy=rnd(5)-2]
+}
+pin zs = []
+loop _ in W {
+    set zs@+ = [x=rnd(SIDE-32), y=rnd(SIDE-32)]
+}
+
+func move () {
+    loop _, p in ps {
+        set p.x = (p.x + p.dx) % SIDE
+        set p.y = (p.y + p.dy) % SIDE
+    }
+}
+
+func scan () {
+    var hits = 0
+    loop _, z in zs {
+        val p = find(ps, \(p) {
+            (p.x >= z.x) && (p.x < z.x+32) && (p.y >= z.y) && (p.y < z.y+32)
+        })
+        if p { set hits += 1 }
+    }
+    hits
+}
+
+pin g = grid_new(64)
+func grid () {
+    grid_clear(g)
+    loop _, p in ps {
+        grid_add(g, p.x, p.y, p)
+    }
+    var hits = 0
+    loop _, z in zs {
+        val p = grid_find(g, z.x, z.y, z.x+31, z.y+31, \(p) {
+            (p.x >= z.x) && (p.x < z.x+32) && (p.y >= z.y) && (p.y < z.y+32)
+        })
+        if p { set hits += 1 }
+    }
+    hits
+}
+
+;; both in the same ticks, over the same positions
+var h1, h2, us1, us2 = 0, 0, 0, 0
+loop _ in N {
+    move()
+    val t0 = os.clock()
+    set h1 += scan()
+    val t1 = os.clock()
+    set h2 += grid()
+    val t2 = os.clock()
+    set us1 += t1 - t0
+    set us2 += t2 - t1
+}
+assert(h1 == h2)
+;; W, P, hits, microseconds per tick: scan, grid
+print(W, P, h1, math.floor(us1 * 1000000 / N), math.floor(us2 * 1000000 / N))
