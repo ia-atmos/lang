@@ -21,11 +21,11 @@ Last update: 2026-11-19.
 | `#7` | No reals (`#B`) and fixed point (`#C`) | Open; only matter if `#1` includes boards with no FPU as a priority |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open; independent of the options |
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
-| `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Under `ATMOS_TIME=ms`, 12 existing cases differ only for this |
+| `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Candidate from `env-sdl`: no new constant, the clock literal is the unit (`t / 1s` is right in every build; `t / 1000000` is wrong under `ms`, `t * 1000000` overflows under 32 bits). To write in the manual if the author agrees |
 | `#11` | Limits of integers of 32 bits to document: `os.time()` wraps in 2038; the least integer has no literal (as with 64 bits) | Open, minor |
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
-| `#14` | Each environment must say which numeric options it supports (`env-uv` has C that assumes microseconds and 64 bits); the compiler could refuse an option the environment does not declare | Open, raised by `atmos-lang` and `env-esp32` |
+| `#14` | Each environment must say which numeric options it supports (`env-uv` has C that assumes microseconds and 64 bits); the compiler could refuse an option the environment does not declare | Asked 2026-11-20; recommended: the environment declares, the compiler refuses the rest. `env-sdl` (85b23cc) and a scratch of `env-esp32` already support the three options with a small change to the clock |
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build`: an installed read-only compiler cannot build a configuration. The error names the command; the manual does not say it yet | Open, minor |
 
 ## Checked by this session
@@ -89,3 +89,9 @@ Last update: 2026-11-19.
   sdl-pingus passes. `tonumber("9223372036854775808")` is now a real;
   no port depends on it. No port links `libatmos-f32*.a` by name.
   pico-frescogo and env-esp32 were not cloned there.
+- 2026-11-20, `env-sdl` through `atmos-lang` (`#14`, `#10`): `sdl.atm`
+  at 85b23cc supports the three options; its one defect was the clock,
+  emitted in microseconds whatever the unit (now `acc / A_TIME_US`, the
+  rest carried). Colors `0xRRGGBBAA` survive `float` and 32-bit
+  integers. Its 23 tests pass under each option and the three together,
+  except one whose trace is of the default unit.
