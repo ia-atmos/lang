@@ -1,0 +1,31 @@
+;; 7GUIs with grab: "while I await this, my siblings do not react", said
+;; by the branch that awaits; the canvas is still drawn (the filter)
+spawn {
+    grabbable true {
+        par {
+            loop on :button {
+                print("adjust opens")
+                grab <!:action> {
+                    loop on :value {
+                        print("adjust", "value")
+                        until true
+                    }
+                }
+                print("adjust closes")
+            }
+        } with {
+            loop on :undo {
+                print("undo")       ;; silenced while adjusting
+            }
+        } with {
+            loop on :action {
+                print("draw")       ;; passes the filter
+            }
+        }
+    }
+}
+emit :button
+emit :undo
+emit :action
+emit :value
+emit :undo

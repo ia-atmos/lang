@@ -1,0 +1,32 @@
+;; SNKRX with grab: the options take the input from inside, at any
+;; depth; main lends it with one grabbable around the screens
+task Card () {
+    loop on :mouse.dn {
+        print("card bought")
+    }
+}
+task Options () {
+    grab <:mouse.dn || :key.dn> {
+        loop e on <:mouse.dn || :key.dn> {
+            print("options", e)
+            until e ?? :key.dn
+        }
+    }
+}
+task Shop () {
+    spawn Card()
+    loop {
+        await :key.dn
+        await Options()
+    }
+}
+spawn {
+    grabbable true {
+        await Shop()
+    }
+}
+emit :mouse.dn
+emit :key.dn                ;; opens the options
+emit :mouse.dn              ;; only the options see it
+emit :key.dn                ;; closes them
+emit :mouse.dn
