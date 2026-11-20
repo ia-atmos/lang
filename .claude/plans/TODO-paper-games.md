@@ -21,7 +21,9 @@ next time it is put to him.
 | # | Title | State |
 |---|-------|-------|
 | #1 | Organization of the paper (was A4) | Open. Reminder on 2026-11-24 |
-| #2 | Title and venue of the Pingus paper (E, references) | Open. Reminder on 2026-11-24 |
+| #2 | Title and venue of the Pingus paper (E, references) | Checked on the web on 2026-11-20 (`papers/games-related.md`, 2.1): SBGames 2018, single author, pp. 591-600, DOI 10.1109/SBGAMES.2018.00036. By the session, to be confirmed by him |
+| #3 | Work with no input (`atmos-lang#95`, 2026-11-20): data of the ports, references checked, drafts, changes of the language | Done on 2026-11-20, by the session, to be reviewed. See G |
+| #4 | Common method for the CPU of the game logic alone (part of A3) | Set on 2026-11-20, by the session, to be confirmed. See G |
 
 ## A. Decisions waiting for the author
 
@@ -249,3 +251,110 @@ memory or from search snippets, and is to be checked before use.
   in the method of the case studies; no claim on save, resume, or
   replay. To do: tell that session the names of the sections when A4 is
   decided.
+
+## G. Work with no input (#3, 2026-11-20)
+
+The author, in `atmos-lang`, on 2026-11-20 (read in its transcript):
+"I want you to review all sessions and propose them changes that need no
+input. The sessions may also work suggest by themselves. No input form
+me. Go ahead". The rule is in `.claude/plans/TODO.md`, "Work with no
+input". Everything below was done by the session, to be reviewed by
+him; nothing outward, and the outline `papers/games.md` keeps both
+organizations (#1 is still his).
+
+### Changes of the language since 2026-11-15 that bear on the paper
+
+Read from the log of `doc/manual.md`. The outline has no code yet; the
+code in `papers/games-drafts.md` is copied from the ports as they were
+on 2026-11-20.
+
+- `pin`: the rules are stable (`pin val`, `pin var`, modifiers on
+  parameters, a pinned value never leaves its block, `set :out` for a
+  place outside that refers to a value until the block ends). Any
+  explanation of memory in the paper follows the manual, "Pin", and
+  points to the paper on `pin` for the rules.
+- No method calls: `o::f()`, `func o::f`, and the implicit `self` left
+  the language. A sample with `::` no longer compiles.
+- Calls with a single atom and no parentheses (`f x`), and the bare
+  `await` of a name (`await x`).
+- `X.in` instead of `X.xin`; the native tag `:atmos` instead of
+  `:value`; `await :all` over an empty pool is satisfied at once; only
+  the last spawn of a block is the compile error.
+- `X.loadx`: data with names and includes. It bears on the ports that
+  keep content as data (SNKRX, Flare).
+- Numeric options: `ATMOS_REAL=float` (reals with 32 bits) and
+  `ATMOS_INT=32`. They bear on a threat to validity: Pingus and
+  SuperTux kept exact `float` math in C because reals were doubles. To
+  check with each port whether its formulas went back to Atmos before
+  the paper says what stayed in C.
+- Environments may be written in Atmos (`atmos.env`), with a generic
+  `main`; Rocks and the SDL library left for `ia-atmos/env-sdl`. The
+  README no longer has `lib/sdl.atm`.
+
+### What was written (2026-11-20)
+
+- `papers/games-data.md`: the measures that the documents of the ports
+  report, one table per claim, each cell with its source. Nothing was
+  measured again. Ends with "Gaps" and "Inconsistencies".
+- `papers/games-drafts.md`: drafts of the subjects, the method, and
+  the threats to validity, independent of #1. Ends with the open
+  points for the author.
+- `papers/games-related.md`: the references checked on the web, with
+  the URL read. Ends with "Could not verify". It settles B4 (Sweeney)
+  and most of B6 (coroutines in engines).
+
+### Findings to carry to the text
+
+- Sweeney's slide says "Will gladly sacrifice 10% of our performance
+  for 10% higher productivity": productivity, not expressiveness.
+- The Pingus paper names four patterns (finite state machines,
+  continuation passing, dispatching hierarchies, lifespan
+  hierarchies); the port documents seven cases, signaling included.
+- Not to claim: that a Unity coroutine runs no cleanup when stopped,
+  nor that an `await` of Godot cannot be cancelled (the documents are
+  silent); that the state scripts of Naughty Dog lack parallelism,
+  abortion, or finalization (they have tracks, abort on a change of
+  state, and exit handlers).
+- No publication on Atmos was found.
+- B5 is settled: the originals of `env-ray` are in C
+  (`papers/games-data.md`, Subjects).
+
+### To ask the ports (through `atmos-lang`), not done
+
+- SNKRX: the size of the port, 4755 lines (`doc/bench.md`) or 8647
+  (`doc/case-study.md`); the 946 MB of the original, unexplained.
+- `env-ray`: 38 or 35 control variables left.
+- Doom: 44 against 33 ms with no rendering (its TODO) against "no
+  difference" (`doc/bench.md`).
+- Lessmilk, Flare, SuperTux: memory and CPU of the port against the
+  original; Flare and SuperTux: the size of the port.
+- All: the CPU of the game logic alone, measured the same way.
+- Pingus, SuperTux: whether the formulas in `float` went back to Atmos
+  with `ATMOS_REAL=float`.
+- All but Flare: a statement in the README of how the port was
+  written (AI agents under the direction of the author).
+
+### The CPU of the game logic alone (#4, by the session, to be confirmed)
+
+Asked by `env-ray` on 2026-11-20, which proposed it; told to `env-ray`
+and to `atmos-lang` for the other ports.
+
+- The same run as the whole-frame measure (same scripted input, same
+  frames, no cap), with the rasterizer and the presentation skipped in
+  the original and in the port alike: a frame costs its logic plus the
+  draw calls with no pixels. Doom already does it ("no rendering").
+  In-process timers (SNKRX) only exist in the port.
+- CPU time of the process, median of 3 runs, same machine; ms per
+  frame and the ratio of port to original, next to the whole-frame
+  number of the same run. Each `doc/bench.md` says what is skipped.
+
+### Answers of the ports
+
+- `env-ray` (2026-11-20): the control variables left are 38 of 134 in
+  the faithful ports (branch `faithful`, `e0b6a01`) and 35 on `main`
+  (`9f5d069`), with 14 games relaxed: both were right. Its README,
+  "State", now says how the port was written. Logic alone: not
+  measured yet (`env-ray#45`); it has the whole run (1.02 times the C
+  on average) and one stress (space_invaders, 1.4 against 0.75
+  microseconds per enemy). `papers/games-data.md` still has the state
+  of `0d8b477`: to refresh when the ports settle.

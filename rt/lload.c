@@ -616,7 +616,7 @@ static AStatus include (Load* l) {
 
     // dir/file, unless the file is absolute
     size_t dn = (l->dir==NULL || (f->len>0 && f->s[0]=='/')) ? 0 : strlen(l->dir);
-    char* path = malloc(dn + 1 + f->len + 1);
+    char* path = malloc(dn + 1 + f->len + 2);
     size_t n = 0;
     if (dn > 0) {
         memcpy(path, l->dir, dn);
@@ -630,6 +630,9 @@ static AStatus include (Load* l) {
     path[n] = '\0';
     a_dec(v);
     path_norm(path);
+    if (path[0] == '\0') {
+        strcpy(path, ".");
+    }
     n = strlen(path);
 
     // only once
@@ -660,7 +663,15 @@ static AStatus include (Load* l) {
         }
         len += r;
     }
+    // a directory opens, and fails to be read
+    int err = ferror(fp);
     fclose(fp);
+    if (err) {
+        AStatus st = failn(l, "include not found", path, n);
+        free(buf);
+        free(path);
+        return st;
+    }
 
     // the names point into the text: it lasts as long as they do
     if (e->files_n == e->files_max) {

@@ -1,0 +1,25 @@
+;; a pin of a task that is the last statement of its block: the task is
+;; aborted when the block ends, as a spawn in that position (a warning,
+;; and not an error, since the pin is explicit)
+task T () { await(false) }
+task U () { 1 }                     ;; does not await: no warning
+var c = true
+loop i in 2 {
+    print(i)
+    pin t = if c { spawn T() }      ;; dies at each step
+}
+do {
+    pin u = spawn U()               ;; ok
+}
+do {
+    pin t = spawn T()               ;; ok: not the last statement
+    print(:x)
+}
+do {
+    print(:y)
+    pin t = spawn T()               ;; warning
+}
+do {
+    pin b = spawn { await(false) }  ;; warning
+}
+print(:end)

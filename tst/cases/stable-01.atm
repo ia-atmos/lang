@@ -1,0 +1,52 @@
+;; One case for each sentence of the summary "Stable (2026-11-19)" of the
+;; rules of pin that had no case of its own (see TODO-pin.md).
+
+;; an emitted event is owned by the emit: a receiver holds it in a name,
+;; and cannot pin it
+task R () {
+    val e = await(:evt)
+    print(:val, e.v@0)
+    val ok, err = catch true { pin p = e }
+    print(ok, err)
+    val ok2, err2 = catch true { pin q = e.v }
+    print(ok2, err2)
+}
+pin r = spawn R()
+emit(:evt [v=[1]])
+
+;; a task owns its `pub` and its final value: they end with it
+task P () {
+    set pub = [x=[2]]
+    await(:go)
+    [3]
+}
+var keep
+do {
+    pin p = spawn P()
+    print(:pub, p.pub.x@0)
+    val ok, err = catch true { set keep = p.pub }
+    print(ok, err)
+    emit(:go)
+    val ok2, err2 = catch true { set keep = p.ret }
+    print(ok2, err2)
+    print(:ret, p.ret@0)
+}
+
+;; the spawn statement is the only implicit pin: the task lives until the
+;; end of the block; a task that a name holds too; one that is dropped
+;; is aborted at once
+task S (id) {
+    defer { print(:end, id) }
+    await(false)
+}
+do {
+    spawn S(1)
+    val s = spawn S(2)
+    (spawn S(3))
+    print(:in)
+}
+print(:out)
+
+;; a bare `pin` is a `pin val`: it is not assigned
+pin a = [1]
+print(catch true { pin b = a })

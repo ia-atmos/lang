@@ -27,11 +27,16 @@ void a_tab_clear (ATab* t) {
     t->idx  = NULL;
     t->an = t->acap = 0;
     t->en = t->ecap = t->elive = t->icap = 0;
+    // an entry that something else still refers to may be left as a
+    // cycle with no name
     for (uint32_t i=0; i<an; i++) {
+        a_orphan(arr[i]);
         a_dec(arr[i]);
     }
     for (uint32_t i=0; i<en; i++) {
+        a_orphan(ents[i].k);
         a_dec(ents[i].k);
+        a_orphan(ents[i].v);
         a_dec(ents[i].v);
     }
     free(arr);
