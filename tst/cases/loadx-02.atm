@@ -17,13 +17,22 @@ X.print(X.loadx("inc/loadx", "include 'self.atm'\nSELF"))
 ;; the file sees the names defined before the include
 X.print(X.loadx("inc/loadx", "BEFORE = 1\ninclude 'uses.atm'\nUSES"))
 
+;; the first definition wins: a text replaces a name of a file by
+;; defining it before the include
+val doc2 = ":Slide [ t=TITLE, n=NOTE, c=BLUE ]"
+X.print(X.loadx("inc/loadx", "BLUE = :red\ninclude 'theme.atm'\n" ++ doc2))
+X.print(X.loadx("inc/loadx", "TITLE = 1\ninclude 'theme.atm'\n" ++ doc2))
+;; after the include it has no effect
+X.print(X.loadx("inc/loadx", "include 'theme.atm'\nBLUE = :red\n" ++ doc2))
+;; between two files, the first included
+X.print(X.loadx("inc/loadx", "include 'twice.atm'\ninclude 'base.atm'\n[BLUE, SIZE]"))
+X.print(X.loadx("inc/loadx", "include 'base.atm'\ninclude 'twice.atm'\n[BLUE, SIZE]"))
+
 ;; errors
 print(catch true { X.loadx("inc/loadx", "include 'none.atm'\n1") })
 print(catch true { X.loadx("\ninclude 'theme.atm'\n1") })
 print(catch true { X.loadx("inc/loadx", "include 'value.atm'\n1") })
 print(catch true { X.loadx("inc/loadx", "\ninclude 'err.atm'\n1") })
-print(catch true { X.loadx("inc/loadx", "include 'base.atm'\ninclude 'twice.atm'\n1") })
-print(catch true { X.loadx("inc/loadx", "include 'base.atm'\nBLUE = 1\n1") })
 print(catch true { X.loadx("inc/loadx", "include 'uses.atm'\n1") })
 print(catch true { X.loadx("inc/loadx", "include 'base.atm'") })
 print(catch true { X.loadx("inc/loadx", "[include 'base.atm']") })

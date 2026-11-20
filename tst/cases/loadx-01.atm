@@ -14,6 +14,11 @@ print(X.loadx("N = -1\nN"), X.loadx("C = 1min\nC"))
 ;; a field may have the name of a name
 X.print(X.loadx("T = [1]\n[T=T, x=T]"))
 
+;; the first definition wins: a later one is read and ignored
+X.print(X.loadx("A = 1\nA = 2\nB = [A]\nA = 3\n[A, B]"))
+print(catch true { X.loadx("A = 1\nA = [\n1") })
+print(catch true { X.loadx("A = 1\nA = [B]\n1") })
+
 ;; each use is a copy
 val v = X.loadx("T = [[1]]\n[T, T]")
 set v@0@0@0 = 9
@@ -36,7 +41,6 @@ print(#X.loadx("A=[1,1] B=[A,A] C=[B,B] D=[C,C]\n[D,D]")@1@1@1@1)
 print(catch true { X.loadx("[A]") })
 print(catch true { X.loadx("A = [A]\nA") })
 print(catch true { X.loadx("A = [1]\n[\n B]") })
-print(catch true { X.loadx("A = 1\nA = 2\n[A]") })
 print(catch true { X.loadx("A = 1\n") })
 print(catch true { X.loadx("A = 1\n[A]\nB = 2") })
 print(catch true { X.loadx("A = [1]\n[A...]") })
