@@ -57,6 +57,7 @@ static void    node_stop (ANode* n);
 static int     trail_bdepth (ATask* t, int i);
 static ATrailX* trail_x (ATrail* tr);
 static AStatus emit_top   (ANode* n, AVal evt);
+static AStatus emit_held  (ANode* n, AVal evt);
 static AStatus emit_node  (ANode* n, uint32_t time, AVal evt);
 static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt);
 
@@ -1597,6 +1598,11 @@ AStatus a_emit (AVal to, AVal evt) {
         return A_ERROR;
     }
     evt_own(evt);
+    if (to.type==A_XTASK || to.type==A_TASKS) {
+        // an exit of the target goes to who holds it, as in a
+        // broadcast, and not to who emits
+        return chk_aborted(emit_held(n, evt));
+    }
     return chk_aborted(emit_top(n, evt));
 }
 
@@ -3763,8 +3769,14 @@ static AStatus emit_to1 (AVal to, AVal evt) {
     if (a_isnum(evt)) {
         return a_error("invalid emit : expected global");
     }
-    ANode* n = (ANode*) to.u.o;
     evt_own(evt);
+    return emit_held((ANode*) to.u.o, evt);
+}
+
+// Emits to one task or pool. An exit that leaves the target goes to who
+// holds it.
+static AStatus emit_held (ANode* n, AVal evt) {
+    AVal to = a_obj(&n->hdr);
 
     // who holds the target, taken before the emit: a task that ends
     // leaves the tree
