@@ -13,7 +13,7 @@ The compiler (`ia-atmos/lang`, `main` at `84f8627` or later): the rules of `pin`
 7. A pool held by a `val` works: `func mk () { val ts = tasks() ; spawn @ts T() ; ts }`.
 8. A deep pin adopts only unnamed values; a named value stored in or captured by a pinned value is only referenced (e.g. `pin over = \(x,y){ inside(r,x,y) }` with `r` a parameter now works; the `val over` workaround may go back to `pin`).
 9. Declarations of prototypes are names, not pins: `func f`, `task T`, `val func f` hold an unpinned prototype, so a local function (recursive too) can be returned; `pin func f` gives an owner. Inside a function, `func g` with `g` unknown is now a local `val func g` (no longer an error).
-10. Cycles: without a `pin`, reference counting applies. Since `7480111` (2026-11-18), a cycle among unpinned values that only the names of a block reach is broken at the end of that block, also through a named value held by a pin. Still leaks: a cyclic value that a call returns and that is dropped without a name.
+10. Cycles: without a `pin`, reference counting applies. Since `7480111` (2026-11-18), a cycle among unpinned values that only the names of a block reach is broken at the end of that block, also through a named value held by a pin. A cycle with no name is also broken when the last reference from outside it goes (a result that is dropped, the parameter of a task that ends), since atmos-pin#7 (2026-11-20).
 
 Still open (do not work around yet): an unpinned holder whose floor rises (`val z = [] ; set z.k = k` with `k` pinned outside fails: write `val z = [k=k]`), `with`, a flag that removes the checks.
 
