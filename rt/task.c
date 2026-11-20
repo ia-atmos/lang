@@ -3814,14 +3814,30 @@ static AStatus emit_to1 (AVal to, AVal evt) {
     ANode* n = (ANode*) to.u.o;
     evt_own(evt);
 
-    // who holds the target, taken before the emit: a task that ends
-    // leaves the tree
-    int i = 0;
-    ATask* t = node_holder(n, &i);
-    AVal tref = a_nil();
-    if (t != NULL) {
-        tref = a_obj(&t->node.hdr);
-        a_inc(tref);
+    // Who holds the target, and who holds them, up to the main chunk,
+    // each with the trail that spawned the one below. The chain is
+    // taken before the emit: a task that ends leaves the tree, and the
+    // emit may end any of them (the target ends, which awakes its
+    // parent, which raises).
+    typedef struct { ATask* t; int i; } Hold;
+    int   nh  = 0;
+    int   cap = 8;
+    Hold* hs  = malloc(cap * sizeof(Hold));
+    for (ANode* x=n; ; ) {
+        int i = 0;
+        ATask* t = node_holder(x, &i);
+        if (t == NULL) {
+            break;
+        }
+        if (nh == cap) {
+            cap *= 2;
+            hs = realloc(hs, cap * sizeof(Hold));
+        }
+        hs[nh].t = t;
+        hs[nh].i = i;
+        nh++;
+        a_inc(a_obj(&t->node.hdr));
+        x = &t->node;
     }
 
     a_inc(to);
@@ -3831,15 +3847,11 @@ static AStatus emit_to1 (AVal to, AVal evt) {
     // An exit that leaves the target did not pass through who holds
     // it, since the emit started at the target. It is delivered as a
     // broadcast does: raised in the trail that spawned the target, and
-    // upwards while nobody handles it.
-    while (st!=A_OK && t!=NULL) {
-        int ni = 0;
-        ATask* nt = node_holder(&t->node, &ni);
-        AVal nref = a_nil();
-        if (nt != NULL) {
-            nref = a_obj(&nt->node.hdr);
-            a_inc(nref);
-        }
+    // upwards while nobody handles it. A holder that the emit ended is
+    // skipped.
+    for (int k=0; k<nh && st!=A_OK; k++) {
+        ATask* t = hs[k].t;
+        int    i = hs[k].i;
         while (t->trs != NULL) {
             ATrail* tr = &t->trs[i];
             if (tr->waiting) {
@@ -3860,12 +3872,11 @@ static AStatus emit_to1 (AVal to, AVal evt) {
             }
             i = t->desc->trails[i].up;
         }
-        a_dec(tref);
-        t    = nt;
-        tref = nref;
-        i    = ni;
     }
-    a_dec(tref);
+    for (int k=0; k<nh; k++) {
+        a_dec(a_obj(&hs[k].t->node.hdr));
+    }
+    free(hs);
     return st;
 }
 

@@ -162,7 +162,7 @@ func shoot (u, r) {
 |---|---|
 | Clauses of a `func` | both cases that repeat (2.1, 2.2) dispatch **tasks** |
 | The tag of the first argument, a tagged table | the kind is a field or a bare tag; no entity is a tagged table |
-| The walk up the hierarchy | never needed: the default arm (`else`) is the only "parent" |
+| The walk up the hierarchy | never needed in these ports: the default arm (`else`) is the only "parent". Corrected on 2026-11-20: the badguys of SuperTux, ported since, have three levels (`261118-oo-inherit.md`) |
 | Open (a kind in its own file) | Pingus has it with a table and one line of dispatch |
 | The 22 `if u.character == ...` of SNKRX | not helped: tweaks across other functions |
 | A clause loses the locals of the function around the `match` | the 52 arms of `Character` share three |

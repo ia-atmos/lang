@@ -292,7 +292,8 @@ case studies from six ports of libraries and games to Atmos.
       owned by the block; a field plus `defer` to nil (a reader outside keeps
       the value alive and running, silently)
 - Cost of `set :out` and the mark of finalized data: none measured
-  (2,000,000 pinned tables, 0.68 s against 0.72 s); 12 ports pass unchanged
+  (20 million table reads, 0.70 s before and 0.68 s after, `TODO-pin.md`);
+  12 ports pass unchanged
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
   0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
 - Reports of the migration, so far (`261115-pin.md`)
@@ -350,7 +351,8 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 11. Related Work
 
-- Prior work by the same author: dyn-lex (2023)
+- Prior work by the same author: dyn-lex (2023; checked against its
+  repository, last commit 2023-10-24: `doc/manual.md`, `src/main/kotlin/`)
     - every dynamic value attached, with no keyword, to the block of its first
       assignment; tasks and coroutines too; all checks at run time
     - states: FLEET (not assigned yet: the ancestor of unpinned),
@@ -359,7 +361,11 @@ case studies from six ports of libraries and games to Atmos.
       Atmos has `func f (pin x)` in its place
     - `:tmp` names that hold without attaching, for `and`/`or`: the problem
       Atmos solves with `val` without owner and the ceiling
-    - its test `ll_05_nest` fails on the hole that the ceiling closes
+    - its test `ll_05_nest` (`src/test/kotlin/TExec.kt`) expects the error
+      "cannot move to deeper scope with pending references": the hole that
+      the ceiling closes
+    - `drop` applies recursively, only to assignable expressions with a
+      single reference (its manual, "Drop")
     - what Atmos changes: an explicit `pin`, the floor and the ceiling,
       reassignment of owned places, the same rules for tasks
 - Câmara, undergraduate thesis, UERJ (2024): dyn-lex against Lua 5.4 on 7
@@ -368,8 +374,12 @@ case studies from six ports of libraries and games to Atmos.
     - cost of the checks against a variant without them; reference counting
       doubles each pointer; cycles leak
     - its five rules, for a side-by-side with the Atmos rules
-    - known flaw: times include recompilation; cite the method and the
-      qualitative findings, not the numbers
+    - known flaw (the author): times include recompilation; cite the method
+      and the qualitative findings, not the numbers
+    - remark (#12): the published scripts of `alochaus/dyn-lex-benchmark`
+      compile once and time only the executable; the flaw is not visible
+      there, so it may lie in the runs of the thesis, not in the scripts
+    - its repository has 8 programs: the 7 named plus `simple` (a sum loop)
 - Structured concurrency: Trio, Kotlin, Swift, Java Loom, Céu
 - Regions: Tofte-Talpin, MLKit, Cyclone, Real-Time Java scoped memory
 - Ownership: Rust, ownership types, Vale, Lobster

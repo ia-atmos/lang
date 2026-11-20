@@ -1,0 +1,22 @@
+;; #9: a true from the step of a secondary is a quit requested (its
+;; window closed): the program ends, as with the primary, and every
+;; environment quits; it is not an error
+var n = 0
+atmos.env([
+    mode = [primary=true],
+    step = func () {
+        set n = n + 1
+        emit(1000)
+        false
+    },
+    quit = func () { print("quit A") },
+])
+atmos.env([
+    mode = [secondary=true],
+    step = func (m) {
+        if n == 3 { print("closed") ; return true }
+        false
+    },
+    quit = func () { print("quit B") },
+])
+await(false)

@@ -19,46 +19,107 @@ used before that date (A1, B2, ...) stay valid for what was written then.
 | #3 | Case studies | Open |
 | #4 | The eight rules of Section 4 | Open |
 | #5 | What this paper adds to Croquet | Open |
-| #6 | Related work still from memory | Open, work of this session |
-| #7 | The example of Section 3, not compiled | Open, work of this session |
-| #8 | Fill the sections with text | Not started, after the outline is approved |
+| #6 | Related work still from memory | Mostly done 2026-11-20; CRDTs, Time Warp, Elm time travel not read |
+| #7 | The example of Section 3, not compiled | Done 2026-11-20: `papers/snapshots/` |
+| #8 | Fill the sections with text | Drafts of Sections 3 and 9, by the session, to be confirmed |
 
 ## Open items
 
-- **#1 Title and name.** The author asked on 2026-11-16 that the title
-  has one of: decentralized, blockchain, permissionless, consensus.
-  Proposed: "Snapshots and Commands: Structured Reactive Programs over
-  a Permissionless Consensus"; four alternatives are in
-  `papers/snapshots.md`. He left it open: not to ask again until the
-  outline is otherwise settled.
-- **#2 Freechains.** The consensus reorders commands, and the
-  resolution of branches is automatic: back to a snapshot, apply again
-  in the new order, commands that no longer apply rejected by all peers
-  (approved on 2026-11-16). Still to confirm:
-    - #2a each command is a post, and the order of the consensus is the
-      order of the journal;
-    - #2b when a command is final, and what the user sees before that.
-- **#3 Case studies.** No port follows the architecture.
-  Recommended: Doom with checkpoints after the faithful port, 1oom as a
-  game by turns, and one small editor written for the paper (which also
-  serves Section 8, among peers).
+Work of 2026-11-20 under the rule "work with no input" (`atmos-lang#95`):
+nothing below was decided for the author; each screen is ready for him.
+
+- **#1 Title and name.** Left open by the author on 2026-11-16, not to
+  ask again until the outline is otherwise settled. Proposed: "Snapshots
+  and Commands: Structured Reactive Programs over a Permissionless
+  Consensus"; four alternatives are in `papers/snapshots.md`.
+
+- **#2 Freechains.** Approved on 2026-11-16: the consensus reorders
+  commands, and the resolution is automatic (back to a snapshot, apply
+  again in the new order, commands that no longer apply rejected by all
+  peers). Bayou (1995, read on 2026-11-20) did the same with an undo
+  log and a primary.
+    - #2a Is each command a post, and the order of the consensus the
+      order of the journal?
+        - Option A (recommended): yes, one post per command. Simple, and
+          the journal is the chain.
+        - Option B: a post holds a batch of commands (a session, a
+          turn). Fewer posts, coarser reordering.
+        - Option C: Freechains only carries closed snapshots and
+          journals. No reordering, but no live sharing.
+    - #2b When is a command final, and what does the user see before?
+        - Option A (recommended): Bayou's split. A command is tentative
+          until the consensus settles the posts before it, then stable.
+          The program shows the tentative state, and marks what may
+          still change.
+        - Option B: show only the stable state. Simple, but every action
+          of the user waits for the consensus.
+        - Option C: show the tentative state with no mark. Simple, but a
+          reordering surprises the user.
+
+- **#3 Case studies.** No port follows the architecture yet. Candidates,
+  with what each would show (the facts on the original games are from
+  memory, to confirm with each session):
+    - `doom`: the motivation, measured (967 states kept in C because a
+      save may happen at any tic); with checkpoints, things as tasks
+      instead of rows. Also the case of `atmos-lang#45`, a snapshot of
+      the tasks by the runtime, the way this paper does not take.
+    - `sdl-tux` (SuperTux): a platformer with checkpoints in its levels;
+      the most direct case of Section 7.
+    - `sdl-snxkx` (SNKRX): runs of arenas; a save between arenas is a
+      natural checkpoint.
+    - `sdl-pingus`: levels; the state that persists is which levels are
+      done; small snapshot, few commands.
+    - `sdl-flare`: an RPG whose original saves at any point; the port
+      has no save yet, and the tasks of a map are already spawned from
+      its file; a save at the entry of a map is a checkpoint.
+    - `pico-1oom` (not started): a game of turns whose save is the whole
+      state, reproducible from a seed; the case without checkpoints,
+      where every turn is a command.
+    - `pico-slides`: a presentation as one table; the slide is the
+      state and next/back are commands; the smallest case that is not a
+      game.
+    - an editor written for the paper, grown from
+      `papers/snapshots/board.atm`: the case among peers (Section 8).
+    - Recommended: `doom` (motivation), `sdl-tux` (checkpoints),
+      `pico-1oom` (turns), and the editor (peers). Two to four, by the
+      length the venue allows.
+
 - **#4 The eight rules of Section 4.** A reading of the discussion, not
-  his words. Recommended: to review them one at a time.
-- **#5 What this paper adds to Croquet.** Croquet (read on 2026-11-17)
-  has model and view, a reflector that orders events, time as ticks,
-  shared random numbers, snapshots plus the events after them, and
-  persisted data apart from snapshots. Proposed contributions left:
-    - #5a the architecture inside a synchronous language, the model as
-      plain data and tasks as the view, restart as the abortion of a
-      block, with the rules of pin;
-    - #5b checkpoints for action games;
+  his words. The example (`#7`) follows all eight and checks R4 and R6.
+  Recommended: to review them one at a time. Options per rule: keep,
+  merge, drop, or reword.
+
+- **#5 What this paper adds to Croquet.** Croquet (current docs, read on
+  2026-11-17) has model and view, a reflector that orders events, time
+  as ticks, shared random numbers, snapshots plus the events after them,
+  and persisted data apart from snapshots.
+    - #5a the architecture inside a synchronous language: the model as
+      plain data, tasks as the view, a restart as the abortion of a
+      block, with the rules of pin.
+    - #5b checkpoints for action games.
     - #5c order by a permissionless consensus, with automatic
       reordering.
-- **#6 Related work from memory.** Event sourcing, Elm and Redux, Raft,
-  Bayou, Time Warp, and CRDTs: to check and to add references. The 2003
-  Croquet paper is not read (web.archive.org resets the connection).
-- **#7 The example of Section 3.** A sketch, not compiled.
-- **#8 Text.** Fill the sections after the author approves the outline.
+    - Recommended: all three, with #5a as the main one, since #5b and
+      #5c depend on it.
+
+- **#6 Related work from sources.** Read on 2026-11-20, with the passage
+  in Section 13: event sourcing and CQRS (Fowler), Elm and Redux (their
+  guides), Raft (Section 7 of the paper), Bayou (SOSP 1995), rr (ATC
+  2017). Not read: CRDTs (Shapiro et al. 2011, the report would not
+  download), Time Warp (Jefferson 1985), time travel in Elm or Redux in
+  a primary source, the 2003 Croquet paper.
+
+- **#7 The example.** Done on 2026-11-20: `papers/snapshots/board.atm`
+  compiles and runs on `main`, also with the address sanitizer;
+  `papers/snapshots/test.sh` compares it with `expected.txt`. It checks
+  resume, any instant, R6, and R4 (it finds a note that keeps state in a
+  local). The language did not get in the way. One finding, now in
+  Section 9: the restart test only holds between gestures, not at any
+  point.
+
+- **#8 Text.** Drafts of Sections 3 and 9 in `papers/snapshots-draft.md`,
+  by the session, to be confirmed: the outline is not approved yet, and
+  the other sections wait for `#1` to `#5`.
 
 ## Done before 2026-11-18 (labels of that time)
 

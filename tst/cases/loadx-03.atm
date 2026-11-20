@@ -1,0 +1,56 @@
+;; X.loadx: robustness of the reader and of its includes
+
+;; a file that is missing, a directory, an empty name, an empty file
+print(catch true { X.loadx("inc/loadx", "include 'none.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'dir'\n1") })
+print(catch true { X.loadx("inc/loadx", "\ninclude ''\n1") })
+print(catch true { X.loadx("include '.'\n1") })
+print(catch true { X.loadx("inc/none", "include 'base.atm'\n1") })
+print(X.loadx("inc/loadx", "include 'empty.atm'\n1"))
+
+;; a cycle of includes ends: a file is only included once
+X.print(X.loadx("inc/loadx/cycle", "include 'a.atm'\n[A, B]"))
+print(catch true { X.loadx("inc/loadx/cycle", "include 'b.atm'\n[A, B]") })
+
+;; the error is in a file included by a file: its name and its line
+print(catch true { X.loadx("inc", "include 'loadx/cycle/b.atm'\n1") })
+
+;; a value that expands to many tables: 2^15 leaves
+var s = "A0 = [1, 1]\n"
+loop i in 14 {
+    set s = s ++ "A" ++ (i+1) ++ " = [A" ++ i ++ ", A" ++ i ++ "]\n"
+}
+val v = X.loadx(s ++ "A14")
+var n = 0
+var t = v
+loop {
+    until t !? :table
+    set n = n + 1
+    set t = t@1
+}
+print(n, string.len(X.dump(v)))
+
+;; nesting through names: up to the limit of X.load, and not beyond
+func chain (n) {
+    var r = "N0 = [1]\n"
+    loop i in n {
+        set r = r ++ "N" ++ (i+1) ++ " = [N" ++ i ++ "]\n"
+    }
+    r ++ "N" ++ n
+}
+print(X.loadx(chain(199)) ?? :table)
+print(catch true { X.loadx(chain(200)) })
+print(catch true { X.loadx(chain(1000)) })
+
+;; many names
+var m = ""
+loop i in 2000 {
+    set m = m ++ "K" ++ i ++ " = " ++ i ++ "\n"
+}
+X.print(X.loadx(m ++ "[K0, K999, K1999]"))
+
+;; a dump of what was read with names is read back by X.load, equal
+val a = X.loadx(io.read(io.open("inc/slides.atm"), :all))
+val d = X.dump(a)
+print(X.eq(X.load(d), a), X.eq(X.loadx(d), a), X.dump(X.load(d)) == d)
+print(d)
