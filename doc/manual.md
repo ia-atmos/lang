@@ -4061,4 +4061,4 @@ may surprise a naive reading:
 | [return](#statement-arguments) | `return (a+1)*2` | `return ((a+1)*2)`     | `(return (a+1)) * 2`     |
 | [return](#statement-arguments) | `[return a, b]`  | `[return (a, b)]`      | `[(return a), b]`        |
 | [locals](#local-variables) | `val x = 1, y`      | `val x = (1, y)`        | `(val x = 1), y`         |
-| [indexing](#indexing) | `t@0.x`             | error: invalid number `0.x` | `(t@0).x`         |
+| [indexing](#indexing) | `t@0.5`             | `t@(0.5)`               | `(t@0).5`                |
