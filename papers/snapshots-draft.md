@@ -175,7 +175,7 @@ drag of a note is disposable, and the input that follows the cut, the
 rest of the drag, no longer means a move.
 So the test cuts only between gestures.
 The example marks these points in its input script, with `:cut`, and the
-run with restarts cuts at each of them: ten restarts in a run of nine
+run with restarts cuts at each of them: nine restarts in a run of nine
 commands.
 The two runs end with the same table.
 
