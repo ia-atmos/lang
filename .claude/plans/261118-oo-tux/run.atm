@@ -1,0 +1,49 @@
+;; every combination of the harness, with both versions of `collision`
+pin KINDS = [
+    [kind=:walker,     tag=:Bad.Walker,     squish=true],
+    [kind=:walker,     tag=:Bad.Walker,     squish=false],
+    [kind=:walker,     tag=:Bad.Walker,     squish=false, sleep=:sleeping],
+    [kind=:jumpy,      tag=:Bad.Jumpy,      squish=false],
+    [kind=:bouncing,   tag=:Bad.Bouncing,   squish=true],
+    [kind=:flying,     tag=:Bad.Flying,     squish=true],
+    [kind=:iceblock,   tag=:Bad.Walker.Ice, squish=false, ice=:normal],
+    [kind=:iceblock,   tag=:Bad.Walker.Ice, squish=false, ice=:flat],
+    [kind=:iceblock,   tag=:Bad.Walker.Ice, squish=false, ice=:waking],
+    [kind=:iceblock,   tag=:Bad.Walker.Ice, squish=false, ice=:kicked],
+    [kind=:iceblock,   tag=:Bad.Walker.Ice, squish=false, ice=:grabbed],
+    [kind=:stalactite, tag=:Bad.Stalactite, squish=false, st=:hanging],
+    [kind=:stalactite, tag=:Bad.Stalactite, squish=false, st=:falling],
+    [kind=:stalactite, tag=:Bad.Stalactite, squish=false, st=:squished],
+]
+pin OTHERS = [
+    [kind=:player,  tag=:Player],
+    [kind=:badguy,  tag=:Bad.Walker,     cls=:walker,     active=true,  moving=true,  freezable=false],
+    [kind=:badguy,  tag=:Bad.Walker,     cls=:walker,     active=true,  moving=true,  freezable=true],
+    [kind=:badguy,  tag=:Bad.Stalactite, cls=:stalactite, active=true,  moving=true,  freezable=false],
+    [kind=:badguy,  tag=:Bad.Walker,     cls=:walker,     active=false, moving=true,  freezable=false],
+    [kind=:badguy,  tag=:Bad.Walker,     cls=:walker,     active=true,  moving=false, freezable=false],
+    [kind=:coin,    tag=:Coin],
+]
+pin WORLDS = [
+    [above=false, stone=false, invincible=false],
+    [above=true,  stone=false, invincible=false],
+    [above=true,  stone=true,  invincible=false],
+    [above=false, stone=false, invincible=true],
+]
+var n = 0
+loop _, k in KINDS {
+    loop _, o in OTHERS {
+        loop _, w in WORLDS {
+            loop _, bits in [HIT.LEFT, HIT.RIGHT, HIT.TOP, HIT.BOTTOM] {
+                loop _, st in [[true, false], [false, false], [true, true]] {
+                    pin s = k ++ [dir=DIR.LEFT, state=BG.ACTIVE, active=st@0, grabbed=st@1]
+                    if s.sleep == nil { set s.sleep = :walking }
+                    set LOG.s = ""
+                    val r = collision(s, o, bits, w)
+                    print(n, r, LOG.s)
+                    set n = n + 1
+                }
+            }
+        }
+    }
+}
