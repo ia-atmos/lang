@@ -1,0 +1,32 @@
+;; #10: a secondary that has input of its own (a socket) gives the
+;; primary a descriptor in `fd`, readable when it has input; a primary
+;; that waits watches them with `atm_env_fds`, so that the secondary is
+;; not delayed by the wait of the primary (by the session `atmos-envs`,
+;; to be confirmed by the author)
+```:prelude
+static int fds_seen (void) {
+    int fds[8];
+    int n = atm_env_fds(fds, 8);        // the descriptors of the secondaries
+    for (int i=0; i<n; i++) {
+        printf("watch %d\n", fds[i]);
+    }
+    return n;
+}
+```
+atmos.env([
+    mode = [primary=true],
+    step = func () {
+        print("n", `:number fds_seen()`)
+        true
+    },
+])
+atmos.env([
+    mode = [secondary=true],
+    fd = 7,
+    step = func () { false },
+])
+atmos.env([
+    mode = [secondary=true],         ;; no input of its own
+    step = func () { false },
+])
+await(false)
