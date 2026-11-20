@@ -534,6 +534,55 @@ so that a host, such as a browser, emits to the program.
 The table must be unpinned: the runtime owns it.
 Callbacks of a library in C may emit from inside a `step`, as below.
 
+A `true` from a `step`, of the primary or of a secondary, is a request to quit
+(a window closed): the program ends and every environment quits.
+That nothing can awake the program is only known to a primary alone (no other
+environment is registered): with secondaries, which may still have input, it
+waits instead.
+
+An environment starts when it is included: the file opens its library at the
+top level, in a native literal, and registers itself with `atmos.env`, so that
+the program may use the library from its first line.
+Its `quit` closes the library.
+
+### Tests of a program with an environment
+
+A program that runs in an environment is tested with [`test`](#test) blocks,
+with the flag `-t`, in the same process as the environment.
+The program keeps its logic in a task, such as a game, which the main chunk
+spawns, and which a `test` block spawns as well, with parameters in place of
+options of the command line or variables of the system.
+The test emits the input and the time that the environment would, and checks
+what the task does; a `return` from the main chunk ends the test before the
+environment ever steps:
+
+```
+task game (level) {
+    <...>
+}
+test {
+    spawn game(1)
+    emit(:key.dn [key="Space", code=32])
+    emit @:global (16ms)            ;; the time, as the primary emits it
+    <checks>
+    return
+}
+spawn game(1)
+```
+
+An environment knows that it runs under `-t` by a `test` block of its own
+file, which sets a global of its C, so that it opens no window, plays no
+audio, and draws off screen:
+
+```
+`int ENV_TEST = 0;`
+test { `ENV_TEST = 1;` }
+```
+
+The flag is only known once the main chunk runs, so an environment opens its
+window and its audio from Atmos (at the first window, at the first sound), and
+not in a `main` of its own before `atm_main`.
+
 An environment may also be written in C, with a `main` of its own over the
 interface of the runtime, which replaces the generic one:
 
