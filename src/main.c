@@ -43,6 +43,11 @@
 #ifndef ATMOS_ENV_CFLAGS
 #define ATMOS_ENV_CFLAGS ""
 #endif
+// The numeric options that the environment supports, beyond the
+// defaults: a list of values, as in "float 32 ms".
+#ifndef ATMOS_ENV_NUM
+#define ATMOS_ENV_NUM ""
+#endif
 #ifndef ATMOS_ENV_LDFLAGS
 #define ATMOS_ENV_LDFLAGS ""
 #endif
@@ -108,11 +113,28 @@ static const char* home_dir (void) {
     return ATMOS_HOME;
 }
 
+// Tells whether the word `w` is in the list `s`, separated by spaces.
+static int has_word (const char* s, const char* w) {
+    size_t n = strlen(w);
+    for (const char* p=s; (p=strstr(p,w))!=NULL; p+=n) {
+        if ((p==s || p[-1]==' ') && (p[n]=='\0' || p[n]==' ')) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 // An option of the build with two values: 0 for `v0` (the default), 1
 // for `v1`. Any other value is an error.
 static int opt2 (const char* name, const char* v0, const char* v1) {
     const char* v = env(name, v0);
     if (strcmp(v, v1) == 0) {
+        // a dedicated compiler takes only what its environment declares
+        if (ATMOS_ENV!=NULL && !has_word(ATMOS_ENV_NUM,v1)) {
+            fprintf(stderr, ATMOS_NAME " : invalid %s : "
+                "the environment does not support '%s'\n", name, v1);
+            exit(1);
+        }
         return 1;
     }
     if (strcmp(v, v0) != 0) {

@@ -633,6 +633,11 @@ once, and so does the plain compiler with the `include`, or with the option
 `-e` and the flags in `ATMOS_CFLAGS` and `ATMOS_LDFLAGS`.
 The paths given to `make env` must be absolute, and the flags must have no
 quotes.
+An environment declares the numeric options that it supports beyond the
+defaults with `ENV_NUM`, as in `ENV_NUM="float 32 ms"` (see
+[Types](#types--values)): its compiler refuses a program built with an option
+that is not declared, since the C code of an environment may depend on the size
+of a number and on the unit of time.
 A dedicated compiler still needs the directory of the compiler it was built
 from, a C compiler, and the development files of its library.
 The example `exs/stdin.atm` emits each line of the standard input as an event.
