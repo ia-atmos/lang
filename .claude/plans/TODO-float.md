@@ -13,9 +13,9 @@ Last update: 2026-11-19.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Which systems the numeric options must serve | Closed 2026-11-20 by the author: the architectures may be any, nobody knows who will use it; the question is that the types can be configured. No list of target systems |
-| `#2` | How the types are configured | Decided 2026-11-20 (`#2a`): two independent options with fixed sizes, `ATMOS_REAL=double\|float` and `ATMOS_INT=64\|32`. Implemented on the branch `float` (922062d), not merged |
-| `#3` | The clock under integers of 32 bits (a clock is a number of microseconds: 2^31 us is 35 min) | Decided 2026-11-20 (`#3a`): a third option for the unit of time, `ATMOS_TIME=us\|ms` (default `us`); a clock literal that does not fit the integer is a compile error. Implemented on the branch `float`, not merged. See `#9` |
-| `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). Implemented on the branch `float` (72d3398) |
+| `#2` | How the types are configured | Decided 2026-11-20 (`#2a`): two independent options with fixed sizes, `ATMOS_REAL=double\|float` and `ATMOS_INT=64\|32`. On `main` (692af43) |
+| `#3` | The clock under integers of 32 bits (a clock is a number of microseconds: 2^31 us is 35 min) | Decided 2026-11-20 (`#3a`): a third option for the unit of time, `ATMOS_TIME=us\|ms` (default `us`); a clock literal that does not fit the integer is a compile error. On `main` (692af43). See `#9` |
+| `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). On `main` (692af43) |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
 | `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Both ran it: `env-esp32` built the board image (-4.5 KB, speed not measured); the suite of `sdl-tux` is identical, over `env-sdl` too. Left: Atmos code of Tux doing the float arithmetic |
 | `#7` | No reals (`#B`) and fixed point (`#C`) | Open; only matter if `#1` includes boards with no FPU as a priority |
@@ -24,7 +24,7 @@ Last update: 2026-11-19.
 | `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Under `ATMOS_TIME=ms`, 12 existing cases differ only for this |
 | `#11` | Limits of integers of 32 bits to document: `os.time()` wraps in 2038; the least integer has no literal (as with 64 bits) | Open, minor |
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
-| `#13` | Merge of the branch `float` (3bec041) into `main` | Asked 2026-11-20, waits for the author. Suite passes with ASAN; `atmos-lang` measured the ports: nothing changes in the default build (2116 files of 12 ports compile to the same C, apart from the two renamings of the branch) |
+| `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
 | `#14` | Each environment must say which numeric options it supports (`env-uv` has C that assumes microseconds and 64 bits); the compiler could refuse an option the environment does not declare | Open, raised by `atmos-lang` and `env-esp32` |
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build`: an installed read-only compiler cannot build a configuration. The error names the command; the manual does not say it yet | Open, minor |
 
