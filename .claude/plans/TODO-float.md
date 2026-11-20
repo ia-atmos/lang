@@ -18,7 +18,7 @@ Last update: 2026-11-19.
 | `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). On `main` (692af43) |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Settled by the session on 2026-11-20, to be confirmed: the fewest digits stay. See "Screens" |
 | `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` | Done 2026-11-20: the badguys of `sdl-tux` are plain Atmos with real arithmetic under `ATMOS_REAL=float` (a6cdb0b) and 69 runs are identical to the official game tick by tick, 29 with badguys; `env-esp32` built the board image |
-| `#7` | No reals (`#B`) and fixed point (`#C`) | Open. The measurement that decides was asked of `env-esp32` (the software floating point linked on a target with no FPU). See "Screens" |
+| `#7` | No reals (`#B`) and fixed point (`#C`) | Settled by the session on 2026-11-20, to be confirmed: not done. Measured by `env-esp32` on the esp32c3 (no FPU): the software arithmetic costs no flash (it is in the ROM) and the `f` functions of libm 15 KB of a 379 KB image. See "Screens" |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open, not recommended now. See "Screens" |
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
 | `#10` | A portable way to compute with time as a number | Done 2026-11-20 as documentation (d96b8b0): a clock is the unit (`t / 1s`); no new constant. By the session, to be confirmed |
@@ -139,6 +139,20 @@ Last update: 2026-11-19.
   `float` only the digits of a printed real differ. Pushed to its main.
   All six environments (sdl, pico, ray, uv, iup, esp32) had the same
   defect of the unit of time and now support the three options.
+- 2026-11-20, `env-esp32` (`#7`), lang 844053e, the three options,
+  `app/init.atm`, built for both targets with no warnings (its drivers
+  build on the esp32c3 unchanged):
+
+  | | esp32 (FPU) | esp32c3 (no FPU) |
+  |---|---|---|
+  | Soft-float routines in flash | 89 B | 0 B (resolved to the ROM) |
+  | libm `f` functions | 10857 B | 15248 B |
+  | Component (`libmain.a`) | 127172 B | 148875 B |
+  | Image | 341453 B | 379349 B |
+
+  Most of the libm is the math library itself (`powf`, the trig), which
+  a fixed-point build would still need or drop as a feature. Speed not
+  measured (needs a board).
 
 ## The matrix of configurations (2026-11-20)
 
@@ -201,8 +215,12 @@ No input form me. Go ahead". What this session settled itself is marked
   functions of libm). A few KB: not worth it. Tens of KB on a board
   with 256 KB or less: worth a discussion. Asked of `env-esp32` for the
   esp32c3.
-- Reading until then: not recommended; `ATMOS_REAL=float` already
-  removes the double math (-4.6 KB on the ESP32).
+- Result (2026-11-20, `env-esp32`, esp32c3): the arithmetic costs no
+  flash (the routines are in the ROM of the chip) and the `f` functions
+  of libm 15 KB, 4% of the image, most of it `pow` and the trig.
+- Settled by the session, to be confirmed: not done. The size does not
+  justify a second arithmetic; only the speed of software reals could,
+  and it needs a board and a program that computes (the PID loop).
 
 ### `#8` An 8-byte value on 64-bit hosts (NaN boxing)
 
