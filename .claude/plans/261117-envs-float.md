@@ -11,7 +11,7 @@ options come from `lang` `692af43`: `ATMOS_INT=32`, `ATMOS_REAL=float`,
 | `env-iup` | the unit of the build | | IUP (no Atmos types) | done (`68fbe3c`): the suite passes under each option; with `float` only the printed digits of a timer differ |
 | `env-pico` | the unit of the build (`4dbf649`) | | `libpico.a`, built by the environment, no Atmos types | done for the time; the rest not reported |
 | `env-uv` | microseconds: `a_int((int64_t)dt * 1000)` | `uv.now()`, sizes and positions of files are 64-bit integers | libuv (no Atmos types) | not done (`env-uv#11`): wrong under `ms`; files over 2 GB truncated under `INT=32` |
-| `env-ray` | microseconds: `atm_emit(a_int(us))` | colors packed as `int64_t` (`r<<24`), `double` fields | raylib, patched for the test mode | not done (`env-ray#44`): wrong under `ms`; colors with `r >= 128` overflow under `INT=32`; `ray.f32` could shrink under `REAL=float` |
+| `env-ray` | microseconds: `atm_emit(a_int(us))` | colors packed as `int64_t` (`r<<24`), `double` fields | raylib, patched for the test mode | not done (`env-ray#44`): wrong under `ms`; colors with `r >= 128` become negative under `INT=32` (they cast back to `uint32_t`, as in sdl: to check); `ray.f32` could shrink under `REAL=float` |
 | `env-esp32` | microseconds: `emit(dt)` from `drv_clock_wait` | `int64_t` arguments of the drivers (`esp_int`) | the drivers in `drv/`, compiled with the program | measured in a scratch copy (`env-esp32#21`): `AVal` 16 to 8 bytes, its component -16%; `ATMOS_REAL_FLOAT` builds (image -4.6 KB); not adopted |
 
 What it takes to support each option:
