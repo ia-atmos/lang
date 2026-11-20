@@ -1,0 +1,4 @@
+==> ERROR:
+ |  find-err-01.atm:1 (call)
+ v  find-err-01.atm:1 (throw)
+==> invalid argument to 'find' : expected table or tasks : got number
