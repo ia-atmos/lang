@@ -834,6 +834,33 @@ static ATrailX* trail_x (ATrail* tr) {
     return tr->x;
 }
 
+// A grab that ends leaves the stack of its grabbable; a grabbable that
+// ends leaves its grabs without one (they end with it, in its block).
+static void grab_off (ATrail* tr, ATrailX* x) {
+    if (x->gkind == A_GRAB && x->gup != NULL && x->gup->x != NULL) {
+        ATrailX* u = x->gup->x;
+        for (int i=0; i<u->gn; i++) {
+            if (u->gs[i] == tr) {
+                memmove(&u->gs[i], &u->gs[i+1], (u->gn-i-1) * sizeof(ATrail*));
+                u->gn--;
+                break;
+            }
+        }
+    } else if (x->gkind == A_GRABBABLE) {
+        for (int i=0; i<x->gn; i++) {
+            if (x->gs[i]->x != NULL) {
+                x->gs[i]->x->gup = NULL;
+            }
+        }
+    }
+    for (int i=0; i<x->ngfilt; i++) {
+        patt_free(x->gfilt[i]);
+    }
+    free(x->gfilt);
+    free(x->gs);
+    free(x->gpath);
+}
+
 // Releases the state of a trail, which becomes inactive.
 static void trail_off (ATrail* tr) {
     if (tr->root.kind != PK_NONE) {
@@ -846,6 +873,7 @@ static void trail_off (ATrail* tr) {
             patt_free(x->filt[i]);
         }
         free(x->filt);
+        grab_off(tr, x);
         a_dec(x->tog);
         a_pay_drop(&x->wpay);
         a_pay_drop(&x->ppay);
@@ -1261,6 +1289,61 @@ static AStatus filt_pass (APatt** fs, int n, AVal evt, int* pass) {
     return st;
 }
 
+// An emit that a grab captures: while it traverses the subtree of the
+// grabbable, it only follows the path down to the grab (the trails on
+// the path do not awake), and then the whole subtree of the grab. The
+// path is a copy: the grab may end in the middle of the emit. A nested
+// emit has its own time, so it is not affected.
+typedef struct ACap {
+    uint32_t time;
+    ATrail*  g;
+    void**   path;
+    int      n;
+    int      in;
+} ACap;
+static ACap CAP = { 0, NULL, NULL, 0, 0 };
+
+// Whether the emit at `time` is captured, outside the grab.
+static int cap_out (uint32_t time) {
+    return CAP.g!=NULL && CAP.time==time && !CAP.in;
+}
+
+// Whether the emit at `time` skips a child (a trail or a node).
+static int cap_skip (uint32_t time, void* p) {
+    if (!cap_out(time)) {
+        return 0;
+    }
+    for (int i=0; i<CAP.n; i++) {
+        if (CAP.path[i] == p) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// The emit reaches a grabbable: the most recent of its grabs whose
+// patterns match the event, if the grabbable's match too, captures it.
+static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
+    ATrailX* x = tr->x;
+    int pass = 0;
+    AStatus st = filt_pass(x->gfilt, x->ngfilt, evt, &pass);
+    for (int k=x->gn-1; st==A_OK && pass && k>=0; k--) {
+        ATrailX* g = x->gs[k]->x;
+        int p = 0;
+        st = filt_pass(g->gfilt, g->ngfilt, evt, &p);
+        if (st==A_OK && p) {
+            CAP.time = time;
+            CAP.g    = x->gs[k];
+            CAP.n    = g->gpn;
+            CAP.in   = 0;
+            CAP.path = malloc((g->gpn > 0 ? g->gpn : 1) * sizeof(void*));
+            memcpy(CAP.path, g->gpath, g->gpn * sizeof(void*));
+            break;
+        }
+    }
+    return st;
+}
+
 // The event is `:T [b]` for the tag of an automatic toggle.
 static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (tog.type==A_NIL || evt.type!=A_TAB) {
@@ -1284,6 +1367,9 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
         // only nested trails, which keep their places
         const ATrailD* ds = t->desc->trails;
         for (int j=ds[tr->idx].kid; j>=0 && st==A_OK; j=ds[j].next) {
+            if (cap_skip(time, &t->trs[j])) {
+                continue;
+            }
             st = emit_trail(t, &t->trs[j], time, evt);
             if (t->trs == NULL) {
                 break;
@@ -1298,6 +1384,9 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     ANode*  n = NULL;
     int kind;
     while (st==A_OK && (kind = kit_next(&it,&c,&n))!=0) {
+        if (cap_skip(time, (kind == 1) ? (void*)c : (void*)n)) {
+            continue;
+        }
         st = (kind == 1) ? emit_trail(t, c, time, evt)
                          : emit_node(n, time, evt);
     }
@@ -1307,10 +1396,7 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
 
 // Traverses the subtree of a trail: its children in order, then the
 // trail itself at its await.
-static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
-    if (tr->status==TR_OFF || tr->doomed) {
-        return A_OK;
-    }
+static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     AStatus st = A_OK;
     int pass = 1;
     if (tr->toggled) {
@@ -1339,7 +1425,8 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
                 exit_park(t, tr, st);
                 st = A_OK;
             }
-        } else if (tr->status==TR_SUSPENDED && tr->time<time && !tr->waiting) {
+        } else if (tr->status==TR_SUSPENDED && tr->time<time && !tr->waiting &&
+                   !cap_out(time)) {
             int done = 0;
             if (tr->root.kind == PK_HEAP) {
                 // predicates run in the context of the awaiting trail
@@ -1383,6 +1470,29 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     return st;
 }
 
+// A grab and a grabbable change how the emit goes on below them.
+static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+    if (tr->status==TR_OFF || tr->doomed) {
+        return A_OK;
+    }
+    ACap save = CAP;
+    AStatus st = A_OK;
+    if (cap_out(time) && tr==CAP.g) {
+        CAP.in = 1;
+    } else if (tr->x!=NULL && tr->x->gkind==A_GRABBABLE && tr->x->gn>0 &&
+               !cap_out(time)) {
+        st = cap_find(tr, evt, time);
+    }
+    if (st == A_OK) {
+        st = emit_trail_(t, tr, time, evt);
+    }
+    if (CAP.path != save.path) {
+        free(CAP.path);
+    }
+    CAP = save;
+    return st;
+}
+
 // Traverses the subtree of a node.
 static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
     if (n->dead || n->doomed) {
@@ -1406,6 +1516,9 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
             node_trav(n, 1);
             int cnt = n->ndns;
             for (int i=0; i<cnt && st==A_OK; i++) {
+                if (cap_skip(time, n->dns[i])) {
+                    continue;
+                }
                 st = emit_node(n->dns[i], time, evt);
             }
             node_trav(n, -1);
@@ -1463,6 +1576,63 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
     x->filt = malloc((n > 0 ? n : 1) * sizeof(APatt*));
     memcpy(x->filt, fs, n * sizeof(APatt*));
     x->nfilt = n;
+}
+
+// `grabbable P {...}` and `grab P {...}`, before the block starts. A
+// grab takes the nearest grabbable above it, in the tree of tasks.
+AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
+    ATrail* me = &t->trs[i];
+    ATrailX* x = trail_x(me);
+    x->gkind  = kind;
+    x->gfilt  = malloc((n > 0 ? n : 1) * sizeof(APatt*));
+    memcpy(x->gfilt, fs, n * sizeof(APatt*));
+    x->ngfilt = n;
+    AStatus st = filt_start(x->gfilt, x->ngfilt);
+    if (st!=A_OK || kind==A_GRABBABLE) {
+        return st;
+    }
+    int cap = 0;
+    int k   = 0;
+    void** path = NULL;
+    ATrail* up = NULL;
+    while (up == NULL) {
+        ATrail* tr = &t->trs[i];
+        if (tr!=me && tr->x!=NULL && tr->x->gkind==A_GRABBABLE) {
+            up = tr;
+            break;
+        }
+        if (k+2 > cap) {
+            cap  = (cap == 0) ? 8 : cap*2;
+            path = realloc(path, cap * sizeof(void*));
+        }
+        path[k++] = tr;
+        if (i > 0) {
+            i = t->desc->trails[i].up;
+            continue;
+        }
+        ANode* nd = &t->node;
+        do {
+            if (k+1 > cap) {
+                cap  = cap*2;
+                path = realloc(path, cap * sizeof(void*));
+            }
+            path[k++] = nd;
+            i  = nd->trail;
+            nd = nd->up;
+        } while (nd!=NULL && nd->hdr.type!=A_XTASK);
+        if (nd == NULL) {
+            free(path);
+            return a_error("invalid grab : expected enclosing grabbable");
+        }
+        t = (ATask*) nd;
+    }
+    x->gpath = path;
+    x->gpn   = k;
+    x->gup   = up;
+    ATrailX* u = up->x;
+    u->gs = realloc(u->gs, (u->gn+1) * sizeof(ATrail*));
+    u->gs[u->gn++] = me;
+    return A_OK;
 }
 
 static AStatus emit_top (ANode* n, AVal evt) {

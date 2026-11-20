@@ -804,7 +804,22 @@ typedef struct ATrailX {
     AVal     tog;
     struct APatt** filt;
     int      nfilt;
+    // `grabbable` (A_GRABBABLE) or `grab` (A_GRAB): its patterns
+    uint8_t  gkind;
+    struct APatt** gfilt;
+    int      ngfilt;
+    // a grabbable: the grabs that it holds, the most recent last
+    struct ATrail** gs;
+    int      gn;
+    // a grab: its grabbable, and the trails and nodes from the grab up
+    // to it (the grabbable excluded), which an emit it captures follows
+    struct ATrail* gup;
+    void**   gpath;
+    int      gpn;
 } ATrailX;
+
+#define A_GRABBABLE 1
+#define A_GRAB      2
 
 // Pattern of an await: a single leaf, or a tree. The value is what
 // the leaf compares to: a tag, a table, a task, a pool, a duration.
@@ -937,6 +952,7 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h);
 // spawn {...}, a branch of a par: starts trail `i` of the task, a
 // transparent block.
 AStatus a_trail_spawn (struct ATask* t, int i);
+AStatus a_trail_grab  (struct ATask* t, int i, int kind, struct APatt** fs, int n);
 
 // End of the block that started trail `i`, if it is still active: it
 // is aborted. As `a_pin_end`, the trail `me` that executes the block
