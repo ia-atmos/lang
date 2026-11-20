@@ -17,8 +17,8 @@ the design.
 
 | # | Title | State |
 |---|-------|-------|
-| 1 | One function or two: `X.load` extended, or a new `X.loadx` | asked, recommended: a new `X.loadx`, `X.load` unchanged |
-| 2 | The syntax of a definition, and what marks the final value | to ask |
+| 1 | One function or two: `X.load` extended, or a new `X.loadx` | **decided (2026-11-20, #1a)**: a new `X.loadx`, a superset of `X.load`, which stays as it is |
+| 2 | The syntax of a definition, and what marks the final value | asked, recommended: `ID = Value` with no keyword, the value with no name is the result |
 | 3 | A name as a value: a copy at each use, no shared node | to ask |
 | 4 | The spread `NAME...`: where it may appear, and its positional entries | to ask |
 | 5 | A field in conflict: the later wins; shallow replace or deep merge | to ask |
