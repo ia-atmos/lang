@@ -60,5 +60,5 @@ beside it, `env-esp32#6`).
   device.
 - Watchdog: a reaction that never awaits keeps the main task busy and
   starves the idle task of FreeRTOS (a warning after 5 s, no reset).
-  `doc/env.md` of `env-esp32` suggests `await(0)` in long loops. A note
+  `doc/env.md` of `env-esp32` suggests `await(1ms)` in long loops (`await(0)` does not yield: it ends in the same reaction). A note
   for any environment on an RTOS board.
