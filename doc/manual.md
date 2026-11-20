@@ -3282,6 +3282,22 @@ arguments of a spawned call.
 However, the `until`/`while` predicate is lazy, re-evaluating its condition on
 each event.
 
+Since an `until` evaluates to the result of its condition, an await over the
+members of a [pool](#tasks) is written with [find](#basic-functions): the
+await awakes at the first event in which a member satisfies the predicate,
+and evaluates to that member.
+The condition is checked again at each event that the pattern accepts, such
+as the tick of an environment:
+
+```
+task Trap (pingus, zone) {
+    loop {
+        val t = await :tick until find(pingus, \(t) { inside(zone, t.pub) })
+        emit @t :kill               ;; `t` is the pingu that entered the zone
+    }
+}
+```
+
 Examples:
 
 <!-- exs/exp-26-await.atm -->
@@ -3581,6 +3597,19 @@ there is no `require`.
   evaluates to its arguments otherwise
 - `next(t [, k])`: the key and value that follow the key `k` in the table
   `t`, or the first ones if `k` is absent; evaluates to `nil` after the last
+- `find(xs, f)`: the first member `v` of the [pool](#tasks) or table `xs`
+  for which `f(v, k)` is truthy, and its key `k` (in a pool, its position
+  among the live tasks); evaluates to `nil` if there is none
+- `filter(xs, f)`: a new [vector](#vector) with the members of the pool or
+  table `xs` for which `f(v, k)` is truthy, in the order of the
+  [loop](#loop) over `xs`
+
+Examples:
+
+```
+val e = find(enemies, \(e) { e.hp <= 0 })       ;; the first dead enemy, or nil
+val es = filter(enemies, \(e) { e.hp > 0 })     ;; the live enemies
+```
 
 ## Math
 
