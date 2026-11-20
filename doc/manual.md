@@ -2992,13 +2992,25 @@ val ok, v = catch \{(true,42)} {    ;; catches any error, transforms into 42
 print(ok, v)                        ;; --> false, 42
 ```
 
+An error that no `catch` handles terminates the program with a trace: the line
+that raised it, and then the lines of the calls and of the awaits that it
+crossed, from the innermost to the outermost:
+
 ```
-throw :X
+func g () {
+    throw :X
+}
+task T () {
+    await 1ms
+    g()
+}
+await T()
 
 ;;; error stack trace
 ==> ERROR:
- |  atmos:9 (call)
- v  test.atm:1 (throw) <- atmos:9 (task)
+ |  test.atm:8 (await)
+ |  test.atm:6 (call)
+ v  test.atm:2 (throw)
 ==> X
 ;;;
 ```

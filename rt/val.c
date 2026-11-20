@@ -21,7 +21,8 @@ int a_lin = 0;
 int a_depth = 0;
 
 // Trace of the pending error: the line that raised it, and the lines
-// of the calls it has crossed (innermost first).
+// of the calls and of the awaits it has crossed (innermost first). An
+// await is kept as `-lin-1`.
 #define TRACE_MAX 32
 static int TRACE_THROW = 0;
 static int TRACE_CALLS[TRACE_MAX];
@@ -202,6 +203,16 @@ int atm_step_failed (void) {
     return STEP_IN && STEP_ST!=A_OK;
 }
 
+// The pending error crosses the await at line `lin`: the task that
+// awaited another one that raised it.
+void a_trace_await (int lin) {
+    if (TRACE_N < TRACE_MAX) {
+        TRACE_CALLS[TRACE_N++] = -lin - 1;
+    } else {
+        TRACE_MORE = 1;
+    }
+}
+
 void a_error_dump (void) {
     fflush(stdout);
     fprintf(stderr, "==> ERROR:\n");
@@ -209,12 +220,15 @@ void a_error_dump (void) {
         fprintf(stderr, " |  ...\n");
     }
     for (int i=TRACE_N-1; i>=0; i--) {
+        int awt = (TRACE_CALLS[i] < 0);
+        int lin = awt ? -TRACE_CALLS[i]-1 : TRACE_CALLS[i];
         // a call from C, with no line (the `step` of an environment)
-        if (A_LIN_LINE(TRACE_CALLS[i]) == 0) {
+        if (A_LIN_LINE(lin) == 0) {
             continue;
         }
-        fprintf(stderr, " |  %s:%d (call)\n",
-            atm_files[A_LIN_FILE(TRACE_CALLS[i])], A_LIN_LINE(TRACE_CALLS[i]));
+        fprintf(stderr, " |  %s:%d (%s)\n",
+            atm_files[A_LIN_FILE(lin)], A_LIN_LINE(lin),
+            awt ? "await" : "call");
     }
     fprintf(stderr, " v  %s:%d (throw)\n",
         atm_files[A_LIN_FILE(TRACE_THROW)], A_LIN_LINE(TRACE_THROW));
