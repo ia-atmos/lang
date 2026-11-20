@@ -21,8 +21,9 @@ next time it is put to him.
 | # | Title | State |
 |---|-------|-------|
 | #1 | Organization of the paper (was A4) | Open. Reminder on 2026-11-24 |
-| #2 | Title and venue of the Pingus paper (E, references) | Open. Reminder on 2026-11-24 |
-| #3 | Work with no input (`atmos-lang#95`, 2026-11-20): data of the ports, references checked, drafts, changes of the language | In course, by the session. See G |
+| #2 | Title and venue of the Pingus paper (E, references) | Checked on the web on 2026-11-20 (`papers/games-related.md`, 2.1): SBGames 2018, single author, pp. 591-600, DOI 10.1109/SBGAMES.2018.00036. By the session, to be confirmed by him |
+| #3 | Work with no input (`atmos-lang#95`, 2026-11-20): data of the ports, references checked, drafts, changes of the language | Done on 2026-11-20, by the session, to be reviewed. See G |
+| #4 | Common method for the CPU of the game logic alone (part of A3) | Set on 2026-11-20, by the session, to be confirmed. See G |
 
 ## A. Decisions waiting for the author
 
@@ -289,3 +290,71 @@ on 2026-11-20.
 - Environments may be written in Atmos (`atmos.env`), with a generic
   `main`; Rocks and the SDL library left for `ia-atmos/env-sdl`. The
   README no longer has `lib/sdl.atm`.
+
+### What was written (2026-11-20)
+
+- `papers/games-data.md`: the measures that the documents of the ports
+  report, one table per claim, each cell with its source. Nothing was
+  measured again. Ends with "Gaps" and "Inconsistencies".
+- `papers/games-drafts.md`: drafts of the subjects, the method, and
+  the threats to validity, independent of #1. Ends with the open
+  points for the author.
+- `papers/games-related.md`: the references checked on the web, with
+  the URL read. Ends with "Could not verify". It settles B4 (Sweeney)
+  and most of B6 (coroutines in engines).
+
+### Findings to carry to the text
+
+- Sweeney's slide says "Will gladly sacrifice 10% of our performance
+  for 10% higher productivity": productivity, not expressiveness.
+- The Pingus paper names four patterns (finite state machines,
+  continuation passing, dispatching hierarchies, lifespan
+  hierarchies); the port documents seven cases, signaling included.
+- Not to claim: that a Unity coroutine runs no cleanup when stopped,
+  nor that an `await` of Godot cannot be cancelled (the documents are
+  silent); that the state scripts of Naughty Dog lack parallelism,
+  abortion, or finalization (they have tracks, abort on a change of
+  state, and exit handlers).
+- No publication on Atmos was found.
+- B5 is settled: the originals of `env-ray` are in C
+  (`papers/games-data.md`, Subjects).
+
+### To ask the ports (through `atmos-lang`), not done
+
+- SNKRX: the size of the port, 4755 lines (`doc/bench.md`) or 8647
+  (`doc/case-study.md`); the 946 MB of the original, unexplained.
+- `env-ray`: 38 or 35 control variables left.
+- Doom: 44 against 33 ms with no rendering (its TODO) against "no
+  difference" (`doc/bench.md`).
+- Lessmilk, Flare, SuperTux: memory and CPU of the port against the
+  original; Flare and SuperTux: the size of the port.
+- All: the CPU of the game logic alone, measured the same way.
+- Pingus, SuperTux: whether the formulas in `float` went back to Atmos
+  with `ATMOS_REAL=float`.
+- All but Flare: a statement in the README of how the port was
+  written (AI agents under the direction of the author).
+
+### The CPU of the game logic alone (#4, by the session, to be confirmed)
+
+Asked by `env-ray` on 2026-11-20, which proposed it; told to `env-ray`
+and to `atmos-lang` for the other ports.
+
+- The same run as the whole-frame measure (same scripted input, same
+  frames, no cap), with the rasterizer and the presentation skipped in
+  the original and in the port alike: a frame costs its logic plus the
+  draw calls with no pixels. Doom already does it ("no rendering").
+  In-process timers (SNKRX) only exist in the port.
+- CPU time of the process, median of 3 runs, same machine; ms per
+  frame and the ratio of port to original, next to the whole-frame
+  number of the same run. Each `doc/bench.md` says what is skipped.
+
+### Answers of the ports
+
+- `env-ray` (2026-11-20): the control variables left are 38 of 134 in
+  the faithful ports (branch `faithful`, `e0b6a01`) and 35 on `main`
+  (`9f5d069`), with 14 games relaxed: both were right. Its README,
+  "State", now says how the port was written. Logic alone: not
+  measured yet (`env-ray#45`); it has the whole run (1.02 times the C
+  on average) and one stress (space_invaders, 1.4 against 0.75
+  microseconds per enemy). `papers/games-data.md` still has the state
+  of `0d8b477`: to refresh when the ports settle.

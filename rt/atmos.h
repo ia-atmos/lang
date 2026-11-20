@@ -347,11 +347,18 @@ static inline void a_pushm (AVal* src) {
 }
 
 // Releases all values from `top` up.
+static inline void a_orphan (AVal v);
+
 static inline void a_settop (int top) {
     while (a_top > top) {
-        a_dec(a_stk[--a_top]);
+        a_top--;
+        a_orphan(a_stk[a_top]);
+        a_dec(a_stk[a_top]);
     }
 }
+
+// Releases a temporary.
+static inline void a_clr_tmp (AVal* dst);
 
 // Moves the first result at `base` (or nil) into a slot and releases
 // the others.
@@ -1096,6 +1103,29 @@ static inline void a_name (AVal v, int d) {
 // write, no cycle may have formed.
 void a_unname_x (AVal* vs, int n, int d);
 void a_cycles (AVal* vs, int n, int d);
+
+// A reference to `v` is about to go, and it is not a name: a temporary,
+// a result that is dropped, an entry of a value that is freed. If `v`
+// is unpinned, has no name, and something else still refers to it, what
+// is left may be only a cycle: it is broken, as at the end of a block.
+void a_orphan_x (AVal v);
+
+static inline void a_orphan (AVal v) {
+    if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
+        v.u.o->rc>1 && v.u.o->pinned==0 && v.u.o->ceil==0)
+    {
+        a_orphan_x(v);
+    }
+}
+
+static inline void a_clr_tmp (AVal* dst) {
+    a_orphan(*dst);
+    a_clr(dst);
+}
+
+// The parameters of a task end with it: a cyclic argument that only
+// they still reach is broken, whatever its ceiling.
+void a_args_end (AVal* vs, int n);
 
 // Count of the writes of a reference into a table, a box, or a `pub`.
 extern uint32_t a_muts;

@@ -12,21 +12,24 @@ the rule are `#1`..`#8`.
 
 | # | Item | State |
 |---|------|-------|
-| #1 | Authorization by `grabbable`, found dynamically | asked, waiting |
-| #2 | What is captured: patterns in both | waiting |
-| #3 | Who receives: the `grab` block and its descendants | waiting |
-| #4 | Nesting: a stack per `grabbable` | waiting |
-| #5 | Time: timers outside a grab, zero tick on release | waiting |
-| #6 | `grab` as an expression | waiting |
-| #7 | Emits that do not traverse the `grabbable` | waiting |
-| #8 | Keyword: `grabbable` or `grabbing` | waiting |
+| #1 | Authorization by `grabbable`, found dynamically | by the session, to be confirmed (branch `grab`) |
+| #2 | What is captured: patterns in both | by the session, to be confirmed |
+| #3 | Who receives: the `grab` block and its descendants | by the session, to be confirmed |
+| #4 | Nesting: a stack per `grabbable` | by the session, to be confirmed |
+| #5 | Time: timers outside a grab pause; no zero tick on release | by the session, to be confirmed |
+| #6 | `grab` as an expression | by the session, to be confirmed |
+| #7 | Emits that do not traverse the `grabbable`: not captured | by the session, to be confirmed |
+| #8 | Keyword: `grabbable` (and `grab`) | by the session, to be confirmed |
 | #9 | The comment of the issue, read here | reported |
 | #10 | 7GUIs weak, env-ray neutral, SNKRX the case | revised 2026-11-19: 7GUIs is a strong case too |
 | #11 | SNKRX: the shop answers the mouse behind the options | reported |
 | #12 | The summary pasted from another chat | reported |
-| #13 | Implement on the branch `grab` | after the decisions |
-| #14 | Tell `atmos-context` about resuming | after #5 |
-| #15 | `set :out` (branch `pin`, merged) as an alternative to a dynamic `grabbable` | noted, bears on #1 |
+| #13 | Implement on the branch `grab` | done, 4aed336; ports asked to `atmos-lang`; merge is the author's |
+| #14 | Tell `atmos-context` about resuming | sent 2026-11-20: grab does not touch the resume |
+| #15 | `set :out` as an alternative to a dynamic `grabbable` | assessed: not comparable without a new design (#16) |
+| #16 | A grabbable as a value (`grab @g P {...}`), the lexical alternative to #1 | noted, not proposed |
+| #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | reported; rename or another keyword is the author's (#8) |
+| #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
 
 ## Decisions waiting for the author (asked one at a time)
 
@@ -52,7 +55,36 @@ the rule are `#1`..`#8`.
 
 ## Decided
 
-(none yet)
+(none by the author yet)
+
+## By the session, to be confirmed (2026-11-20, rule "Work with no input")
+
+Implemented on the branch `grab` (ia-atmos/lang, 4aed336, `main`
+merged in, `tst/run.sh` 1006 pass and `make test-rt test-env` pass,
+with `ATMOS_ASAN=1`). Each decision has its test, so that another
+answer changes one place:
+
+| # | Choice | Test |
+|---|--------|------|
+| #1 | nearest `grabbable` in the tree of tasks; else `invalid grab : expected enclosing grabbable` | `tst/cases/grab-01`, `grab-err-01` |
+| #2 | await patterns in both; captured if both match | `grab-02` |
+| #3 | the grab block, its tasks and its pools; a pool outside it does not | `grab-03` |
+| #4 | a stack: the most recent grab whose patterns match wins | `grab-04` |
+| #5 | the timers outside pause (they get no clock); no zero tick on release | `grab-05` |
+| #6 | `grab` evaluates to its block | `grab-06` |
+| #7 | an emit that does not traverse the grabbable is not captured | `grab-07` |
+| #8 | keywords `grabbable` and `grab`; still valid as table keys and fields | `tst/ast/grab-01` |
+
+The real cases, as they are today and with `grab`, side by side:
+`tst/cases/grab-case-snkrx-0` / `-1` (the shop answers the mouse behind
+the options, #11) and `grab-case-7guis-0` / `-1` (undo still alive
+while adjusting). The manual has a section "Grab" on the branch.
+
+Runtime (`rt/task.c`): the emit traversal only. `emit_trail` wraps the
+old body; a capture (`ACap`, keyed by the time of the emit) follows the
+path from the grabbable down to the grab, a copy taken when the
+grabbable is reached; the trails on the path do not awake. `trail_off`
+removes a grab from its grabbable.
 
 ## Known work, not done
 
@@ -84,6 +116,21 @@ the rule are `#1`..`#8`.
   agrees (stack, SNKRX the clearest case) but misses the `grabbable` of
   his comment and the mouse leaking in the shop; told him. #1 asked
   again.
+- #16 A lexical alternative to #1 would hand the grabbable as a value
+  (`pin g = grabbable P {...}` and `grab @g Q {...}`, the value passed
+  down with `set :out` or as an argument). In SNKRX it would have to
+  travel from `main.atm` through the screens to `Options`. Not
+  proposed: noted for the author, against #1.
+- #18 `atmos-lang` measured `grab` 4aed336 against `main` 513767c
+  (2152 files of 15 clones): 8 files stop compiling, all from one
+  name, the parameter `grab` of `display` in env-sdl `sdl.atm:1110`
+  (`func (full, w, h, grab, cursor)`, used as `$grab`), copied in
+  Pingus `engine/sdl.atm` and reached by sdl-tux `game/main.atm`.
+  Every other file gives identical C. One rename of a parameter in
+  env-sdl and in the copy of Pingus, or another keyword (#8). Not
+  asked of the ports: the keyword and the merge are the author's.
+- #17 A block registers before it starts, so that a grab in the first
+  run of a grabbable finds it.
 - #15 `atmos-lang` (2026-11-19): `main` merged `pin`, with `set :out
   place = value` (a place outside refers to a pinned value until the
   block of the `set` ends). It gives a lexical way to hand a

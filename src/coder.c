@@ -325,6 +325,14 @@ static Opnd opnd_c (const char* c) {
 // Releases a consumed operand.
 static void opnd_rel (Unit* u, Opnd o) {
     if (o.tmp >= 0) {
+        out(u, "a_clr_tmp(&L[%d]);", o.tmp);
+    }
+}
+
+// Releases a temporary whose value was just stored somewhere (a field
+// of a constructor, the destination of an assignment): it is no orphan.
+static void opnd_rel_kept (Unit* u, Opnd o) {
+    if (o.tmp >= 0) {
         out(u, "a_clr(&L[%d]);", o.tmp);
     }
 }
@@ -697,7 +705,7 @@ static Opnd gen_table (Unit* u, Expr* e) {
             Opnd v = gen_expr(u, val);
             out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, a_int(%d), %s)", d.c, n++, v.c);
-            opnd_rel(u, v);
+            opnd_rel_kept(u, v);
         } else {
             Opnd k = gen_expr(u, key);
             gen_born_in(u, val, d.c);
@@ -705,8 +713,8 @@ static Opnd gen_table (Unit* u, Expr* e) {
             out(u, "a_born(%s, %s);", d.c, k.c);
             out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, %s, %s)", d.c, k.c, v.c);
-            opnd_rel(u, k);
-            opnd_rel(u, v);
+            opnd_rel_kept(u, k);
+            opnd_rel_kept(u, v);
         }
     }
     return d;
@@ -1014,6 +1022,10 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
         out(u, "a_clrs(&L[%d], %d);", b.lo, *nslots(u)-b.lo);
     }
     // the parameters of a function or task end with its body
+    if (u->level==0 && u->npar>0 && u->root==NULL && u->task) {
+        // a cyclic argument that only the parameters still reach
+        out(u, "a_args_end(&L[0], %d);", u->npar);
+    }
     if (u->level==0 && u->npar>0 && u->root==NULL) {
         out(u, "a_unname(&L[0], %d, D, %s);", u->npar, b.mu);
     }
@@ -1321,7 +1333,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         } else {
             out_try(u, "a_pin_set(&%s, %s, D + %d)", dst, v.c, x->level);
         }
-        opnd_rel(u, v);
+        opnd_rel_kept(u, v);
         return;
     }
     if (l.e->tag == E_ACC) {
@@ -1351,7 +1363,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
     out(u, "a_muts += (%s.type >= A_TAB);", v.c);
     if (l.e->tag == E_PUB) {
         out_try(u, "a_pub_set(NULL, %s)", v.c);
-        opnd_rel(u, v);
+        opnd_rel_kept(u, v);
         return;
     }
     switch (l.e->u.index.kind) {
@@ -1366,7 +1378,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
             out_try(u, "a_setindex_next(%s, %s)", l.t.c, v.c);
             break;
     }
-    opnd_rel(u, v);
+    opnd_rel_kept(u, v);
     opnd_rel(u, l.t);
 }
 
