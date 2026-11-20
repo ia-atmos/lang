@@ -1114,11 +1114,20 @@ void a_args_end (AVal* vs, int n);
 // Count of the writes of a reference into a table, a box, or a `pub`.
 extern uint32_t a_muts;
 
+// The slots of a block are its names and its temporaries, and most hold
+// no value with a ceiling: the test is made here, before any call.
 static inline void a_unname (AVal* vs, int n, int d, uint32_t mu) {
     if (mu != a_muts) {
         a_cycles(vs, n, d);
     }
-    a_unname_x(vs, n, d);
+    for (int i=0; i<n; i++) {
+        AVal v = vs[i];
+        if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&
+            v.u.o->ceil!=0 && (int)v.u.o->ceil>=d)
+        {
+            a_unname_x(&vs[i], 1, d);
+        }
+    }
 }
 
 // set x = v, with `x` a pin of the block `d`: the new value is pinned
