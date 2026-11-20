@@ -287,6 +287,9 @@ static void hoist (Expr* e) {
         case E_TOGGLE_ON:
             hoist(e->u.toggle_on.blk);
             break;
+        case E_GRAB:
+            hoist(e->u.grab.blk);
+            break;
         case E_PAR:
             hoist_list(&e->u.par.blks);
             break;
@@ -461,6 +464,7 @@ static int awaits (Expr* e) {
         case E_AWAIT:
         case E_PAR:
         case E_TOGGLE_ON:
+        case E_GRAB:
             return 1;
         case E_INDEX:
             return awaits(e->u.index.t) || awaits(e->u.index.idx);
@@ -958,6 +962,14 @@ static void res (Expr* e) {
                 res_patt(e->u.toggle_on.fs[i]);
             }
             res_block(e->u.toggle_on.blk, 1);
+            break;
+
+        case E_GRAB:
+            chk_await(e->tk, (e->u.grab.kind == 1) ? "grabbable" : "grab");
+            for (int i=0; i<e->u.grab.nf; i++) {
+                res_patt(e->u.grab.fs[i]);
+            }
+            res_block(e->u.grab.blk, 1);
             break;
 
         case E_PROTO: {

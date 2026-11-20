@@ -288,6 +288,16 @@ void ast_dump (Expr* e) {
             }
             printf(")");
             break;
+        case E_GRAB:
+            printf("(%s", (e->u.grab.kind == 1) ? "grabbable" : "grab");
+            for (int i=0; i<e->u.grab.nf; i++) {
+                printf(i == 0 ? " " : ", ");
+                dump_patt(e->u.grab.fs[i]);
+            }
+            printf(" ");
+            ast_dump(e->u.grab.blk);
+            printf(")");
+            break;
         case E_TOGGLE_ON:
             printf("(toggle on %s", e->tk.str);
             for (int i=0; i<e->u.toggle_on.nf; i++) {

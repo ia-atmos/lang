@@ -2596,6 +2596,32 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
+// grabbable P, ... {...}  |  grab P, ... {...}: the block runs as a
+// transparent task, registered before it starts.
+static void gen_grab (Unit* u, Expr* e, Dst d) {
+    Opnd r = opnd_tmp(u);
+    Blk b = blk_open(u);
+    int id = gen_trail(u);
+    gen_trail_end(u, id);
+
+    int n;
+    Opnd* os = gen_filters(u, e->u.grab.fs, e->u.grab.nf, &n);
+    out(u, "    a_lin = %d;", lin_of(e->tk));
+    out(u, "    st = a_trail_grab(t, %d, %d, fs, %d);",
+        id, e->u.grab.kind, e->u.grab.nf);
+    out(u, "}");
+    out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
+    for (int i=0; i<n; i++) {
+        opnd_rel(u, os[i]);
+    }
+    gen_spawn_tra(u, id, e->u.grab.blk, PAR_NONE, 0, r.c, D_NONE);
+
+    out(u, "st = a_await_trails(tr, %d, 1);", id);
+    gen_suspend(u, dst_none());
+    blk_close(u, b, dst_none(), hnd_none());
+    store(u, r, d);
+}
+
 // await P
 static void gen_await (Unit* u, Expr* e, Dst d) {
     gen_await_patt(u, e->u.await.p, lin_of(e->tk), d);
@@ -2770,6 +2796,9 @@ static void gen (Unit* u, Expr* e, Dst d) {
             break;
         case E_TOGGLE_ON:
             gen_toggle_on(u, e, d);
+            break;
+        case E_GRAB:
+            gen_grab(u, e, d);
             break;
         case E_NAT:
             gen_nat(u, e, d);

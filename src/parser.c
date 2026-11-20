@@ -1317,6 +1317,16 @@ static Expr* parser_1_prim (void) {
         e->u.await.p = parser_await();
         return e;
 
+    // grabbable P, ... {...}  |  grab P, ... {...}
+    } else if (check_str("grabbable") || check_str("grab")) {
+        int kind = check_str("grabbable") ? 1 : 2;
+        accept_str(kind == 1 ? "grabbable" : "grab");
+        Expr* e = mk(E_GRAB, TK0);
+        e->u.grab.kind = kind;
+        e->u.grab.nf   = parser_filters(&e->u.grab.fs);
+        e->u.grab.blk  = parser_block();
+        return e;
+
     // toggle t(b) with P  |  toggle on :T with P {...}
     } else if (accept_str("toggle")) {
         Tk tk = TK0;
