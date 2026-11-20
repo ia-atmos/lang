@@ -10,24 +10,26 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | # | Title | State |
 |---|---|---|
 | #1 | Is there a case that justifies syntax, or does a table/library do for now? | decided 2026-11-19: a table for now ("Tabela por enquanto") |
-| #3 | A paragraph in the manual ("User Types") with the table idiom | waiting for the author (asked 2026-11-19); text on the branch `oo` |
-| #4 | Port a few badguys of SuperTux as the test of inheritance of behavior | not asked yet; belongs to the session of `sdl-tux` |
-| #2 | sdl-flare was not surveyed | closed 2026-11-19: surveyed after the author pointed that it is public; no case that repeats (`261118-oo-cases.md`, 2.5) |
+| #3 | A paragraph in the manual ("User Types") with the table idiom | by the session, to be confirmed (2026-11-20): text and two test cases on the branch `oo` (`484869b`), suite passing over main `c4e99c4`; sent to `atmos-lang`, through which it goes to main |
+| #4 | The badguys of SuperTux as the test of inheritance of behavior | done 2026-11-20 by reading the port of `sdl-tux` (`261118-oo-inherit.md`): #1 stands |
+| #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed to `atmos-lang` on 2026-11-20; it is of `sdl-tux` to take or not |
+| #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 
 ## Waiting for the author
 
-- **#3** Add to the manual, under "User Types", a paragraph and an
-  example of the table idiom (a table from tags to functions or tasks,
-  `AREA@(s.tag)(s)`). Recommended: yes. The text is on the branch `oo`;
-  no change to the compiler.
+Nothing blocks. To confirm or undo when he reads:
 
-## Next, one at a time
+- **#3**, settled by the session under the rule "Work with no input":
+  the paragraph and the tests `tst/cases/tag-table-01` and `-02` are on
+  the branch `oo`. To undo: do not merge the branch, or revert the
+  commit.
+- **#1** was re-examined against SuperTux (#4) and stands.
 
-- **#4** Port a few badguys of SuperTux (deep inheritance in the
-  original), to see whether inheritance of behavior asks for dispatch
-  by tag or composition of tasks is enough. Recommended: propose it to
-  the session of `sdl-tux`.
-- If syntax is reopened: tasks as clauses first; then what is
+## Next
+
+- **#5**, **#6** (see the index).
+- If syntax is reopened: tasks and closures as clauses first (the
+  methods of a badguy are closures over a task); then what is
   dispatched on (a tagged table or also a bare tag); the parent clause;
   values with no tag; one argument or several; where clauses may be
   declared; the grammar of `x :Tag` with `atmos-args`; prototypes as
@@ -35,14 +37,14 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 
 ## Known and not done
 
-- No port has inheritance of behavior: the badguys of SuperTux, the
-  typical case, are not ported (`261118-oo-cases.md`, 2.6).
-- Nothing implemented in the compiler; the branch `oo` has only the
-  paragraph of #3.
+- Nothing implemented in the compiler; the branch `oo` has the
+  paragraph of #3 and its two tests.
+- The originals (C++, Lua) were not read: what is said of them comes
+  from the `Class::method` comments of the ports and from memory.
 
 ## Reported and not acknowledged
 
-- #3 (2026-11-19).
+- #3 as settled by the session, #4, #5, #6 (2026-11-20).
 
 ## Decided by the author
 
