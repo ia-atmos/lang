@@ -25,7 +25,7 @@ Last update: 2026-11-19.
 | `#11` | Limits of integers of 32 bits to document | Done 2026-11-20 (d96b8b0): `os.time()` wraps in 2038; the least integer is written `-2147483647 - 1` |
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
-| `#14` | Each environment says which numeric options it supports; its compiler refuses the rest | Prepared by the session on the branch `float` (2447d5f), to be confirmed, NOT merged: `make env ... ENV_NUM="float 32 ms"`; a dedicated compiler refuses an option that is not declared; the plain compiler with `-e` checks nothing. Suite passes with ASAN. `env-sdl` (85b23cc), `env-pico` (4dbf6494), `env-ray` (e45a4ad), `env-uv` (19faf7b) and a scratch of `env-esp32` support the three options, each after the same fix: the time emitted in the unit of the build |
+| `#14` | Each environment says which numeric options it supports; its compiler refuses the rest | Prepared by the session on the branch `float` (2447d5f), to be confirmed, NOT merged: `make env ... ENV_NUM="float 32 ms"`; a dedicated compiler refuses an option that is not declared; the plain compiler with `-e` checks nothing. Suite passes with ASAN. `env-sdl` (85b23cc), `env-pico` (4dbf6494), `env-ray` (e45a4ad), `env-uv` (19faf7b), `env-iup` and a scratch of `env-esp32` support the three options, each after the same fix: the time emitted in the unit of the build |
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
 | `#16` | `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf`, "because Atmos has no fmod" | Answered 2026-11-20: nothing is missing. `%` on reals is `fmod` (`fmodf` under `float`), and `math.pow`, `math.sin` exist. Told `sdl-tux`; a divergence, if it tries, would be a defect to report here |
 | `#17` | A time field of an event of an environment (`:frame [us=]` of `env-pico`, `time` of `env-esp32`): the unit of the build, or the unit in its name | Open, his to decide, with `atmos-envs#16`. Reading of the session: a field named after a unit keeps it |
@@ -132,6 +132,13 @@ Last update: 2026-11-19.
   and positions of files become reals over 2 GB under 32-bit integers;
   `mtime` in whole seconds in every build (its choice, to be confirmed
   by the author in `env-uv`). No C library compiled apart.
+- 2026-11-20, `env-iup` through `atmos-lang` (`#14`), on lang
+  55b1fee: the time it emits was in microseconds whatever the build,
+  now `rest / A_TIME_US` with the remainder carried; an index loop is
+  `AInt`. Its 15 tests pass under `ms` and under 32-bit integers; under
+  `float` only the digits of a printed real differ. Pushed to its main.
+  All six environments (sdl, pico, ray, uv, iup, esp32) had the same
+  defect of the unit of time and now support the three options.
 
 ## The matrix of configurations (2026-11-20)
 
