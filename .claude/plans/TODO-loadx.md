@@ -48,6 +48,7 @@ Value : (as in X.load) | ID
   `undefined name : A`, `name already defined : A`, `expected value`.
 - `X.dump` does not change: a value read with names is written expanded.
 | 12 | Merge of the branch `loadx` into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN over the current `main` |
+| 13 | An `include` in the text of `X.loadx` (asked by the author: "faz sentido um include?") | asked, recommended: not now; a file of definitions is joined by the program, `X.loadx(theme ++ doc)`, which works today |
 
 ## State (2026-11-20)
 
