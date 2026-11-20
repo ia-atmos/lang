@@ -566,16 +566,18 @@ test {
 spawn game(1)
 ```
 
-An environment knows that it runs under `-t` by a variable that a `test`
-block of its own file sets, and which its C reads, so that it opens no
-window, plays no audio, and draws off screen:
+An environment knows that it runs under `-t` by a `test` block of its own
+file, which sets a global of its C, so that it opens no window, plays no
+audio, and draws off screen:
 
 ```
-var env_test = false
-test { set env_test = true }
-`int ENV_TEST;`
-`ENV_TEST = a_truthy($env_test);`
+`int ENV_TEST = 0;`
+test { `ENV_TEST = 1;` }
 ```
+
+The flag is only known once the main chunk runs, so an environment opens its
+window and its audio from Atmos (at the first window, at the first sound), and
+not in a `main` of its own before `atm_main`.
 
 An environment may also be written in C, with a `main` of its own over the
 interface of the runtime, which replaces the generic one:
