@@ -1,0 +1,38 @@
+;; X.loadx with includes: a file of definitions
+
+;; relative to the directory given
+val doc = "include 'theme.atm'\n:Slide [ t=TITLE, n=NOTE, c=BLUE ]"
+X.print(X.loadx("inc/loadx", doc))
+X.print(X.loadx("inc/loadx/", doc))
+X.print(X.loadx("inc/../inc/loadx", doc))
+
+;; relative to the current directory
+X.print(X.loadx("include \"inc/loadx/theme.atm\"\n[TITLE]"))
+X.print(X.loadx("", "include 'inc/loadx/base.atm' [SIZE]"))
+
+;; among the definitions, and only once
+X.print(X.loadx("inc/loadx", "X = 1\ninclude 'base.atm'\nY = [X, BLUE]\ninclude 'base.atm'\ninclude './base.atm'\nY"))
+X.print(X.loadx("inc/loadx", "include 'self.atm'\nSELF"))
+
+;; the file sees the names defined before the include
+X.print(X.loadx("inc/loadx", "BEFORE = 1\ninclude 'uses.atm'\nUSES"))
+
+;; errors
+print(catch true { X.loadx("inc/loadx", "include 'none.atm'\n1") })
+print(catch true { X.loadx("\ninclude 'theme.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'value.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "\ninclude 'err.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'base.atm'\ninclude 'twice.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'base.atm'\nBLUE = 1\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'uses.atm'\n1") })
+print(catch true { X.loadx("inc/loadx", "include 'base.atm'") })
+print(catch true { X.loadx("inc/loadx", "[include 'base.atm']") })
+print(catch true { X.loadx("inc/loadx", "1\ninclude 'base.atm'") })
+print(catch true { X.loadx("include = 1\n1") })
+print(catch true { X.loadx("include\n1") })
+print(catch true { X.loadx("include 'inc\n1") })
+print(catch true { X.loadx(10, "1") })
+print(catch true { X.loadx("inc", 10) })
+
+;; X.load has no include
+print(catch true { X.load("include 'inc/loadx/base.atm'\n1") })

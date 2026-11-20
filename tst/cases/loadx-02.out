@@ -1,0 +1,24 @@
+:Slide [c=blue, n=[color=blue, size=0.03], t=[color=blue, size=0.08]]
+:Slide [c=blue, n=[color=blue, size=0.03], t=[color=blue, size=0.08]]
+:Slide [c=blue, n=[color=blue, size=0.03], t=[color=blue, size=0.08]]
+[[color=blue, size=0.08]]
+[0.08]
+[1, blue]
+1
+[1]
+false	invalid load : line 1 : include not found : inc/loadx/none.atm
+false	invalid load : line 2 : include not found : theme.atm
+false	invalid load : inc/loadx/value.atm : line 2 : expected definition
+false	invalid load : inc/loadx/err.atm : line 3 : undefined name : C
+false	invalid load : inc/loadx/twice.atm : line 1 : name already defined : BLUE
+false	invalid load : line 2 : name already defined : BLUE
+false	invalid load : inc/loadx/uses.atm : line 1 : undefined name : BEFORE
+false	invalid load : line 1 : expected value
+false	invalid load : line 1 : undefined name : include
+false	invalid load : line 2 : expected end of input
+false	invalid load : line 1 : invalid name
+false	invalid load : line 1 : undefined name : include
+false	invalid load : line 1 : unterminated string
+false	invalid argument to 'loadx' : expected string : got number
+false	invalid argument to 'loadx' : expected string : got number
+false	invalid load : line 1 : unexpected name : expected value
