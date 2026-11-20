@@ -1,4 +1,4 @@
-pin-val-01.atm : line 29 : near 'x' : warning : pinned value given away by its block (expected 'val')
+pin-val-01.atm : line 29 : near 'x' : warning : pinned value given away by its block (expected 'val' at line 28)
 1	4	3
 f	5	6
 T	7

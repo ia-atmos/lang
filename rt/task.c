@@ -3832,9 +3832,10 @@ static AStatus emit_held (ANode* n, AVal evt) {
     // emit may end any of them (the target ends, which awakes its
     // parent, which raises).
     typedef struct { ATask* t; int i; } Hold;
+    Hold  fix[8];           // deeper trees go to the heap
     int   nh  = 0;
     int   cap = 8;
-    Hold* hs  = malloc(cap * sizeof(Hold));
+    Hold* hs  = fix;
     for (ANode* x=n; ; ) {
         int i = 0;
         ATask* t = node_holder(x, &i);
@@ -3843,7 +3844,12 @@ static AStatus emit_held (ANode* n, AVal evt) {
         }
         if (nh == cap) {
             cap *= 2;
-            hs = realloc(hs, cap * sizeof(Hold));
+            if (hs == fix) {
+                hs = malloc(cap * sizeof(Hold));
+                memcpy(hs, fix, sizeof(fix));
+            } else {
+                hs = realloc(hs, cap * sizeof(Hold));
+            }
         }
         hs[nh].t = t;
         hs[nh].i = i;
@@ -3888,7 +3894,9 @@ static AStatus emit_held (ANode* n, AVal evt) {
     for (int k=0; k<nh; k++) {
         a_dec(a_obj(&hs[k].t->node.hdr));
     }
-    free(hs);
+    if (hs != fix) {
+        free(hs);
+    }
     return st;
 }
 

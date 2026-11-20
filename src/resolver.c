@@ -399,8 +399,9 @@ static void giveaway (Expr* e, Scope* to) {
             break;
         case E_ACC:
             if (e->var!=NULL && e->var->kind==V_PIN && in_scopes(e->var,to)) {
+                // the line to change is the one of the declaration
                 warn(e->tk, "pinned value given away by its block "
-                    "(expected 'val')");
+                    "(expected 'val' at line %d)", e->var->tk.lin);
             }
             break;
         default:

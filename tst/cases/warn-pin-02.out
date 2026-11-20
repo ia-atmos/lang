@@ -1,9 +1,9 @@
-warn-pin-02.atm : line 6 : near 'ps' : warning : pinned value given away by its block (expected 'val')
-warn-pin-02.atm : line 11 : near 'a' : warning : pinned value given away by its block (expected 'val')
-warn-pin-02.atm : line 16 : near 'p' : warning : pinned value given away by its block (expected 'val')
-warn-pin-02.atm : line 28 : near 'r' : warning : pinned value given away by its block (expected 'val')
-warn-pin-02.atm : line 41 : near 'r' : warning : pinned value given away by its block (expected 'val')
-warn-pin-02.atm : line 44 : near 'u' : warning : pinned value given away by its block (expected 'val')
+warn-pin-02.atm : line 6 : near 'ps' : warning : pinned value given away by its block (expected 'val' at line 5)
+warn-pin-02.atm : line 11 : near 'a' : warning : pinned value given away by its block (expected 'val' at line 9)
+warn-pin-02.atm : line 16 : near 'p' : warning : pinned value given away by its block (expected 'val' at line 15)
+warn-pin-02.atm : line 28 : near 'r' : warning : pinned value given away by its block (expected 'val' at line 27)
+warn-pin-02.atm : line 41 : near 'r' : warning : pinned value given away by its block (expected 'val' at line 40)
+warn-pin-02.atm : line 44 : near 'u' : warning : pinned value given away by its block (expected 'val' at line 44)
 ==> ERROR:
  v  warn-pin-02.atm:44 (throw)
 ==> invalid escape : table pinned at warn-pin-02.atm:44

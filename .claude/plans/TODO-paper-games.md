@@ -358,3 +358,11 @@ and to `atmos-lang` for the other ports.
   on average) and one stress (space_invaders, 1.4 against 0.75
   microseconds per enemy). `papers/games-data.md` still has the state
   of `0d8b477`: to refresh when the ports settle.
+- `doom` (2026-11-20, reported by `atmos-lang`, its item
+  `atmos-lang#96`; not read in `doom/doc/bench.md` yet): with no
+  rendering, on demo1, 263.4 M instructions for the main build against
+  230.2 M of the C; 711.7 M for the variant with the door and the
+  zombieman as tasks (2.7 times), about 40% of it the traversal of a
+  broadcast. It bears on the claim of cost: tasks in the simulation
+  have a price that grows with the broadcast. To read at the source
+  before it enters `papers/games-data.md`.
