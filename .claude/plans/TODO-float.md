@@ -12,8 +12,8 @@ Last update: 2026-11-19.
 
 | Item | Title | State |
 |---|---|---|
-| `#1` | Which systems the numeric options must serve | Asked 2026-11-19; recommended: boards of 32 bits (ESP32 family, RP2040, Cortex-M), not the AVR of 8 bits |
-| `#2` | Integers of 32 bits (`#A`): one option with the reals, apart, or a profile (`#D`) | Open, after `#1` |
+| `#1` | Which systems the numeric options must serve | Closed 2026-11-20 by the author: the architectures may be any, nobody knows who will use it; the question is that the types can be configured. No list of target systems |
+| `#2` | How the types are configured: two independent options (`ATMOS_INT`, `ATMOS_REAL`), one option for both, or any C type | Asked 2026-11-20; recommended: two independent options with fixed sizes |
 | `#3` | The clock under integers of 32 bits: milliseconds, or a 64-bit timer apart | Open, depends on `#2` |
 | `#4` | The runtime built on demand, per configuration (`#E`) | Open, needed with the second option |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Open |
