@@ -56,6 +56,9 @@ Value : (as in X.load) | ID
 | 18 | Merge of the include and of #19/#20 (branch `loadx`) into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN |
 | 19 | Overwriting a name (asked by the author: "sobreescrita de variáveis, possível?"). Today it is the error of #6 | **decided (2026-11-20, #19c)**: the first definition wins; the one of an included file becomes a default, which the text that includes it replaces by defining the name before the include. Its reach is #20 |
 | 20 | The reach of #19c: when a repeated definition is ignored and when it is still an error | **decided (2026-11-20, #20b)**: always ignored, anywhere. A later definition of a name is read (so its syntax and its names are checked) and ignored. The error `name already defined` of #6 no longer exists. Implemented on the branch `loadx` |
+| 21 | Defect: an include of a directory (or of an empty name) was read as an empty file, with no error | fixed on the branch `loadx` (`23f30ab`): `include not found : PATH`. By the session, under the rule "Work with no input"; waits for `atmos-lang` to take it to `main` |
+| 22 | Tests of the reader, by the session under the same rule: `loadx-03` (missing file, directory, empty file, cycle of includes, 2^15 leaves, nesting at the limit, 2000 names, dump read back), `loadx-04` and `loadx-05` (the same numbers under `ATMOS_INT=32 ATMOS_REAL=float ATMOS_TIME=ms` and without them) | on the branch `loadx`, suite with ASAN passing (cases 431) |
+| 23 | Asked `pico-slides` whether its documents load as written | waits for its answer |
 
 ## State (2026-11-20)
 
@@ -98,5 +101,5 @@ Value : ... | ID
   reader of `rt/lload.c` (`AInt`, `AReal`, `ATMOS_INT=32`,
   `ATMOS_REAL=float`, `ATMOS_TIME=ms`). `X.loadx` reads numbers through
   the same `number` function, so it follows the options. Before another
-  change to the file: bring `main` into the branch, and add one case
-  under `NAME.env` (`ATMOS_INT=32`), as `atmos-lang` suggested.
+  change to the file: bring `main` into the branch. The case under
+  `NAME.env` is done (#22).
