@@ -39,3 +39,13 @@ becomes an item only if the author takes it up.
   and `env-pico` need `make ATMOS=/path/to/lang` to build their
   dedicated compiler, and their tests call `../atmos-sdl`,
   `../atmos-pico -t`.
+
+## From other sessions (data, to check before use)
+
+- `atmos-lang`, 2026-11-20: the branch `float` renames three variables
+  (`ATMOS_REAL=double|float` to `ATMOS_FLOAT=64|32`, `ATMOS_INT` to
+  `ATMOS_INTEGER`, `ATMOS_TIME` to `ATMOS_CLOCK`; a former name is an
+  error) and adds `ENV_NUM` to `make env` (what an environment
+  supports). Seen in `origin/float` (`src/main.c`, `Makefile`); not on
+  `main` yet. Anything proposed here about the variables starts from
+  those names, and `cli` will be rebased over it once merged.
