@@ -7,3 +7,11 @@ exit 1
 2
 11
 41
+atmos-envt : invalid ATMOS_TIME : the environment does not support 'ms'
+exit 1
+atmos-envt : invalid ATMOS_INT : the environment does not support '32'
+exit 1
+41
+41
+atmos-envn : invalid ATMOS_TIME : the environment does not support 'ms'
+exit 1
