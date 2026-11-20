@@ -23,7 +23,7 @@ Last update: 2026-11-19.
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
 | `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Under `ATMOS_TIME=ms`, 12 existing cases differ only for this |
 | `#11` | Limits of integers of 32 bits to document: `os.time()` wraps in 2038; the least integer has no literal (as with 64 bits) | Open, minor |
-| `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) was not measured: this host has no 32-bit compiler; `env-esp32` can measure it | Asked of `env-esp32` on 2026-11-20 |
+| `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
 | `#13` | Merge of the branch `float` (3bec041) into `main` | Asked 2026-11-20. Suite passes over main e9c2d8b with ASAN (cases 428, golden 443); `atmos-lang` asked to measure the ports. In the default build two edges change: `tonumber` of a decimal above 2^63-1 is a real, a clock of 2^63 us or more is an error |
 
 ## Checked by this session
@@ -60,3 +60,22 @@ Last update: 2026-11-19.
   `env-sdl`, and the screenshots). The float arithmetic of the port is
   still in C kernels; the blocks and badguys in Atmos with floats come
   next, and it will report.
+
+- 2026-11-20, `env-esp32` (`#12`), branch `float` 91d9673 in a scratch
+  copy, ESP32 (32-bit pointers), gcc 15.2 `-O2`, `app/init.atm`:
+
+  | Options | `sizeof(AVal)` | Component | Static DRAM |
+  |---|---|---|---|
+  | none | 16 | 157876 B | 42307 B |
+  | `ATM_REAL_FLOAT` | 16 | 158270 B | 42307 B |
+  | + `ATM_INT_32` | 8 | 132468 B | 41395 B |
+  | + `ATM_TIME_MS` | 8 | 132517 B | 41395 B |
+
+  Heap and stack high-water not measured (no board; the host cannot
+  link 32-bit programs). Its host tests pass with `ATMOS_REAL=float
+  ATMOS_INT=32`; under `ATMOS_TIME=ms` only the printed times differ.
+  For `ms` its environment changed: the step converts `atmos.next()`
+  to microseconds with `A_TIME_US`, emits whole milliseconds and keeps
+  the remainder; the `time` fields of its events become milliseconds.
+  It found that `make` at 91d9673 had no rule for `build/libatmos.a`:
+  fixed since 72d3398.
