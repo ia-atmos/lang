@@ -119,6 +119,35 @@ Last update: 2026-11-19.
   doubles and floats (asteroids, koala_seasons) `ray.f32` stays;
   `:frame [us=]` stays in microseconds (`#17`).
 
+## The matrix of configurations (2026-11-20)
+
+The `cases` and `golden` suites (863 cases with no `.env` of their
+own), with ASAN, under each of the seven configurations that are not
+the default, against the outputs of the default. Compiler and runtime
+of main 692af43.
+
+| `REAL` | `INT` | `TIME` | Pass | Differ |
+|---|---|---|---|---|
+| double | 64 | ms | 853 | 12 |
+| double | 32 | us | 859 | 6 |
+| double | 32 | ms | 851 | 14 |
+| float | 64 | us | 861 | 4 |
+| float | 64 | ms | 850 | 15 |
+| float | 32 | us | 857 | 8 |
+| float | 32 | ms | 849 | 16 |
+
+The cases that differ under a combination are exactly the union of
+those that differ under each of its options alone: no interaction.
+Every difference was read; none is a defect, a crash or a report of
+the sanitizer.
+
+| Class | Option | Cases |
+|---|---|---|
+| Unit of time: a time printed, or a bare number emitted as a time | `ms` | `await-cnt-01`, `clk-01`, `dump-01`, `env-01`, `int-03`, `load-01`, `loadx-01`, `timer-02`, `timer-03`, `timer-07`, golden `0490`, `0491` |
+| Overflow: wrapping at 32 bits, a decimal that becomes a real | `32` | `bit-01`, `int-01` |
+| Overflow: a clock above 35 min is a compile error | `32` | `clk-01`, `dump-01`, `int-03`, `load-01` |
+| Precision: a real printed with the digits of a float, `1e100` as infinity | `float` | `arith-01`, `dump-01`, `int-01`, golden `0002` |
+
 ## Work with no input (2026-11-20)
 
 The author, in `atmos-lang` (checked in its transcript, 2026-11-20
