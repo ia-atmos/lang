@@ -10,6 +10,10 @@ Items are numbered `#N` since 2026-11-18 (standing rule of the author,
 `atmos-lang#71`): unique in this session, in order, never reused. Labels
 used before that date (A1, B2, ...) stay valid for what was written then.
 
+> **Paused** by the author on 2026-11-20: "por enquanto não vamos fazer
+> nada aqui". No work in this session, also under "work with no input",
+> until he resumes it.
+
 ## Index
 
 | # | Title | State |
