@@ -17,14 +17,14 @@ started, no decision needed), **moved** (another session handles it),
 | 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
-| 6 | The event of termination of transparent blocks | open (recommended: remove). Tried on 2026-11-20: dropping the event alone breaks 7 cases (`par :all`, `toggle`, `return` of a block wait on it), so it needs the wait of `par` redone first; not prepared |
+| 6 | The event of termination of transparent blocks | moved 2026-11-20: `atmos-blocks` (`261120-blocks.md`); the plain removal breaks 7 cases, since the wait of a `par` rides on the event |
 | 7 | Iterating a tagged table gives the field `tag` | closed: kept, as the reference |
 | 8 | `await x` needs `await(x)`; `loop n {}` is not a counted loop | closed: became #31 |
 | 9 | Indexing a string is an error (the reference gives `nil`) | closed: kept |
 | 10 | The names `:value`, `X.nin`, `include` | closed; later `:value` became `:atmos` and `X.xin` became `X.in` (2026-11-17) |
 | 11 | Mouse events in `lib/sdl.atm` | closed 2026-11-16: the library left for `env-sdl` |
 | 12 | Tweens and springs as a library | work |
-| 13 | The trace of an error with the tasks it crossed | prepared 2026-11-20 on the branch `lang` (f946501): `file:N (await)` for each await crossed, no field in a trail; four expected outputs gain a line; suite and sdl-pingus pass. The merge waits for the author |
+| 13 | The trace of an error with the tasks it crossed | done 2026-11-20 (main f52579e, the branch `lang`; approved by the author, `#99a`) |
 | 14 | `X.dump` with indentation | closed: not until someone needs it |
 | 15 | Faster compilation (24 s in Pingus) | work |
 | 16 | Slimmer `ATask` and `ANode` | closed: not now |
@@ -76,11 +76,11 @@ started, no decision needed), **moved** (another session handles it),
 | 62 | A task whose value is dropped outlives its block | done 2026-11-15 |
 | 63 | A `pin` of a task that ends a loop body is not flagged | moved 2026-11-20: `atmos-pin` (asked to prepare it on `pin`) |
 | 64 | An architecture of snapshots and commands | moved: `paper-snapshots` |
-| 65 | `t@0.x` does not compile | prepared 2026-11-20 on the branch `lang` (28e909b): `t@0.x` is the field `x` of `t@0`; `5.` and `1.e2` are no longer numbers; no file of the ports lexes differently (2116). The merge waits for the author |
+| 65 | `t@0.x` does not compile | done 2026-11-20 (main f52579e, the branch `lang`; approved by the author, `#99a`) |
 | 66 | A paper on `pin` | moved: `paper-pin` |
 | 67 | A paper on snapshots and commands | moved: `paper-snapshots` |
 | 68 | FrescoGO! over pico | moved: `pico-frescogo` |
-| 69 | The six exit names as keywords of the lexer | moved 2026-11-20: `atmos-args` (asked to prepare it on `args`) |
+| 69 | The six exit names as keywords of the lexer | done 2026-11-20 (main 61979ce, the branch `args`; approved by the author, `#99a`) |
 | 70 | Atmos on the ESP32 | moved: `env-esp32` |
 | 71 | The numbering of items: `#N`, never reused, for everything put to the author | done 2026-11-18 (this file) |
 | 72 | The tests of the projects with `test` blocks and emits: what still needs a trick | open (answered on 2026-11-18; the adoption is `atmos-envs`, its A3) |
@@ -107,7 +107,14 @@ started, no decision needed), **moved** (another session handles it),
 | 93 | The measurement of the branch `float` 3bec041 (`ATMOS_INT`, `ATMOS_TIME`, libraries built on demand) on the ports, default configuration: nothing changes | done 2026-11-20 (sent to `atmos-float`; the merge waits for the author there) |
 | 94 | The branch `float` merged by `atmos-float` (692af43: `ATMOS_INT`, `ATMOS_TIME`, libraries on demand): main checked, the 15 ports and the 8 language sessions told | done 2026-11-20 |
 | 95 | Work with no input: review every session and propose work that needs no decision of the author; the sessions may also go on with their own suggestions | done 2026-11-20: rule written (`TODO.md`, "Standing rules"); proposals sent to the 28 sessions; here, `#13` and `#65` prepared on the branch `lang` |
-| 96 | The cost of a broadcast: about 180 instructions per emit for each task that awaits another event (measured by `doom`, its program e40); an index from the tag to the trails that await it would remove it, keeping the order of awaking | open: after the branches that change `rt/task.c` (pool, grab, context) merge |
+| 96 | The cost of a broadcast: about 180 instructions per emit for each task that awaits another event (measured by `doom`, its program e40); an index from the tag to the trails that await it would remove it, keeping the order of awaking | open: after the branches that change `rt/task.c` (pool, grab, context) merge; `doom` also measured its variant with a door and the zombieman as tasks: 711.7 M against 263.4 M instructions, about 40% in the traversal, and 2.2 thousand per directed emit into nested awaits |
 | 97 | `atm_emit_to`: an exit raised by a task that the emit ended outside the target was lost (reported by `env-uv`) | done 2026-11-20 (7e3b7b5, case `env-emit-to-02`) |
 | 98 | A warning for a binary operator at the start of a line (`x` then `-1` is `x - 1`; reported by `doom`); the row is in the manual, "Ambiguities" | open (the author's; recommended: no warning, the row is enough) |
-| 99 | Branches ready and measured, waiting for the author's merge: `lang` (`#13`, `#65`), `args` 72ea64e (`#69`, no port changes), `pool` 695afa1 (`find`/`filter`, `#60`; no port changes at compile time), `context` 64433db (no port changes, no cost), `grab` 4aed336 (the keyword `grab` breaks a parameter of `env-sdl` and of the copy in `sdl-pingus`: 8 files), `envs` (two designs as failing cases) | open: his |
+| 99 | Branches ready and measured, waiting for the author's merge | open: `lang` and `args` merged on 2026-11-20 (`#99a`). Left, his: `float` (the variables renamed; asked there), `pool` d8a82a9 (`find`/`filter` now under `atmos-iter`; `#60`), `context`, `grab` (breaks a parameter `grab` of `env-sdl`), `envs` (two designs), `pin-out` (`#102`), `oo` 895aedd (clauses by tag, a prototype; no port changes) |
+| 100 | Merged with no input, as defect fixes, documentation and tests: `atmos-loadx` (the include that is not a file), `atmos-oo` (the table idiom in the manual), `atmos-pin#7` (the two leaks of the cycle collection) and `#12` (a warning, no port gets it), `atmos-envs` (the manual on environments); main 8c46149, suite and sdl-pingus pass; the ports asked to run their suites on it | done 2026-11-20; confirmed by the author on 2026-11-20 (`#100a ok`): the warning of `atmos-pin#12` and the paragraph of `atmos-oo#3` stay |
+| 101 | The frame loop of `sdl-snxkx` about 12% slower since the ceiling of 2026-11-17: `a_unname_x` called for every slot of a block at the end of each step | done 2026-11-20 by `atmos-pin` (#14, main 23a063e): the slots are tested inline |
+| 102 | `set :out` written in a function or an `if` is cleared when that block ends, silently (`atmos-pin#16`); the alternative, the place lasts until the value ends, is on the branch `pin-out` (8eb364d) | open: the author's, in `atmos-pin` |
+| 103 | The command line of the language (asked by the author) | moved: `atmos-cli` (`261120-cli.md`) |
+| 104 | Explain `find` / `filter` of `atmos-pool` | answered 2026-11-20 |
+| 105 | The measurement of `float` 1bb1edf (the variables renamed: `ATMOS_FLOAT`, `ATMOS_INTEGER`, `ATMOS_CLOCK`): the default build is untouched (2197 files); `sdl-tux` (three scripts) and `env-esp32` (its Makefile) set the old names and must change at the merge | done 2026-11-20 (sent to `atmos-float`; the merge is asked there) |
+| 106 | A library for iterables, instead of `find`/`filter` as globals; iterators, loops and functions to be organized (asked by the author) | moved: `atmos-iter` (`261120-iter.md`) |

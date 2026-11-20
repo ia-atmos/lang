@@ -1,6 +1,7 @@
 false	invalid environment : expected secondary mode
 false	invalid environment : expected table
 ==> ERROR:
+ |  env-02.atm:17 (await)
  v  env-02.atm:15 (throw)
 ==> boom
 quit

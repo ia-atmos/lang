@@ -71,16 +71,10 @@ static void scope_pop (void) {
 }
 
 static Var* declare (Tk tk, VarKind kind) {
-    // `pub` is always the public value of the running task, and the
-    // names of the exit statements could never be used
-    static const char* RESERVED[] = {
-        "pub", "return", "break", "escape", "throw", "abort", "until",
-        "while", "skip", NULL
-    };
-    for (int i=0; RESERVED[i]!=NULL; i++) {
-        if (!strcmp(tk.str, RESERVED[i])) {
-            err(tk, "invalid declaration : unexpected '%s'", tk.str);
-        }
+    // `pub` is always the public value of the running task (the names
+    // of the exit statements are keywords, which the parser rejects)
+    if (!strcmp(tk.str, "pub")) {
+        err(tk, "invalid declaration : unexpected '%s'", tk.str);
     }
     Var* v = xalloc(sizeof(Var));
     v->tk   = tk;
@@ -400,8 +394,9 @@ static void giveaway (Expr* e, Scope* to) {
             break;
         case E_ACC:
             if (e->var!=NULL && e->var->kind==V_PIN && in_scopes(e->var,to)) {
+                // the line to change is the one of the declaration
                 warn(e->tk, "pinned value given away by its block "
-                    "(expected 'val')");
+                    "(expected 'val' at line %d)", e->var->tk.lin);
             }
             break;
         default:

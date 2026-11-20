@@ -1,5 +1,30 @@
 Drafts written on 2026-11-20 by the session paper-games, with no input of the author. Independent of the organization of the paper (#1). To be reviewed.
 
+> **Correction, 2026-11-20 (SNKRX).** The numbers of SNKRX in this
+> file come from `sdl-snkrx` at `ae9c69f` and are superseded by
+> `07f5905` (`doc/bench.md`, `doc/case-study.md`), read on the same
+> day. The old benchmark ran the port with no audio while the original
+> decoded all its sounds. With the sound of the port mixed (port
+> `7639dd3`, 3 runs, medians):
+>
+> - ticks per second, port against original: 60 against 56 (menu), 71
+>   against 66 (shop), 113 against 93 (level 1), 79 against 65
+>   (stress): 1.07 to 1.22 times, not 1.8 to 3.0;
+> - CPU: 83% to 91% of the original, not 56% to 71%;
+> - peak memory: 546 against 946 MB, not 131. The 946 MB are 103 sounds
+>   decoded whole at start (359 MB of samples); the port does the same
+>   (131 MB muted). Neither peak is about the language: memory is not
+>   to be cited as a gain;
+> - logic alone (no window, `-O2`, 1500 ticks, 3 runs): 0.089 ms per
+>   tick in level 1, 2.77 in the stress, port only;
+> - size, one count: the game has 9455 lines and 91671 tokens against
+>   10381 and 134827 of the original (91% and 68%); the engines, 2209
+>   and 19370 against 4428 and 40796. The 4755 and 8647 lines were two
+>   stages of the port.
+>
+> The SNKRX cells and sentences below are to be rewritten from the new
+> documents.
+
 # Conventions of this file
 
 - Every number is followed by its source in brackets. A path such as
