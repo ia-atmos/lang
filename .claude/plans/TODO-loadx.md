@@ -49,8 +49,9 @@ Value : (as in X.load) | ID
 - `X.dump` does not change: a value read with names is written expanded.
 | 12 | Merge of the branch `loadx` into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN over the current `main` |
 | 13 | An `include` in the text of `X.loadx` (asked by the author: "faz sentido um include?") | **decided (2026-11-20, #13b)**: an `include "file"` in the text. Its details are #14 on; nothing is implemented before they are settled |
-| 14 | The include: relative to what, since `X.loadx` receives a text and not a file | **decided (2026-11-20, #14a)**: a function that receives the path of the file; the include is relative to the file that has it, as in the language; a text given as a string has no include (an error); errors say the file and the line |
-| 15 | The name of the function that receives the path | asked, recommended: `X.loadxf(path)`, beside `X.loadx(s)` |
+| 14 | The include: relative to what, since `X.loadx` receives a text and not a file | **decided (2026-11-20)**: first #14a, then the author went back to #14b with a change: the directory of the includes is an argument of `X.loadx`, and it is the FIRST one, `X.loadx(dir, s)`. No function that receives a path |
+| 15 | The name of the function that receives the path | closed with #14: no new function |
+| 16 | `X.loadx` with one argument, now that the directory comes first | asked, recommended: `X.loadx(s)` stays valid, a text with no directory, where an include is an error |
 
 ## State (2026-11-20)
 
