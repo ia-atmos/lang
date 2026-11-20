@@ -308,13 +308,17 @@ print(t ?? :T)              ;; --> true
 Atmos has no tracing garbage collector: no pauses and no scans of the heap.
 Values are reference counted underneath, and the blocks of the program add
 what counting alone cannot do: they reclaim cycles, they give each value a
-lexical point of death, and they rule out dangling references.
+lexical point of death, and they rule out the use of a value that was
+reclaimed.
 
 Every dynamic value (a table, a function, a native value, a task, or a pool
 of tasks) belongs to a block of the program, which reclaims the value when
 it terminates.
 A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
+The one exception is explicit: a place written with [`set :out`](#pin)
+refers to a value of an inner block until that block terminates, and a
+name that kept the value by then may not use it.
 
 The counts remain in use for what has no block, or ends before its block:
 an unpinned value that is dropped is reclaimed at once; an event that is emitted
@@ -336,13 +340,13 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
 - The value is reclaimed when the block terminates, even if it is part of a
   cycle.
 - The value cannot escape the block, which is verified when the program
-  executes.
+  executes (`invalid escape : table pinned at prog.atm:10`).
 
 A value that nobody pins is reclaimed by its counts, and a cycle among
 unpinned values is broken at the end of the block of the names that reach
 it, if nothing outside still refers to it.
-One case is not reached, and leaks: a cyclic value that a call returns and
-that is dropped without ever receiving a name.
+So is a cycle with no name, when the last reference from outside it goes:
+a value that a call returns and that is dropped, for instance.
 A cyclic structure whose moment of release matters should still be pinned.
 
 The next example builds a cycle that is reclaimed when the block terminates:
@@ -529,6 +533,55 @@ An environment with no `step` makes the runtime return after the main chunk,
 so that a host, such as a browser, emits to the program.
 The table must be unpinned: the runtime owns it.
 Callbacks of a library in C may emit from inside a `step`, as below.
+
+A `true` from a `step`, of the primary or of a secondary, is a request to quit
+(a window closed): the program ends and every environment quits.
+That nothing can awake the program is only known to a primary alone (no other
+environment is registered): with secondaries, which may still have input, it
+waits instead.
+
+An environment starts when it is included: the file opens its library at the
+top level, in a native literal, and registers itself with `atmos.env`, so that
+the program may use the library from its first line.
+Its `quit` closes the library.
+
+### Tests of a program with an environment
+
+A program that runs in an environment is tested with [`test`](#test) blocks,
+with the flag `-t`, in the same process as the environment.
+The program keeps its logic in a task, such as a game, which the main chunk
+spawns, and which a `test` block spawns as well, with parameters in place of
+options of the command line or variables of the system.
+The test emits the input and the time that the environment would, and checks
+what the task does; a `return` from the main chunk ends the test before the
+environment ever steps:
+
+```
+task game (level) {
+    <...>
+}
+test {
+    spawn game(1)
+    emit(:key.dn [key="Space", code=32])
+    emit @:global (16ms)            ;; the time, as the primary emits it
+    <checks>
+    return
+}
+spawn game(1)
+```
+
+An environment knows that it runs under `-t` by a `test` block of its own
+file, which sets a global of its C, so that it opens no window, plays no
+audio, and draws off screen:
+
+```
+`int ENV_TEST = 0;`
+test { `ENV_TEST = 1;` }
+```
+
+The flag is only known once the main chunk runs, so an environment opens its
+window and its audio from Atmos (at the first window, at the first sound), and
+not in a `main` of its own before `atm_main`.
 
 An environment may also be written in C, with a `main` of its own over the
 interface of the runtime, which replaces the generic one:
@@ -727,7 +780,8 @@ A `number` literal starts with a digit and is followed by digits, letters, and
 dots (`.`).
 
 A `clock` duration literal is a straight sequence of numbers and time units
-(e.g. `1min30s`), which is converted into a number in microseconds.
+(e.g. `1min30s`), which is converted into a number in microseconds (or in
+milliseconds, see [Types](#types--values)).
 
 A `string` literal is a sequence of characters enclosed by an odd number
 of matching double (`"`) or single (`'`) quotes.
@@ -895,9 +949,24 @@ In either unit, a clock is an integer, or a real if it has a fraction of the
 unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
 integer is a compile error: with integers of 32 bits, a clock holds up to 35
 minutes in microseconds, and up to 24 days in milliseconds.
+A program that computes with time as a number should use a clock as the unit,
+which is right in every build: `t / 1s` is a time in seconds, and `2 * 1ms` is
+two milliseconds.
+A bare number is not: `t / 1000000` is wrong in milliseconds, and
+`t * 1000000` overflows with integers of 32 bits.
+
+With integers of 32 bits, `os.time()` wraps in the year 2038.
+As with 64 bits, the least integer has no literal (`-2147483648` is the
+negation of a real), and is written as `-2147483647 - 1`.
+
 The environment of a program must be built with the same options.
-The runtime is built once for each combination of the options, when a program
-first asks for it.
+
+Only the runtime of the default options is built with the compiler.
+The runtime of another combination is built once, when a program first asks for
+it, which requires `make`, the sources of the runtime, and permission to write
+to the directory `build/` of the compiler.
+Otherwise, the compiler shows the command that builds it
+(`make -C <dir> build/libatmos-i32.a`), to be run by who has the permission.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 
@@ -1738,9 +1807,11 @@ reaches.
 The search only runs if a reference was written into a table, a captured
 variable, or a `pub` since the block began, since no cycle forms without a
 write.
-Two cases are not reached, and leak: a cyclic value that a call returns
-and that is dropped without a name, and one that is given to a task of a
-pool of an outer block, when that task ends.
+A cycle with no name is broken in the same way when the last reference
+from outside it goes: a temporary, a result that is dropped, an entry of a
+value that is freed, or the parameter of a task that ends.
+For a parameter of a task, the search gives up on a value that reaches
+more than a few hundred others, which is then left to the counts.
 
 A parameter of a task is a name as the others, but the task may outlive the
 block that spawned it, as a task of a pool of an outer block does.
@@ -4023,6 +4094,7 @@ may surprise a naive reading:
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |
 | [calls](#calls)   | `f g x`               | error: use parenthesis  | `f(g(x))`, `f(g)(x)`     |
+| [operations](#operations) | `x` ⏎ `-1`    | `x - 1`                 | `x ; -1`                 |
 | [pipes](#pipes)   | `x<-y`                | `y(x)`                  | `x < (-y)`               |
 | [tasks](#tasks)   | `task` ⏎ `(x)`        | `task ; (x)`            | `task(x)`                |
 | [lambda](#lambda) | `\-`                  | `\(a,b){ a - b }`       | `\(a){ -a }`             |

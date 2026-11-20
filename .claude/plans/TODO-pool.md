@@ -9,56 +9,73 @@ prefix; those born here are `atmos-pool#N`.
 
 | Item | Title | State |
 |---|---|---|
-| `atmos-lang#1` | An await over a pool with a condition | Waiting for the author (options a-d below) |
-| `atmos-lang#2` | Phases inside a tick | Open, not yet put to him |
-| `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Open, not yet put to him |
+| `atmos-lang#1` | An await over a pool with a condition | `#1a` on the branch `pool`, by the session, to be confirmed |
+| `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
+| `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
-| `atmos-lang#33` | Time emitted to a pool or a task | Open, not yet put to him |
-| `atmos-lang#60` | Where the exception of `emit @t` goes | Open, not yet put to him |
-| `atmos-pool#1` | The behaviors of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Reported, not acknowledged |
-| `atmos-pool#2` | A spatial index (grid) as a library, the only thing that removes the cost W x P of the cases | Remark, not asked |
+| `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
+| `atmos-lang#60` | Where the exception of `emit @t` goes | To the holder, on the branch `pool`, by the session, to be confirmed |
+| `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Manual and cases checked; a case added on the branch; still not acknowledged |
+| `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
+| `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
+| `atmos-pool#4` | Where libraries written in Atmos live (`lib/` on the branch is a guess) | Question, not yet put to him |
 
 ## A. Waiting for the author (one at a time)
 
-`atmos-lang#1`, an await over a pool with a condition. Options:
+All of it is prepared on the branch `pool` (`261120-pool-work.md`); his
+answer to each is a merge or a revert.
 
-- `#1a`: a function of the library, `find(xs, f)`, over anything that
-  `loop ... in` walks (a pool or a table: SNKRX, Flare and Lessmilk
-  keep their entities in tables, also after the migrations of `pin`),
-  giving the first member whose `f` is truthy, and the idiom `val t =
-  await :tick until find(ts, f)` in the manual (an `await ... until c`
-  evaluates to the result of `c`; checked on the compiler of
-  2026-11-18 with `find` written in Atmos). A `filter` companion for
-  the cases that act on all that match.
-- `#1b`: a new pattern, `await :some ts until f` (`:any ts until c`
-  already means "a task ended, and `c`"). Pools only.
-- `#1c`: re-check on change of `pub`.
-- `#1d`: members emit to the pool of zones.
-
-Recommended: **`#1a`**. The cases need the matching task, not a
-mechanism; `#1c` saves nothing since members change every tick; the
-cost W x P only goes away with `atmos-pool#2`.
-
-Next: `atmos-lang#60`, `#4`, `#2`, `#33`, with the recommendations of
-`261118-pool.md`, section 2.
+- `atmos-lang#1`: merge `#1a` (`find`, `filter`, the idiom)? The other
+  options were `#1b` (a pattern `await :some ts until f`), `#1c`
+  (re-check on change of `pub`), `#1d` (members emit to the zones).
+  Recommended: yes.
+- `atmos-lang#60`: merge "to the holder"? See `atmos-pool#3` first.
+  Recommended: yes; it departs from the reference.
+- `atmos-pool#1`: acknowledge the three behaviours. Recommended: yes.
+- `atmos-pool#2`, `#4`: the grid as a library, and where.
+  Recommended: keep it out for now (the ports do not need it at their
+  sizes), decide `#4` when a second library appears.
+- Then `atmos-lang#2`, `#4`, `#33` (`261120-pool-proposals.md`):
+  recommended `#2a`, `#4a`, `#33a`, none of which changes the language.
 
 ## B. Work known, not done
 
-- After `atmos-lang#1`: implement it here, on the branch `pool` (rule
-  of the author, 2026-11-18, `TODO.md` "Standing rules", checked in
-  the transcript of `atmos-lang`): bring `main` in, run `tst/run.sh`,
-  `make test-rt test-env` with `ATMOS_ASAN=1`, ask `atmos-lang` to
-  measure the ports if existing programs change, merge after the
-  author approves. Tell `atmos-grab` and `atmos-context` what changes
-  in `rt/task.c`.
+- `main` (`8c46149`, with the fix of `atm_emit_to` and the changes of
+  atmos-pin) is in the branch, `15766e9`, and then `5509fa1` (the chain of holders on the stack), tip `d8a82a9`: the merge took the new body
+  of `emit_to1` into `emit_held` with no conflict; `tst/run.sh`
+  pass=1018 fail=0 on `d8a82a9`, `make test-rt test-env` pass (ASAN). `atmos-lang`
+  reruns the suite and Pingus on it.
+- After his approval: bring `main` into the branch again, run the full
+  suite, merge. `atmos-lang` then migrates and tells the ports.
+- `atmos-lang#2a`: the paragraph of the convention in the manual, if he
+  takes it.
 
 ## C. Reported, not acknowledged
 
 - `atmos-pool#1`.
-- The cases of `atmos-lang#1` (`261118-pool-cases.md`), 2026-11-18,
-  and that the rules of `pin` did not change them (checked again on
-  2026-11-18: the survey was already after both migrations).
+- The cases of `atmos-lang#1` (`261118-pool-cases.md`), and that the
+  rules of `pin` did not change them.
+- The work of 2026-11-20 on the branch (`261120-pool-work.md`), sent to
+  `atmos-lang` with what changes in `rt/task.c`, to relay to
+  `atmos-grab` and `atmos-context`.
+
+- The measurement of `atmos-lang` on `origin/pool` (`695afa1`), back on
+  2026-11-20: the 2152 `.atm` files of 15 clones give the same
+  diagnostics, and the same C but for the numbers of the globals; the
+  suite of sdl-pingus passes; no cost in a loop of 300,000 emits. Not
+  shown by it: a throw that crosses an `emit @t` at run time (only the
+  suites of the ports can, and only that of Pingus runs there).
+
+## Settled by the session, to be confirmed (rule `atmos-lang#95`)
+
+All on the branch `pool`, reversible by not merging:
+
+- `atmos-lang#1`: `#1a`, with `find` and `filter` as globals, `f(v, k)`,
+  `find` giving the member and its key.
+- `atmos-lang#60`: to the holder.
+- `atmos-pool#2`: the grid in `lib/grid.atm`, with `grid_find` in the
+  shape of `find`.
 
 ## D. Decided by the author
 

@@ -168,6 +168,22 @@ inside runs" holds for every program; it costs one pointer comparison
 per resume; and the lazy switch gives the SNKRX stars one `enter` per
 frame for the whole pool.
 
-## 7. Decided
+## 7. Implemented (by the session, to be confirmed)
+
+On the branch `context` (2026-11-20), with B lazy and the syntax
+`context (enter, leave) {...}`. In `rt/task.c`:
+
+- `ATrailX` keeps `enter`, `leave` and the value `enter` returned.
+- A stack of the contexts applied; `ctx_switch(t, i)` walks up from trail
+  `i` of task `t` (the tree of trails, then the trail where the task or
+  its pool lives) and leaves and enters the difference.
+- `trail_resume` switches to the trail before resuming it, and back to
+  the resumer after, except when the traversal of an emit resumed it
+  (`LAZY`); `emit_top` goes back to the emitter at the end of the
+  traversal. Predicates of `await` switch too.
+- `trail_off` of a context leaves it if applied.
+- With no context alive and none applied, every hook is one test.
+
+## 8. Decided
 
 (nothing yet)
