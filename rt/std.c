@@ -738,39 +738,55 @@ int a_clause_is (AVal f) {
     return clause_is(f);
 }
 
-// How specific a tag is for an argument: 0 if it does not match.
-static int clause_score (AVal tag, AVal arg) {
+// The key `tag` of a tagged table.
+static AVal CLAUSE_KTAG;
+
+// The string by which an argument is matched against a tag: itself, if
+// a string, or its field `tag`, if a table. NULL otherwise.
+static AStr* clause_argtag (AVal arg) {
+    if (arg.type == A_STR) {
+        return A_STR_OF(arg);
+    }
+    if (arg.type == A_TAB) {
+        AVal tag = a_tab_get(A_TAB_OF(arg), CLAUSE_KTAG);
+        if (tag.type == A_STR) {
+            return A_STR_OF(tag);
+        }
+    }
+    return NULL;
+}
+
+// How specific a tag is for an argument, as `arg ?? tag`: 0 if it does
+// not match.
+static int clause_score (AVal tag, AVal arg, AStr* argtag) {
     if (tag.type == A_NIL) {
         return 1;
     }
-    if (!a_is(arg, tag)) {
-        return 0;
-    }
     if (tag.type != A_STR) {
-        return 3;
+        return a_is(arg, tag) ? 3 : 0;
     }
     AStr* s = A_STR_OF(tag);
-    const char* type = a_typename(arg);
-    if (!strcmp(type, s->s)) {
-        if (arg.type!=A_STR || strcmp(A_STR_OF(arg)->s, s->s)) {
-            return 2;               // the name of its type
+    if (argtag != NULL) {
+        if (s==argtag || (argtag->len > s->len && argtag->s[s->len]=='.' &&
+                          !memcmp(s->s, argtag->s, s->len)))
+        {
+            return 3 + (int) s->len;
         }
     }
-    return 3 + s->len;
+    const char* type = a_typename(arg);
+    if (type[0]==s->s[0] && !strcmp(type, s->s)) {
+        return 2;                   // the name of its type
+    }
+    return 0;
 }
 
 // The tag by which an argument is chosen, for an error message.
 static const char* clause_argname (AVal arg) {
-    if (arg.type == A_TAB) {
-        AVal k = a_strz("tag");
-        AVal tag = a_tab_get(A_TAB_OF(arg), k);
-        a_dec(k);
-        if (tag.type == A_STR) {
-            return A_STR_OF(tag)->s;
-        }
-    }
-    return a_typename(arg);
+    AStr* s = (arg.type == A_TAB) ? clause_argtag(arg) : NULL;
+    return (s != NULL) ? s->s : a_typename(arg);
 }
+
+#define CLAUSE_PARS 16
 
 AStatus a_clause_pick (AVal f, int argc, AVal* argv, AVal* out) {
     if (!clause_is(f)) {
@@ -778,28 +794,29 @@ AStatus a_clause_pick (AVal f, int argc, AVal* argv, AVal* out) {
         return A_OK;
     }
     AFunc* g = A_FUNC_OF(f);
-    int best  = -1;
-    int bestn = 0;
+    AStr* tags[CLAUSE_PARS];
+    for (int j=0; j<CLAUSE_PARS; j++) {
+        tags[j] = (j < argc) ? clause_argtag(argv[j]) : NULL;
+    }
+    int best = -1;
+    int bests[CLAUSE_PARS];
     for (int i=1; i<g->ncap; ) {
         int n = (int) g->caps[i+1].u.i;
-        // applies?
-        int ok = 1;
-        for (int j=0; ok && j<n; j++) {
-            ok = clause_score(g->caps[i+2+j], arg(argc,argv,j)) > 0;
+        // applies? more specific than the best so far, from the left?
+        int cur[CLAUSE_PARS];
+        int ok  = 1;
+        int cmp = (best == -1);
+        for (int j=0; ok && j<CLAUSE_PARS; j++) {
+            cur[j] = (j < n) ?
+                clause_score(g->caps[i+2+j], arg(argc,argv,j), tags[j]) : 1;
+            ok = (cur[j] > 0);
+            if (cmp == 0) {
+                cmp = cur[j] - bests[j];
+            }
         }
-        // more specific than the best so far?
-        if (ok) {
-            int cmp = (best == -1);
-            for (int j=0; cmp==0 && (j<n || j<bestn); j++) {
-                AVal a = arg(argc, argv, j);
-                int s1 = (j < n)     ? clause_score(g->caps[i+2+j], a)    : 1;
-                int s2 = (j < bestn) ? clause_score(g->caps[best+2+j], a) : 1;
-                cmp = s1 - s2;
-            }
-            if (cmp > 0) {
-                best  = i;
-                bestn = n;
-            }
+        if (ok && cmp>0) {
+            best = i;
+            memcpy(bests, cur, sizeof(cur));
         }
         i += 2 + n;
     }
@@ -843,6 +860,9 @@ static AStatus std_clause (AFunc* self, int argc, AVal* argv) {
     AVal f    = arg(argc, argv, 2);
     int  n    = (argc > 3) ? argc-3 : 0;
     const char* id = A_STR_OF(name)->s;
+    if (n > CLAUSE_PARS) {
+        return a_error("invalid clause : '%s' has too many parameters", id);
+    }
 
     int old = 0;                // captures taken from `cur`
     int def = 0;                // `cur` is a plain function: the default
@@ -903,6 +923,7 @@ static AStatus std_clause (AFunc* self, int argc, AVal* argv) {
 
 void atm_std_init (void) {
     atm_g_clause   = a_func(std_clause, 0);
+    CLAUSE_KTAG    = a_strz("tag");
     atm_g_print    = a_func(std_print, 0);
     atm_g_type     = a_func(std_type, 0);
     atm_g_tostring = a_func(std_tostring, 0);
@@ -982,6 +1003,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
     a_clr(&atm_g_clause);
+    a_clr(&CLAUSE_KTAG);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {
         a_clr(&atm_envs[i]);
