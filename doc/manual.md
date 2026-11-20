@@ -2041,6 +2041,20 @@ When the block of the `set :out` terminates, the place goes back to `nil`,
 if it still refers to the value: so a place never refers to a value that
 was finalized.
 
+The same form shows, in the `pub` of a task, a value that the body of the
+task pins, which a plain assignment refuses, since the `pub` is visible
+wherever the task is:
+
+```
+task Widget () {
+    set pub = []
+    pin spring = [k=10]
+    set pub.spring = spring         ;; ERROR: invalid escape : table pinned at ...
+    set :out pub.spring = spring    ;; ok: until the block ends
+    <...>
+}
+```
+
 Code outside the block may read the place while the block lasts.
 If it keeps the value in a name and the block terminates, the name refers
 to a finalized value, and any use of it raises an error:
