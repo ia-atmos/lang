@@ -34,22 +34,16 @@ atmos: $(CC_SRC) $(CC_HDR)
 # program, and with the flags that the environment needs. Paths must be
 # absolute, and the flags must have no quotes.
 #
-# `ENV_NUM` lists the numeric options that the environment supports
-# beyond the defaults, as in ENV_NUM="float=32 integer=32 clock=ms"
-# (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`): the compiler
-# refuses the others.
-#
 #   make -C <lang> env OUT=<dir>/atmos-pico ENV=<dir>/pico.atm \
 #        ENV_CFLAGS="-I<dir>/c/src" ENV_LDFLAGS="<dir>/c/libpico.a -lSDL2"
 env: $(CC_SRC) $(CC_HDR) $(LIBS)
 	@test -n "$(OUT)" -a -n "$(ENV)" || \
-	    { echo "usage: make env OUT=<executable> ENV=<file.atm> [ENV_CFLAGS=...] [ENV_LDFLAGS=...] [ENV_NUM=...]"; exit 1; }
+	    { echo "usage: make env OUT=<executable> ENV=<file.atm> [ENV_CFLAGS=...] [ENV_LDFLAGS=...]"; exit 1; }
 	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' \
 	    -DATMOS_NAME='"$(notdir $(OUT))"' \
 	    -DATMOS_ENV='"$(abspath $(ENV))"' \
 	    -DATMOS_ENV_CFLAGS='"$(ENV_CFLAGS)"' \
 	    -DATMOS_ENV_LDFLAGS='"$(ENV_LDFLAGS)"' \
-	    -DATMOS_ENV_NUM='"$(ENV_NUM)"' \
 	    -Isrc $(CC_SRC) -o $(OUT)
 
 # $(1): the suffix of a configuration

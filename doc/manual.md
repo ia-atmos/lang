@@ -633,11 +633,21 @@ once, and so does the plain compiler with the `include`, or with the option
 `-e` and the flags in `ATMOS_CFLAGS` and `ATMOS_LDFLAGS`.
 The paths given to `make env` must be absolute, and the flags must have no
 quotes.
-An environment declares the numeric options that it supports beyond the
-defaults with `ENV_NUM`, as in `ENV_NUM="float=32 integer=32 clock=ms"` (see
-[Types](#types--values)): its compiler refuses a program built with an option
-that is not declared, since the C code of an environment may depend on the size
-of a number and on the unit of time.
+The C code of an environment may depend on the numeric options of the build
+(see [Types](#types--values)): the size of a number and the unit of a clock.
+It reads the unit as `A_CLOCK_US` (the microseconds in one unit), and it
+refuses an option that it does not support with `#error` in its prelude, since
+it is compiled with the flags of the program:
+
+```
+#ifdef ATM_CLOCK_MS
+#error "my-env: ATMOS_CLOCK=ms is not supported"
+#endif
+```
+
+The flags are `ATM_FLOAT_32`, `ATM_INTEGER_32` and `ATM_CLOCK_MS`.
+A field of an event whose name says a unit, as `us`, keeps that unit in every
+build.
 A dedicated compiler still needs the directory of the compiler it was built
 from, a C compiler, and the development files of its library.
 The example `exs/stdin.atm` emits each line of the standard input as an event.

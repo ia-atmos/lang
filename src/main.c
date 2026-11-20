@@ -43,11 +43,6 @@
 #ifndef ATMOS_ENV_CFLAGS
 #define ATMOS_ENV_CFLAGS ""
 #endif
-// The numeric options that the environment supports, beyond the
-// defaults: a list, as in "float=32 integer=32 clock=ms".
-#ifndef ATMOS_ENV_NUM
-#define ATMOS_ENV_NUM ""
-#endif
 #ifndef ATMOS_ENV_LDFLAGS
 #define ATMOS_ENV_LDFLAGS ""
 #endif
@@ -113,22 +108,10 @@ static const char* home_dir (void) {
     return ATMOS_HOME;
 }
 
-// Tells whether the word `w` is in the list `s`, separated by spaces.
-static int has_word (const char* s, const char* w) {
-    size_t n = strlen(w);
-    for (const char* p=s; (p=strstr(p,w))!=NULL; p+=n) {
-        if ((p==s || p[-1]==' ') && (p[n]=='\0' || p[n]==' ')) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 // An option of the build with two values: 0 for `v0` (the default), 1
-// for `v1`. Any other value is an error. `key` names the option in the
-// list of an environment, as in "float=32". `old` is a former name of
-// the variable, which is refused, so that it is not ignored in silence.
-static int opt2 (const char* name, const char* key, const char* old,
+// for `v1`. Any other value is an error. `old` is a former name of the
+// variable, which is refused, so that it is not ignored in silence.
+static int opt2 (const char* name, const char* old,
                  const char* v0, const char* v1)
 {
     if (getenv(old) != NULL) {
@@ -138,12 +121,6 @@ static int opt2 (const char* name, const char* key, const char* old,
     }
     const char* v = env(name, v0);
     if (strcmp(v, v1) == 0) {
-        // a dedicated compiler takes only what its environment declares
-        if (ATMOS_ENV!=NULL && !has_word(ATMOS_ENV_NUM,xfmt("%s=%s",key,v1))) {
-            fprintf(stderr, ATMOS_NAME " : invalid %s : "
-                "the environment does not support '%s'\n", name, v1);
-            exit(1);
-        }
         return 1;
     }
     if (strcmp(v, v0) != 0) {
@@ -159,9 +136,9 @@ static int opt2 (const char* name, const char* key, const char* old,
 static int OPT_F32 = 0;
 
 static void opts_num (void) {
-    OPT_F32     = opt2("ATMOS_FLOAT",   "float",   "ATMOS_REAL", "64", "32");
-    OPT_INT32   = opt2("ATMOS_INTEGER", "integer", "ATMOS_INT",  "64", "32");
-    OPT_TIME_MS = opt2("ATMOS_CLOCK",   "clock",   "ATMOS_TIME", "us", "ms");
+    OPT_F32     = opt2("ATMOS_FLOAT",   "ATMOS_REAL", "64", "32");
+    OPT_INT32   = opt2("ATMOS_INTEGER", "ATMOS_INT",  "64", "32");
+    OPT_TIME_MS = opt2("ATMOS_CLOCK",   "ATMOS_TIME", "us", "ms");
 }
 
 // Builds the C source into an executable. Returns 0 on success.

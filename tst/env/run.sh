@@ -6,9 +6,7 @@ set -e
 cd "$(dirname "$0")"
 ROOT=$(cd ../.. && pwd)
 make -s -C "$ROOT" env OUT="$ROOT/build/atmos-envt" ENV="$PWD/env.atm" ENV_CFLAGS=-DENVT_BASE=40
-make -s -C "$ROOT" env OUT="$ROOT/build/atmos-envn" ENV="$PWD/env.atm" ENV_CFLAGS=-DENVT_BASE=40 ENV_NUM="float=32 integer=32"
 T="$ROOT/build/atmos-envt"
-N="$ROOT/build/atmos-envn"
 A="$ROOT/atmos"
 out=$(mktemp)
 (
@@ -26,13 +24,10 @@ out=$(mktemp)
     ATMOS_CFLAGS='-O1 -DENVT_BASE=10' $A -e env.atm prog.atm
     # with the address sanitizer
     ATMOS_ASAN=1 $T prog.atm
-    # a numeric option that the environment does not declare is refused
-    ATMOS_CLOCK=ms $T prog.atm ; echo "exit $?"
-    ATMOS_INTEGER=32 $T prog.atm ; echo "exit $?"
-    # and one that it declares is taken
-    $N prog.atm
-    ATMOS_INTEGER=32 ATMOS_FLOAT=32 $N prog.atm
-    ATMOS_CLOCK=ms $N prog.atm ; echo "exit $?"
+    # an environment refuses with #error a numeric option it does not
+    # support, and takes the others
+    ATMOS_CLOCK=ms $T prog.atm 2>&1 | grep -c "error: #error \"envt: ATMOS_CLOCK=ms is not supported"
+    ATMOS_INTEGER=32 ATMOS_FLOAT=32 $T prog.atm
     # a former name is refused
     ATMOS_REAL=float $A prog.atm ; echo "exit $?"
 ) > "$out" 2>&1
