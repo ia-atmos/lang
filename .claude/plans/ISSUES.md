@@ -105,3 +105,4 @@ started, no decision needed), **moved** (another session handles it),
 | 91 | Explain `#60` (where the exception of `emit @t` goes) | answered 2026-11-19 with a program run on main; the decision stays `#60`, in `atmos-pool` |
 | 92 | A loader of data that accepts names, `loadx` (the author, through `pico-slides`) | done 2026-11-20 by `atmos-loadx`: `X.loadx(s)` on main (d27805c), names as values with a deep copy per use, no spread; suite checked here |
 | 93 | The measurement of the branch `float` 3bec041 (`ATMOS_INT`, `ATMOS_TIME`, libraries built on demand) on the ports, default configuration: nothing changes | done 2026-11-20 (sent to `atmos-float`; the merge waits for the author there) |
+| 94 | The branch `float` merged by `atmos-float` (692af43: `ATMOS_INT`, `ATMOS_TIME`, libraries on demand): main checked, the 15 ports and the 8 language sessions told | done 2026-11-20 |
