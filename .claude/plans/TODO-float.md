@@ -24,7 +24,9 @@ Last update: 2026-11-19.
 | `#10` | A portable way to compute with time as a number (a program that emits `1000` as a time depends on the unit) | Open. Under `ATMOS_TIME=ms`, 12 existing cases differ only for this |
 | `#11` | Limits of integers of 32 bits to document: `os.time()` wraps in 2038; the least integer has no literal (as with 64 bits) | Open, minor |
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
-| `#13` | Merge of the branch `float` (3bec041) into `main` | Asked 2026-11-20. Suite passes over main e9c2d8b with ASAN (cases 428, golden 443); `atmos-lang` asked to measure the ports. In the default build two edges change: `tonumber` of a decimal above 2^63-1 is a real, a clock of 2^63 us or more is an error |
+| `#13` | Merge of the branch `float` (3bec041) into `main` | Asked 2026-11-20, waits for the author. Suite passes with ASAN; `atmos-lang` measured the ports: nothing changes in the default build (2116 files of 12 ports compile to the same C, apart from the two renamings of the branch) |
+| `#14` | Each environment must say which numeric options it supports (`env-uv` has C that assumes microseconds and 64 bits); the compiler could refuse an option the environment does not declare | Open, raised by `atmos-lang` and `env-esp32` |
+| `#15` | The build on demand needs `make`, the sources and a writable `<home>/build`: an installed read-only compiler cannot build a configuration. The error names the command; the manual does not say it yet | Open, minor |
 
 ## Checked by this session
 
@@ -79,3 +81,11 @@ Last update: 2026-11-19.
   the remainder; the `time` fields of its events become milliseconds.
   It found that `make` at 91d9673 had no rule for `build/libatmos.a`:
   fixed since 72d3398.
+- 2026-11-20, `atmos-lang` (`#13`): `float` 3bec041 against main
+  3ae60f9, default configuration. `make test` passes with ASAN on a
+  clean copy. The 2116 `.atm` files of the 12 port clones, `-c` with
+  both compilers: diagnostics and exit identical, generated C identical
+  after the two renamings of the branch (`a_int((AInt)`). The suite of
+  sdl-pingus passes. `tonumber("9223372036854775808")` is now a real;
+  no port depends on it. No port links `libatmos-f32*.a` by name.
+  pico-frescogo and env-esp32 were not cloned there.
