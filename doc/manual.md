@@ -715,6 +715,8 @@ The literals for `nil`, `boolean` and `number` follow the same
 [lexical conventions of Lua][lua-lexical].
 A number with no fractional part and no exponent is an integer (e.g., `10`,
 `0xFF`), and any other is a real (e.g., `1.5`, `1e3`).
+A dot belongs to a number only before a digit, such that `t@0.x` is the field
+`x` of `t@0`, and `5.` is not a number.
 
 The literal `nil` is the single value of the `nil` type.
 

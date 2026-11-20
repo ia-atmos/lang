@@ -361,6 +361,21 @@ int lexer_token (Tk* tk) {
         // clocks:   5s  300ms  2h30min
         } else if (isdigit(c)) {
             int n = 1 + read_while(is_num, 0, 0);
+            // a dot belongs to the number only before a digit: `t@0.x`
+            // is the field `x` of `t@0`
+            {
+                int hex = (n>1 && SRC[i0]=='0' && (SRC[i0+1]=='x' || SRC[i0+1]=='X'));
+                for (int k=1; k<n; k++) {
+                    int d = (unsigned char) SRC[i0+k+1];
+                    if (SRC[i0+k]=='.' && !(hex ? isxdigit(d) : isdigit(d))) {
+                        while (n > k) {
+                            unread();
+                            n--;
+                        }
+                        break;
+                    }
+                }
+            }
             if (memchr(SRC+i0,'e',n) || memchr(SRC+i0,'E',n) ||
                 memchr(SRC+i0,'p',n) || memchr(SRC+i0,'P',n))
             {
