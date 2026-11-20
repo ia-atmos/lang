@@ -195,6 +195,24 @@ of the sessions still have the old names.
   only after the author approved the design and with the suite passing
   over the current `main`. After the merge, `atmos-lang` migrates the
   tests if needed and tells the ports.
+- **Work with no input** (2026-11-20, `#95`). The author, in
+  `atmos-lang`: "I want you to review all sessions and propose them
+  changes that need no input. The sessions may also work suggest by
+  themselves. No input form me. Go ahead". As read by `atmos-lang` (the
+  reading is its, to be corrected by him): a session does now the work
+  that needs no decision of his, proposed to it or its own; where a
+  decision of his is pending and the session has a recommendation, it
+  may go on with the recommendation if that is reversible and stays in
+  its own repository or branch, and records it as an item marked "by
+  the session, to be confirmed", so that he can review and undo it; it
+  does not ask him and does not wait. Not covered: the merge of a
+  language change into `main` of `ia-atmos/lang` (still his approval:
+  the branch is left ready and measured), anything outward or hard to
+  undo (upstream, tags, releases, deleting originals or history,
+  installs that need his approval), and the limits a session already
+  has. A defect fix that changes no rule of the language goes to `main`
+  through `atmos-lang`, after the suite and the measurement on the
+  ports.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
