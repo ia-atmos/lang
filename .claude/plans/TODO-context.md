@@ -20,7 +20,7 @@ session, never reused; from another session, `session#N`.
 | #7 | The three comments of issue 21 not readable | remark | open |
 | #8 | The canvas of the stars: `STARS` (author) or `BACK` (material) | remark | settled (checked by `atmos-lang` in `src/shared.atm`): both exist; the stars draw on `STARS` (line 71), the background on `BACK` (line 22): the author is right |
 | #9 | Implement `context` on the branch `context` | work | done (2026-11-20), branch `context` 64433db, main merged in, suite with ASAN passes (1007, rt, env); waits for the measurement on the ports (`atmos-lang`) and the author's approval to merge |
-| #10 | Tell `atmos-grab` (and `pool`) what the prototype does at the resume of a trail in `rt/task.c` | work | done 2026-11-20 |
+| #10 | Tell `atmos-grab` (and `pool`) what the prototype does at the resume of a trail in `rt/task.c` | work | done 2026-11-20; `atmos-grab#14`: branch `grab` (4aed336) does not touch `trail_resume`/`emit_top`, wraps `emit_trail` (body kept), and also touches `trail_off` and `ATrailX`: conflicts are textual only, whoever merges second rebases |
 | #11 | Non-drawing events (the author's question): with the lazy resume, a key costs nothing unless a task inside awakes on it | answer | reported, not acknowledged |
 | #12 | `lua-atmos` has no `context`; `atmos-lang/atmos` has only a plan, once per emit | remark | reported, not acknowledged |
 | #13 | No real case awaits between set and restore: `context` fixes no bug today, it saves writing and makes the stars one switch per pool | remark | reported, not acknowledged |
