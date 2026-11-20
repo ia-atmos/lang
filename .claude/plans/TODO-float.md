@@ -118,6 +118,12 @@ Last update: 2026-11-19.
   computed through a real loses bits under `float`; where the C mixes
   doubles and floats (asteroids, koala_seasons) `ray.f32` stays;
   `:frame [us=]` stays in microseconds (`#17`).
+- 2026-11-20, `env-esp32` (`#12`), its real line (one environment,
+  modules linked only when included), lang 55b1fee, board build:
+  `libmain.a` 138873 B in the default, 128104 B with the three options
+  (-10769 B); static DRAM 17782 B to 17078 B (-704 B); no warnings.
+  Its host tests give the same output in both. Speed and heap need the
+  board: the steps are in `doc/board.md` of `ia-atmos/env-esp32`.
 
 ## The matrix of configurations (2026-11-20)
 
