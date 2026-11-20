@@ -49,7 +49,8 @@ Value : (as in X.load) | ID
 - `X.dump` does not change: a value read with names is written expanded.
 | 12 | Merge of the branch `loadx` into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN over the current `main` |
 | 13 | An `include` in the text of `X.loadx` (asked by the author: "faz sentido um include?") | **decided (2026-11-20, #13b)**: an `include "file"` in the text. Its details are #14 on; nothing is implemented before they are settled |
-| 14 | The include: relative to what, since `X.loadx` receives a text and not a file | asked, recommended: a function that receives the path of the file; the include is relative to that file, as in the language, and a text given as a string has no include |
+| 14 | The include: relative to what, since `X.loadx` receives a text and not a file | **decided (2026-11-20, #14a)**: a function that receives the path of the file; the include is relative to the file that has it, as in the language; a text given as a string has no include (an error); errors say the file and the line |
+| 15 | The name of the function that receives the path | asked, recommended: `X.loadxf(path)`, beside `X.loadx(s)` |
 
 ## State (2026-11-20)
 
