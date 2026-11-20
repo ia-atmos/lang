@@ -17,7 +17,7 @@ Last update: 2026-11-19.
 | `#3` | The clock under integers of 32 bits (a clock is a number of microseconds: 2^31 us is 35 min) | Decided 2026-11-20 (`#3a`): a third option for the unit of time, `ATMOS_TIME=us\|ms` (default `us`); a clock literal that does not fit the integer is a compile error. On `main` (692af43). See `#9` |
 | `#4` | How the 16 configurations of the runtime are built | Decided 2026-11-20 (`#4a`): `make` builds the default ones, the compiler builds a missing one on first use (and `make` keeps those that exist up to date). On `main` (692af43) |
 | `#5` | Print of a 32-bit real: the fewest digits (done) or always `%.9g` | Settled by the session on 2026-11-20, to be confirmed: the fewest digits stay. See "Screens" |
-| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` (an environment built under the option) | Both ran it: `env-esp32` built the board image (-4.5 KB, speed not measured); the suite of `sdl-tux` is identical, over `env-sdl` too. Left: Atmos code of Tux doing the float arithmetic |
+| `#6` | Confirm the 32-bit reals in `sdl-tux` and `env-esp32` | Done 2026-11-20: the badguys of `sdl-tux` are plain Atmos with real arithmetic under `ATMOS_REAL=float` (a6cdb0b) and 69 runs are identical to the official game tick by tick, 29 with badguys; `env-esp32` built the board image |
 | `#7` | No reals (`#B`) and fixed point (`#C`) | Open. The measurement that decides was asked of `env-esp32` (the software floating point linked on a target with no FPU). See "Screens" |
 | `#8` | An 8-byte value on 64-bit hosts (`#G`, NaN boxing) | Open, not recommended now. See "Screens" |
 | `#9` | A clock with a fraction of the unit (`500us` under `ms`, `2.5us` today): a real, or a compile error | Decided 2026-11-20 (`#9a`, the author said "Ok" to the recommendation): a real, in both units, as on the branch |
@@ -27,6 +27,8 @@ Last update: 2026-11-19.
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
 | `#14` | Each environment says which numeric options it supports; its compiler refuses the rest | Prepared by the session on the branch `float` (2447d5f), to be confirmed, NOT merged: `make env ... ENV_NUM="float 32 ms"`; a dedicated compiler refuses an option that is not declared; the plain compiler with `-e` checks nothing. Suite passes with ASAN. `env-sdl` (85b23cc) and a scratch of `env-esp32` support the three options |
 | `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
+| `#16` | `math` has no `fmod` (nor a few others): `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf` | Open. `%` on reals is `fmod` and `math.sin` exists; to check what is really missing with `sdl-tux` |
+| `#17` | A time field of an event of an environment (`:frame [us=]` of `env-pico`, `time` of `env-esp32`): the unit of the build, or the unit in its name | Open, his to decide, with `atmos-envs#16`. Reading of the session: a field named after a unit keeps it |
 
 ## Checked by this session
 
@@ -95,6 +97,17 @@ Last update: 2026-11-19.
   rest carried). Colors `0xRRGGBBAA` survive `float` and 32-bit
   integers. Its 23 tests pass under each option and the three together,
   except one whose trace is of the default unit.
+- 2026-11-20, `sdl-tux` (`#6`): see the index. The only C left in the
+  runs with badguys reads the collision system, plus two pieces with
+  `fmodf`, `powf`, `sinf` (the flying snowball), "because Atmos has no
+  fmod" (`#16`).
+- 2026-11-20, `env-pico` (`#14`), main 4dbf6494 on lang 55b1fee:
+  `ATMOS_TIME=ms` was wrong and is fixed (the loop emitted microseconds
+  in every build); `:frame [us=]` stays in microseconds (`#17`);
+  `ATMOS_INT=32` compiles and runs, with colors `0xRRGGBBAA` to check
+  against the wrapping of a hexadecimal literal; `ATMOS_REAL=float`
+  nothing found; its C library uses no Atmos type. Sample tests pass
+  under each option alone; the full suite only in the default build.
 
 ## Work with no input (2026-11-20)
 
