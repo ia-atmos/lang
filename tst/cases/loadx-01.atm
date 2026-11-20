@@ -1,0 +1,64 @@
+;; X.loadx reads what X.load reads, with names defined before the value
+X.print(X.loadx("[1, x=2, :T [3]]"))
+print(X.loadx("10"), X.loadx("'s'"), X.loadx(":a.b"), X.loadx("nil"), X.loadx("1s"))
+
+;; a name is used as a value
+X.print(X.loadx("T = [1]\n[T, t=T]"))
+X.print(X.loadx("A = [1]\nB = [A, x=2]\n[B, A]"))
+X.print(X.loadx("T = :X [1]\nT"))
+
+;; a name holds any value
+X.print(X.loadx("N = 10 S = 'a' Z = nil B = true\n[size=N, S, z=Z, b=B, @(S)=N]"))
+print(X.loadx("N = -1\nN"), X.loadx("C = 1min\nC"))
+
+;; a field may have the name of a name
+X.print(X.loadx("T = [1]\n[T=T, x=T]"))
+
+;; each use is a copy
+val v = X.loadx("T = [[1]]\n[T, T]")
+set v@0@0@0 = 9
+set v@0@+ = 2
+X.print(v)
+
+;; the same value as X.load of the expanded text
+val s = io.read(io.open("inc/slides.atm"), :all)
+val a = X.loadx(s)
+val b = X.load(":Slides [ :Slide [ :text ['Cultura', style=[color=[fg=:blue], anchor=:C]], :image ['logo.png', style=[color=[fg=:blue], anchor=:C]] ], :Slide [ :image ['logo.png', style=[color=[fg=:blue], anchor=:C]] ] ]")
+print(X.eq(a, b), a ?? :Slides, a@1@0 ?? :image, (a@0@0).style.color.fg)
+
+;; a dump writes it expanded
+print(X.dump(X.loadx("T = [a=1]\n:S [t=T, T]")))
+
+;; a name nested many times
+print(#X.loadx("A=[1,1] B=[A,A] C=[B,B] D=[C,C]\n[D,D]")@1@1@1@1)
+
+;; errors
+print(catch true { X.loadx("[A]") })
+print(catch true { X.loadx("A = [A]\nA") })
+print(catch true { X.loadx("A = [1]\n[\n B]") })
+print(catch true { X.loadx("A = 1\nA = 2\n[A]") })
+print(catch true { X.loadx("A = 1\n") })
+print(catch true { X.loadx("A = 1\n[A]\nB = 2") })
+print(catch true { X.loadx("A = [1]\n[A...]") })
+print(catch true { X.loadx("A = [1]\nA A") })
+print(catch true { X.loadx("nil = 1\n1") })
+print(catch true { X.loadx("A =\n") })
+print(catch true { X.loadx("A = [1\nA") })
+print(catch true { X.loadx("A = 1 + 2\nA") })
+print(catch true { X.loadx("") })
+print(catch true { X.loadx(10) })
+
+;; X.load does not change
+print(catch true { X.load("A = 1\nA") })
+print(catch true { X.load("[A]") })
+
+;; too deep: 150 tables inside 150 tables
+func nest (n, s) {
+    var r = s
+    loop i in n {
+        set r = "[" ++ r ++ "]"
+    }
+    r
+}
+print(catch true { X.loadx("A = " ++ nest(150,"1") ++ "\n" ++ nest(150,"A")) })
+print(X.loadx("A = " ++ nest(100,"1") ++ "\n" ++ nest(100,"A")) ?? :table)
