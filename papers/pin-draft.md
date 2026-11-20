@@ -121,6 +121,12 @@ remains, values in a cycle or reachable only through one, are cut. The pass
 runs only if, since the block began, a reference was written into a table, a
 box, or a `pub`. Soundness rests on the counts, not on the ceiling: the
 escape information that block depths provide only selects the candidates.
+The same trial deletion runs on a value with no name when the last reference
+to it from outside goes: a temporary, a result that is dropped, an entry of a
+value that is freed, or the parameter of a task that ends. For a parameter of
+a task, the search gives up on a value that reaches more than 256 others,
+which is then left to the counts. No measurable cost was reported for this
+step (`.claude/plans/TODO-pin.md`, item 7).
 
 An `emit` that carries a pinned value compares two depths, where the target
 is attached and where the value is pinned, and does not walk the tree of

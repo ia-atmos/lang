@@ -1956,7 +1956,12 @@ AStatus a_resumed (ATrail* tr, AKind k) {
     root_drop(&tr->root);
     switch (k) {
         case R_ABORT: return A_ABORT;
-        case R_EXIT:  return EXIT;
+        case R_EXIT:
+            // the error of an awaited task crosses this await
+            if (EXIT == A_ERROR) {
+                a_trace_await(a_lin);
+            }
+            return EXIT;
         default:      return A_OK;
     }
 }
