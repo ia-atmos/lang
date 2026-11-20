@@ -40,3 +40,25 @@ beside it, `env-esp32#6`).
   version. To propose to `env-esp32` after #3 is adopted by `env-sdl`.
 - **The time** (#16): emitted in microseconds; under `ATMOS_TIME=ms`,
   which a board may want, it must follow the unit of the build.
+
+## Update 2026-11-20 (from `env-esp32`)
+
+- `env-esp32#16` decided by the author and done: **one environment per
+  board**. `env/esp32.atm` is the only `atmos.env` (primary): its step
+  waits on the semaphore (timeout `atmos.next()`), emits the time, then
+  drains the queued events of all drivers in timestamp order (each
+  driver registers a peek of its oldest event, `drv/src.c`). `gpio`,
+  `ir`, `espnow`, `preferences`, `debug` are plain includes that
+  register a drain in `esp32.drain`. `app/init.atm`: image 989 KB to
+  357 KB (no Wi-Fi linked), static RAM 42 KB to 18 KB.
+- So the board needs neither secondaries nor #10: the wake stays inside
+  one environment.
+- A lesson for the design of secondaries: one environment per source
+  loses the order of events across sources (the steps run in turn); one
+  step that drains by time keeps it. Secondaries remain for libraries
+  with loops of their own (uv beside IUP), not for sources of one
+  device.
+- Watchdog: a reaction that never awaits keeps the main task busy and
+  starves the idle task of FreeRTOS (a warning after 5 s, no reset).
+  `doc/env.md` of `env-esp32` suggests `await(0)` in long loops. A note
+  for any environment on an RTOS board.
