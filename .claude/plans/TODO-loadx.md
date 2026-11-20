@@ -53,7 +53,7 @@ Value : (as in X.load) | ID
 | 15 | The name of the function that receives the path | closed with #14: no new function |
 | 16 | `X.loadx` with one argument, now that the directory comes first | **decided (2026-11-20, #16a with a change)**: `X.loadx(s)` stays valid, and its includes are relative to the current directory, as `io.open` |
 | 17 | What an include is: where it may appear, what the included file holds, a file included twice, a nested include | **decided (2026-11-20, #17a)**: at the top level, among the definitions and before the value; the file holds definitions and includes only; once per file, as in the language; a nested include is relative to the file that has it; a name defined twice is still an error; an error inside a file says its name |
-| 18 | Merge of the include and of #19/#20 (branch `loadx`) into `main` | asked |
+| 18 | Merge of the include and of #19/#20 (branch `loadx`) into `main` | **approved and done (2026-11-20)**, after the suite passed with ASAN |
 | 19 | Overwriting a name (asked by the author: "sobreescrita de variáveis, possível?"). Today it is the error of #6 | **decided (2026-11-20, #19c)**: the first definition wins; the one of an included file becomes a default, which the text that includes it replaces by defining the name before the include. Its reach is #20 |
 | 20 | The reach of #19c: when a repeated definition is ignored and when it is still an error | **decided (2026-11-20, #20b)**: always ignored, anywhere. A later definition of a name is read (so its syntax and its names are checked) and ignored. The error `name already defined` of #6 no longer exists. Implemented on the branch `loadx` |
 
@@ -71,7 +71,7 @@ Value : (as in X.load) | ID
 - `pico-slides` was told the final syntax and semantics, and that there
   is no spread.
 
-## The include (#13 to #17), implemented on the branch `loadx`
+## The include (#13 to #17) and the first definition that wins (#19, #20), merged into `main`
 
 ```
 Text  : { Def } Value

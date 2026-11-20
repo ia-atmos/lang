@@ -246,7 +246,8 @@ From the [original implementation][atmos-lua], which compiles to Lua:
   durations, strings, and comments. No expressions. `X.dump(v)` writes
   it back.
   `X.loadx(s)` also accepts names defined before the value
-  (`T = [1]  [T, T]`), each use being a copy.
+  (`T = [1]  [T, T]`), each use being a copy, and `include "file"`
+  for a file of definitions.
 - Native literals are C code, not Lua: `` `:number strlen("abc")` ``.
     - A leading tag converts the expression: `:number`, `:boolean`,
       `:string`, `:atmos`. With no tag, the code is a statement.

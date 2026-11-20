@@ -1,0 +1,3 @@
+include "base.atm"
+include "sub/note.atm"      ;; which includes base.atm again
+TITLE = [ color=BLUE, size=SIZE ]
