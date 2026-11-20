@@ -6,7 +6,7 @@ decided here and implemented by `atmos-lang`: `261115-pin.md`,
 `261118-pin-handoff.md`). This session cannot push to `main`:
 `atmos-lang` fast-forwards `main` to `pin` after each approved change.
 
-Last update: 2026-11-19.
+Last update: 2026-11-20.
 
 ## Index of the items (`atmos-pin#N`)
 
@@ -16,16 +16,17 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | # | Title | State |
 |---|---|---|
 | #1 | An outer place that holds a value of an inner block (case E) | decided 2026-11-19: `set :out place = value` (the place goes back to `nil` at the end of the block of the `set`), plus the state "finalized" of data, whose use is an error (`invalid access : finalized table pinned at f:N`). Implemented and merged in `main` (`8361f88`, 2026-11-19), after 12 ports passed with no `invalid access : finalized`. See below |
-| #2 | env-pico: the finalizers of a layer and of a font reset the current layer and the pencil's font, instead of the binding's own count | approved 2026-11-19; asked to `env-pico`, waiting for its report |
+| #2 | env-pico: the finalizers of a layer and of a font reset the current layer and the pencil's font, instead of the binding's own count | done by `env-pico` (`9df0db43`, 2026-11-19): 67 of 67 tests, ASAN clean, the three games run, screenshots unchanged. Kept by design: a layer or a font that nobody pinned lives while it is the current one (the binding holds it as a name would). To recheck if the runtime changes how it closes a pinned value: the finalizers drop the binding's reference to the box being finalized |
 | #3 | A compile flag that removes the checks (the end-of-block finalization stays, it is semantics) | open: "not yet" (2026-11-17). Needed by the experiment of the paper (CLBG, with and without the checks) |
 | #4 | Choices of the implementation: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | confirmed by the author, 2026-11-19 |
 | #5 | The `spawn` statement as the only implicit pin | confirmed by the author, 2026-11-19: it stays |
 | #6 | sdl-snxkx: the second migration (pins given away) and the contacts sent only to the two tasks | waiting for its session. The experiment of the context is no longer needed: with `set :out w.tasks@(b) = task` in the body of each task, the world made by the caller keeps the map (answered with a tested program, 2026-11-19); `SHARED_SPRINGS` has the same direct form |
-| #7 | Known limits of the collection of cycles (leaks): a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | open, documented in the manual; no plan |
+| #7 | The two leaks of the collection of cycles: a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | fixed on `pin`, 2026-11-20 (by the session, under the rule "work with no input"; a defect, no rule changes): a reference that goes and is not a name (a temporary, a result that is dropped, an entry of a value that is freed) runs the same trial deletion on a value with no name that something else still holds; the parameters of a task do it when the task ends, whatever the ceiling, giving up beyond 256 values. No measurable cost. Test `cycle-02`. Waits for the measurement on the ports and the merge by `atmos-lang` |
 | #8 | Remarks of the ports for the author: env-uv (a function that creates a handle and gives it away declares it with `val`, the weaker word; on a throw in the middle the handle is closed by the count, not by the block); Doom and env-uv (the same lines changed three times in three days: a change that breaks programs should say what migrates) | relayed on 2026-11-18, not answered |
 | #9 | Declare the rules stable again, and tell `paper-pin` and the ports | done: the author declared the rules of `pin` stable on 2026-11-19, as they are in `main` `8361f88` (see "Stable" below). Told to `paper-pin` and, through `atmos-lang`, to the ports. The flag (#3) is outside: it changes no rule |
-| #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | confirmed with no anomaly: sdl-pingus, env-uv, ray-lessmilk, env-ray; the others have not reported |
+| #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | closed, 2026-11-20: no anomaly in sdl-pingus, env-uv, ray-lessmilk, env-ray (reported here), and in sdl-flare, doom, sdl-tux, env-iup, env-sdl, env-pico, pico-frescogo, pico-1oom (their suites on `4199167` or later, reported to `atmos-lang` for `atmos-lang#81`). sdl-snxkx is #6 |
 | #11 | The warning of a pin given away missed `until c, v` and `while c, v` (found by sdl-pingus: `pin r = await Game(path)` ... `until !again, r`, a live defect that only the replay of the demos reached) | done on `pin` (2026-11-18): the values after the condition are checked against the pins of the loop; test `warn-pin-02` |
+| #12 | `atmos-lang#63`, here since pin moved: a `pin` of a task that is the last statement of its block (`pin t = if c { spawn T() }` at the end of a loop body) dies at once and was not flagged | done on `pin`, 2026-11-20 (by the session, under "work with no input"): a compile-time WARNING, `task aborted at end of block (a pin that ends its block)`, for a `pin` whose value is a spawn (directly, or the last expression of the branches of an `if`, of a `do`) of a task that awaits, when the declaration is the last statement of a block whose value is not used. The spawn statement in that position stays an error. Test `warn-spawn-01`; `task-06` gains the warning. Waits for the measurement and the merge by `atmos-lang` |
 
 ## Stable (2026-11-19)
 
@@ -48,7 +49,7 @@ migrates (the remark of Doom and env-uv, #8).
   argument of a task that outlives its spawner has its ceiling at the
   block that ends the task.
 - A cycle of unpinned values is broken at the end of the block of its
-  names (two known leaks, #7).
+  names, and when the last reference from outside it goes (#7).
 - An event with a pinned value only reaches a target attached inside
   the block of the pin. An emitted event is owned by the emit. A task
   owns its `pub` and its final value. A native declares what it holds.
@@ -57,6 +58,31 @@ migrates (the remark of Doom and env-uv, #8).
   block of the `set` ends. Finalized data may not be used (`invalid
   access : finalized ...`).
 - Open, and no rule: the flag that removes the checks (#3).
+
+### Cases of the suite for each sentence (audit of 2026-11-20)
+
+| Sentence | Cases (`tst/cases/`) |
+|---|---|
+| Pinned and unpinned, floor and ceiling | `floor-01`, `floor-02`, `ceil-01`, `pin-err-01`, `pin-err-04` to `06` |
+| `pin` is optional; `val` and `var` hold unpinned values | `pin-val-01`, `pin-val-02`, `ceil-01` |
+| `pin val`, `pin var`, a parameter `pin x`, `pin func` | `pin-val-01`, `par-mod-01`, `par-mod-02`, `pool-val-01` |
+| A bare `pin` is `pin val` | `stable-01` |
+| A store only goes where the block of the value lasts | `pin-01` to `03`, `pin-err-02`, `pin-err-03` |
+| A pinned value never leaves its block | `xfer-01`, `xfer-02`, `warn-pin-01`, `warn-pin-02` |
+| The pin is deep | `deep-01` to `05` |
+| A named value: adopted at the block of its name or outside, referenced inside | `deep-06`, `deep-07` |
+| Reassigning an owned place retires the old value | `repin-01` to `04` |
+| The floor rises while only the name refers to the value | `floor-up-01` |
+| An argument of a task that outlives its spawner | `deep-07` |
+| A cycle of unpinned values is broken | `cycle-01`, `cycle-02` |
+| An event with a pinned value reaches a target inside the block of the pin | `emit-pin-01` |
+| An emitted event is owned by the emit | `stable-01` |
+| A task owns its `pub` and its final value | `stable-01`, `pin-await-01`, `deep-04` |
+| A native declares what it holds | none here (it needs C): covered by `env-pico` (`tst/life`, `tst/life-loop`) |
+| The `spawn` statement is the only implicit pin | `stable-01`, `task-06`, `warn-spawn-01` |
+| `set :out` | `out-01`, `out-02`, `out-err-01` |
+| Finalized data may not be used | `out-02` |
+| An unpinned pool held by a `val` | `pool-val-01` |
 
 ## #1, as decided
 

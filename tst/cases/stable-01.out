@@ -1,0 +1,13 @@
+val	1
+false	invalid assignment : unexpected pinned value : table pinned at stable-01.atm:15
+false	invalid assignment : unexpected pinned value : table pinned at stable-01.atm:15
+pub	2
+false	invalid escape : table pinned at stable-01.atm:19
+false	invalid escape : table pinned at stable-01.atm:29
+ret	3
+end	3
+in
+end	1
+end	2
+out
+false	invalid assignment : unexpected pinned value : table pinned at stable-01.atm:51
