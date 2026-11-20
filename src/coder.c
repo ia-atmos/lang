@@ -17,6 +17,7 @@
 // of the enclosing block, which releases its slots and propagates the
 // status. The values of an exit travel in the payload.
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,6 +113,12 @@ typedef struct Defer {
     // the tasks of the unit that nobody pinned: they end with its
     // outermost block, after everything else
     int   orph;
+    // set :out: the place goes back to nil, if it still refers to the
+    // value. 1: a table (slots `ot`, `ok`); 2: a variable (`odst`).
+    // The value is in the slot `ov`.
+    int   out;
+    int   ot, ok, ov;
+    const char* odst;
 } Defer;
 
 // Appends one line at column zero (labels).
@@ -539,8 +546,10 @@ static const char* gen_num (const char* str) {
     int hex = (str[0]=='0' && (str[1]=='x' || str[1]=='X'));
     if (strpbrk(str, hex ? ".pP" : ".eE") == NULL) {
         unsigned long long v = strtoull(str, NULL, 0);
-        if (hex || (strlen(str)<=19 && v<=9223372036854775807ULL)) {
-            return xfmt("a_int((int64_t)%lluULL)", v);
+        unsigned long long max = OPT_INT32 ?
+            2147483647ULL : 9223372036854775807ULL;
+        if (hex || (strlen(str)<=19 && v<=max)) {
+            return xfmt("a_int((AInt)%lluULL)", v);
         }
     }
     return xfmt("a_num(%.17g)", strtod(str, NULL));
@@ -804,6 +813,7 @@ static Blk blk_open (Unit* u) {
         u->defs[0].trail = -1;
         u->defs[0].user = 0;
         u->defs[0].orph = 1;
+        u->defs[0].out  = 0;
         u->ndefs = 1;
     }
     u->level++;
@@ -950,6 +960,15 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
         }
         if (mine[i].pin != NULL) {
             out(u, "a_pin_end(NULL, %s, &st, 0);", pin_ref(mine[i].pin));
+            continue;
+        }
+        if (mine[i].out == 1) {
+            out(u, "if (a_truthy(L[%d])) a_out_tab_end(L[%d], L[%d], L[%d]);",
+                mine[i].flag, mine[i].ot, mine[i].ok, mine[i].ov);
+            continue;
+        } else if (mine[i].out == 2) {
+            out(u, "if (a_truthy(L[%d])) a_out_var_end(&%s, L[%d]);",
+                mine[i].flag, mine[i].odst, mine[i].ov);
             continue;
         }
         int id = ++u->nlabels;
@@ -1116,6 +1135,7 @@ static void gen_defer (Unit* u, Expr* e) {
     u->defs[u->ndefs].trail = -1;
     u->defs[u->ndefs].user = 0;
     u->defs[u->ndefs].orph = 0;
+    u->defs[u->ndefs].out  = 0;
     u->ndefs++;
     out(u, "a_set(&L[%d], a_bool(1));", flag);
 }
@@ -1129,6 +1149,7 @@ static void gen_pin_end (Unit* u, const char* slot, int user) {
     u->defs[u->ndefs].trail = -1;
     u->defs[u->ndefs].user = user;
     u->defs[u->ndefs].orph = 0;
+    u->defs[u->ndefs].out  = 0;
     u->ndefs++;
 }
 
@@ -1141,6 +1162,7 @@ static void gen_trail_end (Unit* u, int trail) {
     u->defs[u->ndefs].trail = trail;
     u->defs[u->ndefs].user = 0;
     u->defs[u->ndefs].orph = 0;
+    u->defs[u->ndefs].out  = 0;
     u->ndefs++;
 }
 
@@ -1408,7 +1430,61 @@ static void gen_set_op (Unit* u, Expr* e) {
 
 // set x = e  |  set t@k, y = e
 // Tables and keys are evaluated before the values.
+// set :out x = e: the place refers to the value, with no check of an
+// escape and no adoption, until the enclosing block ends, when it goes
+// back to nil if it still refers to it. The value outlives the block
+// (it belongs to this block or to an outer one), so the place never
+// refers to a finalized value; a name that reads the place and
+// outlives the block refers to a finalized value, which may not be
+// used.
+static void gen_set_out (Unit* u, Expr* e) {
+    Expr* dst = e->u.set.dsts.v[0];
+    if (dst->tag==E_INDEX && dst->u.index.kind!=IDX_EXPR) {
+        err(dst->tk, "invalid set :out : expected field or index");
+    }
+    if (dst->tag==E_ACC && dst->var->kind==V_PIN) {
+        err(dst->tk, "invalid set :out : unexpected pin");
+    }
+    Loc l = gen_loc(u, dst);
+    if (dst->tag!=E_INDEX && dst->tag!=E_ACC) {
+        err(dst->tk, "invalid set :out : expected variable, field, or index");
+    }
+    Opnd v = gen_expr(u, e->u.set.src);
+    out(u, "a_lin = %d;", lin_of(e->tk));
+    Defer d;
+    memset(&d, 0, sizeof(d));
+    d.flag  = slot_new(u);
+    d.trail = -1;
+    d.ov    = slot_new(u);
+    out(u, "a_cpy(&L[%d], %s);", d.ov, v.c);
+    if (dst->tag == E_INDEX) {
+        d.out = 1;
+        d.ot  = slot_new(u);
+        d.ok  = slot_new(u);
+        out(u, "a_cpy(&L[%d], %s);", d.ot, l.t.c);
+        out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+        out_try(u, "a_out_tab(L[%d], L[%d], L[%d])", d.ot, d.ok, d.ov);
+    } else {
+        Var* x = dst->var;
+        d.out  = 2;
+        d.odst = var_c(u, x);
+        out(u, "a_name(L[%d], %s);", d.ov, var_depth(u, x));
+        out(u, "a_muts += (L[%d].type >= A_TAB);", d.ov);
+        out(u, "a_cpy(&%s, L[%d]);", d.odst, d.ov);
+    }
+    out(u, "a_set(&L[%d], a_bool(1));", d.flag);
+    u->defs = realloc(u->defs, (u->ndefs+1) * sizeof(Defer));
+    u->defs[u->ndefs++] = d;
+    opnd_rel(u, v);
+    opnd_rel(u, l.k);
+    opnd_rel(u, l.t);
+}
+
 static void gen_set (Unit* u, Expr* e) {
+    if (e->u.set.out) {
+        gen_set_out(u, e);
+        return;
+    }
     if (e->u.set.op != NULL) {
         gen_set_op(u, e);
         return;
@@ -2069,7 +2145,7 @@ static void gen_nat (Unit* u, Expr* e, Dst d) {
 
     static const char* CONV[] = {
         NULL, NULL,
-        "a_int((int64_t)(", "a_num((double)(", "a_bool(0 != (",
+        "a_int((AInt)(", "a_num((double)(", "a_bool(0 != (",
         "a_strn((", "((", "a_number(("
     };
     Opnd t = opnd_tmp(u);
@@ -2551,12 +2627,17 @@ static Opnd gen_expr (Unit* u, Expr* e) {
         case E_NUM:
             return opnd_c(gen_num(e->tk.str));
         case E_CLK: {
-            // a clock is a number of microseconds
-            double us = e->tk.clk;
-            if (us==(double)(long long)us && us<9e18) {
-                return opnd_c(xfmt("a_int(%lldLL)", (long long)us));
+            // a clock is a number of units of time (microseconds or
+            // milliseconds): an integer, which must fit the integer of
+            // the build, or a real if it has a fraction of the unit
+            double t = OPT_TIME_MS ? e->tk.clk/1000 : e->tk.clk;
+            if (t >= (OPT_INT32 ? 2147483648.0 : 9223372036854775808.0)) {
+                err(e->tk, "invalid clock : out of range");
             }
-            return opnd_c(xfmt("a_num(%.17g)", us));
+            if (t != floor(t)) {
+                return opnd_c(xfmt("a_num(%.17g)", t));
+            }
+            return opnd_c(xfmt("a_int((AInt)%.0f)", t));
         }
         case E_STR: {
             // only quoted single-line literals have escapes

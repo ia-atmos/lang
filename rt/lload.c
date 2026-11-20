@@ -11,8 +11,26 @@
 // It is data only: there are no variables, operations, functions, or
 // calls. Comments are accepted: `;; ...` up to the end of the line,
 // and `;;; ... ;;;` over multiple lines.
+//
+// X.loadx: reads the same, with names defined before the value.
+//
+//      Text  : { Def } Value
+//      Def   : ID `=´ Value
+//            | `include´ STR
+//      Value : ... | ID
+//
+// A name is used as a value only, and each use is a deep copy of what
+// it holds: the result is what X.load gives for the text with each
+// name replaced by its value. A name sees the names defined before it.
+// The first definition of a name wins: a later one is read and ignored,
+// so a text replaces a name of a file by defining it before the include.
+// An include reads the definitions of another file, which has no value
+// of its own. The file is relative to the directory given to X.loadx
+// (or to the current one), and inside an included file, to that file.
+// A file is only included once.
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "lib.h"
@@ -20,15 +38,50 @@
 // Nested tables allowed, to protect the C stack.
 #define DEPTH_MAX 200
 
+// A name of X.loadx: its text, its value, and how deep the value nests.
+typedef struct Name {
+    const char* s;
+    size_t n;
+    AVal v;
+    int depth;
+} Name;
+
+// A file included by X.loadx: the names point into its text.
+typedef struct File {
+    char* path;
+    char* buf;
+} File;
+
+// What X.loadx keeps along a text and the files it includes.
+typedef struct Env {
+    Name* names;
+    int names_n;
+    int names_max;
+    File* files;
+    int files_n;
+    int files_max;
+} Env;
+
 typedef struct Load {
     const char* s;
     const char* end;
     int lin;
     int depth;
+    int top;            // deepest table since the value in course started
+    Env* e;             // X.loadx: names are accepted
+    const char* file;   // an included file, or NULL for the text given
+    const char* dir;    // where its includes are, or NULL for the current
 } Load;
 
+// "invalid load : [file : ]line N : msg[ : name]"
+static AStatus failn (Load* l, const char* msg, const char* s, size_t n) {
+    return a_error("invalid load : %s%sline %d : %s%s%.*s",
+        l->file==NULL ? "" : l->file, l->file==NULL ? "" : " : ",
+        l->lin, msg, s==NULL ? "" : " : ", (int)n, s==NULL ? "" : s);
+}
+
 static AStatus fail (Load* l, const char* msg) {
-    return a_error("invalid load : line %d : %s", l->lin, msg);
+    return failn(l, msg, NULL, 0);
 }
 
 // Skips blanks and comments. Returns 0 on an unterminated comment.
@@ -103,6 +156,16 @@ static int accept (Load* l, char c) {
 
 static AStatus value (Load* l, AVal* dst);
 
+static Name* name_get (Load* l, const char* s, size_t n) {
+    for (int i=0; i<l->e->names_n; i++) {
+        Name* nm = &l->e->names[i];
+        if (nm->n==n && !strncmp(nm->s,s,n)) {
+            return nm;
+        }
+    }
+    return NULL;
+}
+
 // CLK: digits and units in descending order (day h min s ms us), as
 // in `1h30min`. Returns the duration in microseconds, or -1 if the
 // text is not a clock.
@@ -170,13 +233,18 @@ static AStatus number (Load* l, int neg, AVal* dst) {
     memcpy(buf, s, n);
     buf[n] = '\0';
 
-    // a clock is a number of microseconds
+    // a clock is a number of units of time: an integer, which must fit,
+    // or a real if it has a fraction of the unit
     double us = neg ? -1 : clock_us(buf);
     if (us >= 0) {
-        if (us==(double)(long long)us && us<9e18) {
-            a_set(dst, a_int((int64_t)us));
+        double t = us / A_TIME_US;
+        if (t >= A_INT_LIM) {
+            return fail(l, "invalid clock : out of range");
+        }
+        if (t == floor(t)) {
+            a_set(dst, a_int((AInt)t));
         } else {
-            a_set(dst, a_num(us));
+            a_set(dst, a_num(t));
         }
         l->s = p;
         return A_OK;
@@ -188,13 +256,13 @@ static AStatus number (Load* l, int neg, AVal* dst) {
         if (*stop != '\0') {
             return fail(l, "invalid number");
         }
-        if (hex || (n<=19 && v<=9223372036854775807ULL)) {
-            a_set(dst, a_int(neg ? (int64_t)(0 - v) : (int64_t)v));
+        if (hex || (n<=19 && v<=(unsigned long long)A_INT_MAX)) {
+            a_set(dst, a_int(neg ? (AInt)(0 - v) : (AInt)v));
             l->s = p;
             return A_OK;
         }
     }
-    double d = strtod(buf, &stop);
+    AReal d = A_STRTOR(buf, &stop);
     if (*stop != '\0') {
         return fail(l, "invalid number");
     }
@@ -317,6 +385,9 @@ static AStatus tag (Load* l, AVal* dst) {
 static AStatus table (Load* l, AVal t) {
     if (++l->depth > DEPTH_MAX) {
         return fail(l, "too many nested tables");
+    }
+    if (l->depth > l->top) {
+        l->top = l->depth;
     }
     int64_t n = 0;
     while (1) {
@@ -468,6 +539,23 @@ static AStatus value (Load* l, AVal* dst) {
             a_set(dst, a_bool(1));
         } else if (n==5 && !strncmp(l->s,"false",5)) {
             a_set(dst, a_bool(0));
+        } else if (l->e != NULL) {
+            // a copy of the name: no table is shared
+            Name* nm = name_get(l, l->s, n);
+            if (nm == NULL) {
+                return failn(l, "undefined name", l->s, n);
+            }
+            if (l->depth+nm->depth > DEPTH_MAX) {
+                return fail(l, "too many nested tables");
+            }
+            if (l->depth+nm->depth > l->top) {
+                l->top = l->depth + nm->depth;
+            }
+            AVal v = a_nil();
+            if (a_xcopy(&v, nm->v) != A_OK) {
+                return A_ERROR;
+            }
+            a_set(dst, v);
         } else {
             return fail(l, "unexpected name : expected value");
         }
@@ -477,17 +565,209 @@ static AStatus value (Load* l, AVal* dst) {
     return fail(l, "expected value");
 }
 
-// Reads the single value in `s[0..len)`.
-static AStatus load (const char* s, size_t len) {
-    Load l = { s, s+len, 1, 0 };
+static AStatus names (Load* l);
+
+// Removes `.` and `dir/..` from a path, in place, so that a file reached
+// in two ways is known as the same.
+static void path_norm (char* path) {
+    char* parts[64];
+    int n = 0;
+    int abs = (path[0] == '/');
+    char* out = path + abs;
+    char* p = path + abs;
+    int more = 1;
+    while (more) {
+        char* q = p;
+        while (*q!='\0' && *q!='/') {
+            q++;
+        }
+        size_t len = q - p;
+        more = (*q == '/');     // read now: the copy may write over it
+        char* nxt = q + 1;
+        if (len==0 || (len==1 && p[0]=='.')) {
+            // nothing
+        } else if (len==2 && p[0]=='.' && p[1]=='.' && n>0 &&
+                   !(out-parts[n-1]==3 && parts[n-1][0]=='.' && parts[n-1][1]=='.'))
+        {
+            out = parts[--n];
+        } else if (n < 64) {
+            parts[n++] = out;
+            memmove(out, p, len);
+            out += len;
+            *out++ = '/';
+        }
+        p = nxt;
+    }
+    if (n > 0) {
+        out--;
+    }
+    *out = '\0';
+}
+
+// After `include`, at the string: reads the definitions of the file.
+static AStatus include (Load* l) {
+    Env* e = l->e;
     AVal v = a_nil();
-    AStatus st = value(&l, &v);
+    if (string(l,&v) != A_OK) {
+        a_dec(v);
+        return A_ERROR;
+    }
+    AStr* f = A_STR_OF(v);
+
+    // dir/file, unless the file is absolute
+    size_t dn = (l->dir==NULL || (f->len>0 && f->s[0]=='/')) ? 0 : strlen(l->dir);
+    char* path = malloc(dn + 1 + f->len + 1);
+    size_t n = 0;
+    if (dn > 0) {
+        memcpy(path, l->dir, dn);
+        n = dn;
+        if (path[n-1] != '/') {
+            path[n++] = '/';
+        }
+    }
+    memcpy(path+n, f->s, f->len);
+    n += f->len;
+    path[n] = '\0';
+    a_dec(v);
+    path_norm(path);
+    n = strlen(path);
+
+    // only once
+    for (int i=0; i<e->files_n; i++) {
+        if (!strcmp(e->files[i].path, path)) {
+            free(path);
+            return A_OK;
+        }
+    }
+
+    FILE* fp = fopen(path, "rb");
+    if (fp == NULL) {
+        AStatus st = failn(l, "include not found", path, n);
+        free(path);
+        return st;
+    }
+    char* buf = NULL;
+    size_t len = 0;
+    size_t max = 0;
+    while (1) {
+        if (len == max) {
+            max = max*2 + 1024;
+            buf = realloc(buf, max);
+        }
+        size_t r = fread(buf+len, 1, max-len, fp);
+        if (r == 0) {
+            break;
+        }
+        len += r;
+    }
+    fclose(fp);
+
+    // the names point into the text: it lasts as long as they do
+    if (e->files_n == e->files_max) {
+        e->files_max = e->files_max*2 + 8;
+        e->files = realloc(e->files, e->files_max * sizeof(File));
+    }
+    e->files[e->files_n++] = (File) { path, buf };
+
+    // its own includes are relative to it
+    char* dir = NULL;
+    const char* bar = strrchr(path, '/');
+    if (bar != NULL) {
+        size_t m = (bar==path) ? 1 : (size_t)(bar - path);
+        dir = malloc(m + 1);
+        memcpy(dir, path, m);
+        dir[m] = '\0';
+    }
+
+    Load l2 = { buf, buf+len, 1, 0, 0, e, path, dir };
+    AStatus st = names(&l2);
+    if (st==A_OK && l2.s<l2.end) {
+        st = fail(&l2, "expected definition");
+    }
+    free(dir);
+    return st;
+}
+
+// X.loadx: `ID = Value` and `include STR` before the value.
+static AStatus names (Load* l) {
+    while (1) {
+        if (!skip(l)) {
+            return fail(l, "unterminated comment");
+        }
+        if (!(l->s<l->end && is_id1(*l->s))) {
+            return A_OK;
+        }
+        const char* p = l->s;
+        while (p<l->end && is_id(*p)) {
+            p++;
+        }
+        const char* q = p;
+        while (q<l->end && (*q==' ' || *q=='\t')) {
+            q++;
+        }
+        const char* s = l->s;
+        size_t n = p - s;
+        if (n==7 && !strncmp(s,"include",7) && q<l->end && (*q=='"' || *q=='\'')) {
+            l->s = q;
+            if (include(l) != A_OK) {
+                return A_ERROR;
+            }
+            continue;
+        }
+        if (!(q<l->end && *q=='=')) {
+            return A_OK;
+        }
+        if ((n==7 && !strncmp(s,"include",7)) || (n==3 && !strncmp(s,"nil",3)) || (n==4 && !strncmp(s,"true",4)) ||
+            (n==5 && !strncmp(s,"false",5)))
+        {
+            return fail(l, "invalid name");
+        }
+        l->s = q + 1;
+        l->top = 0;
+        AVal v = a_nil();
+        if (value(l,&v) != A_OK) {
+            a_dec(v);
+            return A_ERROR;
+        }
+        if (name_get(l,s,n) != NULL) {
+            // the first definition wins: this one is read and ignored
+            a_dec(v);
+            continue;
+        }
+        Env* e = l->e;
+        if (e->names_n == e->names_max) {
+            e->names_max = e->names_max*2 + 8;
+            e->names = realloc(e->names, e->names_max * sizeof(Name));
+        }
+        e->names[e->names_n++] = (Name) { s, n, v, l->top };
+    }
+}
+
+// Reads the single value in `s[0..len)`, after its names if `x`, with
+// the includes in `dir`.
+static AStatus load (const char* s, size_t len, int x, const char* dir) {
+    Env e = { NULL, 0, 0, NULL, 0, 0 };
+    Load l = { s, s+len, 1, 0, 0, x ? &e : NULL, NULL, dir };
+    AVal v = a_nil();
+    AStatus st = x ? names(&l) : A_OK;
+    if (st == A_OK) {
+        st = value(&l, &v);
+    }
     if (st==A_OK && !skip(&l)) {
         st = fail(&l, "unterminated comment");
     }
     if (st==A_OK && l.s<l.end) {
         st = fail(&l, "expected end of input");
     }
+    for (int i=0; i<e.names_n; i++) {
+        a_dec(e.names[i].v);
+    }
+    free(e.names);
+    for (int i=0; i<e.files_n; i++) {
+        free(e.files[i].path);
+        free(e.files[i].buf);
+    }
+    free(e.files);
     if (st == A_OK) {
         a_push(v);
     } else {
@@ -503,7 +783,30 @@ static AStatus x_load (AFunc* self, int argc, AVal* argv) {
     if (arg_str(argc, argv, 0, "load", &s) != A_OK) {
         return A_ERROR;
     }
-    return load(s->s, s->len);
+    return load(s->s, s->len, 0, NULL);
+}
+
+// X.loadx([dir,] s): the same, with names and includes before the
+// value. The includes are in `dir`, or in the current directory.
+static AStatus x_loadx (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AStr* d = NULL;
+    AStr* s;
+    if (argc>=2 && arg_str(argc, argv, 0, "loadx", &d)!=A_OK) {
+        return A_ERROR;
+    }
+    if (arg_str(argc, argv, argc>=2, "loadx", &s) != A_OK) {
+        return A_ERROR;
+    }
+    char* dir = NULL;
+    if (d!=NULL && d->len>0) {
+        dir = malloc(d->len + 1);
+        memcpy(dir, d->s, d->len);
+        dir[d->len] = '\0';
+    }
+    AStatus st = load(s->s, s->len, 1, dir);
+    free(dir);
+    return st;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -577,7 +880,11 @@ static AStatus dump (Dump* d, AVal v) {
                 dstr(d, (v.u.n > 0) ? "1e999" : "-1e999");
                 return A_OK;
             }
+#ifdef ATM_REAL_FLOAT
+            snprintf(num, sizeof(num), "%.9g", (double)v.u.n);
+#else
             snprintf(num, sizeof(num), "%.17g", v.u.n);
+#endif
             dstr(d, num);
             // a real must read back as a real
             if (strpbrk(num, ".eE") == NULL) {
@@ -704,5 +1011,6 @@ char* a_dump_text (AVal v) {
 
 void atm_lib_load_init (void) {
     field(atm_g_X, "load", x_load);
+    field(atm_g_X, "loadx", x_loadx);
     field(atm_g_X, "dump", x_dump);
 }

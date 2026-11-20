@@ -14,7 +14,7 @@ started, no decision needed), **moved** (another session handles it),
 |---|------|-------|
 | 1 | `await` over a pool with a condition ("a pingu enters my zone") | moved: `atmos-pool` |
 | 2 | Phases inside a tick, instead of the order of creation | moved: `atmos-pool` |
-| 3 | 32-bit reals (decided to do; the form is open: a build option or a type) | open |
+| 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
 | 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
 | 6 | The event of termination of transparent blocks | open (recommended: remove) |
@@ -92,9 +92,18 @@ started, no decision needed), **moved** (another session handles it),
 | 78 | The trick left by the pilot `#76`: the environment opens a window and the audio also under `-t` | moved: `atmos-envs` (its A3) |
 | 79 | What a test may want to set must be a parameter or a global, not `getenv` | open (remark; for the convention of `atmos-envs`) |
 | 80 | The 25 sessions of the project awakened at the author's request | done 2026-11-19 |
-| 81 | Merge of `pin` 4199167 (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | open: measured (suite 972 with ASAN; 2105 files compile the same; no cost; 12 ports pass with no `invalid access : finalized`; `sdl-snxkx` not measurable before its migration); waits for the author's approval |
+| 81 | Merge of `pin` (`atmos-pin#1`: `set :out`, and the use of finalized data is an error) | done 2026-11-19 (tip 64005fd merged; approved by the author in `atmos-pin`, "Pode juntar o #1 à main"; suite and 12 ports pass) |
 | 82 | The measurement of the branch `args` 6ba7568 on the ports (`atmos-args#3`): 2100 of 2105 trees identical, 5 files of `env-pico` become an error (`key = f [...],` in a table) | done 2026-11-19 (sent to `atmos-args`; the design is its) |
 | 83 | The 25 sessions awakened a second time at the author's request | done 2026-11-19 |
 | 84 | The second measurement of `args`, at 823d843 (single-atom rule, `atmos-args#8`): trees and generated C identical for all 2105 files of the ports | done 2026-11-19 (sent to `atmos-args`; the merge waits for the author there) |
 | 85 | Three findings of the board build of `env-esp32`: no `nanosleep` on the host, a manual example that leaks, warnings of `-Wall` in the generated C | done 2026-11-19 (ee17162 `ATM_NO_CLOCK`, dc94c6f `a_set` in the manual, 7b0bf06 `A_UNUSED`) |
 | 86 | Merge of `args` 823d843 (`atmos-args#6`: `f x`, `f t.x`, `f 10`, `await t`) | done 2026-11-19 (approved by the author in `atmos-args`, "Ok, lá"; suite passes after the merge) |
+| 87 | The rules of `pin` declared stable by the author (`atmos-pin#9`): told to the 14 ports and the 6 language sessions | done 2026-11-19 (`TODO-pin.md`, section "Stable", on main 71f7d17) |
+| 88 | How `#58` was settled: the language side closed with no change, the adoption by the environments is not done | done 2026-11-19 (answered; the author asked for the adoption proposal, requested of `atmos-envs`, its #3) |
+| 89 | Configurable real and integer types for other systems (ESP32, Arduino) | moved: `atmos-float` (`261119-float.md`) |
+| 90 | Is the await over a pool with a condition (`#1`) still pending? | answered 2026-11-19: yes, in `atmos-pool`, waiting for the author's choice (`#1a` recommended) |
+| 91 | Explain `#60` (where the exception of `emit @t` goes) | answered 2026-11-19 with a program run on main; the decision stays `#60`, in `atmos-pool` |
+| 92 | A loader of data that accepts names, `loadx` (the author, through `pico-slides`) | done 2026-11-20 by `atmos-loadx`: `X.loadx(s)` on main (d27805c), names as values with a deep copy per use, no spread; suite checked here |
+| 93 | The measurement of the branch `float` 3bec041 (`ATMOS_INT`, `ATMOS_TIME`, libraries built on demand) on the ports, default configuration: nothing changes | done 2026-11-20 (sent to `atmos-float`; the merge waits for the author there) |
+| 94 | The branch `float` merged by `atmos-float` (692af43: `ATMOS_INT`, `ATMOS_TIME`, libraries on demand): main checked, the 15 ports and the 8 language sessions told | done 2026-11-20 |
+| 95 | Work with no input: review every session and propose work that needs no decision of the author; the sessions may also go on with their own suggestions | open: rule written (`TODO.md`, "Standing rules"), proposals sent to the sessions on 2026-11-20 |

@@ -115,6 +115,7 @@ Environment variables:
 - `ATMOS_LDFLAGS`: linker flags, which go after the program
   (e.g. `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer.
+- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits.
 
 # Documentation
 
@@ -244,6 +245,9 @@ From the [original implementation][atmos-lua], which compiles to Lua:
   language, as a JSON of Atmos: tables, vectors, tags, numbers,
   durations, strings, and comments. No expressions. `X.dump(v)` writes
   it back.
+  `X.loadx(s)` also accepts names defined before the value
+  (`T = [1]  [T, T]`), each use being a copy, and `include "file"`
+  for a file of definitions.
 - Native literals are C code, not Lua: `` `:number strlen("abc")` ``.
     - A leading tag converts the expression: `:number`, `:boolean`,
       `:string`, `:atmos`. With no tag, the code is a statement.

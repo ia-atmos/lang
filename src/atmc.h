@@ -255,7 +255,9 @@ struct Expr {
                                                         dcl;
         // proto: `func f () {}` declares `f` if it is unknown
         // op: binary operator of a compound assignment, or NULL
-        struct { List dsts; Expr* src; int proto; const char* op; }
+        // out: `set :out`, a place that refers to a value until the
+        // block ends
+        struct { List dsts; Expr* src; int proto; const char* op; int out; }
                                                         set;
         struct { List es; }                             block;
         // esc: has an escape tag (in tk)
@@ -291,6 +293,11 @@ void list_ins (List* l, int i, Expr* e);
 
 // Enables `test` blocks (-t).
 extern int OPT_TEST;
+
+// The numeric types of the build: integers of 32 bits (`ATMOS_INT=32`)
+// and time in milliseconds (`ATMOS_TIME=ms`). They bound the literals.
+extern int OPT_INT32;
+extern int OPT_TIME_MS;
 
 // File of an environment, included before the program (or NULL).
 extern const char* OPT_ENV;

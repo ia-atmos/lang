@@ -16,6 +16,8 @@
 #include "atmc.h"
 
 int OPT_TEST = 0;
+int OPT_INT32 = 0;
+int OPT_TIME_MS = 0;
 const char* OPT_ENV = NULL;
 
 static Tk TK0;
@@ -629,6 +631,11 @@ static const char* SETS[] = {
 // set x, t@1 = e  |  set x += e
 static Expr* parser_set (void) {
     Expr* set = mk(E_SET, TK0);
+    // set :out x = e
+    if (check_tag(TK_TAG) && !strcmp(TK1.str,":out")) {
+        next();
+        set->u.set.out = 1;
+    }
     do {
         Tk tk = TK1;
         Expr* e = parser();
@@ -637,6 +644,9 @@ static Expr* parser_set (void) {
         }
         list_add(&set->u.set.dsts, e);
     } while (accept_str(","));
+    if (set->u.set.out && (set->u.set.dsts.n!=1 || check_op(SETS))) {
+        err(TK1, "invalid set :out : expected single destination and '='");
+    }
     if (check_op(SETS)) {
         // a single destination, updated in place
         if (set->u.set.dsts.n != 1) {

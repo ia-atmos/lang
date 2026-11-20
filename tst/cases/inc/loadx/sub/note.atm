@@ -1,0 +1,3 @@
+include "../base.atm"       ;; relative to this file
+include "./../base.atm"
+NOTE = [ color=BLUE, size=0.03 ]

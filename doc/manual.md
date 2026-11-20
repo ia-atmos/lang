@@ -469,6 +469,12 @@ The following environment variables affect the build:
   (e.g., `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer, which
   also reports memory leaks when the program terminates.
+- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits, instead of a
+  `double` (see [Types](#types--values)).
+- `ATMOS_INT`: if `32`, an integer has 32 bits, instead of 64 (see
+  [Types](#types--values)).
+- `ATMOS_TIME`: if `ms`, the unit of time is the millisecond, instead of the
+  microsecond (`us`, see [Types](#types--values)).
 - `ATMOS_HOME`: the directory with the runtime (`rt/` and `build/`).
   By default, it is the directory of the compiler itself, so a checkout may be
   moved after it is built.
@@ -866,6 +872,32 @@ An operation with two integers results in an integer, except for the division
 Any other operation with numbers results in a real.
 An integer and a real with the same value are equal (`1 == 1.0`), and are
 the same key in a table.
+
+A program built with `ATMOS_REAL=float` (see [Execution](#execution)) has reals
+with single precision, as a C `float` with 32 bits, such that it computes as a
+C program with `float` does: each operation between reals rounds to 32 bits,
+`math` uses the functions for `float`, and a real prints with the fewest
+digits that give it back (`0.1`, `0.33333334`).
+The option holds for the whole program, with no second type of real in the
+language.
+
+A program built with `ATMOS_INT=32` has integers with 32 bits: integer
+arithmetic wraps at 32 bits, a decimal literal that does not fit is a real, and
+a hexadecimal one wraps.
+The two options are independent.
+With both, on a target with pointers of 32 bits, a value takes 8 bytes instead
+of 16.
+
+A program built with `ATMOS_TIME=ms` counts time in milliseconds instead of
+microseconds: the value of a clock (`1s` is `1000`), the time of an emit, and
+the time to the nearest timer.
+In either unit, a clock is an integer, or a real if it has a fraction of the
+unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
+integer is a compile error: with integers of 32 bits, a clock holds up to 35
+minutes in microseconds, and up to 24 days in milliseconds.
+The environment of a program must be built with the same options.
+The runtime is built once for each combination of the options, when a program
+first asks for it.
 
 [lua-types]: https://www.lua.org/manual/5.4/manual.html#2.1
 
@@ -1918,6 +1950,43 @@ func f (pin u) {            ;; a function may pin what it receives
 f([1, 2, 3])
 ```
 
+A place of an outer block may refer to a value of an inner one, for as long
+as the inner block lasts, with `set :out`:
+
+```
+pin play = []                       ;; lives for the whole program
+do {                                ;; a map
+    pin es = tasks()                ;; the map owns its enemies
+    set :out play.enemies = es      ;; a table outside refers to them
+    <...>                           ;; `play.enemies` is visible everywhere
+}                                   ;; `play.enemies` is nil again
+```
+
+The place may be a field or an index of a table, or a variable of an outer
+block.
+The assignment has no check of an escape, and the place does not adopt the
+value, which still belongs to its block.
+When the block of the `set :out` terminates, the place goes back to `nil`,
+if it still refers to the value: so a place never refers to a value that
+was finalized.
+
+Code outside the block may read the place while the block lasts.
+If it keeps the value in a name and the block terminates, the name refers
+to a finalized value, and any use of it raises an error:
+
+```
+task Hero () {
+    val es = play.enemies           ;; a name outside the map
+    await(:later)                   ;; the map terminates meanwhile
+    spawn @es Enemy()               ;; ERROR: invalid access : finalized pool ...
+}
+```
+
+The error `invalid access : finalized table pinned at prog.atm:10`, with
+the line of the pin, is raised by an index, an assignment to a field, a
+length, an iteration, a call of a function, and a spawn into a pool.
+A reference to a task that terminated remains valid, as usual: it is dead.
+
 #### Where
 
 An expression can be suffixed with a `where` clause to define contextual
@@ -2090,6 +2159,7 @@ expression in the right of `=`:
 ```
 Set : `set´ Expr* `=´ Expr+
     | `set´ Expr OP`=´ Expr
+    | `set´ `:out´ Expr `=´ Expr
 ```
 
 The only valid locations are
@@ -2101,6 +2171,10 @@ with a binary [operation](#operations): `set x OP= e` is equivalent to
 `set x = x OP (e)`, but evaluates the location only once.
 The valid operators are `+` `-` `*` `/` `//` `%` `++` `&` `|` `^` `<<` `>>`
 `&&` `||`.
+
+The third format, `set :out`, makes a location of an outer block refer to a
+value of the current block until the block terminates, when the location
+goes back to `nil` (see [pin](#pin)).
 
 Examples:
 
@@ -3542,6 +3616,7 @@ tables recursively.
 - `X.print(...)`: `print` using `X.tostring` on each argument
 - `X.copy(v)`: deep copy of `v`
 - `X.load(s)`: reads a value written as data
+- `X.loadx([dir,] s)`: reads a value written as data, with names and includes
 - `X.dump(v)`: writes a value as data
 - `X.in(v, t)`, `X.nin(v, t)`: membership ("in" and "not in"); `X.xin` is a
   former name of `X.in`, to be removed
@@ -3612,6 +3687,113 @@ print(X.load("[1, [2, 3]]")@1@0)            ;; --> 2
 val s = X.dump(:Pos [x=10, y=20, "a"])
 print(s)                                    ;; --> :Pos ["a", x=10, y=20]
 io.write(io.open("pos.atm", "w"), s)        ;; saves it
+```
+
+### Load with Names
+
+The function `X.loadx(s)` reads what `X.load` reads, and also accepts
+definitions of names before the value:
+
+```
+Text  : { Def } Value
+Def   : ID `=´ Value
+      | `include´ STR
+Value : ... | ID
+```
+
+A definition `ID = Value` gives a name to a value.
+The value that has no name is the result, and nothing may follow it.
+A name holds any value, such as a number or a table, and is used wherever a
+value is expected: as a positional entry, as the value of a field or of a key,
+or as the result itself.
+A name may have any identifier, except `nil`, `true`, `false`, and `include`.
+
+Each use of a name is a copy of its value.
+Therefore, the result is the same that `X.load` gives for the text with each
+name replaced by its value: the names do not exist in the result, and no table
+is shared between two uses.
+
+A definition may use the names defined before it, and not itself.
+A name that is not defined is an error with the line of the problem.
+
+The first definition of a name wins: a later definition of the same name is
+read and ignored.
+
+An `include` reads the definitions of another file, as if they were written in
+its place.
+The included file only has definitions and other includes, with no value of its
+own.
+A file is only included once: other occurrences have no effect.
+
+The file name is relative to the directory `dir` in `X.loadx(dir, s)`, or to
+the current directory in `X.loadx(s)`.
+Inside an included file, the name is relative to that file.
+An error inside an included file shows its name before the line.
+
+Since the first definition wins, the definitions of an included file are
+defaults: a text replaces one of them by defining the name before the
+`include`.
+A definition after the `include` has no effect on the name, nor on the names
+that the file has already built with it.
+
+There are still no operations, functions, or calls: a text with names is data.
+A text may grow much larger when it is read, since a name may be used many
+times: `X.loadx` is meant for texts that the program trusts, and `X.load` for
+any other.
+
+The function `X.dump` writes no names: a value that was read with names is
+written in full.
+
+Examples:
+
+```
+;; slides.atm
+TITLE = [ color=[fg=:blue], anchor=:C ]
+LOGO  = :image ["logo.png", style=TITLE]
+
+:Slides [
+    :Slide [ :text ["Cultura", style=TITLE], LOGO ],
+    :Slide [ LOGO ],
+]
+```
+
+```
+pin f = io.open("slides.atm")
+val s = X.loadx(io.read(f, :all))
+print(s ?? :Slides, (s@1@0).style.anchor)   ;; --> true, C
+
+val v = X.loadx("T = [1]  [T, T]")
+set v@0@0 = 9                               ;; each use is a copy
+X.print(v)                                  ;; --> [[9], [1]]
+
+X.loadx("[T]")          ;; error: invalid load : line 1 : undefined name : T
+```
+
+```
+;; decks/theme.atm
+BLUE  = :blue
+TITLE = [ color=BLUE, anchor=:C ]
+```
+
+```
+;; decks/talk.atm
+include "theme.atm"
+:Slides [
+    :Slide [ :text ["Cultura", style=TITLE] ],
+]
+```
+
+```
+pin f = io.open("decks/talk.atm")
+val s = X.loadx("decks", io.read(f, :all))  ;; includes decks/theme.atm
+print((s@0@0).style.color)                  ;; --> blue
+```
+
+```
+;; decks/red.atm
+BLUE = :red             ;; replaces the BLUE of the theme
+include "theme.atm"
+TITLE                   ;; --> [anchor=C, color=red]
 ```
 
 ### Membership
@@ -3730,6 +3912,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
 
       | `set´ Expr* `=´ Expr+                       ;; assignment
       | `set´ Expr OP`=´ Expr                       ;; compound assignment
+      | `set´ `:out´ Expr `=´ Expr                  ;; until the block ends
 
       | `nil´ | `false´ | `true´                    ;; literals
       | TAG | NUM | STR | CLK | NAT

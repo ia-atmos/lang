@@ -1,0 +1,5 @@
+;; set :out takes one destination that is a variable, a field or an index,
+;; and not a pin
+pin t = []
+pin p = [1]
+set :out p = t

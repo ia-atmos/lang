@@ -150,6 +150,9 @@ may be changed.
 | `raylib` | A permission to change the remote of its checkout of the compiler (harmless meanwhile: the old address redirects) |
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
 | `atmos-oo` | Created on 2026-11-18, after the method call (`::`) was removed (`b4424ff`): whether and how to declare and dispatch functions of the same name by tag. Material `261118-oo.md`; list `TODO-oo.md`; branch `oo` |
+| `atmos-float` | Created on 2026-11-19, after `ATMOS_REAL=float` (`4565af1`, `atmos-lang#3`): the numeric types of a build, and whether integers and reals should be configurable for other systems. Material `261119-float.md`; list `TODO-float.md`; branch `float`; session_011eECog5kQDX9i1eN1gKzDJ |
+| `atmos-loadx` | Created on 2026-11-19, asked by the author through `pico-slides`: a loader of data that accepts names (`TITLE = [...]`, `[TITLE...]`). Material `261119-loadx.md`; list `TODO-loadx.md`; branch `loadx`; session_011eECoiJyx2tmrJg6HgoknZ |
+| `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Waits for the result of `atmos-loadx` |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
 | `atmos-args` (was `args`; its branch stays `args`) | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
@@ -192,6 +195,24 @@ of the sessions still have the old names.
   only after the author approved the design and with the suite passing
   over the current `main`. After the merge, `atmos-lang` migrates the
   tests if needed and tells the ports.
+- **Work with no input** (2026-11-20, `#95`). The author, in
+  `atmos-lang`: "I want you to review all sessions and propose them
+  changes that need no input. The sessions may also work suggest by
+  themselves. No input form me. Go ahead". As read by `atmos-lang` (the
+  reading is its, to be corrected by him): a session does now the work
+  that needs no decision of his, proposed to it or its own; where a
+  decision of his is pending and the session has a recommendation, it
+  may go on with the recommendation if that is reversible and stays in
+  its own repository or branch, and records it as an item marked "by
+  the session, to be confirmed", so that he can review and undo it; it
+  does not ask him and does not wait. Not covered: the merge of a
+  language change into `main` of `ia-atmos/lang` (still his approval:
+  the branch is left ready and measured), anything outward or hard to
+  undo (upstream, tags, releases, deleting originals or history,
+  installs that need his approval), and the limits a session already
+  has. A defect fix that changes no rule of the language goes to `main`
+  through `atmos-lang`, after the suite and the measurement on the
+  ports.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session

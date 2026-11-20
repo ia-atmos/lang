@@ -21,11 +21,12 @@ the rule are `#1`..`#8`.
 | #7 | Emits that do not traverse the `grabbable` | waiting |
 | #8 | Keyword: `grabbable` or `grabbing` | waiting |
 | #9 | The comment of the issue, read here | reported |
-| #10 | 7GUIs weak, env-ray neutral, SNKRX the case | reported |
+| #10 | 7GUIs weak, env-ray neutral, SNKRX the case | revised 2026-11-19: 7GUIs is a strong case too |
 | #11 | SNKRX: the shop answers the mouse behind the options | reported |
 | #12 | The summary pasted from another chat | reported |
 | #13 | Implement on the branch `grab` | after the decisions |
 | #14 | Tell `atmos-context` about resuming | after #5 |
+| #15 | `set :out` (branch `pin`, merged) as an alternative to a dynamic `grabbable` | noted, bears on #1 |
 
 ## Decisions waiting for the author (asked one at a time)
 
@@ -74,9 +75,18 @@ the rule are `#1`..`#8`.
 - #10 The 7GUIs case is weak (IUP already does the modality) and
   env-ray's is neutral (the pause is already outside the game); SNKRX
   is the case.
+  Revised (2026-11-19, from a summary the author pasted): 7GUIs is a
+  strong case, the need said by the waiting branch with no cooperation
+  of its siblings; it also asks for a filter (#2). See the cases, §4.
 - #11 SNKRX today: the shop's buttons and cards still answer the mouse
   behind the options modal (the `eng.slow` freezes time, not input).
 - #12 The author pasted the summary of another chat (2026-11-18): it
   agrees (stack, SNKRX the clearest case) but misses the `grabbable` of
   his comment and the mouse leaking in the shop; told him. #1 asked
   again.
+- #15 `atmos-lang` (2026-11-19): `main` merged `pin`, with `set :out
+  place = value` (a place outside refers to a pinned value until the
+  block of the `set` ends). It gives a lexical way to hand a
+  `grabbable` to an inner block. It does not change the recommendation
+  of #1: `Options` is spawned by a task that does not hold the
+  `grabbable`, so the dynamic lookup is still what SNKRX needs.

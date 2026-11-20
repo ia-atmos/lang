@@ -21,28 +21,30 @@ static AStatus run_clock (AStatus st) {
 
 #else
 
-static double now_us (void) {
+// The time in the unit of the program (microseconds or milliseconds).
+static double now (void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec*1e6 + ts.tv_nsec/1e3;
+    return (ts.tv_sec*1e6 + ts.tv_nsec/1e3) / A_TIME_US;
 }
 
 // The clock, with no environment: sleeps until the nearest timer and
 // delivers the time elapsed.
 static AStatus run_clock (AStatus st) {
     while (st==A_OK && atm_alive()) {
-        double us = atm_next();
-        if (us < 0) {
+        double nxt = atm_next();
+        if (nxt < 0) {
             break;
         }
         fflush(stdout);
-        double t0 = now_us();
+        double t0 = now();
+        double us = nxt * A_TIME_US;
         struct timespec ts;
         ts.tv_sec  = (time_t) (us / 1e6);
         ts.tv_nsec = (long) ((us - ts.tv_sec*1e6) * 1e3);
         nanosleep(&ts, NULL);
-        double dt = now_us() - t0;
-        st = atm_emit(a_num((dt > us) ? dt : us));
+        double dt = now() - t0;
+        st = atm_emit(a_num((dt > nxt) ? dt : nxt));
     }
     return st;
 }

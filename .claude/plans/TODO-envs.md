@@ -7,6 +7,10 @@ compiler's list (`TODO.md`), which do not change.
 
 Last update: 2026-11-18.
 
+## Standing
+
+- The rules of `pin` are stable (the author, 2026-11-19, `atmos-pin#9`; `TODO-pin.md`, "Stable"). Designs here build on them; a proposal that needs a rule of `pin` changed goes to `atmos-pin` first.
+
 ## Index
 
 Items are `#N` (standing rule of the author, 2026-11-18): unique in this
@@ -18,11 +22,11 @@ An item of another session is `session#N` (the compiler's list is
 |---|-------|-------|
 | #1 | Two environments in one program (`atmos-lang#57`): `atmos.env` | Decided 2026-11-17, done (`81986e7`, pilot uv+iup) |
 | #2 | One vocabulary of events, that of pico (`atmos-lang#46`) | Decided 2026-11-17, done (sdl, pico, ray) |
-| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open; pilot `sdl-pingus#15` passed 2026-11-19 (byte-identical trace; `SDL_ATM_FRAMES`, `_KEYS`, `PINGUS_ORDERS` no longer needed). Left: the environment still opens window and audio under `-t` (needs the test flag of `261117-envs-atmos.md`); switches read by `getenv` cannot be set by a test (must be parameters or settable globals). Not covered: polled input, pixels, C callbacks. Ready to put to the author |
+| #3 | Tests of a game by `test` blocks (`atmos-lang#58`) | Open; pilot `sdl-pingus#15` passed 2026-11-19 (byte-identical trace; `SDL_ATM_FRAMES`, `_KEYS`, `PINGUS_ORDERS` no longer needed). Left: the environment still opens window and audio under `-t` (needs the test flag of `261117-envs-atmos.md`); switches read by `getenv` cannot be set by a test (must be parameters or settable globals). Not covered: polled input, pixels, C callbacks. Put to the author 2026-11-19 (asked through `atmos-lang`), proposal `261117-envs-tests.md`, decisions #3a..#3d |
 | #4 | Selection of an environment, `make env`/`-e` (`atmos-lang#59`) | Open |
 | #5 | Split `env-ray` from its games; Lessmilk's copy (`atmos-lang#47`) | Open |
 | #6 | `emit @t` whose target throws (`atmos-lang#60`) | Open, language: `atmos-lang` |
-| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open |
+| #7 | New environments: POSIX, browser, boards (`atmos-lang#52`) | Open; an `env-esp32` exists (seen 2026-11-19: `ATM_NO_CLOCK` in `rt/main.c`, `ee17162`), not yet read here |
 | #8 | The order inside a frame | Decided 2026-11-18, done (pico, ray; sdl already) |
 | #9 | What `true` from `step` means with secondaries | Open, asked |
 | #10 | A secondary wakes a waiting primary (an `fd`) | Open, design (pilot gap 2) |
@@ -31,6 +35,7 @@ An item of another session is `session#N` (the compiler's list is
 | #13 | No test of `iup.atm` as a secondary | Work (pilot gap 8) |
 | #14 | `:frame` stays; `:clock` is time only | Decided 2026-11-17 |
 | #15 | No `task main` | Decided 2026-11-17 |
+| #16 | Build configurations (`ATMOS_INT`, `ATMOS_REAL`, `ATMOS_TIME`; `atmos-lang` `692af43`) and the environments: unit of the time emitted, C types in the glue, libraries built apart. Open with the author as `atmos-float#14`; touches the API of environments (where an environment declares or checks the configuration) | Waiting on `atmos-float#14`; nothing to do yet |
 
 
 ## A. Decisions waiting for the author

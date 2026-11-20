@@ -25,6 +25,7 @@ session, never reused; from another session, `session#N`.
 | #12 | `lua-atmos` has no `context`; `atmos-lang/atmos` has only a plan, once per emit | remark | reported, not acknowledged |
 | #13 | No real case awaits between set and restore: `context` fixes no bug today, it saves writing and makes the stars one switch per pool | remark | reported, not acknowledged |
 | #14 | The case of `env-pico` for #1 and #3 | input | reported, not acknowledged |
+| #15 | `pin` merged into `main` (8361f88, `set :out place = value`) and declared STABLE (`atmos-pin#9`, `TODO-pin.md` "Stable"): design #3 on top of it as fixed; a change to a rule of pin goes to `atmos-pin` first | work | when #3 comes |
 
 ## Waiting for the author (one at a time, in this order)
 
