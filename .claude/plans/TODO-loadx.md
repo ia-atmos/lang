@@ -52,7 +52,8 @@ Value : (as in X.load) | ID
 | 14 | The include: relative to what, since `X.loadx` receives a text and not a file | **decided (2026-11-20)**: first #14a, then the author went back to #14b with a change: the directory of the includes is an argument of `X.loadx`, and it is the FIRST one, `X.loadx(dir, s)`. No function that receives a path |
 | 15 | The name of the function that receives the path | closed with #14: no new function |
 | 16 | `X.loadx` with one argument, now that the directory comes first | **decided (2026-11-20, #16a with a change)**: `X.loadx(s)` stays valid, and its includes are relative to the current directory, as `io.open` |
-| 17 | What an include is: where it may appear, what the included file holds, a file included twice, a nested include | asked, recommended: at the top level before the value; the file holds definitions only; once per file, as in the language; a nested include is relative to the file that has it |
+| 17 | What an include is: where it may appear, what the included file holds, a file included twice, a nested include | **decided (2026-11-20, #17a)**: at the top level, among the definitions and before the value; the file holds definitions and includes only; once per file, as in the language; a nested include is relative to the file that has it; a name defined twice is still an error; an error inside a file says its name |
+| 18 | Merge of the include (branch `loadx`, three more commits) into `main` | asked |
 
 ## State (2026-11-20)
 
@@ -67,3 +68,24 @@ Value : (as in X.load) | ID
   tables (`too many nested tables`).
 - `pico-slides` was told the final syntax and semantics, and that there
   is no spread.
+
+## The include (#13 to #17), implemented on the branch `loadx`
+
+```
+Text  : { Def } Value
+Def   : ID `=´ Value
+      | `include´ STR
+Value : ... | ID
+```
+
+- `X.loadx(dir, s)`: the includes of `s` are relative to `dir`;
+  `X.loadx(s)`: to the current directory. Inside an included file, to
+  that file.
+- Details chosen in the implementation, told to the author with #18:
+  `include` is not a valid name; a path is compared after removing `.`
+  and `dir/..`, so `sub/../base.atm` and `base.atm` are the same file
+  (a symbolic link is not followed); an absolute path is used as it
+  is; the messages are `include not found : PATH` and, for a value in
+  an included file, `FILE : line N : expected definition`.
+- `make test` with ASAN passes: cases 423 (`loadx-02` added), the rest
+  as before.
