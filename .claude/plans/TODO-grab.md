@@ -28,6 +28,7 @@ the rule are `#1`..`#8`.
 | #14 | Tell `atmos-context` about resuming | sent 2026-11-20: grab does not touch the resume |
 | #15 | `set :out` as an alternative to a dynamic `grabbable` | assessed: not comparable without a new design (#16) |
 | #16 | A grabbable as a value (`grab @g P {...}`), the lexical alternative to #1 | noted, not proposed |
+| #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | reported; rename or another keyword is the author's (#8) |
 | #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
 
 ## Decisions waiting for the author (asked one at a time)
@@ -120,6 +121,14 @@ removes a grab from its grabbable.
   down with `set :out` or as an argument). In SNKRX it would have to
   travel from `main.atm` through the screens to `Options`. Not
   proposed: noted for the author, against #1.
+- #18 `atmos-lang` measured `grab` 4aed336 against `main` 513767c
+  (2152 files of 15 clones): 8 files stop compiling, all from one
+  name, the parameter `grab` of `display` in env-sdl `sdl.atm:1110`
+  (`func (full, w, h, grab, cursor)`, used as `$grab`), copied in
+  Pingus `engine/sdl.atm` and reached by sdl-tux `game/main.atm`.
+  Every other file gives identical C. One rename of a parameter in
+  env-sdl and in the copy of Pingus, or another keyword (#8). Not
+  asked of the ports: the keyword and the merge are the author's.
 - #17 A block registers before it starts, so that a grab in the first
   run of a grabbable finds it.
 - #15 `atmos-lang` (2026-11-19): `main` merged `pin`, with `set :out
