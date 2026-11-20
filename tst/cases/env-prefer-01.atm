@@ -1,0 +1,23 @@
+;; #11: the modes are settled when the main chunk ends, not when an
+;; environment is registered: the primary is the first that prefers it
+;; (`mode.prefer`), or else the first registered. So a dedicated compiler,
+;; whose environment is registered before those of the program, does not
+;; force it as the primary (`atmos-uv` with IUP; by the session
+;; `atmos-envs`, to be confirmed by the author)
+var n = 0
+atmos.env([                         ;; as `uv.atm`, from `atmos-uv`
+    mode = [primary=true, secondary=true],
+    step = func (m) {
+        if n == 0 { print("uv", m) }
+        false
+    },
+])
+atmos.env([                         ;; as `iup.atm`, included by the program
+    mode = [primary=true, secondary=true, prefer=:primary],
+    step = func (m) {
+        if n == 0 { print("iup", m) }
+        set n = n + 1
+        n == 2
+    },
+])
+await(false)
