@@ -3672,8 +3672,10 @@ name replaced by its value: the names do not exist in the result, and no table
 is shared between two uses.
 
 A definition may use the names defined before it, and not itself.
-A name that is not defined, or that is defined twice, is an error with the line
-of the problem.
+A name that is not defined is an error with the line of the problem.
+
+The first definition of a name wins: a later definition of the same name is
+read and ignored.
 
 An `include` reads the definitions of another file, as if they were written in
 its place.
@@ -3685,6 +3687,12 @@ The file name is relative to the directory `dir` in `X.loadx(dir, s)`, or to
 the current directory in `X.loadx(s)`.
 Inside an included file, the name is relative to that file.
 An error inside an included file shows its name before the line.
+
+Since the first definition wins, the definitions of an included file are
+defaults: a text replaces one of them by defining the name before the
+`include`.
+A definition after the `include` has no effect on the name, nor on the names
+that the file has already built with it.
 
 There are still no operations, functions, or calls: a text with names is data.
 A text may grow much larger when it is read, since a name may be used many
@@ -3737,6 +3745,13 @@ include "theme.atm"
 pin f = io.open("decks/talk.atm")
 val s = X.loadx("decks", io.read(f, :all))  ;; includes decks/theme.atm
 print((s@0@0).style.color)                  ;; --> blue
+```
+
+```
+;; decks/red.atm
+BLUE = :red             ;; replaces the BLUE of the theme
+include "theme.atm"
+TITLE                   ;; --> [anchor=C, color=red]
 ```
 
 ### Membership
