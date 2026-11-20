@@ -19,6 +19,7 @@ title above is a placeholder. Alternative titles:
 > implemented or measured: the sketches were not compiled, and no port
 > follows the architecture yet. What waits for the author and for other
 > sessions is in `.claude/plans/TODO-paper-snapshots.md`.
+> Draft text of Sections 3 and 9: `papers/snapshots-draft.md`.
 
 ## Abstract
 
@@ -241,8 +242,12 @@ state, and case studies.
 
 - The risk: a local variable that the table does not know
 - The test
-    - at any point: dump, abort all, load, spawn
-    - the same commands must give the same table afterwards
+    - at a point between two gestures: dump, abort all, load, spawn
+    - the same input must give the same table afterwards
+    - not at any point: a cut in the middle of a gesture loses it, by
+      design, and the input after the cut means something else (found
+      by the example, 2026-11-20)
+    - it finds only the hidden state that the recorded input exercises
 - Automatic under determinism: any recorded run is a test
 - What a compiler could check
     - writes to the table outside the applier
