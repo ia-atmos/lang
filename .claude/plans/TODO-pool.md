@@ -41,8 +41,9 @@ answer to each is a merge or a revert.
 
 ## B. Work known, not done
 
-- The measurement of the ports on `origin/pool`, asked of `atmos-lang`
-  on 2026-11-20 (the new globals `find`/`filter`; `atmos-lang#60`).
+- When `atmos-lang` fixes `atm_emit_to` on `main` (a defect found by
+  env-uv, in `emit_to1`): bring `main` in, solve the conflict with
+  `emit_held`, run the suite again.
 - After his approval: bring `main` into the branch again, run the full
   suite, merge. `atmos-lang` then migrates and tells the ports.
 - `atmos-lang#2a`: the paragraph of the convention in the manual, if he
@@ -56,6 +57,13 @@ answer to each is a merge or a revert.
 - The work of 2026-11-20 on the branch (`261120-pool-work.md`), sent to
   `atmos-lang` with what changes in `rt/task.c`, to relay to
   `atmos-grab` and `atmos-context`.
+
+- The measurement of `atmos-lang` on `origin/pool` (`695afa1`), back on
+  2026-11-20: the 2152 `.atm` files of 15 clones give the same
+  diagnostics, and the same C but for the numbers of the globals; the
+  suite of sdl-pingus passes; no cost in a loop of 300,000 emits. Not
+  shown by it: a throw that crosses an `emit @t` at run time (only the
+  suites of the ports can, and only that of Pingus runs there).
 
 ## Settled by the session, to be confirmed (rule `atmos-lang#95`)
 
