@@ -11,20 +11,21 @@ session, never reused; from another session, `session#N`.
 
 | # | Item | Kind | State |
 |---|---|---|---|
-| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | asked 2026-11-18, waiting |
-| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | after #1 |
-| #3 | `leave` receives what `enter` returned | decision | after #2 |
-| #4 | Syntax | decision | after #3 |
-| #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | after #4 |
-| #6 | SNKRX and env-ray not readable by this session | remark | open |
+| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | by the session, to be confirmed (2026-11-20): around each resume, lazy; on the branch `context` |
+| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | by the session, to be confirmed: no filter |
+| #3 | `leave` receives what `enter` returned | decision | by the session, to be confirmed: yes |
+| #4 | Syntax | decision | by the session, to be confirmed: `context (enter, leave) {...}`, two functions (`\{...}`, `\(old) {...}`); `context` becomes a keyword |
+| #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | by the session, to be confirmed: `emit` and `spawn` there are errors (`abort` not checked); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer |
+| #6 | SNKRX and env-ray not readable by this session | remark | open: cloning `ia-atmos/snxkx` and `ia-atmos/raylib` refused again (2026-11-20) |
 | #7 | The three comments of issue 21 not readable | remark | open |
-| #8 | The canvas of the stars: `STARS` (author) or `BACK` (material) | remark | open, check in SNKRX |
-| #9 | Implement `context` on the branch `context` | work | waits for the design |
-| #10 | Tell `atmos-grab` (and `pool`) what #1 decides: all touch the resume of a trail in `rt/task.c` | work | after #1 |
+| #8 | The canvas of the stars: `STARS` (author) or `BACK` (material) | remark | settled (checked by `atmos-lang` in `src/shared.atm`): both exist; the stars draw on `STARS` (line 71), the background on `BACK` (line 22): the author is right |
+| #9 | Implement `context` on the branch `context` | work | done (2026-11-20), branch `context` 64433db, main merged in, suite with ASAN passes (1007, rt, env); waits for the measurement on the ports (`atmos-lang`) and the author's approval to merge |
+| #10 | Tell `atmos-grab` (and `pool`) what the prototype does at the resume of a trail in `rt/task.c` | work | done 2026-11-20 |
 | #11 | Non-drawing events (the author's question): with the lazy resume, a key costs nothing unless a task inside awakes on it | answer | reported, not acknowledged |
 | #12 | `lua-atmos` has no `context`; `atmos-lang/atmos` has only a plan, once per emit | remark | reported, not acknowledged |
 | #13 | No real case awaits between set and restore: `context` fixes no bug today, it saves writing and makes the stars one switch per pool | remark | reported, not acknowledged |
 | #14 | The case of `env-pico` for #1 and #3 | input | reported, not acknowledged |
+| #16 | Optimize: aborting a pool inside a context switches once per task (context-03 at the end); the walk up the tree on each resume could be a pointer cached at spawn | work | known, not done |
 | #15 | `pin` merged into `main` (8361f88, `set :out place = value`) and declared STABLE (`atmos-pin#9`, `TODO-pin.md` "Stable"): design #3 on top of it as fixed; a change to a rule of pin goes to `atmos-pin` first | work | when #3 comes |
 
 ## Waiting for the author (one at a time, in this order)
@@ -88,6 +89,26 @@ session, never reused; from another session, `session#N`.
   outliving its owner, so the binding could drop the bookkeeping of a
   current layer whose block ended. Its counts match section 2 of
   `261118-context-semantics.md`.
+
+## Settled by the session, to be confirmed (2026-11-20)
+
+Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
+#1 to #5 are implemented with the recommendations on the branch
+`context`, one test file per decision (`tst/cases/context-*.atm`,
+`tst/ast/context-*.atm`): another answer changes one place.
+
+| # | Taken | Tests |
+|---|---|---|
+| #1 | around each resume, lazy | context-01 to 05 |
+| #2 | no filter | context-06 |
+| #3 | `leave` receives what `enter` returned | context-07 |
+| #4 | `context (enter, leave) {...}` | ast context-1, context-err-1 |
+| #5 | `emit`, `spawn` in `enter`/`leave` are errors; errors raised in the trail resumed or the resumer | context-08 to 10 |
+
+Measured (cases context-11, context-12): 50 stars, 100 canvas switches per
+frame today, 2 with a context around the pool, 0 for `:update` and `:key`;
+the layer of env-pico does not leak to another task when the task that set
+it awaits.
 
 ## Decided
 
