@@ -289,7 +289,7 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
             int64_t i;
             if (!a_toint(v, &i)) {
                 st = a_error("invalid format : expected integer : got %s",
-                    a_isnum(v) ? "real" : a_typename(v));
+                    a_isnum(v) ? "float" : a_typename(v));
                 break;
             }
             if (conv == 'c') {

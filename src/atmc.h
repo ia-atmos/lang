@@ -21,9 +21,9 @@ char* file_read (const char* path, size_t* len);
 //      `stmts`         C statements, evaluates to nil
 //      `:prelude decls`    C declarations at file scope
 //      `:number e`     C expression converted to a number: an integer
-//                      or a real, according to its type in C
+//                      or a float, according to its type in C
 //      `:number.integer e`     ... always to an integer
-//      `:number.float e`       ... always to a real
+//      `:number.float e`       ... always to a float
 //      `:boolean e`    ... to a boolean
 //      `:string e`     ... to a string (NULL gives nil)
 //      `:atmos e`      C expression of type AVal (owned); `:value` is

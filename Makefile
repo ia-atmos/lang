@@ -58,9 +58,9 @@ build/rt$(1)/%.o: rt/%.c $$(RT_HDR)
 	@mkdir -p build/rt$(1)
 	$$(CC) $$(CFLAGS) \
 	    $$(if $$(findstring -asan,$(1)),$$(ASAN)) \
-	    $$(if $$(findstring -f32,$(1)),-DATM_REAL_FLOAT) \
-	    $$(if $$(findstring -i32,$(1)),-DATM_INT_32) \
-	    $$(if $$(findstring -ms,$(1)),-DATM_TIME_MS) \
+	    $$(if $$(findstring -f32,$(1)),-DATM_FLOAT_32) \
+	    $$(if $$(findstring -i32,$(1)),-DATM_INTEGER_32) \
+	    $$(if $$(findstring -ms,$(1)),-DATM_CLOCK_MS) \
 	    -Irt -c $$< -o $$@
 
 build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o
