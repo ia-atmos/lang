@@ -19,9 +19,9 @@
 //   ATMOS_CFLAGS   C flags (default: -O1)
 //   ATMOS_LDFLAGS  linker flags, after the program (e.g. -lSDL2)
 //   ATMOS_ASAN     if set, builds with the address sanitizer
-//   ATMOS_REAL     if `float`, a real is a C float of 32 bits
-//   ATMOS_INT      if `32`, an integer has 32 bits (default `64`)
-//   ATMOS_TIME     if `ms`, time is in milliseconds (default `us`)
+//   ATMOS_FLOAT    if `32`, a float is a C float of 32 bits (default `64`)
+//   ATMOS_INTEGER  if `32`, an integer has 32 bits (default `64`)
+//   ATMOS_CLOCK    if `ms`, a clock is in milliseconds (default `us`)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +44,7 @@
 #define ATMOS_ENV_CFLAGS ""
 #endif
 // The numeric options that the environment supports, beyond the
-// defaults: a list of values, as in "float 32 ms".
+// defaults: a list, as in "float=32 integer=32 clock=ms".
 #ifndef ATMOS_ENV_NUM
 #define ATMOS_ENV_NUM ""
 #endif
@@ -125,12 +125,21 @@ static int has_word (const char* s, const char* w) {
 }
 
 // An option of the build with two values: 0 for `v0` (the default), 1
-// for `v1`. Any other value is an error.
-static int opt2 (const char* name, const char* v0, const char* v1) {
+// for `v1`. Any other value is an error. `key` names the option in the
+// list of an environment, as in "float=32". `old` is a former name of
+// the variable, which is refused, so that it is not ignored in silence.
+static int opt2 (const char* name, const char* key, const char* old,
+                 const char* v0, const char* v1)
+{
+    if (getenv(old) != NULL) {
+        fprintf(stderr, ATMOS_NAME " : invalid %s : "
+            "renamed to %s ('%s' or '%s')\n", old, name, v1, v0);
+        exit(1);
+    }
     const char* v = env(name, v0);
     if (strcmp(v, v1) == 0) {
         // a dedicated compiler takes only what its environment declares
-        if (ATMOS_ENV!=NULL && !has_word(ATMOS_ENV_NUM,v1)) {
+        if (ATMOS_ENV!=NULL && !has_word(ATMOS_ENV_NUM,xfmt("%s=%s",key,v1))) {
             fprintf(stderr, ATMOS_NAME " : invalid %s : "
                 "the environment does not support '%s'\n", name, v1);
             exit(1);
@@ -150,9 +159,9 @@ static int opt2 (const char* name, const char* v0, const char* v1) {
 static int OPT_F32 = 0;
 
 static void opts_num (void) {
-    OPT_F32     = opt2("ATMOS_REAL", "double", "float");
-    OPT_INT32   = opt2("ATMOS_INT",  "64",     "32");
-    OPT_TIME_MS = opt2("ATMOS_TIME", "us",     "ms");
+    OPT_F32     = opt2("ATMOS_FLOAT",   "float",   "ATMOS_REAL", "64", "32");
+    OPT_INT32   = opt2("ATMOS_INTEGER", "integer", "ATMOS_INT",  "64", "32");
+    OPT_TIME_MS = opt2("ATMOS_CLOCK",   "clock",   "ATMOS_TIME", "us", "ms");
 }
 
 // Builds the C source into an executable. Returns 0 on success.

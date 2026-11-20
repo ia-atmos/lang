@@ -1,2 +1,2 @@
-;; time in milliseconds: a clock with a fraction of the unit is a real
+;; time in milliseconds: a clock with a fraction of the unit is a float
 print(1500us, 500us, 1s500us, 2000us)

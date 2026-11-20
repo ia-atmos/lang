@@ -13,7 +13,7 @@ CC_HDR := src/atmc.h
 
 # The runtime, once per configuration of the numeric types, and once
 # more with the address sanitizer: `libatmos[-f32][-i32][-ms][-asan].a`
-# (`ATMOS_REAL=float`, `ATMOS_INT=32`, `ATMOS_TIME=ms`, `ATMOS_ASAN`).
+# (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`, `ATMOS_ASAN`).
 # `_` stands for an option that is off.
 CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
             $(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(a))+))))
@@ -35,8 +35,9 @@ atmos: $(CC_SRC) $(CC_HDR)
 # absolute, and the flags must have no quotes.
 #
 # `ENV_NUM` lists the numeric options that the environment supports
-# beyond the defaults, as in ENV_NUM="float 32 ms" (`ATMOS_REAL=float`,
-# `ATMOS_INT=32`, `ATMOS_TIME=ms`): the compiler refuses the others.
+# beyond the defaults, as in ENV_NUM="float=32 integer=32 clock=ms"
+# (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`): the compiler
+# refuses the others.
 #
 #   make -C <lang> env OUT=<dir>/atmos-pico ENV=<dir>/pico.atm \
 #        ENV_CFLAGS="-I<dir>/c/src" ENV_LDFLAGS="<dir>/c/libpico.a -lSDL2"

@@ -1,4 +1,4 @@
-;; time in milliseconds (ATMOS_TIME=ms): a clock is a number of
+;; time in milliseconds (ATMOS_CLOCK=ms): a clock is a number of
 ;; milliseconds, and so are the times of an emit and of the timers
 print(1ms, 1s, 1min30s, 1h, 2000us)
 do {

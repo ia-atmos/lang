@@ -294,8 +294,8 @@ void list_ins (List* l, int i, Expr* e);
 // Enables `test` blocks (-t).
 extern int OPT_TEST;
 
-// The numeric types of the build: integers of 32 bits (`ATMOS_INT=32`)
-// and time in milliseconds (`ATMOS_TIME=ms`). They bound the literals.
+// The numeric types of the build: integers of 32 bits (`ATMOS_INTEGER=32`)
+// and time in milliseconds (`ATMOS_CLOCK=ms`). They bound the literals.
 extern int OPT_INT32;
 extern int OPT_TIME_MS;
 

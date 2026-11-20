@@ -46,7 +46,7 @@ typedef struct AObj {
 
 // The C type of a real: a `double`, or a `float` of 32 bits when the
 // runtime and the program are built with `-DATM_REAL_FLOAT` (the
-// compiler does both under `ATMOS_REAL=float`). Then each operation
+// compiler does both under `ATMOS_FLOAT=32`). Then each operation
 // between reals rounds to `float`, as in C, `math` uses the functions
 // for `float`, and a real prints with the fewest digits that give it
 // back. Integers do not change. `A_RF(fn)` is the function `fn` of
@@ -62,7 +62,7 @@ typedef double AReal;
 #endif
 
 // The C type of an integer: 64 bits, or 32 bits when the runtime and
-// the program are built with `-DATM_INT_32` (`ATMOS_INT=32`). Integer
+// the program are built with `-DATM_INT_32` (`ATMOS_INTEGER=32`). Integer
 // arithmetic wraps at the size. With integers of 32 bits and reals of
 // 32 bits, on a target with pointers of 32 bits, a value has 8 bytes
 // instead of 16.
@@ -85,7 +85,7 @@ typedef uint64_t AUInt;
 // The unit of time of a program: a clock (`1h30min`, the time of an
 // emit, the time to the nearest timer) is a number of microseconds, or
 // of milliseconds when the runtime and the program are built with
-// `-DATM_TIME_MS` (`ATMOS_TIME=ms`). `A_TIME_US` is the unit in
+// `-DATM_TIME_MS` (`ATMOS_CLOCK=ms`). `A_TIME_US` is the unit in
 // microseconds.
 #ifdef ATM_TIME_MS
 #define A_TIME_US 1000
