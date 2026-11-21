@@ -326,6 +326,17 @@ is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
 
+A program may be built with fewer of these costs.
+With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
+(a pinned value is finalized at the end of its block, deeply, and cycles
+are collected), so a correct program behaves the same, and an incorrect
+one is not stopped (an escape reads an emptied value instead of raising
+an error).
+With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
+still end with their block, as a `spawn` does: a pinned table, function,
+or native value is a plain name, released by its counts, and no cycle is
+collected.
+
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
 becomes garbage while the block is still alive.
