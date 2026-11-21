@@ -3,14 +3,13 @@
 Iterators, loops and functions over iterables. Material:
 `261120-iter.md` (from `atmos-lang`). Items are `#N` (standing rule of
 2026-11-18): those born here are `atmos-iter#N` from other sessions.
-The branch of this session is `iter` (not created yet: nothing is
-implemented).
+The branch of this session is `iter`.
 
 ## Index
 
 | Item | Title | State |
 |---|---|---|
-| `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Put to him on 2026-11-20, recommended `#1a` (a library `iter`); waiting |
+| `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Put to him on 2026-11-20, recommended `#1a` (a library `iter`); `#1a` on the branch `iter`, by the session, to be confirmed |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Open, after `#1` |
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Remark put to him on 2026-11-20; decision open |
@@ -25,6 +24,32 @@ implemented).
 - `#1`. Options: `#1a` a library `iter` (`iter.find(xs, f)`,
   recommended); `#1b` globals, as on the branch `pool`; `#1c` the
   library of each collection (`vector.filter`, `tasks.find`).
+
+## Settled by the session, to be confirmed (rule `atmos-lang#95`)
+
+On the branch `iter`, reversible by not merging:
+
+- `#1a` (2026-11-21): the commits of `atmos-pool` on its branch
+  `pool-find` (`find`, `filter`, their cases, the manual), taken as
+  they were, then moved into a table `iter`: `iter.find(xs, f)`,
+  `iter.filter(xs, f)`, still over a table or a pool only, with
+  `f(v, k)`. The manual has a section "Iter"; the await over a pool
+  reads `await :tick until iter.find(ts, f)`. A case chains them with
+  `->`. `make test` with `ATMOS_ASAN=1` passes (`tst/run.sh`
+  pass=1015). No port names a variable `iter` (Pingus, SNKRX read).
+  Not measured on the ports yet: nothing in them calls it.
+
+## Received
+
+- `atmos-pool` (2026-11-20): the branch `pool-find` with only `find`
+  and `filter`; the branch `pool` no longer has them, so
+  `atmos-lang#1` now depends on this session. Its notes: `find` must
+  give the member (5 of the 6 cases of Pingus need it); `f(v, k)`
+  because predicates ignore the key; the key returned second because
+  Lessmilk and SNKRX remove the found entity by key; `filter` drops the
+  keys, which loses names in a table; SNKRX, Flare and Lessmilk keep
+  entities in tables, not pools; `await :tick until loop _, t in ts {
+  until f(t), t }` already works with no library.
 
 ## B. What was run (2026-11-20, `main` at `8658dae`)
 
