@@ -1247,7 +1247,11 @@ static void gen_dcl (Unit* u, Expr* e) {
     const char** vs = xalloc(k * sizeof(char*));
     if (e->u.dcl.set == NULL) {
         for (int i=0; i<k; i++) {
-            var_c(u, e->vars[i]);
+            const char* v = var_c(u, e->vars[i]);
+            // pin var x: what it gets later ends with the block
+            if (e->vars[i]->kind == V_PIN) {
+                gen_pin_end(u, v, 1);
+            }
         }
     } else if (k == 1) {
         // pin x = [...]  |  pin x = :T [...]
