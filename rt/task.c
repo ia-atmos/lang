@@ -802,6 +802,9 @@ static void node_sweep (ANode* n) {
 // A child died: it leaves now, or when the traversals end.
 static void node_died (ANode* n) {
     n->dead = 1;
+    if (a_nouts > 0) {
+        a_out_ended(&n->hdr);
+    }
     ANode* up = n->up;
     if (up != NULL) {
         up->dirty = 1;
@@ -2519,6 +2522,85 @@ void a_cycles (AVal* vs, int n, int d) {
     cyc_collect(vs, n, d);
 }
 
+// The places written with `set :out` that wait for the end of a value.
+typedef struct OutE {
+    AObj* v;        // not counted: the entry goes when the value ends
+    AVal  t;        // a table and a key (counted), or
+    AVal  k;
+    AVal* slot;     // a variable, with its box (counted) if captured
+    AVal  box;
+} OutE;
+
+static OutE* OUTS   = NULL;
+static int   OUTS_C = 0;
+int a_nouts = 0;
+
+static int out_ends (AVal v) {
+    if (v.type < A_TAB) {
+        return 0;
+    }
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        return !((ANode*)v.u.o)->dead;
+    }
+    return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
+}
+
+static void out_add (OutE e) {
+    if (a_nouts == OUTS_C) {
+        OUTS_C = (OUTS_C == 0) ? 16 : OUTS_C*2;
+        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+    }
+    OUTS[a_nouts++] = e;
+}
+
+int a_out_reg_tab (AVal t, AVal k, AVal v) {
+    if (!out_ends(v)) {
+        return 0;
+    }
+    a_inc(t);
+    a_inc(k);
+    out_add((OutE) { v.u.o, t, k, NULL, a_nil() });
+    return 1;
+}
+
+int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
+    if (!out_ends(v) || d>a_pdepth(v)) {
+        return 0;
+    }
+    a_inc(box);
+    out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box });
+    return 1;
+}
+
+void a_out_ended (AObj* o) {
+    for (int i=0; i<a_nouts; ) {
+        if (OUTS[i].v != o) {
+            i++;
+            continue;
+        }
+        OutE e = OUTS[i];
+        OUTS[i] = OUTS[--a_nouts];
+        // the place goes back to nil, if it still refers to the value;
+        // a release here may end other values, and change the list
+        AVal v = a_obj(o);
+        if (e.slot != NULL) {
+            if (a_same(*e.slot, v)) {
+                a_clr(e.slot);
+            }
+            a_dec(e.box);
+        } else {
+            if (e.t.type==A_TAB && !a_is_fin(e.t) &&
+                a_same(a_tab_get(A_TAB_OF(e.t),e.k), v))
+            {
+                a_tab_set(A_TAB_OF(e.t), e.k, a_nil());
+            }
+            a_dec(e.t);
+            a_dec(e.k);
+        }
+        i = 0;
+    }
+}
+
 void a_orphan_x (AVal v) {
     // a value that refers to no object is in no cycle
     int ref = 0;
@@ -3300,6 +3382,9 @@ static void clr_deep (AVal v, uint32_t d) {
     } else {
         o->pinned = A_FIN;
         o->depth  = 0;
+    }
+    if (a_nouts > 0) {
+        a_out_ended(o);
     }
     switch (v.type) {
         case A_TAB: {
