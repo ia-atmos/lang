@@ -306,10 +306,12 @@ print(t ?? :T)              ;; --> true
 ## Lexical Memory Management
 
 Atmos has no tracing garbage collector: no pauses and no scans of the heap.
-Values are reference counted underneath, and the blocks of the program add
-what counting alone cannot do: they reclaim cycles, they give each value a
-lexical point of death, and they rule out the use of a value that was
-reclaimed.
+Values are reference counted, and the counts are part of the semantics:
+a value that is no longer referred to is finalized at once, at a point
+that is deterministic.
+The blocks of the program add what counting alone cannot do: they reclaim
+pinned cycles, they give each value a lexical point of death, and they
+rule out the use of a value that was reclaimed.
 
 Every dynamic value (a table, a function, a native value, a task, or a pool
 of tasks) belongs to a block of the program, which reclaims the value when
@@ -2053,8 +2055,8 @@ do {                                ;; a map
 }                                   ;; `play.enemies` is nil again
 ```
 
-The place may be a field or an index of a table, or a variable of an outer
-block.
+The place may be a field or an index of a table, a variable of an outer
+block, or the `pub` of the running task.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
 The place goes back to `nil`, if it still refers to the value, when the
@@ -2079,6 +2081,8 @@ task Widget () {
     <...>
 }
 ```
+
+The whole `pub` may also refer to such a value, as `set :out pub = spring`.
 
 Code outside the block may read the place while the value lasts.
 If it keeps the value in a name and the block terminates, the name refers

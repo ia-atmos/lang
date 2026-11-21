@@ -874,6 +874,22 @@ static void res (Expr* e) {
                 } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
                     err(dst->tk, "invalid set : expected mutable variable");
                 }
+                // set g = func () { g }: the function holds the box of
+                // `g`, which holds the function, a cycle that no pin owns
+                if (dst->tag==E_ACC && dst->var->kind==V_VAR &&
+                    e->u.set.src->tag==E_PROTO && e->u.set.src->proto!=NULL)
+                {
+                    Proto* p = e->u.set.src->proto;
+                    for (int j=0; j<p->ncaps; j++) {
+                        if (p->caps[j] == dst->var) {
+                            warn(dst->tk, "unpinned cycle : the function "
+                                "refers to '%s', which holds it (expected "
+                                "'func %s' or 'pin var %s')", dst->tk.str,
+                                dst->tk.str, dst->tk.str);
+                            break;
+                        }
+                    }
+                }
                 // `task T () {...}` defines `T`, if nothing else sets it
                 if (dst->tag == E_ACC) {
                     if (e->u.set.proto && dst->var->def==NULL) {
