@@ -473,12 +473,12 @@ The following environment variables affect the build:
   (e.g., `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer, which
   also reports memory leaks when the program terminates.
-- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits, instead of a
-  `double` (see [Types](#types--values)).
-- `ATMOS_INT`: if `32`, an integer has 32 bits, instead of 64 (see
+- `ATMOS_FLOAT`: if `32`, a float has 32 bits, as a C `float`, instead of 64,
+  as a C `double` (see [Types](#types--values)).
+- `ATMOS_INTEGER`: if `32`, an integer has 32 bits, instead of 64 (see
   [Types](#types--values)).
-- `ATMOS_TIME`: if `ms`, the unit of time is the millisecond, instead of the
-  microsecond (`us`, see [Types](#types--values)).
+- `ATMOS_CLOCK`: if `ms`, the unit of a clock is the millisecond, instead of
+  the microsecond (`us`, see [Types](#types--values)).
 - `ATMOS_HOME`: the directory with the runtime (`rt/` and `build/`).
   By default, it is the directory of the compiler itself, so a checkout may be
   moved after it is built.
@@ -633,6 +633,21 @@ once, and so does the plain compiler with the `include`, or with the option
 `-e` and the flags in `ATMOS_CFLAGS` and `ATMOS_LDFLAGS`.
 The paths given to `make env` must be absolute, and the flags must have no
 quotes.
+The C code of an environment may depend on the numeric options of the build
+(see [Types](#types--values)): the size of a number and the unit of a clock.
+It reads the unit as `A_CLOCK_US` (the microseconds in one unit), and it
+refuses an option that it does not support with `#error` in its prelude, since
+it is compiled with the flags of the program:
+
+```
+#ifdef ATM_CLOCK_MS
+#error "my-env: ATMOS_CLOCK=ms is not supported"
+#endif
+```
+
+The flags are `ATM_FLOAT_32`, `ATM_INTEGER_32` and `ATM_CLOCK_MS`.
+A field of an event whose name says a unit, as `us`, keeps that unit in every
+build.
 A dedicated compiler still needs the directory of the compiler it was built
 from, a C compiler, and the development files of its library.
 The example `exs/stdin.atm` emits each line of the standard input as an event.
@@ -768,7 +783,7 @@ NAT  : `.*`                 ;; native code
 The literals for `nil`, `boolean` and `number` follow the same
 [lexical conventions of Lua][lua-lexical].
 A number with no fractional part and no exponent is an integer (e.g., `10`,
-`0xFF`), and any other is a real (e.g., `1.5`, `1e3`).
+`0xFF`), and any other is a float (e.g., `1.5`, `1e3`).
 A dot belongs to a number only before a digit, such that `t@0.x` is the field
 `x` of `t@0`, and `5.` is not a number.
 
@@ -834,7 +849,7 @@ A tag in the beginning of the literal gives its kind:
 
 The tags are the names of the [types](#types--values), and `:atmos` is a
 value of any type (`:value` is its former name, to be removed).
-A `:number` becomes an integer or a real according to the type of the
+A `:number` becomes an integer or a float according to the type of the
 expression in C: `` `:number 7/2` `` is `3`, and `` `:number 7/2.0` `` is `3.5`.
 The tags `:number.integer` and `:number.float` force one of them.
 
@@ -922,33 +937,33 @@ Atmos differentiates between *value* and *reference* types:
 - Reference types are built from constructors:
     `function`, `table`, `task`, `xtask`, `tasks`, and `native`.
 
-A `number` is either an integer with 64 bits or a real with double precision,
-as in Lua.
+A `number` is either an `integer` with 64 bits or a `float` with double
+precision, as in Lua.
 An operation with two integers results in an integer, except for the division
-`/`, which always results in a real.
-Any other operation with numbers results in a real.
-An integer and a real with the same value are equal (`1 == 1.0`), and are
+`/`, which always results in a float.
+Any other operation with numbers results in a float.
+An integer and a float with the same value are equal (`1 == 1.0`), and are
 the same key in a table.
 
-A program built with `ATMOS_REAL=float` (see [Execution](#execution)) has reals
+A program built with `ATMOS_FLOAT=32` (see [Execution](#execution)) has floats
 with single precision, as a C `float` with 32 bits, such that it computes as a
-C program with `float` does: each operation between reals rounds to 32 bits,
-`math` uses the functions for `float`, and a real prints with the fewest
+C program with `float` does: each operation between floats rounds to 32 bits,
+`math` uses the functions for `float`, and a float prints with the fewest
 digits that give it back (`0.1`, `0.33333334`).
-The option holds for the whole program, with no second type of real in the
+The option holds for the whole program, with no second type of float in the
 language.
 
-A program built with `ATMOS_INT=32` has integers with 32 bits: integer
-arithmetic wraps at 32 bits, a decimal literal that does not fit is a real, and
+A program built with `ATMOS_INTEGER=32` has integers with 32 bits: integer
+arithmetic wraps at 32 bits, a decimal literal that does not fit is a float, and
 a hexadecimal one wraps.
 The two options are independent.
 With both, on a target with pointers of 32 bits, a value takes 8 bytes instead
 of 16.
 
-A program built with `ATMOS_TIME=ms` counts time in milliseconds instead of
+A program built with `ATMOS_CLOCK=ms` counts a clock in milliseconds instead of
 microseconds: the value of a clock (`1s` is `1000`), the time of an emit, and
 the time to the nearest timer.
-In either unit, a clock is an integer, or a real if it has a fraction of the
+In either unit, a clock is an integer, or a float if it has a fraction of the
 unit (`1500us` is `1.5` in milliseconds), and a clock that does not fit the
 integer is a compile error: with integers of 32 bits, a clock holds up to 35
 minutes in microseconds, and up to 24 days in milliseconds.
@@ -960,7 +975,7 @@ A bare number is not: `t / 1000000` is wrong in milliseconds, and
 
 With integers of 32 bits, `os.time()` wraps in the year 2038.
 As with 64 bits, the least integer has no literal (`-2147483648` is the
-negation of a real), and is written as `-2147483647 - 1`.
+negation of a float), and is written as `-2147483647 - 1`.
 
 The environment of a program must be built with the same options.
 
@@ -2306,7 +2321,7 @@ Lua.
 
 The other arithmetic operators and the bitwise operators follow C:
 
-- `/` is the real division, and always results in a real (`7 / 2` is `3.5`).
+- `/` is the float division, and always results in a float (`7 / 2` is `3.5`).
 - `//` is the integer division, and truncates towards zero (`-7 // 2` is
   `-3`).
 - `%` is the remainder of `//`, and has the sign of the dividend (`-7 % 3` is
@@ -3592,8 +3607,8 @@ there is no `require`.
   as in C, in radians
 - `math.atan(y, x)`, `math.atan2(y, x)`: the angle of the point `(x, y)`, in
   radians; in `math.atan`, `x` is optional and defaults to `1`
-- `math.pow(x, y)`: `x` to the power of `y`, as a real
-- `math.random()`: a random real in `[0,1)`
+- `math.pow(x, y)`: `x` to the power of `y`, as a float
+- `math.random()`: a random float in `[0,1)`
 - `math.random(n)`: a random integer from `0` to `n-1`
 - `math.random(a, b)`: a random integer from `a` to `b`
 - `math.randomseed(n)`: sets the seed of the random numbers

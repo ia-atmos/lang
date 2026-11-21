@@ -20,7 +20,7 @@ ff FF 10 A
 3.14 0.5 1.500000e+03
 a 10 true        tag|
 100% 7
-false	invalid format : expected integer : got real
+false	invalid format : expected integer : got float
 false	invalid format : missing argument
 false	invalid format : unexpected conversion '%y'
 false	invalid argument to 'sub' : expected string : got number

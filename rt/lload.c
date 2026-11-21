@@ -234,10 +234,10 @@ static AStatus number (Load* l, int neg, AVal* dst) {
     buf[n] = '\0';
 
     // a clock is a number of units of time: an integer, which must fit,
-    // or a real if it has a fraction of the unit
+    // or a float if it has a fraction of the unit
     double us = neg ? -1 : clock_us(buf);
     if (us >= 0) {
-        double t = us / A_TIME_US;
+        double t = us / A_CLOCK_US;
         if (t >= A_INT_LIM) {
             return fail(l, "invalid clock : out of range");
         }
@@ -262,7 +262,7 @@ static AStatus number (Load* l, int neg, AVal* dst) {
             return A_OK;
         }
     }
-    AReal d = A_STRTOR(buf, &stop);
+    AFloat d = A_STRTOR(buf, &stop);
     if (*stop != '\0') {
         return fail(l, "invalid number");
     }
@@ -891,13 +891,13 @@ static AStatus dump (Dump* d, AVal v) {
                 dstr(d, (v.u.n > 0) ? "1e999" : "-1e999");
                 return A_OK;
             }
-#ifdef ATM_REAL_FLOAT
+#ifdef ATM_FLOAT_32
             snprintf(num, sizeof(num), "%.9g", (double)v.u.n);
 #else
             snprintf(num, sizeof(num), "%.17g", v.u.n);
 #endif
             dstr(d, num);
-            // a real must read back as a real
+            // a float must read back as a float
             if (strpbrk(num, ".eE") == NULL) {
                 dstr(d, ".0");
             }

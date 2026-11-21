@@ -38,7 +38,7 @@ for suite in $suites; do
         if [ -f $name.flags ]; then
             more=$(cat $name.flags)
         fi
-        # variables of the environment of the case, as `ATMOS_REAL=float`
+        # variables of the environment of the case, as `ATMOS_FLOAT=32`
         vars=""
         if [ -f $name.env ]; then
             vars=$(cat $name.env)
