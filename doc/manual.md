@@ -519,8 +519,9 @@ An error of an event that C emits inside a `step` (a callback of the library,
 which cannot return a status) is kept: the emits that follow fail at once, and
 the error is raised when the `step` returns.
 The first environment is the *primary*: its `step` may sleep (until input, or
-for `atmos.next()` microseconds, the time to the nearest timer) and emits the
-time, as a number of microseconds.
+for `atmos.next()` units of the clock, the time to the nearest timer) and emits
+the time, as a number of units of the clock (microseconds, or milliseconds with
+`ATMOS_CLOCK=ms`; `A_CLOCK_US` in C).
 The others are *secondary*: their `step` never waits and emits no time.
 An environment says which modes it supports in `mode`, and the runtime writes
 the one it got in `mode.current` (`:primary` or `:secondary`), which `step`
