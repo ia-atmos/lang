@@ -2028,6 +2028,12 @@ AStatus a_pub_set (ATask* t, AVal v) {
 // values it holds: by a declaration (`how` is 1) or by the value that
 // holds it (2).
 static void pin_deep (AVal v, int d, int how) {
+#ifdef ATM_PIN_OFF
+    // only a task or a pool is pinned, and not what it holds
+    if (v.type!=A_XTASK && v.type!=A_TASKS) {
+        return;
+    }
+#endif
     if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
         return;
     }
@@ -2066,6 +2072,7 @@ static void pin_deep (AVal v, int d, int how) {
             o->pinned = how;
             o->depth  = d;
             o->lin    = a_lin;
+#ifndef ATM_PIN_OFF
             if (v.type == A_XTASK) {
                 pin_kid(A_TASK_OF(v)->pub, d);
                 pin_kid(A_TASK_OF(v)->ret, d);
@@ -2075,6 +2082,7 @@ static void pin_deep (AVal v, int d, int how) {
                     pin_kid(t->ret, d);
                 }
             }
+#endif
             // held by data: the block of the holder aborts it
             if (how==2 && n->up!=NULL && n->up->hdr.type==A_XTASK) {
                 ATask* up = (ATask*) n->up;
@@ -2106,6 +2114,14 @@ static void pin_deep (AVal v, int d, int how) {
 // with no name is pinned with it. One with a name is only referenced:
 // a name already keeps it, and it may no longer be pinned inside `d`.
 static void pin_kid (AVal v, int d) {
+#ifdef ATM_PIN_OFF
+    // a task or a pool held by data still ends with the block of the
+    // holder; nothing else is pinned
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        pin_deep(v, d, 2);
+    }
+    return;
+#endif
     if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&
         v.u.o->ceil!=0 && d>(int)v.u.o->ceil)
     {
