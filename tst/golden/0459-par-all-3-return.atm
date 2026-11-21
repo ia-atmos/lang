@@ -5,8 +5,7 @@
             } with {
                 20
             }
-            emit(:10)
             X.print(x,y)
         }
+        emit(:10)
         nil
-    
