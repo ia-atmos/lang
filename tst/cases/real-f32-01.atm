@@ -1,4 +1,4 @@
-;; reals of 32 bits (ATMOS_REAL=float): each operation rounds to float
+;; floats of 32 bits (ATMOS_FLOAT=32): each operation rounds to float
 var vy = 0.0
 val dt = 1.0/(1000.0/15.0)
 loop _ in 3 {

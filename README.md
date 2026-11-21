@@ -115,7 +115,7 @@ Environment variables:
 - `ATMOS_LDFLAGS`: linker flags, which go after the program
   (e.g. `-lSDL2`).
 - `ATMOS_ASAN`: if set, builds the program with the address sanitizer.
-- `ATMOS_REAL`: if `float`, a real is a C `float` with 32 bits.
+- `ATMOS_FLOAT`: if `32`, a float is a C `float` with 32 bits.
 
 # Documentation
 
@@ -216,8 +216,8 @@ From the [original implementation][atmos-lua], which compiles to Lua:
   compile error, if the task may await: it would be aborted with the
   block, at once. The ways out are a pin outside the block, as in
   `pin t = if c { spawn T() }`, or a pool, as in `spawn @ts T()`.
-- Numbers are 64-bit integers or reals, as in Lua 5.3: `7 / 2` is
-  `3.5`, `7 // 2` is `3`, and a real always shows as one (`5.0`).
+- Numbers are 64-bit integers or floats, as in Lua 5.3: `7 / 2` is
+  `3.5`, `7 // 2` is `3`, and a float always shows as one (`5.0`).
 - Operators follow C:
     - precedence: `a + b * c` needs no parentheses;
     - `%` has the sign of the dividend, and `//` truncates;

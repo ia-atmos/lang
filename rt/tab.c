@@ -176,7 +176,7 @@ static void hset (ATab* t, AVal k, AVal v) {
 // ARRAY PART
 ///////////////////////////////////////////////////////////////////////////////
 
-// A real key with an integral value is the same key as the integer.
+// A float key with an integral value is the same key as the integer.
 static AVal norm (AVal k) {
     return (k.type == A_NUM) ? a_numi(k.u.n) : k;
 }

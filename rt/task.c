@@ -552,7 +552,9 @@ static AStatus patt_start1 (APatt* p, int* done) {
             st = a_spawn(&t, p->r.v, a_nil(), base);
             a_set(&p->r.v, t);
             p->r.kind = PK_TASK;
-            p->r.own  = 1;
+            // no task, if the spawn failed before it was created (as
+            // with a prototype that was finalized)
+            p->r.own  = (t.type != A_NIL);
             if (st != A_OK) {
                 return st;
             }
