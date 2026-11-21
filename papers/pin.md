@@ -5,7 +5,9 @@ Name of the mechanism: **structured memory**. Its construct is the
 
 > Status: outline. The rules in Section 4 were declared stable by the
 > author on 2026-11-19, as implemented in `main` at `8361f88` and described
-> in `doc/manual.md` ("Lexical Memory Management", "Pin", "Set"). History:
+> in `doc/manual.md` ("Lexical Memory Management", "Pin", "Set"). The
+> collection of unpinned cycles was later removed (atmos-pin#18, branch
+> `pin` at `3cd5169`): a cyclic structure must be pinned. History:
 > `.claude/plans/261115-pin.md`, `.claude/plans/TODO-pin.md`.
 
 ## Abstract
@@ -31,8 +33,10 @@ It bounds the lifetime of a value, but does not collect what becomes garbage
 while its block is alive: a reclaimer underneath does that, and the
 mechanism does not depend on which one.
 Atmos uses reference counting, the simplest; a tracing collector could take
-its place, and would also collect the cycles that the pin leaves to the end
-of their block.
+its place.
+With counting, a cyclic structure must be pinned, and is broken at the end
+of its block; a tracing collector would also collect the cycles that are
+not pinned, which counting leaks.
 We argue that it is only sound and useful under structured programming, in
 which blocks own tasks, abortion is a language primitive, and finalization
 order is deterministic.
@@ -142,8 +146,10 @@ case studies from six ports of libraries and games to Atmos.
     - a constructor builds with `val` and returns it; the caller pins it
     - a pool held by a `val` takes its floor from its tasks, checked at its ceiling
     - cycles among unpinned values: left to the reclaimer underneath; with
-      reference counting, broken at the end of the block of the names that
-      reach them; `pin` chooses the moment of release
+      reference counting, they leak, so a cyclic structure must be pinned
+      (by its block or by a pinned value that holds it); a function that
+      builds one returns it unpinned and the caller pins it
+    - a recursive closure through a variable is a cycle: `func` or `pin var`
     - a named argument to a task that outlives its spawner (a task of an outer
       pool) gets its ceiling at the block that ends the task
     - `pin var` for values the block creates; `var` for those it refers to
@@ -167,7 +173,8 @@ case studies from six ports of libraries and games to Atmos.
     - pins give what a collector does not: a known point of finalization
     - a collector gives what pins do not: garbage reclaimed inside a live block
     - Atmos drops the collector as a tradeoff: no pauses, no heap scans
-    - the price: cycles and unreachable data wait for the end of the block
+    - the price: unreachable data waits for the end of the block, and with
+      counting an unpinned cycle leaks
 - vs. plain reference counting
     - pinned cycles are reclaimed at the end of their block
     - death point is lexical, not "when the last reference goes"
@@ -242,19 +249,10 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 3: `a_chk_store`, one comparison of depths per store
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
 - Rule 5: `a_blk_xfer`, refuses a pinned value that would leave; transfers an unpinned one
-- Cycles at block end: local trial deletion (needed by reference counting
-  only; a tracer would make it unnecessary)
-    - candidates: unpinned values reachable from the block's names
-      (ceiling at that block, or none)
-    - subtract references among candidates and from the names; what keeps a
-      count is alive, with all it reaches; what counting would free is left to it
-    - cut only the edges among the rest (in a cycle, or reached only through one)
-    - runs only if a reference was written into a table, box, or `pub` in the block
-    - soundness rests on the counts, not on the ceiling
-    - escape information by block depth selects the candidates
-    - also when the last outside reference to a nameless value goes (a
-      temporary, a dropped result, an entry of a freed value, the parameter
-      of a task that ends); for a task parameter, gives up beyond 256 values
+- Cycles: a pinned cycle is broken at the end of its block, by the pin; an
+  unpinned cycle is not collected and leaks (no cycle detection, by the
+  author's choice: atmos-pin#18; a local trial deletion was implemented and
+  removed, `3cd5169`)
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
@@ -289,10 +287,6 @@ case studies from six ports of libraries and games to Atmos.
     - mostly `val`/`var` to `pin`; the rewrites that a keyword does not solve
     - to measure again: names may hold unpinned values, and owned places may be
       reassigned, so many of those rewrites are no longer needed
-- Cost of the local trial deletion: none on binary-trees or when only numbers
-  are written; +30 to 40% (~150 ns per iteration) on a loop that only writes
-  a new table into a named one; sdl-pingus (suite, 6000-frame demo) and the
-  libuv echo benchmark unchanged
 - Case E, a longer-lived place referring to what a shorter block owns:
   experiments with a context owned by the block
     - Flare: 4 of 5 workarounds gone, -32 lines, traces identical
@@ -359,12 +353,11 @@ case studies from six ports of libraries and games to Atmos.
 - Shared structures must be owned by a common enclosing block
 - No weak references
 - Collection is still needed during the scope: pins do not replace a GC
-- Without a tracing collector, garbage in cycles lives as long as its block
+- Without a tracing collector, garbage in a pinned cycle lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- Cycles, an artifact of reference counting: the two known leaks (a cyclic value returned by a call and dropped
-  without a name; one given to a task of an outer pool) were fixed on
-  2026-11-20 (`daab0b7`, atmos-pin#7); a parameter of a task gives up beyond
-  a few hundred values, left to the counts
+- Cycles, an artifact of reference counting: an unpinned cycle leaks; a
+  cyclic structure must be pinned, by its block or by a pinned value that
+  holds it (a tracer would remove this limitation)
 - `set :out` refers outward with no check: its place is reset only at the end
   of the block, so a reader in between must not keep what it reads
 - A task cannot publish a value pinned in its body
@@ -424,8 +417,8 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
-- A tracing collector in place of reference counting: cycles collected,
-  trial deletion removed, the three timing rules worded by block
+- A tracing collector in place of reference counting: unpinned cycles
+  collected, the three timing rules worded by block
 - Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion

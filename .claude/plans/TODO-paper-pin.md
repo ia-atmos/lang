@@ -67,6 +67,11 @@ written; each such item now has its number below.
   unpinned value, a retired value, a replaced native: "at the latest at
   the end of the block", counting being the earlier case) is by the
   session, to be confirmed; sent to `atmos-pin` for the manual.
+- **#14 Cycle collection removed** (atmos-pin#18, branch `pin` at
+  `3cd5169`, author's choice "não checar"). The old rule is restored in the
+  outline and the draft: a cyclic structure must be pinned; an unpinned
+  cycle leaks under counting. The trial deletion and its cost are removed
+  from Sections 4, 8 and 9. To check: the commit reaches `main`.
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in
