@@ -157,6 +157,16 @@ Last update: 2026-11-19.
   Most of the libm is the math library itself (`powf`, the trig), which
   a fixed-point build would still need or drop as a feature. Speed not
   measured (needs a board).
+- 2026-11-21, `env-esp32` (`#12`), board build, lang 34c381b, no
+  warnings, `libmain.a` in bytes (runtime, generated C, drivers):
+
+  | Program | Default | `PIN_OFF` | `PIN_OFF` + the three numeric options |
+  |---|---|---|---|
+  | `app/init.atm` | 140631 | 136037 (-3.3%) | 121246 (-13.8%) |
+  | `app/ultrat.atm` | 215219 | 198269 (-7.9%) | 161172 (-25.1%) |
+
+  Static DRAM 17830 / 18998 B in the default, 17086 / 17654 B with all
+  four. Heap and speed need the board.
 
 ## The matrix of configurations (2026-11-20)
 
