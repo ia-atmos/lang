@@ -1,4 +1,6 @@
-;; the ceiling reaches the unpinned values that a named one holds
+;; the ceiling of a name reaches only its value: what the value holds is
+;; protected by its count (it is held by the named value, so it may not be
+;; pinned elsewhere)
 val a = [[1]]
 do {
     pin x = a@0

@@ -326,6 +326,17 @@ is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
 
+A program may be built with fewer of these costs.
+With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
+(a pinned value is finalized at the end of its block, deeply, and cycles
+are collected), so a correct program behaves the same, and an incorrect
+one is not stopped (an escape reads an emptied value instead of raising
+an error).
+With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
+still end with their block, as a `spawn` does: a pinned table, function,
+or native value is a plain name, released by its counts, and no cycle is
+collected.
+
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
 becomes garbage while the block is still alive.
@@ -519,8 +530,9 @@ An error of an event that C emits inside a `step` (a callback of the library,
 which cannot return a status) is kept: the emits that follow fail at once, and
 the error is raised when the `step` returns.
 The first environment is the *primary*: its `step` may sleep (until input, or
-for `atmos.next()` microseconds, the time to the nearest timer) and emits the
-time, as a number of microseconds.
+for `atmos.next()` units of the clock, the time to the nearest timer) and emits
+the time, as a number of units of the clock (microseconds, or milliseconds with
+`ATMOS_CLOCK=ms`; `A_CLOCK_US` in C).
 The others are *secondary*: their `step` never waits and emits no time.
 An environment says which modes it supports in `mode`, and the runtime writes
 the one it got in `mode.current` (`:primary` or `:secondary`), which `step`
@@ -2041,7 +2053,7 @@ f([1, 2, 3])
 ```
 
 A place of an outer block may refer to a value of an inner one, for as long
-as the inner block lasts, with `set :out`:
+as the value lasts, with `set :out`:
 
 ```
 pin play = []                       ;; lives for the whole program
@@ -2056,11 +2068,30 @@ The place may be a field or an index of a table, or a variable of an outer
 block.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
-When the block of the `set :out` terminates, the place goes back to `nil`,
-if it still refers to the value: so a place never refers to a value that
-was finalized.
+The place goes back to `nil`, if it still refers to the value, when the
+value ends: pinned data, when its block finalizes it; a task, when it
+terminates; a pool, when it is aborted.
+So a place never refers to a value that was finalized, wherever the
+`set :out` is written: in the block that owns the value, in a nested block
+such as the branch of an `if`, or in a function that this block calls.
+A value with no end of its own (unpinned data) leaves the place when the
+block of the `set :out` terminates.
 
-Code outside the block may read the place while the block lasts.
+The same form shows, in the `pub` of a task, a value that the body of the
+task pins, which a plain assignment refuses, since the `pub` is visible
+wherever the task is:
+
+```
+task Widget () {
+    set pub = []
+    pin spring = [k=10]
+    set pub.spring = spring         ;; ERROR: invalid escape : table pinned at ...
+    set :out pub.spring = spring    ;; ok: until `spring` ends
+    <...>
+}
+```
+
+Code outside the block may read the place while the value lasts.
 If it keeps the value in a name and the block terminates, the name refers
 to a finalized value, and any use of it raises an error:
 
