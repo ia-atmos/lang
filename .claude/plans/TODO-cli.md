@@ -13,6 +13,7 @@ Last update: 2026-11-21.
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
 | #2 | The names of the long options | Asked 2026-11-21; recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
 | #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2): the ports call them |
 
 ## Observed on 2026-11-20 (`main` at `5123f9a`)
@@ -48,8 +49,9 @@ becomes an item only if the author takes it up.
   (`ATMOS_REAL=double|float` to `ATMOS_FLOAT=64|32`, `ATMOS_INT` to
   `ATMOS_INTEGER`, `ATMOS_TIME` to `ATMOS_CLOCK`; a former name is an
   error) and adds `ENV_NUM` to `make env` (what an environment
-  supports). Seen in `origin/float` (`src/main.c`, `Makefile`); not on
-  `main` yet. Anything proposed here about the variables starts from
+  supports). Seen in `origin/float` (`src/main.c`, `Makefile`). On
+  `main` since `d19d40f` (2026-11-21), without `ENV_NUM`: an
+  environment refuses an option with `#error`. Anything proposed here about the variables starts from
   those names, and `cli` will be rebased over it once merged.
 - `atmos-envs`, 2026-11-20, on the selection of an environment (its
   recommendations, none decided by the author): for `atmos-envs#4`,

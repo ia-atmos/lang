@@ -16,7 +16,7 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 | #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; measured by `atmos-lang` on 2026-11-20 (2197 files of 15 clones: no port changes; `atmos-lang#99`); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | asked 2026-11-20, options #8a `super(...)` (recommended), #8b `f@:Tag(...)`, #8c a named function; see "Waiting for the author" |
-| #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | fixed on `oo`; split as the branch `oo-own` (`35cc6e9`, over main) and offered to `atmos-lang` on 2026-11-20; no reproducer on main |
+| #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
 

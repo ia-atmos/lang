@@ -38,6 +38,9 @@ On the branch `iter`, reversible by not merging:
   `->`. `make test` with `ATMOS_ASAN=1` passes (`tst/run.sh`
   pass=1015). No port names a variable `iter` (Pingus, SNKRX read).
   Not measured on the ports yet: nothing in them calls it.
+- 2026-11-21: `main` at `d19d40f` (the branch `float`) brought into
+  `iter` (`535efb0`) with no conflict; `make test` with `ATMOS_ASAN=1`
+  passes. The prototype has no word "real" to change.
 
 ## Received
 
