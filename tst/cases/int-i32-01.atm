@@ -1,5 +1,5 @@
-;; integers of 32 bits (ATMOS_INT=32): arithmetic wraps at 32 bits, a
-;; decimal that does not fit is a real, a hexadecimal wraps
+;; integers of 32 bits (ATMOS_INTEGER=32): arithmetic wraps at 32 bits, a
+;; decimal that does not fit is a float, a hexadecimal wraps
 print(2147483647 + 1, 65536 * 65536, 100000 * 100000, -(-2147483647 - 1))
 print(2147483648, 3000000000, 0xFFFFFFFF, 0x1FFFFFFFF)
 print(1 << 31, 1 << 32, -1 >> 1, 1 << 30, ~0, 5 // 2, -7 % 3)
