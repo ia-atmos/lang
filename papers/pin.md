@@ -30,10 +30,9 @@ not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
 arena abstraction: the blocks of the program are the regions.
 It bounds the lifetime of a value, but does not collect what becomes garbage
-while its block is alive: a reclaimer underneath does that, and the
-mechanism does not depend on which one.
-Atmos uses reference counting, the simplest; a tracing collector could take
-its place.
+while its block is alive: reference counting does that underneath.
+The safety of the pins does not read a count, but counting also gives a
+value that nobody owns a deterministic end, at the moment it is dropped.
 With counting, a cyclic structure must be pinned, and is broken at the end
 of its block; a tracing collector would also collect the cycles that are
 not pinned, which counting leaks.
@@ -54,9 +53,9 @@ case studies from six ports of libraries and games to Atmos.
     - the mechanism: structured memory, with lexical pins
     - a small set of rules, uniform for all dynamic values
     - a cheap dynamic check: one depth per value, one comparison per store
-    - an implementation on reference counting, chosen for simplicity; the
-      rules compare block depths and never read a count, so a tracing
-      collector could replace it
+    - an implementation on reference counting: the checks compare block
+      depths and never read a count; the counts give unowned values a
+      deterministic end (whether that is design or implementation: open, #13)
     - an evaluation with six real ports
 
 ## 2. Background
@@ -122,16 +121,13 @@ case studies from six ports of libraries and games to Atmos.
       to `nil` when the block of the `set` ends (case E)
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
-    - a dropped unpinned value is finalized at the latest at the end of the
-      block of its last name; with reference counting, at once (by the
-      session, to be confirmed: #13)
+    - a dropped unpinned value is finalized at once
     - table released, native closed, task aborted
     - finalized data is marked: any later use raises
       `invalid access : finalized <type> pinned at f:N`, so a reference that
       outlived its scope is caught instead of reading an empty value
-    - a value replaced in an owned place is retired: finalized at the latest
-      at the end of the block (cycles broken); with reference counting,
-      when its last reference goes
+    - a value replaced in an owned place is retired: finalized when its last
+      reference goes, at the latest at the end of the block (cycles broken)
 - Rule 5, result
     - a pinned value never leaves its block: no implicit give-away
     - a block gives away an unpinned value (a `val`): last expression,
@@ -167,9 +163,9 @@ case studies from six ports of libraries and games to Atmos.
 - Criteria: determinism, cycles, resources, annotations, pauses, cost, errors
 - vs. tracing GC
     - not a replacement: orthogonal, and the two could be combined
-    - the reclaimer under the pins is pluggable: reference counting today,
-      for simplicity; a tracer would change when unowned garbage goes, not
-      what the pins guarantee
+    - the safety of the pins does not depend on counting; a tracer would
+      keep it, but would change when an unowned task or native ends, which
+      counting makes deterministic (open, #13)
     - pins give what a collector does not: a known point of finalization
     - a collector gives what pins do not: garbage reclaimed inside a live block
     - Atmos drops the collector as a tradeoff: no pauses, no heap scans
@@ -228,12 +224,11 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 8. Implementation
 
-- Compilation to C; reference counting, and no tracing collector, for
-  simplicity
-- Orthogonal to the pin: the checks compare depths, finalization at block
-  end is driven by the block; only the moment an unowned value goes reads a
-  count, so a tracer can replace the counts with three rules worded by block
-  (#13)
+- Compilation to C; reference counting, and no tracing collector
+- What reads a count and what does not: the checks compare depths and
+  finalization at block end is driven by the block; only the end of an
+  unowned value reads a count (a dropped value, a retired value, a replaced
+  native), and there counting is what makes it deterministic (#13)
 - What reference counting still does
     - a dropped unpinned value: data at count zero; a task at count one,
       aborted at the end of the statement, since an abort runs code
@@ -363,11 +358,7 @@ case studies from six ports of libraries and games to Atmos.
 - A task cannot publish a value pinned in its body
 - An unpinned value outside its window is an error: `invalid pin : table named at f:N`
 - A native replaced in an owned place is closed when its last holder lets it go:
-  deterministic, but not a point of the text; with a tracer, at the latest
-  at the end of the block
-- With a tracer, a dropped task or native lingers until the end of the block
-  of its last name, not until it is dropped: `pin` remains the way to choose
-  the moment
+  deterministic, but not a point of the text
 - An event is shared: a receiver cannot pin it
 - A value that leaves is transferred deep: cost proportional to its size
 - Requires a language with structured tasks and abortion
@@ -417,8 +408,9 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
-- A tracing collector in place of reference counting: unpinned cycles
-  collected, the three timing rules worded by block
+- A tracing collector beside or in place of reference counting: unpinned
+  cycles collected, at the price of the deterministic end of unowned tasks
+  and natives, which would then have to be bound to a block (#13)
 - Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion
