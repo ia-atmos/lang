@@ -58,7 +58,7 @@
         - `spawn` `await` `emit` `toggle`
         - `par` `watching`
 * STANDARD LIBRARIES
-    - `math` `string` `vector` `io` `os` `X` `atmos`
+    - `math` `string` `iter` `vector` `io` `os` `X` `atmos`
 * SYNTAX
     * Ambiguities
 
@@ -3283,7 +3283,7 @@ However, the `until`/`while` predicate is lazy, re-evaluating its condition on
 each event.
 
 Since an `until` evaluates to the result of its condition, an await over the
-members of a [pool](#tasks) is written with [find](#basic-functions): the
+members of a [pool](#tasks) is written with [iter.find](#iter): the
 await awakes at the first event in which a member satisfies the predicate,
 and evaluates to that member.
 The condition is checked again at each event that the pattern accepts, such
@@ -3292,7 +3292,7 @@ as the tick of an environment:
 ```
 task Trap (pingus, zone) {
     loop {
-        val t = await :tick until find(pingus, \(t) { inside(zone, t.pub) })
+        val t = await :tick until iter.find(pingus, \(t) { inside(zone, t.pub) })
         emit @t :kill               ;; `t` is the pingu that entered the zone
     }
 }
@@ -3597,20 +3597,6 @@ there is no `require`.
   evaluates to its arguments otherwise
 - `next(t [, k])`: the key and value that follow the key `k` in the table
   `t`, or the first ones if `k` is absent; evaluates to `nil` after the last
-- `find(xs, f)`: the first member `v` of the [pool](#tasks) or table `xs`
-  for which `f(v, k)` is truthy, and its key `k` (in a pool, its position
-  among the live tasks); evaluates to `nil` if there is none
-- `filter(xs, f)`: a new [vector](#vector) with the members of the pool or
-  table `xs` for which `f(v, k)` is truthy, in the order of the
-  [loop](#loop) over `xs`
-
-Examples:
-
-```
-val e = find(enemies, \(e) { e.hp <= 0 })       ;; the first dead enemy, or nil
-val es = filter(enemies, \(e) { e.hp > 0 })     ;; the live enemies
-```
-
 ## Math
 
 - `math.floor(x)`, `math.ceil(x)`: rounds `x` down or up to an integer
@@ -3657,6 +3643,26 @@ string.sub("hello", 1, 3)           ;; ell
 string.find("hello", "l")           ;; 2, 2
 string.split("a,b,,c", ",")         ;; ["a", "b", "", "c"]
 string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
+```
+
+## Iter
+
+The library `iter` has functions over what a [loop](#loop) walks.
+The collection comes first, so that a [pipe](#pipes) chains them.
+For now they take a [pool](#tasks) or a table.
+
+- `iter.find(xs, f)`: the first member `v` of the pool or table `xs` for
+  which `f(v, k)` is truthy, and its key `k` (in a pool, its position
+  among the live tasks); evaluates to `nil` if there is none
+- `iter.filter(xs, f)`: a new [vector](#vector) with the members of the pool
+  or table `xs` for which `f(v, k)` is truthy, in the order of the
+  [loop](#loop) over `xs`
+
+Examples:
+
+```
+val e = iter.find(enemies, \(e) { e.hp <= 0 })      ;; the first dead enemy, or nil
+val es = enemies -> iter.filter(\{ it.hp > 0 })     ;; the live enemies
 ```
 
 ## Vector
