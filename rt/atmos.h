@@ -357,6 +357,7 @@ static inline void a_pushm (AVal* src) {
 }
 
 // Releases all values from `top` up.
+extern uint32_t a_muts;
 static inline void a_orphan (AVal v);
 
 static inline void a_settop (int top) {
@@ -1105,7 +1106,9 @@ void a_cycles (AVal* vs, int n, int d);
 void a_orphan_x (AVal v);
 
 static inline void a_orphan (AVal v) {
-    if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
+    // no cycle forms before a reference is written into an object
+    if (a_muts!=0 &&
+        (v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
         v.u.o->rc>1 && v.u.o->pinned==0 && v.u.o->ceil==0)
     {
         a_orphan_x(v);

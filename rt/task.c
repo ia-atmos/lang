@@ -47,6 +47,7 @@ static void    clr_deep (AVal v, uint32_t d);
 static int     adopt_ok (AVal v, int d, int root);
 static void    pin_kid  (AVal v, int d);
 static AStatus adopt_err (const char* what);
+static void    adopt_end (void);
 static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
@@ -2005,6 +2006,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, d);
+        adopt_end();
     } else if (own->hdr.ceil != 0) {
         a_ceil(v, own->hdr.ceil, own->hdr.clin);
     }
@@ -2131,6 +2133,7 @@ AStatus a_nat_holds (AVal nat, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, nat.u.o->depth);
+        adopt_end();
     }
     return A_OK;
 }
@@ -2199,7 +2202,10 @@ void a_ceil (AVal v, int d, uint32_t lin) {
     }
     o->ceil = (d < 0xFFFF) ? d : 0xFFFF;
     o->clin = lin;
-    unpinned_kids(v, a_ceil, d, lin);
+    // Only the value itself: what it holds is protected by its count.
+    // A value held by others than its holder (rc > 1) is not adopted
+    // with it (`adopt_rec`, `pin_kid`), and one held only by it goes
+    // with it.
 }
 
 // The names of the block `d` end: what only they held loses that
@@ -2214,7 +2220,6 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
         return;
     }
     o->ceil = 0;
-    unpinned_kids(v, ceil_up, d, 0);
 }
 
 // Cycles of unpinned values that end with the names of a block.
@@ -2259,6 +2264,9 @@ static int cyc_marked (AVal v) {
 // `a_name_arg`), and the search gives up beyond CYC_MAX candidates,
 // since it may then be walking data of an outer block.
 static int CYC_ANY = 0;
+// a search from a value that is released (not from the names of a block
+// that ends) gives up, as one from an argument does
+static int CYC_BUDGET = 0;
 #define CYC_MAX 256
 
 static int cyc_cand (AVal v, int d) {
@@ -2390,7 +2398,7 @@ static void cyc_collect (AVal* vs, int n, int d) {
     CYC_IN = 0;
     for (int i=0; i<CYC_N; i++) {
         cyc_refs(a_obj(CYC[i].o), cyc_visit, d);
-        if (CYC_ANY && CYC_N>CYC_MAX) {
+        if ((CYC_ANY || CYC_BUDGET) && CYC_N>CYC_MAX) {
             // too much: it gives up
             CYC_IN = 0;
             break;
@@ -2617,7 +2625,9 @@ void a_orphan_x (AVal v) {
         }
     }
     if (ref) {
+        CYC_BUDGET = 1;
         cyc_collect(&v, 1, 0);
+        CYC_BUDGET = 0;
     }
 }
 
@@ -2644,32 +2654,171 @@ void a_unname_x (AVal* vs, int n, int d) {
 // block `d` only if it is their ceiling or an outer block: the names
 // that hold them must not see them finalized.
 static AObj*  ADOPT_BAD = NULL;
-static AObj** ADOPT_VIS = NULL;
-static int    ADOPT_N   = 0;
-static int    ADOPT_CAP = 0;
-static int adopt_rec (AVal v, int d, int root);
+static int    ADOPT_SHARED = 0;
 
-// `root`: the value itself is adopted, as by `pin x = v`; else it is
-// only held, and a named one is only referenced (`pin_kid`).
+// The values that a pin adopts, found by a visit. Each one gets the
+// number of references that come to it from the others (`in`): a value
+// that has more references than those is also held elsewhere (by a name,
+// whose ceiling no longer reaches what that name holds, or by a table of
+// another owner), and so it is only referenced, with all it holds. The
+// value at the top may also have one reference from where it is going
+// (the variable of the pin, or the temporary of a store).
+typedef struct AdoptV {
+    AObj*    o;
+    uint32_t clin;      // saved: the index of the value meanwhile
+    int      in;
+    int      ext;
+} AdoptV;
+
+static AdoptV* ADOPT_VIS = NULL;
+static int     ADOPT_N   = 0;
+static int     ADOPT_CAP = 0;
+// the values left marked (7) as not adopted, until `adopt_end`
+static AObj**  ADOPT_EXT   = NULL;
+static int     ADOPT_NEXT  = 0;
+static int     ADOPT_CEXT  = 0;
+
+#define ADOPT_SEEN 5
+#define ADOPT_OUT  7
+
+static int adopt_rec (AVal v, int d, int top);
+
+static int adopt_data (AObj* o) {
+    return o->type==A_TAB || o->type==A_FUNC || o->type==A_TASK;
+}
+
+// The values that `v` refers to, for `f`.
+static void adopt_kids (AVal v, void (*f)(AVal)) {
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                f(k);
+                f(x);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* fn = A_FUNC_OF(v);
+            for (int i=0; i<fn->ncap; i++) {
+                f(fn->caps[i]);
+            }
+            break;
+        }
+        case A_XTASK:
+            f(A_TASK_OF(v)->pub);
+            f(A_TASK_OF(v)->ret);
+            break;
+        case A_NAT: {
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                f(n->holds[i]);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+static int*    ADOPT_STK   = NULL;
+static int     ADOPT_NSTK  = 0;
+static int     ADOPT_CSTK  = 0;
+
+static void adopt_out (AVal v) {
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned!=ADOPT_SEEN) {
+        return;
+    }
+    AdoptV* x = &ADOPT_VIS[v.u.o->clin];
+    if (x->ext) {
+        return;
+    }
+    x->ext = 1;
+    if (ADOPT_NSTK == ADOPT_CSTK) {
+        ADOPT_CSTK = (ADOPT_CSTK == 0) ? 16 : ADOPT_CSTK*2;
+        ADOPT_STK = realloc(ADOPT_STK, ADOPT_CSTK * sizeof(int));
+    }
+    ADOPT_STK[ADOPT_NSTK++] = v.u.o->clin;
+}
+
+// `root`: the value itself is adopted, as by `pin x = v`, and it is an
+// error if it is held elsewhere; else it is only held, and then it may
+// be only referenced. Leaves the values that are not adopted marked:
+// `adopt_end` unmarks them, after the pin.
 static int adopt_ok (AVal v, int d, int root) {
     ADOPT_N = 0;
     int ok = adopt_rec(v, d, root);
-    // the marks of the visit are undone
-    for (int i=0; i<ADOPT_N; i++) {
-        ADOPT_VIS[i]->pinned = 0;
+    int n = ADOPT_N;
+    if (ok && n>0) {
+        // held elsewhere: more references than those from the others
+        for (int i=0; i<n; i++) {
+            AdoptV* x = &ADOPT_VIS[i];
+            int own = (i == 0) ? 1 : 0;
+            // a named value: its names count too, and its ceiling
+            // decides (`adopt_rec`)
+            if (adopt_data(x->o) && x->o->ceil==0 && x->o->rc-x->in-own>0) {
+                if (i==0 && root) {
+                    ADOPT_BAD = x->o;
+                    ADOPT_SHARED = 1;
+                    ok = 0;
+                    break;
+                }
+                adopt_out(a_obj(x->o));
+            }
+        }
+        // and what they hold, with them
+        while (ok && ADOPT_NSTK>0) {
+            int j = ADOPT_STK[--ADOPT_NSTK];
+            adopt_kids(a_obj(ADOPT_VIS[j].o), adopt_out);
+        }
+        ADOPT_NSTK = 0;
+    }
+    ADOPT_NEXT = 0;
+    for (int i=0; i<n; i++) {
+        AdoptV* x = &ADOPT_VIS[i];
+        x->o->clin = x->clin;
+        if (ok && x->ext) {
+            x->o->pinned = ADOPT_OUT;
+            if (ADOPT_NEXT == ADOPT_CEXT) {
+                ADOPT_CEXT = (ADOPT_CEXT == 0) ? 16 : ADOPT_CEXT*2;
+                ADOPT_EXT = realloc(ADOPT_EXT, ADOPT_CEXT * sizeof(AObj*));
+            }
+            ADOPT_EXT[ADOPT_NEXT++] = x->o;
+        } else {
+            x->o->pinned = 0;
+        }
     }
     return ok;
 }
 
-static int adopt_rec (AVal v, int d, int root) {
-    // pinned, or already visited (a cycle among unpinned values)
-    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+static void adopt_end (void) {
+    for (int i=0; i<ADOPT_NEXT; i++) {
+        if (ADOPT_EXT[i]->pinned == ADOPT_OUT) {
+            ADOPT_EXT[i]->pinned = 0;
+        }
+    }
+    ADOPT_NEXT = 0;
+}
+
+static int adopt_rec (AVal v, int d, int top) {
+    if (v.type<A_TAB || v.type==A_BOX) {
         return 1;
     }
     AObj* o = v.u.o;
+    // already visited (a cycle, or a value held twice)
+    if (o->pinned == ADOPT_SEEN) {
+        ADOPT_VIS[o->clin].in++;
+        return 1;
+    }
+    // pinned
+    if (o->pinned) {
+        return 1;
+    }
     // a named value that is held by a holder inside the block of its
     // name is only referenced
-    if (!root && o->ceil!=0 && d>(int)o->ceil) {
+    if (!top && o->ceil!=0 && d>(int)o->ceil) {
         return 1;
     }
     if (o->ceil!=0 && d>o->ceil) {
@@ -2678,10 +2827,12 @@ static int adopt_rec (AVal v, int d, int root) {
     }
     if (ADOPT_N == ADOPT_CAP) {
         ADOPT_CAP = (ADOPT_CAP == 0) ? 16 : ADOPT_CAP*2;
-        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AObj*));
+        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AdoptV));
     }
-    ADOPT_VIS[ADOPT_N++] = o;
-    o->pinned = 5;
+    // the first one is the value that goes to its owner
+    ADOPT_VIS[ADOPT_N] = (AdoptV) { o, o->clin, (ADOPT_N==0) ? 0 : 1, 0 };
+    o->clin   = ADOPT_N++;
+    o->pinned = ADOPT_SEEN;
     switch (v.type) {
         case A_TAB: {
             uint32_t pos = 0;
@@ -2726,6 +2877,10 @@ static AStatus adopt_err (const char* what) {
     AVal v = a_obj(o);
     const char* type = (v.type == A_XTASK) ? "task" :
                        (v.type == A_TASKS) ? "pool" : a_typename(v);
+    if (ADOPT_SHARED) {
+        ADOPT_SHARED = 0;
+        return a_error("invalid %s : shared %s", what, type);
+    }
     uint32_t lin = o->clin;
     return a_error("invalid %s : %s named at %s:%d", what, type,
         atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
@@ -2750,6 +2905,7 @@ AStatus a_hold (AObj* h, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, h->depth);
+        adopt_end();
     } else if (h->ceil != 0) {
         // the names of the holder see it too
         a_ceil(v, h->ceil, h->clin);
@@ -2826,6 +2982,7 @@ AStatus a_pin (AVal* slot) {
         return adopt_err("pin");
     }
     pin_deep(v, a_depth, 1);
+    adopt_end();
     return A_OK;
 }
 
@@ -3261,6 +3418,7 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
             return adopt_err("pin");
         }
         pin_deep(v, d, 1);
+        adopt_end();
     }
     AVal old = *slot;
     a_inc(v);
