@@ -326,6 +326,15 @@ is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
 
+The checks of the rules below, and the bookkeeping that feeds them, may be
+removed when a program is built with `ATMOS_PIN=off`.
+What remains is the semantics of blocks: a pinned value is finalized at the
+end of its block, a task with it, and a place written with `set :out` goes
+back to `nil` when its value ends.
+A correct program behaves the same; an incorrect one is not stopped (an
+escape reads an emptied value instead of raising an error), and a cycle of
+unpinned values leaks.
+
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
 becomes garbage while the block is still alive.

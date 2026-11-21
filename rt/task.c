@@ -1568,6 +1568,9 @@ static int emit_depth (ANode* n) {
 }
 
 static AStatus emit_chk (ANode* n, AVal evt, int anc) {
+#ifdef ATM_PIN_OFF
+    (void) n; (void) evt; (void) anc; return A_OK;
+#endif
     int p = a_pdepth(evt);
     if (p == 0) {
         return A_OK;
@@ -2174,6 +2177,9 @@ static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
 }
 
 void a_name_arg (AVal v, int d) {
+#ifdef ATM_PIN_OFF
+    (void) v; (void) d; return;
+#endif
     if (v.type<A_TAB || v.u.o->pinned) {
         return;
     }
@@ -2519,6 +2525,9 @@ static void cyc_collect (AVal* vs, int n, int d) {
 uint32_t a_muts = 0;
 
 void a_cycles (AVal* vs, int n, int d) {
+#ifdef ATM_PIN_OFF
+    (void) vs; (void) n; (void) d; return;
+#endif
     cyc_collect(vs, n, d);
 }
 
@@ -2622,6 +2631,9 @@ void a_orphan_x (AVal v) {
 }
 
 void a_args_end (AVal* vs, int n) {
+#ifdef ATM_PIN_OFF
+    (void) vs; (void) n; return;
+#endif
     for (int i=0; i<n; i++) {
         AVal v = vs[i];
         if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
@@ -2732,6 +2744,9 @@ static AStatus adopt_err (const char* what) {
 }
 
 AStatus a_hold (AObj* h, AVal v) {
+#ifdef ATM_PIN_OFF
+    (void) h; (void) v; return A_OK;
+#endif
     int p = a_pdepth(v);
     if (p > (int)h->depth) {
         // An unpinned holder that only its name refers to may receive a
@@ -2819,12 +2834,14 @@ AStatus a_pin (AVal* slot) {
     }
     // an unpinned value is pinned at its floor or deeper, and at its
     // ceiling or outer
+#ifndef ATM_PIN_OFF
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
     }
     if (!adopt_ok(v, a_depth, 1)) {
         return adopt_err("pin");
     }
+#endif
     pin_deep(v, a_depth, 1);
     return A_OK;
 }
@@ -3254,12 +3271,14 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
         if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
             return a_error("invalid assignment : unexpected parent task");
         }
+#ifndef ATM_PIN_OFF
         if (a_pdepth(v) > d) {
             return a_err_pinned(v);
         }
         if (!adopt_ok(v, d, 1)) {
             return adopt_err("pin");
         }
+#endif
         pin_deep(v, d, 1);
     }
     AVal old = *slot;

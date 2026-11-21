@@ -134,11 +134,14 @@ static int opt2 (const char* name, const char* old,
 // The numeric types of the build: the program and the runtime agree on
 // them.
 static int OPT_F32 = 0;
+// ATMOS_PIN=off: the runtime and the program without the checks of pin
+static int OPT_PIN_OFF = 0;
 
 static void opts_num (void) {
     OPT_F32     = opt2("ATMOS_FLOAT",   "ATMOS_REAL", "64", "32");
     OPT_INT32   = opt2("ATMOS_INTEGER", "ATMOS_INT",  "64", "32");
     OPT_TIME_MS = opt2("ATMOS_CLOCK",   "ATMOS_TIME", "us", "ms");
+    OPT_PIN_OFF = opt2("ATMOS_PIN",     "ATMOS_NOPIN", "on", "off");
 }
 
 // Builds the C source into an executable. Returns 0 on success.
@@ -146,10 +149,11 @@ static int build (const char* c, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
     // the runtime of the configuration
-    char* rel = xfmt("build/libatmos%s%s%s%s.a",
+    char* rel = xfmt("build/libatmos%s%s%s%s%s.a",
         OPT_F32     ? "-f32" : "",
         OPT_INT32   ? "-i32" : "",
         OPT_TIME_MS ? "-ms"  : "",
+        OPT_PIN_OFF ? "-nopin" : "",
         asan        ? "-asan" : "");
     char* lib = xfmt("%s/%s", home, rel);
     // only the default configuration is built in advance: another one
@@ -165,7 +169,7 @@ static int build (const char* c, const char* exe) {
     // the flags of the environment of a dedicated compiler, then those
     // of the user
     char* cmd = xfmt(
-        "%s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
+        "%s %s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
         env("ATMOS_CC", "cc"),
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
@@ -173,6 +177,7 @@ static int build (const char* c, const char* exe) {
         OPT_F32     ? "-DATM_FLOAT_32" : "",
         OPT_INT32   ? "-DATM_INTEGER_32"     : "",
         OPT_TIME_MS ? "-DATM_CLOCK_MS"    : "",
+        OPT_PIN_OFF ? "-DATM_PIN_OFF"     : "",
         home, c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
