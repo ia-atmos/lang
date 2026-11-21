@@ -171,6 +171,44 @@ every session was told its new name: `env-pico`, `env-iup`, `env-uv`,
 `paper-src-games`, `sdl-tux`; `doom` and `lang` kept theirs. The titles
 of the sessions still have the old names.
 
+## Session ids
+
+To message a session with `send_message` (`atmos-args` is archived).
+
+| Session | Id | Topic |
+|---|---|---|
+| `atmos-lang` | session_011eECogKVQ7ZzmWCoMST2wK | the compiler; measurements on the ports; merges |
+| `atmos-pin` | session_011eECogSDhkVfyt7qme5DLh | the rules of `pin` |
+| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools |
+| `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
+| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` |
+| `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
+| `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
+| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build |
+| `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
+| `atmos-cli` | session_011eECoijhygAGqD1jDZ3pWZ | the command line |
+| `atmos-blocks` | session_011eECoipBcPZnUN2BbGAyuB | the end of a transparent block |
+| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
+| `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
+| `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
+| `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
+| `sdl-tux` | session_011eECoijTqoBzMrEaknmW9P | port: SuperTux |
+| `ray-lessmilk` | session_011eECohyasjWkvCHdxGxJ6D | port: Lessmilk games |
+| `doom` | session_011eECoiGQuUE9LUpGJZ7yFf | port: Doom |
+| `pico-1oom` | session_011eECoiEGgQ6ZBFHUCoxt77 | port: 1oom |
+| `pico-frescogo` | session_011eECoitGg7fJwfZh8JDNnR | port: FrescoGO! |
+| `pico-slides` | session_011eECogEdSaHMwZpk7NGmgk | presentations over pico |
+| `env-sdl` | session_011eECogZjerUUUp2BmsSRgW | environment: SDL |
+| `env-pico` | session_011eECoikzsmBiPNXNF7ffpf | environment: pico-sdl |
+| `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
+| `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
+| `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
+| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards |
+| `paper-pin` | session_011eECofALi31oSimzbLxYZp | paper on `pin` |
+| `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
+| `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
+| `paper-media` | session_011eECoiQwcXzsrFhTMMYGr7 | paper on media |
+
 ## Standing rules from the author, for all sessions
 
 - Commit and push straight to `main`, in fine-grained commits.
