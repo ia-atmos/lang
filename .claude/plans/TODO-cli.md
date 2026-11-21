@@ -64,3 +64,6 @@ becomes an item only if the author takes it up.
   primary (`-p iup`), or register the environment of the dedicated
   compiler after those of the program. Dedicated compilers in use:
   `atmos-pico`, `atmos-sdl`, `atmos-ray`, `atmos-uv`.
+- `atmos-lang`, 2026-11-21: a fourth build variable, `ATMOS_PIN=unchecked|off`
+  (`atmos-pin#3`), on `main` since `34c381b`, with its libraries in the
+  `CFGS` of the `Makefile` and its `-D` in `src/main.c`.

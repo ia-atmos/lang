@@ -73,8 +73,10 @@ refers to that value.
 reverse order, interleaved with `defer`: tasks and pools are aborted, tables
 and functions release what they hold, even in a cycle, and native values
 release their resources. A value replaced in an owned place is retired: it
-is finalized when its last reference goes, and at the latest at the end of
-the block. An unpinned value that is dropped is finalized at once. Data that
+is finalized at the latest at the end of the block. An unpinned value that is
+dropped is finalized at the latest at the end of the block of its last name.
+With reference counting, both happen earlier: the retired value when its
+last reference goes, the dropped one at once. Data that
 its block finalized is marked, and any later use (an index, a write, a
 length, an iteration, a call, a spawn into a finalized pool) raises
 `invalid access : finalized <type> pinned at f:N`.
@@ -92,7 +94,12 @@ value declares, through its binding, which values it holds.
 ## 8. Implementation
 
 Atmos compiles to C. The runtime counts references and has no tracing
-collector. Each object header carries its reference count, a state byte, the
+collector, a choice of simplicity, not a requirement: the checks compare
+block depths and never read a count, and finalization at the end of a block
+is driven by the block. Only the moment an unowned value goes reads a count,
+which is why rule 4 is stated in terms of blocks, with counting as the
+earlier case. A tracing collector could replace the counts, and would make
+the trial deletion below unnecessary. Each object header carries its reference count, a state byte, the
 depth of its block, the source line of the pin that gave it that depth, and
 the ceiling with its line. The state distinguishes unpinned values, unpinned
 values with a floor, values pinned by a declaration, values pinned by a
@@ -111,7 +118,8 @@ Retired values are kept on a list that holds one reference each. A retired
 value is released as soon as that is its only reference, and whatever
 remains, a cycle, is finalized at the end of the block.
 
-Cycles among unpinned values are broken at the end of the block of the names
+Counting alone does not reclaim cycles. Cycles among unpinned values are
+broken at the end of the block of the names
 that reach them, by a local trial deletion. The candidates are the unpinned
 values reachable from the block's names whose ceiling is at that block or
 absent. References among the candidates and from the names are subtracted. A
@@ -153,6 +161,23 @@ None was measured for this paper.
 - **The ports.** On the final rules, 12 ports pass their suites unchanged
   (`atmos-lang#81`, merge `64005fd` into `main`).
 
-The cost of the checks as a whole, the program with checks against the same
-program without them, is not measured: it needs the flag that removes the
-checks, which the author has not approved yet (#7b, `atmos-pin#3`).
+- **The checks as a whole, on a real program.** Doom, demo1, counted in
+  instructions on `main` at `34c381b`: with no rendering, 263.7 M with the
+  checks against 256.3 M with `ATMOS_PIN=off` (the same generated C, linked
+  against the runtime without the checks; its 16 tests give identical
+  results under both). The checks cost 7.4 M instructions, 2.8% of the run,
+  and about 13% of what the Atmos program adds to the engine written in C
+  (207.9 M). With rendering: 4828.2 M against 4819.1 M, 0.2% (report of
+  `atmos-lang`, 2026-11-21; doom `doc/bench.md`).
+
+- **Code size, on a microcontroller.** env-esp32, board build (ESP32), the
+  program with its runtime: `init` takes 140,631 bytes with the checks and
+  136,037 without (`ATM_PIN_OFF`, 3.3% less); `ultrat` takes 215,219 and
+  198,269 bytes (7.9% less). With `ATMOS_PIN=unchecked` (checks removed,
+  semantics kept): 139,246 and 204,550 bytes. Static DRAM changes by 40 bytes
+  in both. Its 6 host tests give the same output in the three modes; heap and
+  speed on the board are not measured (report of `atmos-lang`, 2026-11-21,
+  `libmain.a`, `lang` at `34c381b`).
+
+`ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
+`ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).

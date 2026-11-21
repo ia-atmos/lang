@@ -168,10 +168,19 @@ static int build (const char* c, const char* exe) {
         asan        ? "-asan" : "");
     char* lib = xfmt("%s/%s", home, rel);
     // only the default configuration is built in advance: another one
-    // is built when a program first asks for it
+    // is built when a program first asks for it, with the output of the
+    // build in a log, so that its warnings do not reach the output of
+    // the program; the log is shown only if the build fails
     if (access(lib, R_OK) != 0) {
-        char* mk = xfmt("make -s -C %s %s >&2", home, rel);
+        char* log = xfmt("%s.log", lib);
+        char* mk = xfmt("mkdir -p %s/build 2>/dev/null && "
+            "make -s -C %s %s >%s 2>&1", home, home, rel, log);
         if (system(mk)!=0 || access(lib, R_OK)!=0) {
+            // the log, if the directory could be written
+            char* show = xfmt("[ -f %s ] && cat %s >&2", log, log);
+            if (system(show) != 0) {
+                // no log: the directory cannot be written
+            }
             fprintf(stderr, ATMOS_NAME " : runtime not found : %s\n"
                 "    build it with : make -C %s %s\n", lib, home, rel);
             return 1;

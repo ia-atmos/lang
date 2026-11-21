@@ -178,6 +178,11 @@ The plan, with the settled decisions and the milestones, is in
 make test
 ```
 
+Before a merge that touches `rt/` or the `Makefile`, `make test-cfgs`
+builds the runtime in every configuration of the options, from clean
+and with `-Werror`, in `build/cfgs`: a warning in any of them would
+reach the output of a program built with it. `atmos-lang` runs it.
+
 - `tst/rt/`: unit tests of the runtime, in C.
 - `tst/lex/`, `tst/ast/`: lexer and parser golden cases.
 - `tst/golden/`: the cases of the reference implementation that this
