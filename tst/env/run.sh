@@ -24,6 +24,12 @@ out=$(mktemp)
     ATMOS_CFLAGS='-O1 -DENVT_BASE=10' $A -e env.atm prog.atm
     # with the address sanitizer
     ATMOS_ASAN=1 $T prog.atm
+    # an environment refuses with #error a numeric option it does not
+    # support, and takes the others
+    ATMOS_CLOCK=ms $T prog.atm 2>&1 | grep -c "error: #error \"envt: ATMOS_CLOCK=ms is not supported"
+    ATMOS_INTEGER=32 ATMOS_FLOAT=32 $T prog.atm
+    # a former name is refused
+    ATMOS_REAL=float $A prog.atm ; echo "exit $?"
 ) > "$out" 2>&1
 if diff "$out" expected.out; then
     echo "pass=1 fail=0"

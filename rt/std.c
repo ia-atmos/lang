@@ -79,7 +79,7 @@ static AStatus std_tonumber (AFunc* self, int argc, AVal* argv) {
     AVal ret;
     if (strpbrk(s, hex ? ".pP" : ".eEnN") == NULL) {
         // as a literal: a decimal that does not fit the integer is a
-        // real, a hexadecimal wraps
+        // float, a hexadecimal wraps
         uint64_t u = strtoull(d, &end, 0);
         if (hex || u<=(uint64_t)A_INT_MAX) {
             ret = a_int((AInt)((*s == '-') ? 0 - u : u));
@@ -245,20 +245,20 @@ static AStatus argn (int argc, AVal* argv, int i, const char* f, double* n) {
     return A_OK;
 }
 
-// Argument `i` as a real, for the functions that compute with reals.
-static AStatus argr (int argc, AVal* argv, int i, const char* f, AReal* n) {
+// Argument `i` as a float, for the functions that compute with floats.
+static AStatus argr (int argc, AVal* argv, int i, const char* f, AFloat* n) {
     double d;
     if (argn(argc, argv, i, f, &d) != A_OK) {
         return A_ERROR;
     }
-    *n = a_real(argv[i]);
+    *n = a_float(argv[i]);
     return A_OK;
 }
 
 #define MATH1(name, expr)                                               \
     static AStatus math_##name (AFunc* self, int argc, AVal* argv) {    \
         (void) self;                                                    \
-        AReal x = 0;                                                    \
+        AFloat x = 0;                                                    \
         if (argr(argc, argv, 0, #name, &x) != A_OK) {                   \
             return A_ERROR;                                             \
         }                                                               \
@@ -277,7 +277,7 @@ MATH1(log,   A_RF(log)(x))
 
 // math.floor(x) / math.ceil(x): an integer, if it fits
 static AStatus math_round (int up, int argc, AVal* argv) {
-    AReal x = 0;
+    AFloat x = 0;
     if (argr(argc, argv, 0, up ? "ceil" : "floor", &x) != A_OK) {
         return A_ERROR;
     }
@@ -298,7 +298,7 @@ static AStatus math_ceil (AFunc* self, int argc, AVal* argv) {
 // math.abs(x): keeps the subtype
 static AStatus math_abs (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    AReal x = 0;
+    AFloat x = 0;
     if (argr(argc, argv, 0, "abs", &x) != A_OK) {
         return A_ERROR;
     }
@@ -315,8 +315,8 @@ static AStatus math_abs (AFunc* self, int argc, AVal* argv) {
 // default, as in Lua.
 static AStatus math_atan (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    AReal y = 0;
-    AReal x = 1;
+    AFloat y = 0;
+    AFloat x = 1;
     if (argr(argc,argv,0,"atan",&y) != A_OK) {
         return A_ERROR;
     }
@@ -331,8 +331,8 @@ static AStatus math_atan (AFunc* self, int argc, AVal* argv) {
 // math.atan2(y, x): the angle of the point (x, y), in (-pi, pi].
 static AStatus math_atan2 (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    AReal y = 0;
-    AReal x = 0;
+    AFloat y = 0;
+    AFloat x = 0;
     if (argr(argc,argv,0,"atan2",&y)!=A_OK ||
         argr(argc,argv,1,"atan2",&x)!=A_OK)
     {
@@ -344,8 +344,8 @@ static AStatus math_atan2 (AFunc* self, int argc, AVal* argv) {
 
 static AStatus math_pow (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    AReal x = 0;
-    AReal y = 0;
+    AFloat x = 0;
+    AFloat y = 0;
     if (argr(argc,argv,0,"pow",&x)!=A_OK || argr(argc,argv,1,"pow",&y)!=A_OK) {
         return A_ERROR;
     }
@@ -793,7 +793,7 @@ AStatus arg_int (int argc, AVal* argv, int i, const char* f, int opt,
     }
     if (!a_toint(v, n)) {
         return a_error("invalid argument to '%s' : expected integer : got %s",
-            f, a_isnum(v) ? "real" : a_typename(v));
+            f, a_isnum(v) ? "float" : a_typename(v));
     }
     return A_OK;
 }

@@ -5,13 +5,15 @@ configured, built, installed, and told which environment to use. The
 material is `261120-cli.md`. The implementation goes to the branch
 `cli`; this file and the plans go straight to `main`.
 
-Last update: 2026-11-20.
+Last update: 2026-11-21.
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
-| #1 | What the author has in mind for the command line | Asked on 2026-11-20; waits for him |
+| #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
+| #2 | The names of the long options | Asked 2026-11-21; recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2): the ports call them |
 
 ## Observed on 2026-11-20 (`main` at `5123f9a`)
 

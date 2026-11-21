@@ -44,29 +44,38 @@ typedef struct AObj {
     uint32_t clin;
 } AObj;
 
-// The C type of a real: a `double`, or a `float` of 32 bits when the
-// runtime and the program are built with `-DATM_REAL_FLOAT` (the
-// compiler does both under `ATMOS_REAL=float`). Then each operation
-// between reals rounds to `float`, as in C, `math` uses the functions
-// for `float`, and a real prints with the fewest digits that give it
+// The former names of the options of the build are refused, so that a
+// program or an environment built with one does not get the defaults in
+// silence.
+#if defined(ATM_REAL_FLOAT) || defined(ATM_INT_32) || defined(ATM_TIME_MS)
+#error "renamed: ATM_REAL_FLOAT to ATM_FLOAT_32, ATM_INT_32 to ATM_INTEGER_32, ATM_TIME_MS to ATM_CLOCK_MS"
+#endif
+#define A_TIME_US A_TIME_US_was_renamed_to_A_CLOCK_US
+#define AReal     AReal_was_renamed_to_AFloat
+
+// The C type of a float: a `double`, or a `float` of 32 bits when the
+// runtime and the program are built with `-DATM_FLOAT_32` (the
+// compiler does both under `ATMOS_FLOAT=32`). Then each operation
+// between floats rounds to `float`, as in C, `math` uses the functions
+// for `float`, and a float prints with the fewest digits that give it
 // back. Integers do not change. `A_RF(fn)` is the function `fn` of
 // <math.h> for the type.
-#ifdef ATM_REAL_FLOAT
-typedef float AReal;
+#ifdef ATM_FLOAT_32
+typedef float AFloat;
 #define A_RF(fn) fn##f
 #define A_STRTOR strtof
 #else
-typedef double AReal;
+typedef double AFloat;
 #define A_RF(fn) fn
 #define A_STRTOR strtod
 #endif
 
 // The C type of an integer: 64 bits, or 32 bits when the runtime and
-// the program are built with `-DATM_INT_32` (`ATMOS_INT=32`). Integer
-// arithmetic wraps at the size. With integers of 32 bits and reals of
+// the program are built with `-DATM_INTEGER_32` (`ATMOS_INTEGER=32`). Integer
+// arithmetic wraps at the size. With integers of 32 bits and floats of
 // 32 bits, on a target with pointers of 32 bits, a value has 8 bytes
 // instead of 16.
-#ifdef ATM_INT_32
+#ifdef ATM_INTEGER_32
 typedef int32_t  AInt;
 typedef uint32_t AUInt;
 #define A_INT_BITS 32
@@ -79,18 +88,18 @@ typedef uint64_t AUInt;
 #define A_INT_MIN  INT64_MIN
 #define A_INT_MAX  INT64_MAX
 #endif
-// 2^(A_INT_BITS-1): an integral real `d` fits if -A_INT_LIM <= d < A_INT_LIM
+// 2^(A_INT_BITS-1): an integral float `d` fits if -A_INT_LIM <= d < A_INT_LIM
 #define A_INT_LIM  (-(double)A_INT_MIN)
 
 // The unit of time of a program: a clock (`1h30min`, the time of an
 // emit, the time to the nearest timer) is a number of microseconds, or
 // of milliseconds when the runtime and the program are built with
-// `-DATM_TIME_MS` (`ATMOS_TIME=ms`). `A_TIME_US` is the unit in
+// `-DATM_CLOCK_MS` (`ATMOS_CLOCK=ms`). `A_CLOCK_US` is the unit in
 // microseconds.
-#ifdef ATM_TIME_MS
-#define A_TIME_US 1000
+#ifdef ATM_CLOCK_MS
+#define A_CLOCK_US 1000
 #else
-#define A_TIME_US 1
+#define A_CLOCK_US 1
 #endif
 
 typedef struct AVal {
@@ -98,7 +107,7 @@ typedef struct AVal {
     union {
         int     b;
         AInt    i;
-        AReal   n;
+        AFloat   n;
         AObj*   o;
     } u;
 } AVal;
@@ -120,18 +129,18 @@ static inline AVal a_bool (int b) {
 static inline AVal a_int (AInt i) {
     AVal v;
     v.type = A_INT;
-#ifdef ATM_INT_32
+#ifdef ATM_INTEGER_32
     v.u.o  = NULL;  // the integer may not fill the union
 #endif
     v.u.i  = i;
     return v;
 }
 
-static inline AVal a_num (AReal n) {
+static inline AVal a_num (AFloat n) {
     AVal v;
     v.type = A_NUM;
-#ifdef ATM_REAL_FLOAT
-    v.u.i  = 0;     // the real may not fill the union
+#ifdef ATM_FLOAT_32
+    v.u.i  = 0;     // the float may not fill the union
     v.u.o  = NULL;
 #endif
     v.u.n  = n;
@@ -147,12 +156,12 @@ static inline double a_dbl (AVal v) {
     return (v.type == A_INT) ? (double)v.u.i : v.u.n;
 }
 
-// A number as a real.
-static inline AReal a_real (AVal v) {
-    return (v.type == A_INT) ? (AReal)v.u.i : v.u.n;
+// A number as a float.
+static inline AFloat a_float (AVal v) {
+    return (v.type == A_INT) ? (AFloat)v.u.i : v.u.n;
 }
 
-// An integer if the value is integral and fits, else a real.
+// An integer if the value is integral and fits, else a float.
 AVal a_numi (double n);
 
 // A number as an integer, if it has an integral value that fits.
@@ -493,7 +502,7 @@ typedef struct AStr {
 AVal a_str  (const char* s, size_t len);
 AVal a_strz (const char* s);
 
-// A C number as an integer or as a real, according to its type.
+// A C number as an integer or as a float, according to its type.
 #define a_number(x) _Generic((x),                                   \
     float: a_num, double: a_num, long double: a_num,                \
     default: a_int)(x)
@@ -1345,7 +1354,7 @@ typedef enum {
 // Slow path of arithmetic: computes or raises.
 AStatus a_arith (AArith op, AVal* dst, AVal a, AVal b);
 
-// Integers wrap on overflow; a mix of integer and real is real.
+// Integers wrap on overflow; a mix of integer and float is float.
 #define A_ARITH_FAST(name, OP, op)                                  \
     static inline AStatus name (AVal* dst, AVal a, AVal b) {        \
         if (a.type==A_INT && b.type==A_INT) {                       \
@@ -1365,7 +1374,7 @@ A_ARITH_FAST(a_add, A_ADD, +)
 A_ARITH_FAST(a_sub, A_SUB, -)
 A_ARITH_FAST(a_mul, A_MUL, *)
 
-// a / b: always real
+// a / b: always float
 static inline AStatus a_div (AVal* dst, AVal a, AVal b) {
     return a_arith(A_DIV, dst, a, b);
 }
@@ -1459,7 +1468,7 @@ AVal a_tostring (AVal v);
 // -a
 AStatus a_neg (AVal* dst, AVal a);
 
-// Bitwise operations on integers. A real with an integral value is
+// Bitwise operations on integers. A float with an integral value is
 // accepted. `>>` is arithmetic; a shift of 64 or more gives 0 (or
 // -1), and a negative one shifts the other way.
 typedef enum {
@@ -1479,8 +1488,8 @@ static inline void a_not (AVal* dst, AVal a) {
 // Name of the type of a value: "nil", "number", ...
 const char* a_typename (AVal v);
 
-// Writes a number as `print` shows it: an integer as `5`, a real with
-// 14 significant digits and always as a real (`5.0`).
+// Writes a number as `print` shows it: an integer as `5`, a float with
+// 14 significant digits and always as a float (`5.0`).
 int a_num_fmt (char* buf, size_t n, AVal v);
 
 ///////////////////////////////////////////////////////////////////////////////
