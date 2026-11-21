@@ -548,7 +548,7 @@ static void gen_args (Unit* u, List* es, const char* n) {
 }
 
 // A number literal is an integer if it has neither a fraction nor an
-// exponent. A decimal one that does not fit becomes a real; a
+// exponent. A decimal one that does not fit becomes a float; a
 // hexadecimal one wraps.
 static const char* gen_num (const char* str) {
     int hex = (str[0]=='0' && (str[1]=='x' || str[1]=='X'));
@@ -2667,7 +2667,7 @@ static Opnd gen_expr (Unit* u, Expr* e) {
         case E_CLK: {
             // a clock is a number of units of time (microseconds or
             // milliseconds): an integer, which must fit the integer of
-            // the build, or a real if it has a fraction of the unit
+            // the build, or a float if it has a fraction of the unit
             double t = OPT_TIME_MS ? e->tk.clk/1000 : e->tk.clk;
             if (t >= (OPT_INT32 ? 2147483648.0 : 9223372036854775808.0)) {
                 err(e->tk, "invalid clock : out of range");

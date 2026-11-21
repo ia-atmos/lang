@@ -21,9 +21,9 @@ char* file_read (const char* path, size_t* len);
 //      `stmts`         C statements, evaluates to nil
 //      `:prelude decls`    C declarations at file scope
 //      `:number e`     C expression converted to a number: an integer
-//                      or a real, according to its type in C
+//                      or a float, according to its type in C
 //      `:number.integer e`     ... always to an integer
-//      `:number.float e`       ... always to a real
+//      `:number.float e`       ... always to a float
 //      `:boolean e`    ... to a boolean
 //      `:string e`     ... to a string (NULL gives nil)
 //      `:atmos e`      C expression of type AVal (owned); `:value` is
@@ -298,8 +298,8 @@ void list_ins (List* l, int i, Expr* e);
 // Enables `test` blocks (-t).
 extern int OPT_TEST;
 
-// The numeric types of the build: integers of 32 bits (`ATMOS_INT=32`)
-// and time in milliseconds (`ATMOS_TIME=ms`). They bound the literals.
+// The numeric types of the build: integers of 32 bits (`ATMOS_INTEGER=32`)
+// and time in milliseconds (`ATMOS_CLOCK=ms`). They bound the literals.
 extern int OPT_INT32;
 extern int OPT_TIME_MS;
 
