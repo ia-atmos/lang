@@ -1303,6 +1303,10 @@ A transparent task has no own identity and is owned by its enclosing
 non-transparent task.
 In addition, it delegates [pub](#pub) and [emit](#emit) operations to its
 owner.
+Since it has no identity, its termination is not an event: unlike a task, it
+does not awake an `await` of any kind (not even `await(true)` or
+`await :xtask`).
+Only what awaits it by structure goes on, such as the enclosing `par`.
 Note that other compound constructs of Atmos, including
 [par and watching](#parallel), also rely on transparent tasks internally.
 
