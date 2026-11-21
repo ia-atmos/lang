@@ -606,7 +606,7 @@ int a_toint (AVal v, int64_t* i) {
     return 0;
 }
 
-// An integer against a real, with no loss of precision.
+// An integer against a float, with no loss of precision.
 static int cmp_id (AInt i, double d) {
     if (d != d) {
         return 2;
@@ -680,9 +680,9 @@ AStatus a_arith (AArith op, AVal* dst, AVal a, AVal b) {
     if (a.type==A_INT && b.type==A_INT && op!=A_DIV) {
         return arith_int(op, dst, a.u.i, b.u.i);
     }
-    AReal x = a_real(a);
-    AReal y = a_real(b);
-    AReal r = 0;
+    AFloat x = a_float(a);
+    AFloat y = a_float(b);
+    AFloat r = 0;
     switch (op) {
         case A_ADD:  r = x + y;                 break;
         case A_SUB:  r = x - y;                 break;
@@ -823,7 +823,7 @@ int a_num_fmt (char* buf, size_t n, AVal v) {
     if (v.type == A_INT) {
         return snprintf(buf, n, "%lld", (long long)v.u.i);
     }
-#ifdef ATM_REAL_FLOAT
+#ifdef ATM_FLOAT_32
     // the fewest digits that give the float back
     int len = 0;
     for (int p=6; p<=9; p++) {
@@ -835,7 +835,7 @@ int a_num_fmt (char* buf, size_t n, AVal v) {
 #else
     int len = snprintf(buf, n, "%.14g", v.u.n);
 #endif
-    // a real always looks like a real
+    // a float always looks like a float
     if (strspn(buf, "-0123456789") == (size_t)len) {
         len += snprintf(buf+len, n-len, ".0");
     }
