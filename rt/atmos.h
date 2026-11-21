@@ -1499,8 +1499,7 @@ extern AVal atm_g_vector;
 extern AVal atm_g_os;
 extern AVal atm_g_io;
 extern AVal atm_g_next;
-extern AVal atm_g_find;
-extern AVal atm_g_filter;
+extern AVal atm_g_iter;
 
 // Deep string representation: tables as `:Tag [v, k=v]`, with sorted
 // keys (owned). Fails on keys that are neither numbers nor strings.

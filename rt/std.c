@@ -14,8 +14,7 @@ AVal atm_g_tostring;
 AVal atm_g_tonumber;
 AVal atm_g_assert;
 AVal atm_g_next;
-AVal atm_g_find;
-AVal atm_g_filter;
+AVal atm_g_iter;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -189,7 +188,7 @@ static int find_hit (AVal k, AVal v, void* ud) {
     return 1;
 }
 
-// find(xs, f): the first member of the pool or table `xs` for which
+// iter.find(xs, f): the first member of the pool or table `xs` for which
 // `f(v, k)` is truthy, and its key. Gives nil if there is none.
 static AStatus std_find (AFunc* self, int argc, AVal* argv) {
     (void) self;
@@ -214,7 +213,7 @@ static int filter_hit (AVal k, AVal v, void* ud) {
     return (fl->st != A_OK);
 }
 
-// filter(xs, f): a new vector with the members of the pool or table
+// iter.filter(xs, f): a new vector with the members of the pool or table
 // `xs` for which `f(v, k)` is truthy, in the order of the walk.
 static AStatus std_filter (AFunc* self, int argc, AVal* argv) {
     (void) self;
@@ -806,8 +805,10 @@ void atm_std_init (void) {
     atm_g_tonumber = a_func(std_tonumber, 0);
     atm_g_assert   = a_func(std_assert, 0);
     atm_g_next     = a_func(std_next, 0);
-    atm_g_find     = a_func(std_find, 0);
-    atm_g_filter   = a_func(std_filter, 0);
+    // the library `iter`, over what `loop ... in` walks
+    atm_g_iter = a_tab();
+    field(atm_g_iter, "find",   std_find);
+    field(atm_g_iter, "filter", std_filter);
 
     atm_g_X = a_tab();
     field(atm_g_X, "tostring", x_tostring);
@@ -863,8 +864,7 @@ void atm_std_init (void) {
     a_own(atm_g_tonumber);
     a_own(atm_g_assert);
     a_own(atm_g_next);
-    a_own(atm_g_find);
-    a_own(atm_g_filter);
+    a_own(atm_g_iter);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -881,8 +881,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_tonumber);
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
-    a_clr(&atm_g_find);
-    a_clr(&atm_g_filter);
+    a_clr(&atm_g_iter);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {
         a_clr(&atm_envs[i]);
