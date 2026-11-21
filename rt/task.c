@@ -2157,43 +2157,6 @@ AStatus a_nat_holds (AVal nat, AVal v) {
     return A_OK;
 }
 
-// The unpinned values that `v` holds, for `f`.
-static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
-                        uint32_t lin)
-{
-    switch (v.type) {
-        case A_TAB: {
-            uint32_t pos = 0;
-            AVal k, x;
-            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-                f(k, d, lin);
-                f(x, d, lin);
-            }
-            break;
-        }
-        case A_FUNC:
-        case A_TASK: {
-            AFunc* fn = A_FUNC_OF(v);
-            for (int i=0; i<fn->ncap; i++) {
-                f(fn->caps[i], d, lin);
-            }
-            break;
-        }
-        case A_XTASK:
-            f(A_TASK_OF(v)->pub, d, lin);
-            f(A_TASK_OF(v)->ret, d, lin);
-            break;
-        case A_NAT: {
-            ANat* n = A_NAT_OF(v);
-            for (int i=0; i<n->nholds; i++) {
-                f(n->holds[i], d, lin);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
 
 void a_name_arg (AVal v, int d) {
 #ifdef ATM_PIN_UNCHECKED
