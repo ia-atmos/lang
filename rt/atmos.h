@@ -1251,6 +1251,21 @@ static inline int a_same (AVal a, AVal b) {
     return a.type==b.type && (a.type<A_STR || a.u.o==b.u.o);
 }
 
+// A place written with `set :out` refers to the value until the value
+// ends, when the value has an end of its own: pinned data (when its
+// block finalizes it), a task (when it terminates), a pool (when it is
+// aborted). The place is then registered, and goes back to nil at that
+// moment, if it still refers to the value. Returns 0 for a value with
+// no end of its own (unpinned data), which is reset at the end of the
+// block of the `set`. A variable is registered only if its block (at
+// depth `d`) is the block of the value or an outer one.
+int a_out_reg_tab (AVal t, AVal k, AVal v);
+int a_out_reg_var (AVal* slot, AVal box, AVal v, int d);
+
+// The value ended (or is freed): its places go back to nil.
+extern int a_nouts;
+void a_out_ended (AObj* o);
+
 static inline void a_out_var_end (AVal* dst, AVal v) {
     if (v.type>=A_STR && a_same(*dst, v)) {
         a_clr(dst);

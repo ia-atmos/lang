@@ -1,0 +1,11 @@
+after_call	1
+next_frame	1
+enemy	1	ends
+enemy_gone	1
+before_end	2
+enemy	2	ends
+map_gone	nil
+task	true
+task_done	nil
+in	1
+out	nil
