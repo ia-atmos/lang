@@ -66,7 +66,8 @@ written; each such item now has its number below.
   5, 8, 10, 12). The wording of three rules in block terms (a dropped
   unpinned value, a retired value, a replaced native: "at the latest at
   the end of the block", counting being the earlier case) is by the
-  session, to be confirmed; sent to `atmos-pin` for the manual.
+  session, to be confirmed; sent to `atmos-pin` for the manual, which put
+  it to the author (2026-11-21); until decided, the manual keeps "at once".
 - **#14 Cycle collection removed** (atmos-pin#18, branch `pin` at
   `3cd5169`, author's choice "não checar"). The old rule is restored in the
   outline and the draft: a cyclic structure must be pinned; an unpinned
