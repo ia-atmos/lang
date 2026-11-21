@@ -25,7 +25,7 @@ static AStatus run_clock (AStatus st) {
 static double now (void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec*1e6 + ts.tv_nsec/1e3) / A_TIME_US;
+    return (ts.tv_sec*1e6 + ts.tv_nsec/1e3) / A_CLOCK_US;
 }
 
 // The clock, with no environment: sleeps until the nearest timer and
@@ -38,7 +38,7 @@ static AStatus run_clock (AStatus st) {
         }
         fflush(stdout);
         double t0 = now();
-        double us = nxt * A_TIME_US;
+        double us = nxt * A_CLOCK_US;
         struct timespec ts;
         ts.tv_sec  = (time_t) (us / 1e6);
         ts.tv_nsec = (long) ((us - ts.tv_sec*1e6) * 1e3);

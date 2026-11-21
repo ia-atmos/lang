@@ -9,6 +9,12 @@ repository `ia-atmos/paper-src-games` (session `src-games`), at its
 last commit `7ff8f88`. That repository is to be removed. The list of
 this file was last updated there on 2026-11-14.
 
+**Paused by the author on 2026-11-20** ("por enquanto nao vamos fazer
+nada aqui"), said in this session: it overrides "Work with no input"
+(`atmos-lang#95`) here. No work on the paper until he says so. Answers
+of the ports are only recorded below. The reminder of 2026-11-24 (#1,
+#2) stays scheduled, since he asked for it.
+
 ## Index of items (`#N`)
 
 Rule of the author, 2026-11-18 (`.claude/plans/TODO.md`, "Standing

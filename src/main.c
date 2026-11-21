@@ -19,9 +19,9 @@
 //   ATMOS_CFLAGS   C flags (default: -O1)
 //   ATMOS_LDFLAGS  linker flags, after the program (e.g. -lSDL2)
 //   ATMOS_ASAN     if set, builds with the address sanitizer
-//   ATMOS_REAL     if `float`, a real is a C float of 32 bits
-//   ATMOS_INT      if `32`, an integer has 32 bits (default `64`)
-//   ATMOS_TIME     if `ms`, time is in milliseconds (default `us`)
+//   ATMOS_FLOAT    if `32`, a float is a C float of 32 bits (default `64`)
+//   ATMOS_INTEGER  if `32`, an integer has 32 bits (default `64`)
+//   ATMOS_CLOCK    if `ms`, a clock is in milliseconds (default `us`)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,8 +109,16 @@ static const char* home_dir (void) {
 }
 
 // An option of the build with two values: 0 for `v0` (the default), 1
-// for `v1`. Any other value is an error.
-static int opt2 (const char* name, const char* v0, const char* v1) {
+// for `v1`. Any other value is an error. `old` is a former name of the
+// variable, which is refused, so that it is not ignored in silence.
+static int opt2 (const char* name, const char* old,
+                 const char* v0, const char* v1)
+{
+    if (getenv(old) != NULL) {
+        fprintf(stderr, ATMOS_NAME " : invalid %s : "
+            "renamed to %s ('%s' or '%s')\n", old, name, v1, v0);
+        exit(1);
+    }
     const char* v = env(name, v0);
     if (strcmp(v, v1) == 0) {
         return 1;
@@ -128,9 +136,9 @@ static int opt2 (const char* name, const char* v0, const char* v1) {
 static int OPT_F32 = 0;
 
 static void opts_num (void) {
-    OPT_F32     = opt2("ATMOS_REAL", "double", "float");
-    OPT_INT32   = opt2("ATMOS_INT",  "64",     "32");
-    OPT_TIME_MS = opt2("ATMOS_TIME", "us",     "ms");
+    OPT_F32     = opt2("ATMOS_FLOAT",   "ATMOS_REAL", "64", "32");
+    OPT_INT32   = opt2("ATMOS_INTEGER", "ATMOS_INT",  "64", "32");
+    OPT_TIME_MS = opt2("ATMOS_CLOCK",   "ATMOS_TIME", "us", "ms");
 }
 
 // Builds the C source into an executable. Returns 0 on success.
@@ -162,9 +170,9 @@ static int build (const char* c, const char* exe) {
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
         asan ? "-fsanitize=address -fno-omit-frame-pointer -g" : "",
-        OPT_F32     ? "-DATM_REAL_FLOAT" : "",
-        OPT_INT32   ? "-DATM_INT_32"     : "",
-        OPT_TIME_MS ? "-DATM_TIME_MS"    : "",
+        OPT_F32     ? "-DATM_FLOAT_32" : "",
+        OPT_INT32   ? "-DATM_INTEGER_32"     : "",
+        OPT_TIME_MS ? "-DATM_CLOCK_MS"    : "",
         home, c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
