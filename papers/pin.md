@@ -28,12 +28,11 @@ not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
 arena abstraction: the blocks of the program are the regions.
 It bounds the lifetime of a value, but does not collect what becomes garbage
-while its block is alive: reference counting does that underneath.
-Cycles are broken at the end of a block: by the pin, for pinned values, and
-by a local trial deletion among the unpinned values that the block's names
-reach, which replaces a cycle collector.
-A tracing collector would still help inside a long-lived block; Atmos leaves
-it out as a design choice, trading that memory for determinism.
+while its block is alive: a reclaimer underneath does that, and the
+mechanism does not depend on which one.
+Atmos uses reference counting, the simplest; a tracing collector could take
+its place, and would also collect the cycles that the pin leaves to the end
+of their block.
 We argue that it is only sound and useful under structured programming, in
 which blocks own tasks, abortion is a language primitive, and finalization
 order is deterministic.
@@ -51,7 +50,9 @@ case studies from six ports of libraries and games to Atmos.
     - the mechanism: structured memory, with lexical pins
     - a small set of rules, uniform for all dynamic values
     - a cheap dynamic check: one depth per value, one comparison per store
-    - an implementation on reference counting, with no tracing collector by choice
+    - an implementation on reference counting, chosen for simplicity; the
+      rules compare block depths and never read a count, so a tracing
+      collector could replace it
     - an evaluation with six real ports
 
 ## 2. Background
@@ -117,13 +118,16 @@ case studies from six ports of libraries and games to Atmos.
       to `nil` when the block of the `set` ends (case E)
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
-    - a dropped unpinned value is finalized at once
+    - a dropped unpinned value is finalized at the latest at the end of the
+      block of its last name; with reference counting, at once (by the
+      session, to be confirmed: #13)
     - table released, native closed, task aborted
     - finalized data is marked: any later use raises
       `invalid access : finalized <type> pinned at f:N`, so a reference that
       outlived its scope is caught instead of reading an empty value
-    - a value replaced in an owned place is retired: finalized when its last
-      reference goes, at the latest at the end of the block (cycles broken)
+    - a value replaced in an owned place is retired: finalized at the latest
+      at the end of the block (cycles broken); with reference counting,
+      when its last reference goes
 - Rule 5, result
     - a pinned value never leaves its block: no implicit give-away
     - a block gives away an unpinned value (a `val`): last expression,
@@ -137,8 +141,9 @@ case studies from six ports of libraries and games to Atmos.
     - a parameter may receive an unpinned value: store it outside, or return it
     - a constructor builds with `val` and returns it; the caller pins it
     - a pool held by a `val` takes its floor from its tasks, checked at its ceiling
-    - cycles among unpinned values: broken at the end of the block of the names
-      that reach them; `pin` chooses the moment of release
+    - cycles among unpinned values: left to the reclaimer underneath; with
+      reference counting, broken at the end of the block of the names that
+      reach them; `pin` chooses the moment of release
     - a named argument to a task that outlives its spawner (a task of an outer
       pool) gets its ceiling at the block that ends the task
     - `pin var` for values the block creates; `var` for those it refers to
@@ -156,12 +161,15 @@ case studies from six ports of libraries and games to Atmos.
 - Criteria: determinism, cycles, resources, annotations, pauses, cost, errors
 - vs. tracing GC
     - not a replacement: orthogonal, and the two could be combined
+    - the reclaimer under the pins is pluggable: reference counting today,
+      for simplicity; a tracer would change when unowned garbage goes, not
+      what the pins guarantee
     - pins give what a collector does not: a known point of finalization
     - a collector gives what pins do not: garbage reclaimed inside a live block
     - Atmos drops the collector as a tradeoff: no pauses, no heap scans
     - the price: cycles and unreachable data wait for the end of the block
 - vs. plain reference counting
-    - cycles are reclaimed
+    - pinned cycles are reclaimed at the end of their block
     - death point is lexical, not "when the last reference goes"
     - aborts a task, not only frees memory
 - vs. ownership and borrowing (Rust)
@@ -213,7 +221,12 @@ case studies from six ports of libraries and games to Atmos.
 
 ## 8. Implementation
 
-- Compilation to C; reference counting, and no tracing collector by choice
+- Compilation to C; reference counting, and no tracing collector, for
+  simplicity
+- Orthogonal to the pin: the checks compare depths, finalization at block
+  end is driven by the block; only the moment an unowned value goes reads a
+  count, so a tracer can replace the counts with three rules worded by block
+  (#13)
 - What reference counting still does
     - a dropped unpinned value: data at count zero; a task at count one,
       aborted at the end of the statement, since an abort runs code
@@ -229,7 +242,8 @@ case studies from six ports of libraries and games to Atmos.
 - Rule 3: `a_chk_store`, one comparison of depths per store
 - Rule 4: `a_pin_end`, `a_pin_clr`; tasks aborted first, then data released
 - Rule 5: `a_blk_xfer`, refuses a pinned value that would leave; transfers an unpinned one
-- Cycles at block end: local trial deletion
+- Cycles at block end: local trial deletion (needed by reference counting
+  only; a tracer would make it unnecessary)
     - candidates: unpinned values reachable from the block's names
       (ceiling at that block, or none)
     - subtract references among candidates and from the names; what keeps a
@@ -347,7 +361,7 @@ case studies from six ports of libraries and games to Atmos.
 - Collection is still needed during the scope: pins do not replace a GC
 - Without a tracing collector, garbage in cycles lives as long as its block
 - A long-lived block (the main loop, a module) may accumulate such garbage
-- Cycles: the two known leaks (a cyclic value returned by a call and dropped
+- Cycles, an artifact of reference counting: the two known leaks (a cyclic value returned by a call and dropped
   without a name; one given to a task of an outer pool) were fixed on
   2026-11-20 (`daab0b7`, atmos-pin#7); a parameter of a task gives up beyond
   a few hundred values, left to the counts
@@ -356,7 +370,11 @@ case studies from six ports of libraries and games to Atmos.
 - A task cannot publish a value pinned in its body
 - An unpinned value outside its window is an error: `invalid pin : table named at f:N`
 - A native replaced in an owned place is closed when its last holder lets it go:
-  deterministic, but not a point of the text
+  deterministic, but not a point of the text; with a tracer, at the latest
+  at the end of the block
+- With a tracer, a dropped task or native lingers until the end of the block
+  of its last name, not until it is dropped: `pin` remains the way to choose
+  the moment
 - An event is shared: a receiver cannot pin it
 - A value that leaves is transferred deep: cost proportional to its size
 - Requires a language with structured tasks and abortion
@@ -406,7 +424,8 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
-- An optional tracing collector, scoped to a block
+- A tracing collector in place of reference counting: cycles collected,
+  trial deletion removed, the three timing rules worded by block
 - Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion

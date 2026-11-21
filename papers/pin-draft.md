@@ -73,8 +73,10 @@ refers to that value.
 reverse order, interleaved with `defer`: tasks and pools are aborted, tables
 and functions release what they hold, even in a cycle, and native values
 release their resources. A value replaced in an owned place is retired: it
-is finalized when its last reference goes, and at the latest at the end of
-the block. An unpinned value that is dropped is finalized at once. Data that
+is finalized at the latest at the end of the block. An unpinned value that is
+dropped is finalized at the latest at the end of the block of its last name.
+With reference counting, both happen earlier: the retired value when its
+last reference goes, the dropped one at once. Data that
 its block finalized is marked, and any later use (an index, a write, a
 length, an iteration, a call, a spawn into a finalized pool) raises
 `invalid access : finalized <type> pinned at f:N`.
@@ -92,7 +94,12 @@ value declares, through its binding, which values it holds.
 ## 8. Implementation
 
 Atmos compiles to C. The runtime counts references and has no tracing
-collector. Each object header carries its reference count, a state byte, the
+collector, a choice of simplicity, not a requirement: the checks compare
+block depths and never read a count, and finalization at the end of a block
+is driven by the block. Only the moment an unowned value goes reads a count,
+which is why rule 4 is stated in terms of blocks, with counting as the
+earlier case. A tracing collector could replace the counts, and would make
+the trial deletion below unnecessary. Each object header carries its reference count, a state byte, the
 depth of its block, the source line of the pin that gave it that depth, and
 the ceiling with its line. The state distinguishes unpinned values, unpinned
 values with a floor, values pinned by a declaration, values pinned by a
@@ -111,7 +118,8 @@ Retired values are kept on a list that holds one reference each. A retired
 value is released as soon as that is its only reference, and whatever
 remains, a cycle, is finalized at the end of the block.
 
-Cycles among unpinned values are broken at the end of the block of the names
+Counting alone does not reclaim cycles. Cycles among unpinned values are
+broken at the end of the block of the names
 that reach them, by a local trial deletion. The candidates are the unpinned
 values reachable from the block's names whose ceiling is at that block or
 absent. References among the candidates and from the names are subtracted. A
