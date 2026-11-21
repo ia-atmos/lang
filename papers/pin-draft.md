@@ -162,5 +162,12 @@ None was measured for this paper.
   (207.9 M). With rendering: 4828.2 M against 4819.1 M, 0.2% (report of
   `atmos-lang`, 2026-11-21; doom `doc/bench.md`).
 
+- **Code size, on a microcontroller.** env-esp32, board build (ESP32), the
+  program with its runtime: `init` takes 140,631 bytes with the checks and
+  136,037 without (`ATM_PIN_OFF`, 3.3% less); `ultrat` takes 215,219 and
+  198,269 bytes (7.9% less). Its host tests pass with the checks, with
+  `ATMOS_PIN=unchecked`, and with `ATMOS_PIN=off` (report of `atmos-lang`,
+  2026-11-21).
+
 `ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
 `ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).

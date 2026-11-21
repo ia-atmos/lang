@@ -300,6 +300,9 @@ case studies from six ports of libraries and games to Atmos.
 - Cost of the checks on a real program (Doom demo1, instructions): 263.7 M
   against 256.3 M with `ATMOS_PIN=off`, 2.8% of the run and about 13% of what
   Atmos adds over the C engine; 0.2% with rendering (doom `doc/bench.md`)
+- Cost in code size (env-esp32, board build, program plus runtime): with the
+  checks against `ATM_PIN_OFF`, `init` 140,631 against 136,037 bytes (+3.3%),
+  `ultrat` 215,219 against 198,269 bytes (+8.6%)
 - Cost of the ceiling: 2,000,000 `pin` of two small tables,
   0.95 s against 0.75 s without the check; the same loop with `val`, 0.75 s
 - Reports of the migration, so far (`261115-pin.md`)
