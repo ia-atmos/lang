@@ -8,7 +8,7 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Should the end of a transparent block be an event that programs see? | decided 2026-11-21: `#1a`, no, it ends in silence |
-| `#2` | Implementation on branch `blocks` (`77b2ff3`, `bc32a05`, `d2825ef`) | suite green with ASAN; waiting for the measurement on the ports and the author's approval to merge |
+| `#2` | Implementation on branch `blocks` (`77b2ff3`, `bc32a05`, `d2825ef`) | measured by `atmos-lang` 2026-11-21 (`atmos-lang#109`): nothing changes on the ports, about 8 times faster; asked the author to approve the merge |
 | `#3` | A `par :all` under a block toggled off: today and now, see below | remark, no decision asked |
 
 ## Facts found by the session (2026-11-20)
@@ -83,3 +83,14 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
   the filter of the toggle and was lost, so such a par would hang;
   now it goes on. A branch can hardly end while its block is off (it
   sees no events), so this is noted, not asked.
+
+## Measurement of `#2` (by `atmos-lang`, 2026-11-21, `atmos-lang#109`)
+
+- `make test` with ASAN on a clean copy: green.
+- 2197 `.atm` files of 15 clones: generated C and diagnostics identical.
+- No port has `await true`, `await :xtask`, `await \{...}` nor
+  `await(\{...})`.
+- sdl-pingus: its suite passes (user time 2m41 against 2m55 on main).
+- A loop of 300,000 `par :all` of two blocks plus a `spawn {}`, with 30
+  idle tasks: 0.043 to 0.045 s against 0.36 to 0.45 s on main.
+- After the merge, `pool`, `grab` and `context` rebase over `trail_end`.
