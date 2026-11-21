@@ -59,6 +59,20 @@ written; each such item now has its number below.
 - **#11 Draft text.** `papers/pin-draft.md`: Sections 3, 4, 8, and the
   measured costs of 9, written on the stable rules while the outline (#10)
   waits. Reversible: it is a separate file; the outline is unchanged.
+- **#13 Reference counting is orthogonal to the pin.** Confirmed by the
+  author, 2026-11-21: counting is used for simplicity and could be replaced
+  by a tracing collector, which would also solve the cycles. The outline
+  and the draft now present the reclaimer as pluggable (Sections 0, 1, 4,
+  5, 8, 10, 12). The wording of three rules in block terms (a dropped
+  unpinned value, a retired value, a replaced native: "at the latest at
+  the end of the block", counting being the earlier case) is by the
+  session, to be confirmed; sent to `atmos-pin` for the manual, which put
+  it to the author (2026-11-21); until decided, the manual keeps "at once".
+- **#14 Cycle collection removed** (atmos-pin#18, branch `pin` at
+  `3cd5169`, author's choice "não checar"). The old rule is restored in the
+  outline and the draft: a cyclic structure must be pinned; an unpinned
+  cycle leaks under counting. The trial deletion and its cost are removed
+  from Sections 4, 8 and 9. To check: the commit reaches `main`.
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in
