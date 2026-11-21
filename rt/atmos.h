@@ -7,13 +7,20 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// ATM_PIN_OFF (`ATMOS_PIN=off`): the checks of `pin` are removed, and so
-// is what only feeds them (the ceiling and the floor of unpinned values,
-// the collection of cycles). What stays is the semantics of blocks: a
-// pinned value is finalized at the end of its block, a task with it, and
-// a place written with `set :out` goes back to nil. A correct program
-// behaves the same; an incorrect one is not stopped (an escape reads an
-// emptied value), and a cycle of unpinned values leaks.
+// ATMOS_PIN=unchecked (ATM_PIN_UNCHECKED): the checks of `pin` are
+// removed, and so is what only feeds them (the ceiling and the floor of
+// unpinned values). The semantics stays: pinned values are finalized at
+// the end of their block, deeply, and cycles are collected. A correct
+// program behaves the same; an incorrect one is not stopped.
+//
+// ATMOS_PIN=off (ATM_PIN_OFF): also, `pin` only holds for tasks and pools;
+// a pinned table, function, or native is a plain name, released by its
+// counts; no cycle is collected.
+#ifdef ATM_PIN_OFF
+#ifndef ATM_PIN_UNCHECKED
+#define ATM_PIN_UNCHECKED
+#endif
+#endif
 
 // Marks a name of the generated code that its function may not use,
 // such that a build with `-Wall` gives no warning about it.
@@ -1069,7 +1076,7 @@ AStatus a_pin (AVal* slot);
 AStatus a_chk_unpinned (AVal v);
 
 static inline AStatus a_chk (AVal v) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) v; return A_OK;
 #endif
     if (v.type<A_TAB || v.u.o->pinned) {
@@ -1095,7 +1102,7 @@ void a_ceil (AVal v, int d, uint32_t lin);
 void a_name_arg (AVal v, int d);
 
 static inline void a_name (AVal v, int d) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) v; (void) d; return;
 #endif
     if (v.type>=A_TAB && !v.u.o->pinned && d>0) {
@@ -1149,6 +1156,12 @@ extern uint32_t a_muts;
 static inline void a_unname (AVal* vs, int n, int d, uint32_t mu) {
 #ifdef ATM_PIN_OFF
     (void) vs; (void) n; (void) d; (void) mu; return;
+#endif
+#ifdef ATM_PIN_UNCHECKED
+    if (mu != a_muts) {
+        a_cycles(vs, n, d);
+    }
+    return;
 #endif
     if (mu != a_muts) {
         a_cycles(vs, n, d);
@@ -1260,7 +1273,7 @@ AStatus a_err_pinned (AVal v);
 AStatus a_err_fin (AVal v);
 
 static inline int a_is_fin (AVal v) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) v; return 0;
 #endif
     return v.type>=A_TAB && v.u.o->pinned==A_FIN;
@@ -1301,7 +1314,7 @@ static inline void a_out_var_end (AVal* dst, AVal v) {
 // A pinned value may only be stored where it cannot outlive its pin
 // block: here, into something that lives at depth `d`.
 static inline AStatus a_chk_store (AVal v, int d) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) v; (void) d; return A_OK;
 #endif
     if (v.type>=A_TAB && a_pdepth(v)>d) {
@@ -1329,7 +1342,7 @@ static inline AStatus a_chk_tab (ATab* t, AVal v) {
 // the values it is born with (the fields of a constructor, the
 // operands of a concatenation). A pinned one is checked by the store.
 static inline void a_born (AVal x, AVal v) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) x; (void) v; return;
 #endif
     if (v.type>=A_TAB && !x.u.o->pinned) {

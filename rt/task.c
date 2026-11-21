@@ -1569,7 +1569,7 @@ static int emit_depth (ANode* n) {
 }
 
 static AStatus emit_chk (ANode* n, AVal evt, int anc) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) n; (void) evt; (void) anc; return A_OK;
 #endif
     int p = a_pdepth(evt);
@@ -2196,7 +2196,7 @@ static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
 }
 
 void a_name_arg (AVal v, int d) {
-#ifdef ATM_PIN_OFF
+#ifdef ATM_PIN_UNCHECKED
     (void) v; (void) d; return;
 #endif
     if (v.type<A_TAB || v.u.o->pinned) {
@@ -2788,10 +2788,14 @@ static int adopt_ok (AVal v, int d, int root) {
             // decides (`adopt_rec`)
             if (adopt_data(x->o) && x->o->ceil==0 && x->o->rc-x->in-own>0) {
                 if (i==0 && root) {
+#ifndef ATM_PIN_UNCHECKED
                     ADOPT_BAD = x->o;
                     ADOPT_SHARED = 1;
                     ok = 0;
                     break;
+#else
+                    continue;
+#endif
                 }
                 adopt_out(a_obj(x->o));
             }
@@ -2918,6 +2922,7 @@ AStatus a_hold (AObj* h, AVal v) {
 #ifdef ATM_PIN_OFF
     (void) h; (void) v; return A_OK;
 #endif
+#ifndef ATM_PIN_UNCHECKED
     int p = a_pdepth(v);
     if (p > (int)h->depth) {
         // An unpinned holder that only its name refers to may receive a
@@ -2931,6 +2936,7 @@ AStatus a_hold (AObj* h, AVal v) {
             return a_err_pinned(v);
         }
     }
+#endif
     if (h->pinned) {
         if (!adopt_ok(v, h->depth, 0)) {
             return adopt_err("pin");
@@ -3006,10 +3012,12 @@ AStatus a_pin (AVal* slot) {
     }
     // an unpinned value is pinned at its floor or deeper, and at its
     // ceiling or outer
-#ifndef ATM_PIN_OFF
+#ifndef ATM_PIN_UNCHECKED
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
     }
+#endif
+#ifndef ATM_PIN_OFF
     if (!adopt_ok(v, a_depth, 1)) {
         return adopt_err("pin");
     }
@@ -3444,10 +3452,12 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
         if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
             return a_error("invalid assignment : unexpected parent task");
         }
-#ifndef ATM_PIN_OFF
+#ifndef ATM_PIN_UNCHECKED
         if (a_pdepth(v) > d) {
             return a_err_pinned(v);
         }
+#endif
+#ifndef ATM_PIN_OFF
         if (!adopt_ok(v, d, 1)) {
             return adopt_err("pin");
         }

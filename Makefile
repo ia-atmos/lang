@@ -16,7 +16,7 @@ CC_HDR := src/atmc.h
 # (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`, `ATMOS_ASAN`).
 # `_` stands for an option that is off.
 CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
-            $(foreach p,_ -nopin,$(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(p)$(a))+)))))
+            $(foreach p,_ -nopin -unchecked,$(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(p)$(a))+)))))
 CFGS := $(patsubst %+,%,$(CFGS))
 # Only the default configuration is built in advance: the compiler
 # builds another one when a program first asks for it, and those that
@@ -56,6 +56,7 @@ build/rt$(1)/%.o: rt/%.c $$(RT_HDR)
 	    $$(if $$(findstring -i32,$(1)),-DATM_INTEGER_32) \
 	    $$(if $$(findstring -ms,$(1)),-DATM_CLOCK_MS) \
 	    $$(if $$(findstring -nopin,$(1)),-DATM_PIN_OFF) \
+	    $$(if $$(findstring -unchecked,$(1)),-DATM_PIN_UNCHECKED) \
 	    -Irt -c $$< -o $$@
 
 build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o

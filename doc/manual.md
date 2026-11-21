@@ -326,16 +326,16 @@ is shared by the tasks that receive it, and is reclaimed when the last of
 them lets it go; and a value that is removed from a pinned value is
 reclaimed then, and does not wait for the block.
 
-A program may be built with `ATMOS_PIN=off`, which removes the costs of
-the rules below.
-Then `pin` only holds for tasks and pools, which still end with their
-block, as a `spawn` does: a pinned table, function, or native value is a
-plain name, released by its counts.
-No check is made, and no cycle is collected.
-A correct program that has no cycles behaves the same, except for the
-moment a native value is released (when its last reference goes, instead
-of at the end of its block); a place written with `set :out` with such a
-value goes back to `nil` at the end of the block of the `set`.
+A program may be built with fewer of these costs.
+With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
+(a pinned value is finalized at the end of its block, deeply, and cycles
+are collected), so a correct program behaves the same, and an incorrect
+one is not stopped (an escape reads an emptied value instead of raising
+an error).
+With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
+still end with their block, as a `spawn` does: a pinned table, function,
+or native value is a plain name, released by its counts, and no cycle is
+collected.
 
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what

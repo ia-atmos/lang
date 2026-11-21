@@ -141,7 +141,18 @@ static void opts_num (void) {
     OPT_F32     = opt2("ATMOS_FLOAT",   "ATMOS_REAL", "64", "32");
     OPT_INT32   = opt2("ATMOS_INTEGER", "ATMOS_INT",  "64", "32");
     OPT_TIME_MS = opt2("ATMOS_CLOCK",   "ATMOS_TIME", "us", "ms");
-    OPT_PIN_OFF = opt2("ATMOS_PIN",     "ATMOS_NOPIN", "on", "off");
+    {
+        const char* p = env("ATMOS_PIN", "on");
+        if (!strcmp(p, "off")) {
+            OPT_PIN_OFF = 1;
+        } else if (!strcmp(p, "unchecked")) {
+            OPT_PIN_OFF = 2;
+        } else if (strcmp(p, "on") != 0) {
+            fprintf(stderr, ATMOS_NAME " : invalid ATMOS_PIN : "
+                "expected 'on', 'unchecked', or 'off'\n");
+            exit(1);
+        }
+    }
 }
 
 // Builds the C source into an executable. Returns 0 on success.
@@ -153,7 +164,7 @@ static int build (const char* c, const char* exe) {
         OPT_F32     ? "-f32" : "",
         OPT_INT32   ? "-i32" : "",
         OPT_TIME_MS ? "-ms"  : "",
-        OPT_PIN_OFF ? "-nopin" : "",
+        (OPT_PIN_OFF==1) ? "-nopin" : (OPT_PIN_OFF==2) ? "-unchecked" : "",
         asan        ? "-asan" : "");
     char* lib = xfmt("%s/%s", home, rel);
     // only the default configuration is built in advance: another one
@@ -177,7 +188,7 @@ static int build (const char* c, const char* exe) {
         OPT_F32     ? "-DATM_FLOAT_32" : "",
         OPT_INT32   ? "-DATM_INTEGER_32"     : "",
         OPT_TIME_MS ? "-DATM_CLOCK_MS"    : "",
-        OPT_PIN_OFF ? "-DATM_PIN_OFF"     : "",
+        (OPT_PIN_OFF==1) ? "-DATM_PIN_OFF" : (OPT_PIN_OFF==2) ? "-DATM_PIN_UNCHECKED" : "",
         home, c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
