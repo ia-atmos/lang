@@ -153,6 +153,14 @@ None was measured for this paper.
 - **The ports.** On the final rules, 12 ports pass their suites unchanged
   (`atmos-lang#81`, merge `64005fd` into `main`).
 
-The cost of the checks as a whole, the program with checks against the same
-program without them, is not measured: it needs the flag that removes the
-checks, which the author has not approved yet (#7b, `atmos-pin#3`).
+- **The checks as a whole, on a real program.** Doom, demo1, counted in
+  instructions on `main` at `34c381b`: with no rendering, 263.7 M with the
+  checks against 256.3 M with `ATMOS_PIN=off` (the same generated C, linked
+  against the runtime without the checks; its 16 tests give identical
+  results under both). The checks cost 7.4 M instructions, 2.8% of the run,
+  and about 13% of what the Atmos program adds to the engine written in C
+  (207.9 M). With rendering: 4828.2 M against 4819.1 M, 0.2% (report of
+  `atmos-lang`, 2026-11-21; doom `doc/bench.md`).
+
+`ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
+`ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).
