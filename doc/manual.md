@@ -3542,6 +3542,10 @@ The switch is lazy: two tasks of the same context that awake in a row, such
 as the tasks of a pool, call `enter` and `leave` only once around both, and an
 event that awakes no task in the context calls neither.
 
+Code inside that changes the state itself keeps the change only until it
+awaits: when it awakes, `enter` runs again and sets the state of the context.
+A context cannot set a state for code outside it to see.
+
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
 It is an error to `emit` or to `spawn` inside `enter` or `leave`.
