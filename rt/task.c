@@ -992,28 +992,33 @@ static int kit_next (KIt* it, ATrail** tr, ANode** n) {
 // RESUME
 ///////////////////////////////////////////////////////////////////////////////
 
-// Termination of a transparent block: as for a task, it is an emit of
-// a task to the subtree of its task. The block has no identity, so the
-// event is a terminated task made up for the occasion, with the result
-// of the block.
-static AStatus trail_emit (ATask* t, AVal ret) {
-    ATask* x = calloc(1, sizeof(ATask));
-    node_init(&x->node, A_XTASK);
-    x->node.dead = 1;
-    x->status = T_DONE;
-    x->ret    = ret;
-    AStatus st = emit_top(&t->node, a_obj(&x->node.hdr));
-    a_dec(a_obj(&x->node.hdr));
-    return st;
+// Termination of a transparent block: it has no identity and is not
+// an event. Only what awaits it by structure goes on: its parent, if
+// it awaits the trails of a `par :all` or of a `toggle` and this was
+// the last one. The parent is resumed directly, with no emit.
+static AStatus trail_wake (ATask* t, int idx) {
+    int up = t->desc->trails[idx].up;
+    if (up < 0) {
+        return A_OK;
+    }
+    ATrail* p = &t->trs[up];
+    if (p->status!=TR_SUSPENDED || p->waiting || p->doomed ||
+        p->root.kind!=PK_TRAILS ||
+        idx<p->root.u.trs.lo || idx>=p->root.u.trs.lo+p->root.u.trs.n ||
+        !trails_off(t, p->root.u.trs.lo, p->root.u.trs.n))
+    {
+        return A_OK;
+    }
+    a_pay_clear();
+    return trail_resume(t, p, R_EVENT);
 }
 
 // The trail terminated with `st`. Returns the status its resumer
 // continues with.
 static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
-    // the result of a transparent block arrives in the payload
-    AVal ret = a_nil();
+    // the result of a transparent block arrives in the payload: its
+    // destination, if any, already has it
     if (tr->idx>0 && st==A_OK) {
-        a_pay_take(&ret, 0);
         a_pay_clear();
     }
     if (tr->root.kind != PK_NONE) {
@@ -1050,7 +1055,7 @@ static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
         // a transparent block
         switch (st) {
             case A_OK:
-                st = trail_emit(t, ret);
+                st = trail_wake(t, idx);
                 break;
             case A_ABORT:
                 st = A_OK;
