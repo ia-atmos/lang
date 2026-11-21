@@ -1145,7 +1145,7 @@ static int check_call_name (void) {
         return 1;
     }
     if (check_tag(TK_ID)) {
-        return !in(EXITS, TK1.str);
+        return 1;
     }
     return !is_lit(TK1.tag) && in(LITS, TK1.str);
 }
@@ -1184,8 +1184,7 @@ static Expr* parser_at_err (void) {
 // The next two tokens are a keyword and `=`: no expression starts
 // like this.
 static int field_key (void) {
-    // a keyword, or the name of an exit statement (`break`, `skip`)
-    if (!check_tag(TK_KEY) && !(check_tag(TK_ID) && in(EXITS,TK1.str))) {
+    if (!check_tag(TK_KEY)) {
         return 0;
     }
     Lex lex = lexer_save();
@@ -1246,7 +1245,7 @@ static Expr* parser_1_prim (void) {
         return mk(E_CLK, TK0);
 
     // return e  break e  escape e  throw e  abort e  skip
-    } else if (check_tag(TK_ID) && in(EXITS,TK1.str)) {
+    } else if (check_tag(TK_KEY) && in(EXITS,TK1.str)) {
         next();
         return parser_exit(TK0);
 

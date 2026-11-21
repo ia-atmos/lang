@@ -13,7 +13,7 @@ CC_HDR := src/atmc.h
 
 # The runtime, once per configuration of the numeric types, and once
 # more with the address sanitizer: `libatmos[-f32][-i32][-ms][-asan].a`
-# (`ATMOS_REAL=float`, `ATMOS_INT=32`, `ATMOS_TIME=ms`, `ATMOS_ASAN`).
+# (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`, `ATMOS_ASAN`).
 # `_` stands for an option that is off.
 CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
             $(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(a))+))))
@@ -52,9 +52,9 @@ build/rt$(1)/%.o: rt/%.c $$(RT_HDR)
 	@mkdir -p build/rt$(1)
 	$$(CC) $$(CFLAGS) \
 	    $$(if $$(findstring -asan,$(1)),$$(ASAN)) \
-	    $$(if $$(findstring -f32,$(1)),-DATM_REAL_FLOAT) \
-	    $$(if $$(findstring -i32,$(1)),-DATM_INT_32) \
-	    $$(if $$(findstring -ms,$(1)),-DATM_TIME_MS) \
+	    $$(if $$(findstring -f32,$(1)),-DATM_FLOAT_32) \
+	    $$(if $$(findstring -i32,$(1)),-DATM_INTEGER_32) \
+	    $$(if $$(findstring -ms,$(1)),-DATM_CLOCK_MS) \
 	    -Irt -c $$< -o $$@
 
 build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o

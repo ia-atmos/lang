@@ -1,0 +1,124 @@
+;; (B) with clauses: `hit` is chosen by the tags of the badguy and of the
+;; other object. A badguy is `:Bad.Walker`, `:Bad.Walker.Ice`,
+;; `:Bad.Jumpy`, `:Bad.Bouncing`, `:Bad.Flying`, `:Bad.Stalactite`; the
+;; other is `:Bad...`, `:Player`, or anything else.
+
+func facing (s, bits) {
+    (((bits & HIT.LEFT) != 0) && (s.dir == DIR.LEFT)) ||
+    (((bits & HIT.RIGHT) != 0) && (s.dir == DIR.RIGHT))
+}
+
+;; with another badguy
+
+func walker_bad (s, o, bits, w) {       ;; `WalkingBadguy::collision_badguy`
+    ifs {
+        s.sleep != :walking     => HIT.FORCE
+        (bits & HIT.TOP) != 0   => HIT.FORCE
+        else => {
+            if facing(s, bits) { turn_around(s) }
+            HIT.CONTINUE
+        }
+    }
+}
+
+func hit (s :Bad,          o :Bad, bits, w) { HIT.FORCE }
+func hit (s :Bad.Walker,   o :Bad, bits, w) { walker_bad(s, o, bits, w) }
+func hit (s :Bad.Jumpy,    o :Bad, bits, w) { jumpy_hit(s, bits) }
+func hit (s :Bad.Bouncing, o :Bad, bits, w) {
+    if facing(s, bits) { turn_around(s) } else { collision_solid(s) }
+    HIT.CONTINUE
+}
+func hit (s :Bad.Walker.Ice, o :Bad, bits, w) {
+    match s.ice {
+        :flat   => HIT.FORCE
+        :waking => HIT.FORCE
+        :kicked => {
+            kill_other(o)
+            HIT.FORCE
+        }
+        else => walker_bad(s, o, bits, w)       ;; the parent
+    }
+}
+func hit (s :Bad.Stalactite, o :Bad, bits, w) {
+    ifs {
+        s.st == :squished => HIT.ABORT
+        s.st != :falling  => HIT.FORCE
+        else => {
+            if o.freezable { log("freeze") } else { kill_other(o) }
+            HIT.FORCE
+        }
+    }
+}
+func hit (s :Bad.Stalactite, o :Bad.Stalactite, bits, w) {
+    if s.st == :squished => HIT.ABORT => HIT.FORCE
+}
+
+;; with the player
+
+func player_bad (s, w) {                ;; `BadGuy::collision_player`
+    if w.invincible {
+        kill_fall(s)
+        return HIT.ABORT
+    }
+    player_kill()
+    HIT.FORCE
+}
+func squished (s) {                     ;; `collision_squished`
+    set_action(s, "squished-" ++ s.dir)
+    kill_squished(s)
+}
+
+func hit (s :Bad, o :Player, bits, w) {
+    if w.above && s.squish {
+        squished(s)
+        return HIT.FORCE
+    }
+    player_bad(s, w)
+}
+func hit (s :Bad.Flying, o :Player, bits, w) {
+    if w.above && s.squish {
+        set_action(s, "squished-" ++ s.dir)
+        flying_fall(s)
+        kill_squished(s)
+        return HIT.FORCE
+    }
+    player_bad(s, w)
+}
+func hit (s :Bad.Walker.Ice, o :Player, bits, w) {
+    if w.above {
+        ice_squished(s)
+        return HIT.FORCE
+    }
+    if ((s.ice == :waking) || (s.ice == :flat)) && (s.state == BG.ACTIVE) &&
+       ((bits & (HIT.LEFT | HIT.RIGHT)) != 0)
+    {
+        set_dir(s, if (bits & HIT.LEFT) != 0 => DIR.RIGHT => DIR.LEFT)
+        player_kick()
+        ice_state(s, :kicked)
+        return HIT.FORCE
+    }
+    player_bad(s, w)
+}
+func hit (s :Bad.Stalactite, o :Player, bits, w) {
+    if s.st != :squished { player_kill() }
+    HIT.FORCE
+}
+
+;; with anything else
+
+func hit (s :Bad, o, bits, w) { HIT.FORCE }
+
+;; `BadGuy::collision`: what holds for every pair, then the pair
+func collision (s, o, bits, w) {
+    ifs {
+        (s.ice == :grabbed) && (s ?? :Bad.Walker.Ice) => HIT.FORCE
+        !s.active => HIT.ABORT
+        s.grabbed => HIT.FORCE
+        (o ?? :Bad) && !(o.active && o.moving) => HIT.FORCE
+        (o ?? :Player) && w.above && w.stone => {
+            kill_fall(s)
+            HIT.FORCE
+        }
+        else => hit(s, o, bits, w)
+    }
+}

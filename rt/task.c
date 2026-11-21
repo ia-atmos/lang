@@ -553,7 +553,8 @@ static AStatus patt_start1 (APatt* p, int* done) {
             a_set(&p->r.v, t);
             p->r.kind = PK_TASK;
             // no task, if the spawn failed before it was created (as
-            // with no clause for the arguments)
+            // with a prototype that was finalized, or with no clause
+            // for the arguments)
             p->r.own  = (t.type != A_NIL);
             if (st != A_OK) {
                 return st;
@@ -1961,7 +1962,12 @@ AStatus a_resumed (ATrail* tr, AKind k) {
     root_drop(&tr->root);
     switch (k) {
         case R_ABORT: return A_ABORT;
-        case R_EXIT:  return EXIT;
+        case R_EXIT:
+            // the error of an awaited task crosses this await
+            if (EXIT == A_ERROR) {
+                a_trace_await(a_lin);
+            }
+            return EXIT;
         default:      return A_OK;
     }
 }

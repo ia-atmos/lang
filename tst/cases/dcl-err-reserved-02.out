@@ -1,1 +1,1 @@
-dcl-err-reserved-02.atm : line 1 : near 'skip' : invalid declaration : unexpected 'skip'
+dcl-err-reserved-02.atm : line 1 : near 'skip' : expected <id>
