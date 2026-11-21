@@ -47,6 +47,7 @@ static void    clr_deep (AVal v, uint32_t d);
 static int     adopt_ok (AVal v, int d, int root);
 static void    pin_kid  (AVal v, int d);
 static AStatus adopt_err (const char* what);
+static void    adopt_end (void);
 static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
@@ -804,6 +805,9 @@ static void node_sweep (ANode* n) {
 // A child died: it leaves now, or when the traversals end.
 static void node_died (ANode* n) {
     n->dead = 1;
+    if (a_nouts > 0) {
+        a_out_ended(&n->hdr);
+    }
     ANode* up = n->up;
     if (up != NULL) {
         up->dirty = 1;
@@ -1567,6 +1571,9 @@ static int emit_depth (ANode* n) {
 }
 
 static AStatus emit_chk (ANode* n, AVal evt, int anc) {
+#ifdef ATM_PIN_UNCHECKED
+    (void) n; (void) evt; (void) anc; return A_OK;
+#endif
     int p = a_pdepth(evt);
     if (p == 0) {
         return A_OK;
@@ -2012,6 +2019,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, d);
+        adopt_end();
     } else if (own->hdr.ceil != 0) {
         a_ceil(v, own->hdr.ceil, own->hdr.clin);
     }
@@ -2032,6 +2040,12 @@ AStatus a_pub_set (ATask* t, AVal v) {
 // values it holds: by a declaration (`how` is 1) or by the value that
 // holds it (2).
 static void pin_deep (AVal v, int d, int how) {
+#ifdef ATM_PIN_OFF
+    // only a task or a pool is pinned, and not what it holds
+    if (v.type!=A_XTASK && v.type!=A_TASKS) {
+        return;
+    }
+#endif
     if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
         return;
     }
@@ -2070,6 +2084,7 @@ static void pin_deep (AVal v, int d, int how) {
             o->pinned = how;
             o->depth  = d;
             o->lin    = a_lin;
+#ifndef ATM_PIN_OFF
             if (v.type == A_XTASK) {
                 pin_kid(A_TASK_OF(v)->pub, d);
                 pin_kid(A_TASK_OF(v)->ret, d);
@@ -2079,6 +2094,7 @@ static void pin_deep (AVal v, int d, int how) {
                     pin_kid(t->ret, d);
                 }
             }
+#endif
             // held by data: the block of the holder aborts it
             if (how==2 && n->up!=NULL && n->up->hdr.type==A_XTASK) {
                 ATask* up = (ATask*) n->up;
@@ -2110,6 +2126,14 @@ static void pin_deep (AVal v, int d, int how) {
 // with no name is pinned with it. One with a name is only referenced:
 // a name already keeps it, and it may no longer be pinned inside `d`.
 static void pin_kid (AVal v, int d) {
+#ifdef ATM_PIN_OFF
+    // a task or a pool held by data still ends with the block of the
+    // holder; nothing else is pinned
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        pin_deep(v, d, 2);
+    }
+    return;
+#endif
     if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&
         v.u.o->ceil!=0 && d>(int)v.u.o->ceil)
     {
@@ -2138,49 +2162,16 @@ AStatus a_nat_holds (AVal nat, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, nat.u.o->depth);
+        adopt_end();
     }
     return A_OK;
 }
 
-// The unpinned values that `v` holds, for `f`.
-static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
-                        uint32_t lin)
-{
-    switch (v.type) {
-        case A_TAB: {
-            uint32_t pos = 0;
-            AVal k, x;
-            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-                f(k, d, lin);
-                f(x, d, lin);
-            }
-            break;
-        }
-        case A_FUNC:
-        case A_TASK: {
-            AFunc* fn = A_FUNC_OF(v);
-            for (int i=0; i<fn->ncap; i++) {
-                f(fn->caps[i], d, lin);
-            }
-            break;
-        }
-        case A_XTASK:
-            f(A_TASK_OF(v)->pub, d, lin);
-            f(A_TASK_OF(v)->ret, d, lin);
-            break;
-        case A_NAT: {
-            ANat* n = A_NAT_OF(v);
-            for (int i=0; i<n->nholds; i++) {
-                f(n->holds[i], d, lin);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
 
 void a_name_arg (AVal v, int d) {
+#ifdef ATM_PIN_UNCHECKED
+    (void) v; (void) d; return;
+#endif
     if (v.type<A_TAB || v.u.o->pinned) {
         return;
     }
@@ -2206,7 +2197,10 @@ void a_ceil (AVal v, int d, uint32_t lin) {
     }
     o->ceil = (d < 0xFFFF) ? d : 0xFFFF;
     o->clin = lin;
-    unpinned_kids(v, a_ceil, d, lin);
+    // Only the value itself: what it holds is protected by its count.
+    // A value held by others than its holder (rc > 1) is not adopted
+    // with it (`adopt_rec`, `pin_kid`), and one held only by it goes
+    // with it.
 }
 
 // The names of the block `d` end: what only they held loses that
@@ -2221,7 +2215,6 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
         return;
     }
     o->ceil = 0;
-    unpinned_kids(v, ceil_up, d, 0);
 }
 
 // Cycles of unpinned values that end with the names of a block.
@@ -2266,6 +2259,9 @@ static int cyc_marked (AVal v) {
 // `a_name_arg`), and the search gives up beyond CYC_MAX candidates,
 // since it may then be walking data of an outer block.
 static int CYC_ANY = 0;
+// a search from a value that is released (not from the names of a block
+// that ends) gives up, as one from an argument does
+static int CYC_BUDGET = 0;
 #define CYC_MAX 256
 
 static int cyc_cand (AVal v, int d) {
@@ -2397,7 +2393,7 @@ static void cyc_collect (AVal* vs, int n, int d) {
     CYC_IN = 0;
     for (int i=0; i<CYC_N; i++) {
         cyc_refs(a_obj(CYC[i].o), cyc_visit, d);
-        if (CYC_ANY && CYC_N>CYC_MAX) {
+        if ((CYC_ANY || CYC_BUDGET) && CYC_N>CYC_MAX) {
             // too much: it gives up
             CYC_IN = 0;
             break;
@@ -2526,7 +2522,89 @@ static void cyc_collect (AVal* vs, int n, int d) {
 uint32_t a_muts = 0;
 
 void a_cycles (AVal* vs, int n, int d) {
+#ifdef ATM_PIN_OFF
+    (void) vs; (void) n; (void) d; return;
+#endif
     cyc_collect(vs, n, d);
+}
+
+// The places written with `set :out` that wait for the end of a value.
+typedef struct OutE {
+    AObj* v;        // not counted: the entry goes when the value ends
+    AVal  t;        // a table and a key (counted), or
+    AVal  k;
+    AVal* slot;     // a variable, with its box (counted) if captured
+    AVal  box;
+} OutE;
+
+static OutE* OUTS   = NULL;
+static int   OUTS_C = 0;
+int a_nouts = 0;
+
+static int out_ends (AVal v) {
+    if (v.type < A_TAB) {
+        return 0;
+    }
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        return !((ANode*)v.u.o)->dead;
+    }
+    return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
+}
+
+static void out_add (OutE e) {
+    if (a_nouts == OUTS_C) {
+        OUTS_C = (OUTS_C == 0) ? 16 : OUTS_C*2;
+        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+    }
+    OUTS[a_nouts++] = e;
+}
+
+int a_out_reg_tab (AVal t, AVal k, AVal v) {
+    if (!out_ends(v)) {
+        return 0;
+    }
+    a_inc(t);
+    a_inc(k);
+    out_add((OutE) { v.u.o, t, k, NULL, a_nil() });
+    return 1;
+}
+
+int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
+    if (!out_ends(v) || d>a_pdepth(v)) {
+        return 0;
+    }
+    a_inc(box);
+    out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box });
+    return 1;
+}
+
+void a_out_ended (AObj* o) {
+    for (int i=0; i<a_nouts; ) {
+        if (OUTS[i].v != o) {
+            i++;
+            continue;
+        }
+        OutE e = OUTS[i];
+        OUTS[i] = OUTS[--a_nouts];
+        // the place goes back to nil, if it still refers to the value;
+        // a release here may end other values, and change the list
+        AVal v = a_obj(o);
+        if (e.slot != NULL) {
+            if (a_same(*e.slot, v)) {
+                a_clr(e.slot);
+            }
+            a_dec(e.box);
+        } else {
+            if (e.t.type==A_TAB && !a_is_fin(e.t) &&
+                a_same(a_tab_get(A_TAB_OF(e.t),e.k), v))
+            {
+                a_tab_set(A_TAB_OF(e.t), e.k, a_nil());
+            }
+            a_dec(e.t);
+            a_dec(e.k);
+        }
+        i = 0;
+    }
 }
 
 void a_orphan_x (AVal v) {
@@ -2545,11 +2623,16 @@ void a_orphan_x (AVal v) {
         }
     }
     if (ref) {
+        CYC_BUDGET = 1;
         cyc_collect(&v, 1, 0);
+        CYC_BUDGET = 0;
     }
 }
 
 void a_args_end (AVal* vs, int n) {
+#ifdef ATM_PIN_OFF
+    (void) vs; (void) n; return;
+#endif
     for (int i=0; i<n; i++) {
         AVal v = vs[i];
         if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
@@ -2572,32 +2655,175 @@ void a_unname_x (AVal* vs, int n, int d) {
 // block `d` only if it is their ceiling or an outer block: the names
 // that hold them must not see them finalized.
 static AObj*  ADOPT_BAD = NULL;
-static AObj** ADOPT_VIS = NULL;
-static int    ADOPT_N   = 0;
-static int    ADOPT_CAP = 0;
-static int adopt_rec (AVal v, int d, int root);
+static int    ADOPT_SHARED = 0;
 
-// `root`: the value itself is adopted, as by `pin x = v`; else it is
-// only held, and a named one is only referenced (`pin_kid`).
+// The values that a pin adopts, found by a visit. Each one gets the
+// number of references that come to it from the others (`in`): a value
+// that has more references than those is also held elsewhere (by a name,
+// whose ceiling no longer reaches what that name holds, or by a table of
+// another owner), and so it is only referenced, with all it holds. The
+// value at the top may also have one reference from where it is going
+// (the variable of the pin, or the temporary of a store).
+typedef struct AdoptV {
+    AObj*    o;
+    uint32_t clin;      // saved: the index of the value meanwhile
+    int      in;
+    int      ext;
+} AdoptV;
+
+static AdoptV* ADOPT_VIS = NULL;
+static int     ADOPT_N   = 0;
+static int     ADOPT_CAP = 0;
+// the values left marked (7) as not adopted, until `adopt_end`
+static AObj**  ADOPT_EXT   = NULL;
+static int     ADOPT_NEXT  = 0;
+static int     ADOPT_CEXT  = 0;
+
+#define ADOPT_SEEN 5
+#define ADOPT_OUT  7
+
+static int adopt_rec (AVal v, int d, int top);
+
+static int adopt_data (AObj* o) {
+    return o->type==A_TAB || o->type==A_FUNC || o->type==A_TASK;
+}
+
+// The values that `v` refers to, for `f`.
+static void adopt_kids (AVal v, void (*f)(AVal)) {
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                f(k);
+                f(x);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* fn = A_FUNC_OF(v);
+            for (int i=0; i<fn->ncap; i++) {
+                f(fn->caps[i]);
+            }
+            break;
+        }
+        case A_XTASK:
+            f(A_TASK_OF(v)->pub);
+            f(A_TASK_OF(v)->ret);
+            break;
+        case A_NAT: {
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                f(n->holds[i]);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+static int*    ADOPT_STK   = NULL;
+static int     ADOPT_NSTK  = 0;
+static int     ADOPT_CSTK  = 0;
+
+static void adopt_out (AVal v) {
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned!=ADOPT_SEEN) {
+        return;
+    }
+    AdoptV* x = &ADOPT_VIS[v.u.o->clin];
+    if (x->ext) {
+        return;
+    }
+    x->ext = 1;
+    if (ADOPT_NSTK == ADOPT_CSTK) {
+        ADOPT_CSTK = (ADOPT_CSTK == 0) ? 16 : ADOPT_CSTK*2;
+        ADOPT_STK = realloc(ADOPT_STK, ADOPT_CSTK * sizeof(int));
+    }
+    ADOPT_STK[ADOPT_NSTK++] = v.u.o->clin;
+}
+
+// `root`: the value itself is adopted, as by `pin x = v`, and it is an
+// error if it is held elsewhere; else it is only held, and then it may
+// be only referenced. Leaves the values that are not adopted marked:
+// `adopt_end` unmarks them, after the pin.
 static int adopt_ok (AVal v, int d, int root) {
     ADOPT_N = 0;
     int ok = adopt_rec(v, d, root);
-    // the marks of the visit are undone
-    for (int i=0; i<ADOPT_N; i++) {
-        ADOPT_VIS[i]->pinned = 0;
+    int n = ADOPT_N;
+    if (ok && n>0) {
+        // held elsewhere: more references than those from the others
+        for (int i=0; i<n; i++) {
+            AdoptV* x = &ADOPT_VIS[i];
+            int own = (i == 0) ? 1 : 0;
+            // a named value: its names count too, and its ceiling
+            // decides (`adopt_rec`)
+            if (adopt_data(x->o) && x->o->ceil==0 && x->o->rc-x->in-own>0) {
+                if (i==0 && root) {
+#ifndef ATM_PIN_UNCHECKED
+                    ADOPT_BAD = x->o;
+                    ADOPT_SHARED = 1;
+                    ok = 0;
+                    break;
+#else
+                    continue;
+#endif
+                }
+                adopt_out(a_obj(x->o));
+            }
+        }
+        // and what they hold, with them
+        while (ok && ADOPT_NSTK>0) {
+            int j = ADOPT_STK[--ADOPT_NSTK];
+            adopt_kids(a_obj(ADOPT_VIS[j].o), adopt_out);
+        }
+        ADOPT_NSTK = 0;
+    }
+    ADOPT_NEXT = 0;
+    for (int i=0; i<n; i++) {
+        AdoptV* x = &ADOPT_VIS[i];
+        x->o->clin = x->clin;
+        if (ok && x->ext) {
+            x->o->pinned = ADOPT_OUT;
+            if (ADOPT_NEXT == ADOPT_CEXT) {
+                ADOPT_CEXT = (ADOPT_CEXT == 0) ? 16 : ADOPT_CEXT*2;
+                ADOPT_EXT = realloc(ADOPT_EXT, ADOPT_CEXT * sizeof(AObj*));
+            }
+            ADOPT_EXT[ADOPT_NEXT++] = x->o;
+        } else {
+            x->o->pinned = 0;
+        }
     }
     return ok;
 }
 
-static int adopt_rec (AVal v, int d, int root) {
-    // pinned, or already visited (a cycle among unpinned values)
-    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+static void adopt_end (void) {
+    for (int i=0; i<ADOPT_NEXT; i++) {
+        if (ADOPT_EXT[i]->pinned == ADOPT_OUT) {
+            ADOPT_EXT[i]->pinned = 0;
+        }
+    }
+    ADOPT_NEXT = 0;
+}
+
+static int adopt_rec (AVal v, int d, int top) {
+    if (v.type<A_TAB || v.type==A_BOX) {
         return 1;
     }
     AObj* o = v.u.o;
+    // already visited (a cycle, or a value held twice)
+    if (o->pinned == ADOPT_SEEN) {
+        ADOPT_VIS[o->clin].in++;
+        return 1;
+    }
+    // pinned
+    if (o->pinned) {
+        return 1;
+    }
     // a named value that is held by a holder inside the block of its
     // name is only referenced
-    if (!root && o->ceil!=0 && d>(int)o->ceil) {
+    if (!top && o->ceil!=0 && d>(int)o->ceil) {
         return 1;
     }
     if (o->ceil!=0 && d>o->ceil) {
@@ -2606,10 +2832,12 @@ static int adopt_rec (AVal v, int d, int root) {
     }
     if (ADOPT_N == ADOPT_CAP) {
         ADOPT_CAP = (ADOPT_CAP == 0) ? 16 : ADOPT_CAP*2;
-        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AObj*));
+        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AdoptV));
     }
-    ADOPT_VIS[ADOPT_N++] = o;
-    o->pinned = 5;
+    // the first one is the value that goes to its owner
+    ADOPT_VIS[ADOPT_N] = (AdoptV) { o, o->clin, (ADOPT_N==0) ? 0 : 1, 0 };
+    o->clin   = ADOPT_N++;
+    o->pinned = ADOPT_SEEN;
     switch (v.type) {
         case A_TAB: {
             uint32_t pos = 0;
@@ -2654,12 +2882,20 @@ static AStatus adopt_err (const char* what) {
     AVal v = a_obj(o);
     const char* type = (v.type == A_XTASK) ? "task" :
                        (v.type == A_TASKS) ? "pool" : a_typename(v);
+    if (ADOPT_SHARED) {
+        ADOPT_SHARED = 0;
+        return a_error("invalid %s : shared %s", what, type);
+    }
     uint32_t lin = o->clin;
     return a_error("invalid %s : %s named at %s:%d", what, type,
         atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
 }
 
 AStatus a_hold (AObj* h, AVal v) {
+#ifdef ATM_PIN_OFF
+    (void) h; (void) v; return A_OK;
+#endif
+#ifndef ATM_PIN_UNCHECKED
     int p = a_pdepth(v);
     if (p > (int)h->depth) {
         // An unpinned holder that only its name refers to may receive a
@@ -2673,11 +2909,13 @@ AStatus a_hold (AObj* h, AVal v) {
             return a_err_pinned(v);
         }
     }
+#endif
     if (h->pinned) {
         if (!adopt_ok(v, h->depth, 0)) {
             return adopt_err("pin");
         }
         pin_kid(v, h->depth);
+        adopt_end();
     } else if (h->ceil != 0) {
         // the names of the holder see it too
         a_ceil(v, h->ceil, h->clin);
@@ -2747,13 +2985,18 @@ AStatus a_pin (AVal* slot) {
     }
     // an unpinned value is pinned at its floor or deeper, and at its
     // ceiling or outer
+#ifndef ATM_PIN_UNCHECKED
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
     }
+#endif
+#ifndef ATM_PIN_OFF
     if (!adopt_ok(v, a_depth, 1)) {
         return adopt_err("pin");
     }
+#endif
     pin_deep(v, a_depth, 1);
+    adopt_end();
     return A_OK;
 }
 
@@ -3182,13 +3425,18 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
         if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
             return a_error("invalid assignment : unexpected parent task");
         }
+#ifndef ATM_PIN_UNCHECKED
         if (a_pdepth(v) > d) {
             return a_err_pinned(v);
         }
+#endif
+#ifndef ATM_PIN_OFF
         if (!adopt_ok(v, d, 1)) {
             return adopt_err("pin");
         }
+#endif
         pin_deep(v, d, 1);
+        adopt_end();
     }
     AVal old = *slot;
     a_inc(v);
@@ -3310,6 +3558,9 @@ static void clr_deep (AVal v, uint32_t d) {
     } else {
         o->pinned = A_FIN;
         o->depth  = 0;
+    }
+    if (a_nouts > 0) {
+        a_out_ended(o);
     }
     switch (v.type) {
         case A_TAB: {

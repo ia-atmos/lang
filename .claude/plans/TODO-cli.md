@@ -13,6 +13,7 @@ Last update: 2026-11-21.
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
 | #2 | The names of the long options | Asked 2026-11-21; recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
 | #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2): the ports call them |
 
 ## Observed on 2026-11-20 (`main` at `5123f9a`)
@@ -63,3 +64,6 @@ becomes an item only if the author takes it up.
   primary (`-p iup`), or register the environment of the dedicated
   compiler after those of the program. Dedicated compilers in use:
   `atmos-pico`, `atmos-sdl`, `atmos-ray`, `atmos-uv`.
+- `atmos-lang`, 2026-11-21: a fourth build variable, `ATMOS_PIN=unchecked|off`
+  (`atmos-pin#3`), on `main` since `34c381b`, with its libraries in the
+  `CFGS` of the `Makefile` and its `-D` in `src/main.c`.
