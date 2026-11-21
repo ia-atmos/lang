@@ -48,8 +48,9 @@ becomes an item only if the author takes it up.
   (`ATMOS_REAL=double|float` to `ATMOS_FLOAT=64|32`, `ATMOS_INT` to
   `ATMOS_INTEGER`, `ATMOS_TIME` to `ATMOS_CLOCK`; a former name is an
   error) and adds `ENV_NUM` to `make env` (what an environment
-  supports). Seen in `origin/float` (`src/main.c`, `Makefile`); not on
-  `main` yet. Anything proposed here about the variables starts from
+  supports). Seen in `origin/float` (`src/main.c`, `Makefile`). On
+  `main` since `d19d40f` (2026-11-21), without `ENV_NUM`: an
+  environment refuses an option with `#error`. Anything proposed here about the variables starts from
   those names, and `cli` will be rebased over it once merged.
 - `atmos-envs`, 2026-11-20, on the selection of an environment (its
   recommendations, none decided by the author): for `atmos-envs#4`,
