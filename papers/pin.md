@@ -141,7 +141,7 @@ case studies from six ports of libraries and games to Atmos.
     - a parameter may receive an unpinned value: store it outside, or return it
     - a constructor builds with `val` and returns it; the caller pins it
     - a pool held by a `val` takes its floor from its tasks, checked at its ceiling
-    - cycles among unpinned values: left to the reclaimer underneath; with
+    - cycles among unpinned values: not collected: with
       reference counting, they leak, so a cyclic structure must be pinned
       (by its block or by a pinned value that holds it); a function that
       builds one returns it unpinned and the caller pins it
