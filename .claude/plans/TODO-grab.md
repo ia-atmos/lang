@@ -30,6 +30,7 @@ the rule are `#1`..`#8`.
 | #16 | A grabbable as a value (`grab @g P {...}`), the lexical alternative to #1 | noted, not proposed |
 | #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | reported; rename or another keyword is the author's (#8) |
 | #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
+| #20 | env-iup `exp-grab` (local 3f0eadf, 7GUIs circles, +9 −6): fits; 15/15 plain and ASAN; a click on Undo during the dialog is denied with grab, acts without. Did not fit: (a) the look of a disabled dialog stays IUP's; (b) "all but the canvas and the time" is not obvious; (c) `grabbable` must be placed ahead around the reactions; (d) the patterns name what is denied, which reads backwards | reported; (b) answered: `grab <until ((it != :draw) && (type(it) != :number))>` lets the clock pass (checked on grab-05); time passing a grab by default is the author's (#5) |
 | #19 | The real cases rewritten on branches of the ports (`atmos-lang` #112a, 2026-11-21): sdl-snxkx `exp-grab` (the shop), env-iup local `exp-grab` (7GUIs), built from `grab` | asked by `atmos-lang`; `grab` kept near `main` (c66c735) |
 
 ## Decisions waiting for the author (asked one at a time)
