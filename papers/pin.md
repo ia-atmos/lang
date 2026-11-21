@@ -30,9 +30,10 @@ not pinned.
 The mechanism needs no static lifetime annotations and no separate region or
 arena abstraction: the blocks of the program are the regions.
 It bounds the lifetime of a value, but does not collect what becomes garbage
-while its block is alive: reference counting does that underneath.
-The safety of the pins does not read a count, but counting also gives a
-value that nobody owns a deterministic end, at the moment it is dropped.
+while its block is alive: reference counting does that underneath, and
+its counts are part of the semantics: a value that is no longer referred to
+is finalized at once, at a deterministic point.
+The safety of the pins does not read a count.
 With counting, a cyclic structure must be pinned, and is broken at the end
 of its block; a tracing collector would also collect the cycles that are
 not pinned, which counting leaks.
@@ -54,8 +55,8 @@ case studies from six ports of libraries and games to Atmos.
     - a small set of rules, uniform for all dynamic values
     - a cheap dynamic check: one depth per value, one comparison per store
     - an implementation on reference counting: the checks compare block
-      depths and never read a count; the counts give unowned values a
-      deterministic end (whether that is design or implementation: open, #13)
+      depths and never read a count; the counts are part of the semantics,
+      and give a value that nobody owns a deterministic end
     - an evaluation with six real ports
 
 ## 2. Background
@@ -118,7 +119,8 @@ case studies from six ports of libraries and games to Atmos.
     - a captured variable belongs to the block that declares it
     - exception, `set :out place = value`: an outer place refers to a pinned
       value of the current block, with no check and no adoption, and is reset
-      to `nil` when the block of the `set` ends (case E)
+      to `nil` when the block of the `set` ends (case E); the place may be a
+      `pub`, whole or a field (`set :out pub = v`)
 - Rule 4, end
     - pinned values finalized in reverse order, interleaved with `defer`
     - a dropped unpinned value is finalized at once
@@ -145,7 +147,8 @@ case studies from six ports of libraries and games to Atmos.
       reference counting, they leak, so a cyclic structure must be pinned
       (by its block or by a pinned value that holds it); a function that
       builds one returns it unpinned and the caller pins it
-    - a recursive closure through a variable is a cycle: `func` or `pin var`
+    - a recursive closure through a variable is a cycle: `func` or `pin var`;
+      the compiler warns on `var g; set g = func ... g ...`
     - a named argument to a task that outlives its spawner (a task of an outer
       pool) gets its ceiling at the block that ends the task
     - `pin var` for values the block creates; `var` for those it refers to
@@ -163,9 +166,9 @@ case studies from six ports of libraries and games to Atmos.
 - Criteria: determinism, cycles, resources, annotations, pauses, cost, errors
 - vs. tracing GC
     - not a replacement: orthogonal, and the two could be combined
-    - the safety of the pins does not depend on counting; a tracer would
-      keep it, but would change when an unowned task or native ends, which
-      counting makes deterministic (open, #13)
+    - the safety of the pins does not depend on counting; but the counts
+      are part of the semantics: a tracer would lose the deterministic end of
+      a value that nobody owns, such as a dropped task or native
     - pins give what a collector does not: a known point of finalization
     - a collector gives what pins do not: garbage reclaimed inside a live block
     - Atmos drops the collector as a tradeoff: no pauses, no heap scans
@@ -228,7 +231,8 @@ case studies from six ports of libraries and games to Atmos.
 - What reads a count and what does not: the checks compare depths and
   finalization at block end is driven by the block; only the end of an
   unowned value reads a count (a dropped value, a retired value, a replaced
-  native), and there counting is what makes it deterministic (#13)
+  native), and there the counts are the semantics: finalized at once, at a
+  deterministic point (atmos-pin#29)
 - What reference counting still does
     - a dropped unpinned value: data at count zero; a task at count one,
       aborted at the end of the statement, since an abort runs code
@@ -408,9 +412,8 @@ case studies from six ports of libraries and games to Atmos.
 - Static detection of escapes, for a subset of the checks
 - Elision of the dynamic check where the block is known
 - Formal semantics and a proof of no dangling references
-- A tracing collector beside or in place of reference counting: unpinned
-  cycles collected, at the price of the deterministic end of unowned tasks
-  and natives, which would then have to be bound to a block (#13)
+- A tracing collector beside reference counting, for unpinned cycles only,
+  keeping the counts as the semantics of everything else
 - Scoped assignment for module tables and global state: `with m.x = v {...}`
 
 ## 13. Conclusion

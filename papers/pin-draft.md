@@ -67,7 +67,7 @@ event that holds a pinned value reaches only targets attached inside that
 value's block. The one exception is `set :out place = value`: a place of an
 outer block refers to a value of the current block with no check and no
 adoption, and is reset to `nil` when the block of the `set` ends, if it still
-refers to that value.
+refers to that value. The place may be a `pub`, whole or a field.
 
 **Rule 4, end.** When a block ends, the values it pinned are finalized in
 reverse order, interleaved with `defer`: tasks and pools are aborted, tables
@@ -94,10 +94,11 @@ value declares, through its binding, which values it holds.
 Atmos compiles to C. The runtime counts references and has no tracing
 collector. The checks compare block depths and never read a count, and
 finalization at the end of a block is driven by the block. Only the end of a
-value that nobody owns reads a count, and there the counts are what make it
-deterministic: a dropped task is aborted, and a dropped native closed, at
-the moment it is dropped. A tracing collector would also collect the cycles
-that counting leaks, but would lose that moment. Each object header carries its reference count, a state byte, the
+value that nobody owns reads a count, and there the counts are part of the
+semantics: a value that is no longer referred to is finalized at once, at a
+deterministic point, so a dropped task is aborted, and a dropped native
+closed, at the moment it is dropped. A tracing collector would also collect
+the cycles that counting leaks, but would lose that moment. Each object header carries its reference count, a state byte, the
 depth of its block, the source line of the pin that gave it that depth, and
 the ceiling with its line. The state distinguishes unpinned values, unpinned
 values with a floor, values pinned by a declaration, values pinned by a
@@ -122,7 +123,8 @@ collected: its counts never reach zero, and it leaks. A cyclic structure
 must therefore be pinned, by its block or by a pinned value that holds it; a
 function that builds one returns it unpinned, and the caller pins it. A
 recursive closure through a variable is such a cycle, and is declared with
-`func` or `pin var`. This is a choice: a local trial deletion was
+`func` or `pin var`; the compiler warns when a variable is assigned a
+function that refers to it. This is a choice: a local trial deletion was
 implemented and then removed (atmos-pin#18, `3cd5169`), and a tracing
 collector would make the restriction unnecessary.
 
