@@ -189,6 +189,20 @@ On the branch `iter`, reversible by not merging:
   follows is not visited, with no error (`#7`).
 - A string is not iterable (`invalid loop : unexpected string`).
 
+## Work known, not done
+
+- `#15`, the fix. The position of a walk must stop depending on `an`
+  and on the compaction of the other keys. Easy part: a position that
+  says which part it is in (a bit), so that a vector that grows does
+  not move the walk of the other keys. Hard part: `rehash` drops the
+  tombstones and moves the live keys left, and the walk cannot tell by
+  how much; resuming from the last key fails when that key was the one
+  removed (the case of `#15`). Candidates: count the walks in progress
+  on a table and not compact while there are any; or keep the
+  tombstones until the part is twice as large. Not started: the
+  promise it keeps (keys added are visited, removed are not, the
+  others once) is a rule for `#7`.
+
 ## C. What was read in the ports (sdl-pingus, snxkx)
 
 - Loop headers outside `data/`: 389 `loop ... in`; 195 are `loop _, v
