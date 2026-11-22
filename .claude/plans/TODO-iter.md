@@ -17,9 +17,29 @@ The branch of this session is `iter`.
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Remark put to him on 2026-11-20; decision open |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
+| `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | Put to him on 2026-11-22 (his question, before `#2`), recommended `#10a`; waiting |
+| `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
+
+- `#10` (asked by him before `#2`). Options: `#10a` one type of table,
+  and a loop that can say which part it walks (recommended); `#10b`
+  two types, vector and dictionary; `#10c` nothing changes. Facts run
+  on `main` (2026-11-22): the walk is the vector part, then the other
+  keys in the order of insertion (a key removed and set again goes to
+  the end), so the order is fixed, unlike Lua's `pairs`; a tagged
+  table gives its tag as a key (`:T [10, 20]` walks `0 1 tag`); after
+  `set w@1 = nil` in `[1,2,3]`, `#w` is `3` and the walk gives two
+  elements; `set u@5` on a vector of two is a key of the other part,
+  walked after the vector; with one variable the loop gives the key.
+  In the ports (Pingus, SNKRX) the names say the intent: 22 `loop i,
+  v` and 15 `loop k, v`; 195 `loop _, v`, mostly over vectors.
+- `#11`, after `#10a`: `#11a` two iterators in `iter`, `iter.vector(t)`
+  (indexes `0..#t-1`) and `iter.dict(t)` (the other keys, without the
+  tag?), native so that they cost no closure (recommended); `#11b` a
+  mark in the header of the loop; `#11c` the default walk changes to
+  the vector part only (touches the 1490 loops).
 
 - `#2`. Options: `#2a` what `loop ... in` walks but `nil` (a table,
   a pool, a number, a function), and a user value is walked by giving
