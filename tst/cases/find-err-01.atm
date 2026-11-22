@@ -1,1 +1,1 @@
-iter.find(10, \(v) { true })
+iter.find("abc", \(v) { true })
