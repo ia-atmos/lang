@@ -13,14 +13,11 @@ other sessions. The branch of this session is `tag-rebased` (the author, 2026-11
 | `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Decided 2026-11-22: `#2a` (his answer: "A"); on the branch `tag-rebased` |
 | `#3` | What a tag may hold: a string or nil only (the prototype), or any value | Decided 2026-11-22: `#3a` (his answer: "a"); on the branch |
 | `#4` | Whether a tag is its own type at run time, or stays a string (`:x == 'x'`) | Decided 2026-11-22: `#4a` (his answer: "a"), a string as today |
-| `#5` | Merge of `tag-rebased`: hand it to `atmos-lang` to measure the ports and merge | Put to him on 2026-11-22 |
+| `#5` | Merge of `tag-rebased`: hand it to `atmos-lang` to measure the ports and merge | Decided 2026-11-22: approved (his answer: "Sim"); handed to `atmos-lang` |
 
 ## A. Waiting for the author (one at a time)
 
-- `#5` (2026-11-22). The branch holds `#1b`, `#2a`, `#3a`; `#4a`
-  needs no code. Tests pass (`ATMOS_ASAN=1 make test`, `make
-  test-cfgs`). Approve the merge, so that `atmos-lang` measures the
-  ports and merges, and `atmos-iter` drops the skip of `#14a`.
+(nothing)
 
 ## Settled by the session, to be confirmed
 
@@ -47,6 +44,8 @@ On the branch `tag-rebased`, reversible by not merging:
 - `#3` (2026-11-22): `#3a`, a tag is a string or nil; any other value
   is an error (golden `0243` accepted as a departure).
 - `#4` (2026-11-22): `#4a`, a tag stays a string at run time.
+- `#5` (2026-11-22): merge approved; `atmos-lang` measures the ports
+  and merges `tag-rebased`; then `atmos-iter` drops the skip of `#14a`.
 
 ## Later (not yet put to him)
 
