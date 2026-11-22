@@ -59,14 +59,11 @@ written; each such item now has its number below.
 - **#11 Draft text.** `papers/pin-draft.md`: Sections 3, 4, 8, and the
   measured costs of 9, written on the stable rules while the outline (#10)
   waits. Reversible: it is a separate file; the outline is unchanged.
-- **#13 Reference counting is orthogonal to the pin.** Confirmed by the
-  author, 2026-11-21: counting is used for simplicity and could be replaced
-  by a tracing collector, which would also solve the cycles. The outline
-  and the draft now present the reclaimer as pluggable (Sections 0, 1, 4,
-  5, 8, 10, 12). The wording of three rules in block terms (a dropped
-  unpinned value, a retired value, a replaced native: "at the latest at
-  the end of the block", counting being the earlier case) is by the
-  session, to be confirmed; sent to `atmos-pin` for the manual.
+- **#14 Cycle collection removed** (atmos-pin#18, branch `pin` at
+  `3cd5169`, author's choice "não checar"). The old rule is restored in the
+  outline and the draft: a cyclic structure must be pinned; an unpinned
+  cycle leaks under counting. The trial deletion and its cost are removed
+  from Sections 4, 8 and 9. To check: the commit reaches `main`.
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in
@@ -83,6 +80,13 @@ written; each such item now has its number below.
   atmos-pin. Per-port numbers are not in `ISSUES.md`.
 
 ## Closed
+
+- **#13 Reference counting and the semantics.** Decided by the author on
+  2026-11-21 (atmos-pin#29): deterministic reference counting is part of
+  the semantics; a value no longer referred to is finalized at once. The
+  block wording of rule 4 was withdrawn; the outline and the draft follow
+  the manual (branch `pin` at `443736c`). Also there: the warning for an
+  unpinned recursive closure (atmos-pin#19) and `set :out pub` (#23).
 
 - **#3 SNKRX in Section 9** (was B1). The guessed bullet is replaced,
   2026-11-19, by its real cases from `atmos-pin`: a map body as a task in

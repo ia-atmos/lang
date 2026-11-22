@@ -67,16 +67,14 @@ event that holds a pinned value reaches only targets attached inside that
 value's block. The one exception is `set :out place = value`: a place of an
 outer block refers to a value of the current block with no check and no
 adoption, and is reset to `nil` when the block of the `set` ends, if it still
-refers to that value.
+refers to that value. The place may be a `pub`, whole or a field.
 
 **Rule 4, end.** When a block ends, the values it pinned are finalized in
 reverse order, interleaved with `defer`: tasks and pools are aborted, tables
 and functions release what they hold, even in a cycle, and native values
 release their resources. A value replaced in an owned place is retired: it
-is finalized at the latest at the end of the block. An unpinned value that is
-dropped is finalized at the latest at the end of the block of its last name.
-With reference counting, both happen earlier: the retired value when its
-last reference goes, the dropped one at once. Data that
+is finalized when its last reference goes, and at the latest at the end of
+the block. An unpinned value that is dropped is finalized at once. Data that
 its block finalized is marked, and any later use (an index, a write, a
 length, an iteration, a call, a spawn into a finalized pool) raises
 `invalid access : finalized <type> pinned at f:N`.
@@ -94,12 +92,13 @@ value declares, through its binding, which values it holds.
 ## 8. Implementation
 
 Atmos compiles to C. The runtime counts references and has no tracing
-collector, a choice of simplicity, not a requirement: the checks compare
-block depths and never read a count, and finalization at the end of a block
-is driven by the block. Only the moment an unowned value goes reads a count,
-which is why rule 4 is stated in terms of blocks, with counting as the
-earlier case. A tracing collector could replace the counts, and would make
-the trial deletion below unnecessary. Each object header carries its reference count, a state byte, the
+collector. The checks compare block depths and never read a count, and
+finalization at the end of a block is driven by the block. Only the end of a
+value that nobody owns reads a count, and there the counts are part of the
+semantics: a value that is no longer referred to is finalized at once, at a
+deterministic point, so a dropped task is aborted, and a dropped native
+closed, at the moment it is dropped. A tracing collector would also collect
+the cycles that counting leaks, but would lose that moment. Each object header carries its reference count, a state byte, the
 depth of its block, the source line of the pin that gave it that depth, and
 the ceiling with its line. The state distinguishes unpinned values, unpinned
 values with a floor, values pinned by a declaration, values pinned by a
@@ -118,23 +117,16 @@ Retired values are kept on a list that holds one reference each. A retired
 value is released as soon as that is its only reference, and whatever
 remains, a cycle, is finalized at the end of the block.
 
-Counting alone does not reclaim cycles. Cycles among unpinned values are
-broken at the end of the block of the names
-that reach them, by a local trial deletion. The candidates are the unpinned
-values reachable from the block's names whose ceiling is at that block or
-absent. References among the candidates and from the names are subtracted. A
-candidate with references left is alive, with everything it reaches; what
-counting alone would free is left to counting; and only the edges among what
-remains, values in a cycle or reachable only through one, are cut. The pass
-runs only if, since the block began, a reference was written into a table, a
-box, or a `pub`. Soundness rests on the counts, not on the ceiling: the
-escape information that block depths provide only selects the candidates.
-The same trial deletion runs on a value with no name when the last reference
-to it from outside goes: a temporary, a result that is dropped, an entry of a
-value that is freed, or the parameter of a task that ends. For a parameter of
-a task, the search gives up on a value that reaches more than 256 others,
-which is then left to the counts. No measurable cost was reported for this
-step (`.claude/plans/TODO-pin.md`, item 7).
+Counting alone does not reclaim cycles. A pinned cycle is broken at the end
+of its block, since the pin cuts what it finalizes. An unpinned cycle is not
+collected: its counts never reach zero, and it leaks. A cyclic structure
+must therefore be pinned, by its block or by a pinned value that holds it; a
+function that builds one returns it unpinned, and the caller pins it. A
+recursive closure through a variable is such a cycle, and is declared with
+`func` or `pin var`; the compiler warns when a variable is assigned a
+function that refers to it. This is a choice: a local trial deletion was
+implemented and then removed (atmos-pin#18, `3cd5169`), and a tracing
+collector would make the restriction unnecessary.
 
 An `emit` that carries a pinned value compares two depths, where the target
 is attached and where the value is pinned, and does not walk the tree of
@@ -150,11 +142,6 @@ None was measured for this paper.
 - **The ceiling check.** 2,000,000 `pin`s of two small tables took 0.95 s,
   against 0.75 s without the check; the same loop with `val` took 0.75 s
   (`.claude/plans/261115-pin.md`).
-- **The local trial deletion.** No cost on binary-trees, nor when only
-  numbers are written. +30 to 40% (about 150 ns per iteration) on a loop that
-  does nothing but write a new table into a named one. The suite and a
-  6000-frame demo of sdl-pingus, and the echo benchmark of the libuv
-  environment, were unchanged (report of `atmos-pin`, 2026-11-18).
 - **`set :out` and the mark of finalized data.** No cost: 20 million table
   reads took 0.70 s before and 0.68 s after, and binary-trees and the write
   loop were unchanged (`.claude/plans/TODO-pin.md`).

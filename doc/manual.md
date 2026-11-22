@@ -328,14 +328,13 @@ reclaimed then, and does not wait for the block.
 
 A program may be built with fewer of these costs.
 With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
-(a pinned value is finalized at the end of its block, deeply, and cycles
-are collected), so a correct program behaves the same, and an incorrect
+(a pinned value is finalized at the end of its block, deeply), so a correct program behaves the same, and an incorrect
 one is not stopped (an escape reads an emptied value instead of raising
 an error).
 With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
 still end with their block, as a `spawn` does: a pinned table, function,
-or native value is a plain name, released by its counts, and no cycle is
-collected.
+or native value is a plain name, released by its counts, and a pinned
+cycle leaks.
 
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
@@ -354,11 +353,9 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
   executes (`invalid escape : table pinned at prog.atm:10`).
 
 A value that nobody pins is reclaimed by its counts, and a cycle among
-unpinned values is broken at the end of the block of the names that reach
-it, if nothing outside still refers to it.
-So is a cycle with no name, when the last reference from outside it goes:
-a value that a call returns and that is dropped, for instance.
-A cyclic structure whose moment of release matters should still be pinned.
+unpinned values leaks: a cyclic structure must be pinned.
+A function that builds a cyclic value returns it unpinned, and the caller
+pins it.
 
 The next example builds a cycle that is reclaimed when the block terminates:
 
@@ -1829,20 +1826,13 @@ A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
 A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-A cycle among unpinned values is also reclaimed there: when a block ends,
-the unpinned values that only its names reach, and that only refer to each
-other, have the references among them cut, and the counts free them.
-A value that something outside still refers to (a table of an outer block,
-a task of an outer pool, the result of the block) is kept, with all it
-reaches.
-The search only runs if a reference was written into a table, a captured
-variable, or a `pub` since the block began, since no cycle forms without a
-write.
-A cycle with no name is broken in the same way when the last reference
-from outside it goes: a temporary, a result that is dropped, an entry of a
-value that is freed, or the parameter of a task that ends.
-For a parameter of a task, the search gives up on a value that reaches
-more than a few hundred others, which is then left to the counts.
+A cycle among unpinned values is not reclaimed: the counts never reach
+zero, and the cycle leaks.
+A cyclic structure must be pinned, by its block or by a pinned value that
+holds it.
+A recursive closure through a variable is such a cycle (the function holds
+the variable, which holds the function): it is declared with `func`, or
+with `pin var`.
 
 A parameter of a task is a name as the others, but the task may outlive the
 block that spawned it, as a task of a pool of an outer block does.
