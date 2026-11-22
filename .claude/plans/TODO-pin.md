@@ -44,6 +44,7 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #27 | The `pub` of a task that ended stays until its pool ends | open, bad case. Moderate: release it when the task ends and no one refers to the task |
 | #28 | The receiver of an event cannot pin its value | open, bad case, by design (the emit owns it) |
 | #29 | Rule 4 and the finalization of retired values are worded by reference counting ("at once"); paper-pin proposed wording by block | decided by the author, 2026-11-21: deterministic reference counting is part of the semantics. The manual keeps "at once" and says so |
+| #30 | `set :out` registry: quadratic (ray-lessmilk, via atmos-lang, 2026-11-22): a `set :out` of a value of an outer block adds an entry per execution, until the value ends, and each finalization scanned all entries (Dark Blue: 34% of its instructions) | fixed on `pin`, 2026-11-22 (by the session; a defect of performance, no change of meaning): the entries of a value are chained and found through a hash of the values, and a `set :out` of the same value to the same place adds no second entry. Repro (16000 tasks): 0.37 s -> 0.005 s. Test `out-04`. Open, for the author: should a `set :out` of a value that is not of an inner block be an error, or a plain `set`? Recommended: neither, it is correct and now cheap |
 
 ## Stable (2026-11-19)
 
