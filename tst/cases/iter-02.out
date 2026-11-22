@@ -1,0 +1,16 @@
+k	0
+k	1
+k	x
+k	y
+v	10
+v	20
+v	1
+v	2
+i	0
+i	1
+p	a
+p	b
+y	nil
+[10, 20]
+[x=1, y=2]
+7	nil	nil
