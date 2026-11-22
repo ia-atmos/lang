@@ -69,6 +69,13 @@ The branch of this session is `iter`.
   `iter.keys`, `iter.vals`) wait for that: with `#4a`, `iter.vals` is
   `loop v in t`, and the selectors would be views that a loop walks as
   a table (not functions, whose first value would be the key).
+- `#4`, his "mas e se quiser percorrer as chaves somente? ainda fica
+  confuso" (2026-11-22): `#4a` now includes `iter.keys(t)`, an iterator
+  over the keys only (the indexes, then the other keys, in the order of
+  the walk), as `keys` in Python and JS: `loop k in iter.keys(d)`. A
+  function, so `iter.find(iter.keys(d), f)` works too. In Pingus and
+  SNKRX: 195 `loop _, v` (values only), 6 `loop k, _` (keys only, e.g.
+  the `Tween` of `snxkx/eng/anim.atm:108`, `worldmap.atm:55` and `:72`).
 - `#13`, his syntax `#[]` and `%[]` (`@[]` refused by him, it reads as
   an index): `#[1,2,3]` is today the length of a constructor (`3`), and
   `x %[1]` is a modulo by a table (an error at run time); neither is in
