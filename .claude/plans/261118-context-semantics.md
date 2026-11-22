@@ -193,3 +193,5 @@ On the branch `context` (2026-11-20), with B lazy and the syntax
 - 2026-11-22, the author: `leave` receives what `enter` returned.
 - 2026-11-22, the author: syntax `context (enter, leave) {...}` or
   `context X {...}` with X giving `[enter, leave]`.
+- 2026-11-22, the author: `emit`, `spawn`, `abort`, `toggle` inside
+  `enter`/`leave` are errors (checked at runtime, also indirectly).

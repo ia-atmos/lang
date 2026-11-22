@@ -15,7 +15,7 @@ session, never reused; from another session, `session#N`.
 | #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | decided by the author (2026-11-22): no filter; a filter stays as #19 |
 | #3 | `leave` receives what `enter` returned (decided 2026-11-22) | decision | decided by the author (2026-11-22): yes |
 | #4 | Syntax | decision | decided by the author (2026-11-22): D, `context (enter, leave) {...}` or `context X {...}` with X giving `[enter, leave]`; `context` is a keyword; done on the branch `context` 14d9304 |
-| #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | by the session, to be confirmed: `emit` and `spawn` there are errors (`abort` not checked); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer |
+| #5 | Errors inside `enter`/`leave` | decision | decided by the author (2026-11-22): `emit`, `spawn`, `abort`, `toggle` there (also from a function they call) are errors, checked at runtime (one test per operation); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer; done on the branch `context` 052e823 |
 | #6 | SNKRX and env-ray not readable by this session | remark | open: cloning `ia-atmos/snxkx` and `ia-atmos/raylib` refused again (2026-11-20) |
 | #7 | The three comments of issue 21 not readable | remark | open |
 | #8 | The canvas of the stars: `STARS` (author) or `BACK` (material) | remark | settled (checked by `atmos-lang` in `src/shared.atm`): both exist; the stars draw on `STARS` (line 71), the background on `BACK` (line 22): the author is right |
@@ -33,7 +33,7 @@ session, never reused; from another session, `session#N`.
 
 ## Waiting for the author (one at a time, in this order)
 
-- **#5** Errors: `emit`, `spawn`, `abort` inside `enter`/`leave`.
+(nothing: #1 to #5 decided; the merge of the branch `context` waits for the author's approval)
 
 ## Known, not done
 
@@ -81,7 +81,7 @@ session, never reused; from another session, `session#N`.
   current layer whose block ended. Its counts match section 2 of
   `261118-context-semantics.md`.
 
-## Settled by the session, to be confirmed (2026-11-20)
+## Settled by the session (2026-11-20), all decided by the author (2026-11-22)
 
 Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 #1 to #5 are implemented with the recommendations on the branch
@@ -94,7 +94,7 @@ Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 | #2 | no filter (decided 2026-11-22) | context-06 |
 | #3 | `leave` receives what `enter` returned | context-07 |
 | #4 | D (decided 2026-11-22): `context (enter, leave) {...}` or `context X {...}` | ast context-1, context-2, context-err-1; cases context-13 to 16 |
-| #5 | `emit`, `spawn` in `enter`/`leave` are errors; errors raised in the trail resumed or the resumer | context-08 to 10 |
+| #5 | `emit`, `spawn`, `abort`, `toggle` in `enter`/`leave` are errors (decided 2026-11-22) | context-08 to 10, 17, 18 |
 
 Measured (cases context-11, context-12): 50 stars, 100 canvas switches per
 frame today, 2 with a context around the pool, 0 for `:update` and `:key`;
@@ -113,3 +113,7 @@ it awaits.
 - #4 (2026-11-22, the author, "D"): `context (enter, leave) {...}` or
   `context X {...}`, X giving the pair `[enter, leave]`; `enter` and
   `leave` that are not functions are an error.
+- #5 (2026-11-22, the author, "ok"): `emit`, `spawn`, `abort` and
+  `toggle` inside `enter`/`leave`, also indirectly, are errors at runtime;
+  the reason: they run other code in the middle of a switch (a nested
+  switch, or the context freed while its `enter` runs).
