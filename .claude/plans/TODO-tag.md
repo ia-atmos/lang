@@ -12,17 +12,15 @@ other sessions. The branch of this session is `tag-rebased` (the author, 2026-11
 | `#1` | Where the tag lives: a plain key `"tag"` (today, with the skip of `atmos-iter#14a`) or a field in the header of `ATab`, out of the keys | Decided 2026-11-22: `#1b` (his answer: "B") |
 | `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Decided 2026-11-22: `#2a` (his answer: "A"); on the branch `tag-rebased` |
 | `#3` | What a tag may hold: a string or nil only (the prototype), or any value | Decided 2026-11-22: `#3a` (his answer: "a"); on the branch |
-| `#4` | Whether a tag is its own type at run time, or stays a string (`:x == 'x'`) | Put to him on 2026-11-22, recommended `#4a` |
+| `#4` | Whether a tag is its own type at run time, or stays a string (`:x == 'x'`) | Decided 2026-11-22: `#4a` (his answer: "a"), a string as today |
+| `#5` | Merge of `tag-rebased`: hand it to `atmos-lang` to measure the ports and merge | Put to him on 2026-11-22 |
 
 ## A. Waiting for the author (one at a time)
 
-- `#4` (2026-11-22). `#4a` a tag stays a string at run time
-  (`:x == 'x'`, `type(:x)` is `:string`), as the manual says today;
-  the header field of `#1b` already gives `??` and `match` their speed
-  (no lookup), and strings are interned, so `==` is a pointer compare.
-  `#4b` its own type (`:tag`): `:x != 'x'`, `type`, `tostring`, the
-  keys `t.x`/`t@:x` (two keys for one name?), `X.load`/`X.dump` and
-  the ports (`??` with strings, `t.tag == "Pos"`) change.
+- `#5` (2026-11-22). The branch holds `#1b`, `#2a`, `#3a`; `#4a`
+  needs no code. Tests pass (`ATMOS_ASAN=1 make test`, `make
+  test-cfgs`). Approve the merge, so that `atmos-lang` measures the
+  ports and merges, and `atmos-iter` drops the skip of `#14a`.
 
 ## Settled by the session, to be confirmed
 
@@ -48,6 +46,7 @@ On the branch `tag-rebased`, reversible by not merging:
   `t@("tag")`, `set t.tag` and `[tag=...]` all reach the header.
 - `#3` (2026-11-22): `#3a`, a tag is a string or nil; any other value
   is an error (golden `0243` accepted as a departure).
+- `#4` (2026-11-22): `#4a`, a tag stays a string at run time.
 
 ## Later (not yet put to him)
 
