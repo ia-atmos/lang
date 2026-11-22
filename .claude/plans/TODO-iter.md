@@ -12,7 +12,7 @@ The branch of this session is `iter`.
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
-| `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Put to him on 2026-11-22 as the fix of his "menos conveniente ter que usar i,v quando so quer o v", recommended `#4a`; waiting |
+| `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Open |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Remark put to him on 2026-11-20; decision open |
@@ -22,6 +22,8 @@ The branch of this session is `iter`.
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
 | `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
 | `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Remark put to him on 2026-11-22; decision after `#4` |
+| `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Found 2026-11-22; to fix on a branch and send to `main` through `atmos-lang` |
+| `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Put to him on 2026-11-22, recommended `#16a` (both); waiting |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
@@ -76,6 +78,19 @@ The branch of this session is `iter`.
   function, so `iter.find(iter.keys(d), f)` works too. In Pingus and
   SNKRX: 195 `loop _, v` (values only), 6 `loop k, _` (keys only, e.g.
   the `Tween` of `snxkx/eng/anim.atm:108`, `worldmap.atm:55` and `:72`).
+- The walk of a table (`rt/tab.c`, 2026-11-22), as he asked: the
+  vector part (`arr`, `an` = `#t`) from `0` to `#t-1`, skipping holes
+  (`nil` in the middle); then the other keys (`ents`), in the order of
+  insertion; a removed key leaves a tombstone, skipped, and dropped
+  when the part grows (`rehash`, which keeps the order); a key set
+  again after removal goes to the end; an index past the end lives
+  with the other keys until the gap is filled, then moves into the
+  vector (`[0,1]`, `@3`, `.x`, `@2` walks `0 1 2 3 x`); a float with
+  an integer value is that integer (`d@(1.0)` is `d@1`); a negative
+  index is one of the other keys. The position of a walk is one
+  counter over both parts (`pos < an` in the vector, `pos - an` in the
+  other keys), which is what breaks in `#15` when `an` changes or the
+  other keys are compacted while walked.
 - `#13`, his syntax `#[]` and `%[]` (`@[]` refused by him, it reads as
   an index): `#[1,2,3]` is today the length of a constructor (`3`), and
   `x %[1]` is a modulo by a table (an error at run time); neither is in
@@ -123,6 +138,10 @@ On the branch `iter`, reversible by not merging:
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
 
 ## D. Decided by the author
+
+- `#4` (2026-11-22): `#4b`, the variables of `loop ... in` keep their
+  meaning (one variable over a table is the key). He noted that with
+  `#4a` an `iter.values` would be needed too.
 
 - `#2` (2026-11-22): `#2a`, `iter` takes what `loop ... in` takes but
   `nil` (a table, a pool, a number, a function), plus a range `(a,
