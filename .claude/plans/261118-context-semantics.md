@@ -188,3 +188,5 @@ On the branch `context` (2026-11-20), with B lazy and the syntax
 
 - 2026-11-22, the author: B, lazy (section 3). The implementation of
   section 7 stands.
+- 2026-11-22, the author: no filter of events (every resume inside is
+  bracketed); a filter stays as a TODO (`TODO-context.md` #19).

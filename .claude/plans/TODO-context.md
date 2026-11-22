@@ -12,7 +12,7 @@ session, never reused; from another session, `session#N`.
 | # | Item | Kind | State |
 |---|---|---|---|
 | #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | decided by the author (2026-11-22): B, around each resume, lazy (as on the branch `context`) |
-| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | by the session, to be confirmed: no filter |
+| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | decided by the author (2026-11-22): no filter; a filter stays as #19 |
 | #3 | `leave` receives what `enter` returned | decision | by the session, to be confirmed: yes |
 | #4 | Syntax | decision | by the session, to be confirmed: `context (enter, leave) {...}`, two functions (`\{...}`, `\(old) {...}`); `context` becomes a keyword |
 | #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | by the session, to be confirmed: `emit` and `spawn` there are errors (`abort` not checked); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer |
@@ -28,14 +28,12 @@ session, never reused; from another session, `session#N`.
 | #16 | Optimize: aborting a pool inside a context switches once per task (context-03 at the end); the walk up the tree on each resume could be a pointer cached at spawn | work | known, not done |
 | #17 | Rewrite the real cases with `context` on branches `exp-context` of `sdl-snxkx` (the stars) and `env-pico` (the current layer), building from the branch `context`; they report lines before and after, tests, cost and misfits | work | asked by `atmos-lang` (2026-11-21, `#112a`, the author's approval relayed, not checked here); this session keeps `context` near `main`. `env-pico` reported (2026-11-21, on 44cde44): 72 tests unchanged, pictures identical, switches per frame 4.0 vs 4.02 (one task per layer) and 22.0 vs 4.02 (pool of 10 into one layer), frame time unchanged (33.59 vs 33.58 ms); no real pico program needs it (synthetic case). Misfits: (a) a body that sets the layer and awaits gets the context's layer back: now one paragraph in the manual (branch `context`); (b) a task cannot set a layer for others with `context` (by design); (c) see #18. `sdl-snxkx` reported (2026-11-21, branch `exp-context` 88da713, on `context` 46703cd, not to merge): the stars (pool around a `context` on `STARS`) and the background (`BACK`); 40 of 40 tests identical; canvas switches per frame 24.72 -> 4.86 (stress, 1500 frames); stress logic 2.973 s -> 2.855 s (within the spread; a switch only sets an index); lines `src/shared.atm` 115 -> 117, `eng/eng.atm` 199 -> 213 (new `eng.on(c)`, `eng.target_get()`). Misfits: (1) `enter` must return what `leave` needs, so the engine needed a getter of the current canvas (#3); (2) two expressions take two lines per use, see #18; (3) only these two sites switch canvases from tasks |
 | #18 | The lambdas of `context` are long for the common case ("set this layer") and cannot be wrapped in a helper, since `context` is a statement (env-pico #17c; sdl-snxkx #17(2) asks for one value: `context eng.on(X) {...}`) | remark | open, both ports hit it; a change of #4, so the author's: one expression giving the pair would make each use one line. Meanwhile a library can return the pair, which works today (checked on `context` 46703cd): `val c = pico.ctx.layer(l)` returning `[enter, leave]`, then `context (c@0, c@1) {...}` |
+| #19 | A filter of events for `context` (`context ... with :draw`): bracket only the reactions to some events | work | known, not done: left by the author (2026-11-22) for later; today every resume inside is bracketed (#2) |
 | #15 | `pin` merged into `main` (8361f88, `set :out place = value`) and declared STABLE (`atmos-pin#9`, `TODO-pin.md` "Stable"): design #3 on top of it as fixed; a change to a rule of pin goes to `atmos-pin` first | work | when #3 comes |
 
 ## Waiting for the author (one at a time, in this order)
 
-- **#2 Filter** (asked 2026-11-22): bracket every reaction inside, or only those to some
-  events (`context ... with :draw`)? Recommended: no filter (the lazy
-  switch already costs nothing when nothing inside awakes).
-- #3 Can `leave` receive what `enter` returned (the pico idiom
+- **#3** Can `leave` receive what `enter` returned (the pico idiom
   `val old = pico.set.layer(l)` ... `pico.set.layer(old)`)?
   Recommended: yes.
 - #4 Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang/atmos`
@@ -99,7 +97,7 @@ Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 | # | Taken | Tests |
 |---|---|---|
 | #1 | around each resume, lazy (decided 2026-11-22) | context-01 to 05 |
-| #2 | no filter | context-06 |
+| #2 | no filter (decided 2026-11-22) | context-06 |
 | #3 | `leave` receives what `enter` returned | context-07 |
 | #4 | `context (enter, leave) {...}` | ast context-1, context-err-1 |
 | #5 | `emit`, `spawn` in `enter`/`leave` are errors; errors raised in the trail resumed or the resumer | context-08 to 10 |
@@ -114,3 +112,5 @@ it awaits.
 - #1 (2026-11-22, the author, "B"): `enter` and `leave` run around each
   resume of code that lives in the block, lazily; see
   `261118-context-semantics.md`, sections 3 to 6 and 8.
+- #2 (2026-11-22, the author, "sem filtro, mas deixar como TODO"): no
+  filter of events; a filter is #19, known, not done.
