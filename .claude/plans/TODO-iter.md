@@ -19,6 +19,8 @@ The branch of this session is `iter`.
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
+| `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
+| `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
@@ -52,6 +54,17 @@ The branch of this session is `iter`.
   as keys from `0`, which the first write would take for a vector;
   that needs a counting runtime over the suites of the ports
   (`atmos-lang`).
+- `#12` (2026-11-22, his "diferenciar por sintaxe? table.vector,
+  table.xxx? vamos por partes"). `#12a` by the content, `[]` decided
+  by its first write; `#12b` by the content, `[]` is an empty vector
+  and an empty dictionary has a mark (recommended); `#12c` a syntax for
+  every constructor (as in dynamic Ceu, `#[...]` and `@[...]`). Read in
+  Pingus and SNKRX: of 85 `x = []` given a name, about 53 are filled
+  as vectors (`@+`, `vector.insert`) and about 32 as dictionaries,
+  most with strings as keys (caches by name), and `ids@(o.id)` in
+  `game.atm:180`, numbers as keys, the case that `#12a` would take
+  for a vector. `??` does not know the subtypes of numbers today
+  (`1 ?? :number.integer` is false).
 - `#11`, after `#10a`: `#11a` two iterators in `iter`, `iter.vector(t)`
   (indexes `0..#t-1`) and `iter.dict(t)` (the other keys, without the
   tag?), native so that they cost no closure (recommended); `#11b` a
