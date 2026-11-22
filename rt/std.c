@@ -140,18 +140,23 @@ static AStatus std_next (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
-// Walks a pool or a table for `find` and `filter`: calls `f(v, k)` on
-// each member, and `hit` on those it accepts. `hit` stops the walk by
-// returning 1.
+// Walks what `loop ... in` walks, but `nil`, for `find` and `filter`:
+// calls `f(v, k)` on each member, and `hit` on those it accepts. `hit`
+// stops the walk by returning 1. In a table or a pool, `v` is the
+// value and `k` its key; over a number `n`, `v` goes from `0` to `n-1`
+// and `k` is `nil`; over a function, `v` and `k` are the first and
+// second values of each call, until it gives `nil`.
 static AStatus walk (const char* name, int argc, AVal* argv,
     int (*hit) (AVal k, AVal v, void* ud), void* ud)
 {
     AVal xs = arg(argc, argv, 0);
     AVal f  = arg(argc, argv, 1);
-    if (xs.type!=A_TAB && xs.type!=A_TASKS) {
-        return a_error("invalid argument to '%s' : expected table or tasks : got %s",
+    if (xs.type!=A_TAB && xs.type!=A_TASKS && xs.type!=A_FUNC && !a_isnum(xs)) {
+        return a_error("invalid argument to '%s' : expected table, tasks, number or function : got %s",
             name, a_typename(xs));
     }
+    // over a number or a function, the first value is the member
+    int swap = (xs.type==A_FUNC || a_isnum(xs));
     if (f.type != A_FUNC) {
         return a_error("invalid argument to '%s' : expected function : got %s",
             name, a_typename(f));
@@ -162,6 +167,11 @@ static AStatus walk (const char* name, int argc, AVal* argv,
         st = a_next(xs, a_nil(), &pos, &k, &v);
         if (st!=A_OK || k.type==A_NIL) {
             break;
+        }
+        if (swap) {
+            AVal x = k;
+            k = v;
+            v = x;
         }
         int base = a_top;
         a_pushc(v);
@@ -174,6 +184,11 @@ static AStatus walk (const char* name, int argc, AVal* argv,
         a_settop(base);
         if (yes && hit(k, v, ud)) {
             break;
+        }
+        if (swap) {
+            AVal x = k;
+            k = v;
+            v = x;
         }
     }
     a_clr(&k);
