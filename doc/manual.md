@@ -58,7 +58,7 @@
         - `spawn` `await` `emit` `mute`
         - `par` `watching`
 * STANDARD LIBRARIES
-    - `math` `string` `vector` `io` `os` `X` `atmos`
+    - `math` `string` `iter` `vector` `io` `os` `X` `atmos`
 * SYNTAX
     * Ambiguities
 
@@ -2852,7 +2852,10 @@ The following iterator expression types with predefined behaviors are
 supported:
 
 - `:table`:
-    ranges over vector indexes and values, and than over key-values of a table
+    ranges over vector indexes and values, and then over the other keys and
+    values of a table, in the order they were inserted; the key `tag` of a
+    [tagged table](#hierarchical-tags) is not visited; the body must not add
+    or remove keys of the table, which leaves the rest of the walk undefined
 - `:tasks`:
     ranges over the indexes and tasks of a task pool, in the order they were
     spawned; the body may abort tasks of the pool, which are then not
@@ -2865,7 +2868,8 @@ supported:
     equivalent to `(0,x-1)` where `x` is the given number, which is the
     number of iterations
 - `:nil`:
-    ranges from `0` upwards, with no limit
+    raises an error, `invalid loop : unexpected nil` (a numeric infinite loop
+    is written `loop i {...}`)
 
 A loop evaluates to `nil` as a whole, unless a [break](#breaks) condition
 occurs.
@@ -2897,6 +2901,12 @@ print(x)            ;; --> nil
 ```
 loop i in 3 {
     print(i)        ;; --> 0, 1, 2
+}
+```
+
+```
+loop in 3 {         ;; with no variable: three times
+    print("hello")
 }
 ```
 
@@ -3324,6 +3334,22 @@ A pattern is evaluated eagerly, once, when the await starts, including the
 arguments of a spawned call.
 However, the `until`/`while` predicate is lazy, re-evaluating its condition on
 each event.
+
+Since an `until` evaluates to the result of its condition, an await over the
+members of a [pool](#tasks) is written with [iter.find](#iter): the
+await awakes at the first event in which a member satisfies the predicate,
+and evaluates to that member.
+The condition is checked again at each event that the pattern accepts, such
+as the tick of an environment:
+
+```
+task Trap (pingus, zone) {
+    loop {
+        val t = await :tick until iter.find(pingus, \(t) { inside(zone, t.pub) })
+        emit @t :kill               ;; `t` is the pingu that entered the zone
+    }
+}
+```
 
 Examples:
 
@@ -3779,7 +3805,6 @@ there is no `require`.
   evaluates to its arguments otherwise
 - `next(t [, k])`: the key and value that follow the key `k` in the table
   `t`, or the first ones if `k` is absent; evaluates to `nil` after the last
-
 ## Math
 
 - `math.floor(x)`, `math.ceil(x)`: rounds `x` down or up to an integer
@@ -3826,6 +3851,65 @@ string.sub("hello", 1, 3)           ;; ell
 string.find("hello", "l")           ;; 2, 2
 string.split("a,b,,c", ",")         ;; ["a", "b", "", "c"]
 string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
+```
+
+## Iter
+
+The library `iter` has functions over what a [loop](#loop) walks.
+The collection comes first, so that a [pipe](#pipes) chains them.
+A collection `xs` is what a loop walks, and its members are:
+
+- in a table, each value `v` and its key `k`
+- in a [pool](#tasks), each task `v` and its position `k` among the live
+  tasks
+- in a number `n`, each `v` from `0` to `n-1`, with `k` as `nil`
+- in a range `(a, b)`, each `v` from `a` up to `b` inclusive, with `k` as
+  `nil`: the two numbers come before the function, as in
+  `iter.find((a, b), f)` or `(a, b) -> iter.find(f)`
+- in a function, the first and second values `v` and `k` of each call, until
+  it evaluates to `nil`
+
+Functions:
+
+- `iter.find(xs, f)`: the first member `v` of `xs` for which `f(v, k)` is
+  truthy, and its `k`; evaluates to `nil` if there is none
+- `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
+  for which `f(v, k)` is truthy, in the order of the walk
+- `iter.map(xs, f)`: a new vector with `f(v, k)` of each member, in the order
+  of the walk; a result `nil` is left out
+- `iter.any(xs, f)`, `iter.all(xs, f)`: whether `f(v, k)` is truthy for some
+  member, or for every member (`true` if there is none)
+- `iter.fold(xs, acc, f)`: `acc`, set to `f(acc, v, k)` at each member
+- `iter.sum(xs)`: the sum of the members, which are numbers; `0` if there is
+  none
+- `iter.min(xs [, f])`, `iter.max(xs [, f])`: the least or the greatest
+  member `v`, compared with `<` by itself or by `f(v, k)`, and its `k`; the
+  first of those that tie; `nil` if there is none
+- `iter.keys(xs)`: an iterator over the keys of the table or pool `xs`, in the
+  order of the walk: `loop k in iter.keys(t) {...}`
+- `iter.values(xs)`: an iterator over the values of the table or pool `xs`, in
+  the order of the walk: `loop v in iter.values(t) {...}`
+- `iter.zip(xs, ys)`: an iterator over the members of `xs` and `ys` side by
+  side, until the shorter ends: `loop a, b in iter.zip(xs, ys) {...}`
+
+The functions that give a collection give a new vector, which is a snapshot:
+it may be kept and walked across awaits.
+The iterators are lazy.
+
+An iterator refers to its collection, and follows the rules of a
+[closure](#pin): it does not escape the block of a pinned collection.
+
+Examples:
+
+```
+val e = iter.find(enemies, \(e) { e.hp <= 0 })      ;; the first dead enemy, or nil
+val es = enemies -> iter.filter(\{ it.hp > 0 })     ;; the live enemies
+val i = iter.find(10, \{ it*it > 20 })               ;; 5
+val ls = io.lines("f.txt") -> iter.filter(\{ #it > 0 })  ;; the lines not empty
+loop k in iter.keys([x=1, y=2]) { print(k) }        ;; x, y
+loop v in iter.values([10, 20]) { print(v) }        ;; 10, 20
+val d = iter.min(enemies, \(e) { dist(me, e) })      ;; the closest enemy
+val n = iter.fold(ls, 0, \(n, l) { if l.solved => n+1 => n })
 ```
 
 ## Vector

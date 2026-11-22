@@ -1650,6 +1650,9 @@ static void gen_loop (Unit* u, Expr* e, Dst d) {
             out(u, "a_adj(%s, 2);", m.n);
             out(u, "a_pop(&%s);", lim.c);
             out(u, "a_pop(&%s);", it.c);
+            // `loop i` counts with no end: `loop i in nil` is not its
+            // other spelling (atmos-iter#6b)
+            out_try(u, "((%s.type == A_NIL) ? a_error(\"invalid loop : unexpected nil\") : A_OK)", it.c);
         }
         k = (e->u.loop.n > 0) ? var_c(u,e->vars[0]) : opnd_tmp(u).c;
         v = (e->u.loop.n > 1) ? var_c(u,e->vars[1]) : opnd_tmp(u).c;

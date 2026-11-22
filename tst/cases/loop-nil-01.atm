@@ -1,0 +1,7 @@
+;; a loop over nil is an error; `loop i` counts with no end (atmos-iter#6b)
+val a = loop i { until i == 2, :ok }
+print(a)                                        ;; ok
+pin t = []
+print(catch true { loop _, e in t.enemies { print(e) } })
+loop _ in t.n || 0 { print(:never) }
+loop i in nil { print(i) }

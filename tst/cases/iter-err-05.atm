@@ -1,0 +1,1 @@
+print(iter.min([1, :x]))

@@ -14,6 +14,7 @@ AVal atm_g_tostring;
 AVal atm_g_tonumber;
 AVal atm_g_assert;
 AVal atm_g_next;
+AVal atm_g_iter;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -137,6 +138,449 @@ static AStatus std_next (AFunc* self, int argc, AVal* argv) {
         a_push(a_nil());
     }
     return A_OK;
+}
+
+// The collection of a function of `iter`: what `loop ... in` walks,
+// but `nil`, which `a_next` walks. Its members are `v, k`: in a table or a pool, the value and
+// its key; over a number `n`, `v` goes from `0` to `n-1` and `k` is
+// `nil`; over two numbers `a, b`, from `a` up to `b` inclusive, as the
+// range of a loop; over a function, the first and second values of each
+// call, until it gives `nil`.
+typedef struct {
+    AVal xs, lim;
+    int  swap;
+} Cur;
+
+// The collection is argument 0, or the range of arguments 0 and 1 when
+// both are numbers and the call has the `nrest` arguments that follow.
+// Sets `*next` to the index of the first argument after it.
+static AStatus cur_init (const char* name, int argc, AVal* argv, int nrest,
+    Cur* c, int* next)
+{
+    c->xs  = arg(argc, argv, 0);
+    c->lim = a_nil();
+    *next  = 1;
+    if (a_isnum(c->xs) && argc>=2+nrest && a_isnum(argv[1])) {
+        c->lim = argv[1];
+        *next  = 2;
+    }
+    if (c->xs.type!=A_TAB && c->xs.type!=A_TASKS && c->xs.type!=A_FUNC && !a_isnum(c->xs)) {
+        return a_error("invalid argument to '%s' : expected table, tasks, number or function : got %s",
+            name, a_typename(c->xs));
+    }
+    // over a number or a function, the first value is the member
+    c->swap = (c->xs.type==A_FUNC || a_isnum(c->xs));
+    return A_OK;
+}
+
+static AStatus arg_fn (const char* name, AVal f) {
+    if (f.type != A_FUNC) {
+        return a_error("invalid argument to '%s' : expected function : got %s",
+            name, a_typename(f));
+    }
+    return A_OK;
+}
+
+// What a function of `iter` does with each member: `each` gets the
+// member and `f(v, k)` (or nil with no `f`), and stops the walk by
+// returning 1, or by setting `*st`.
+typedef int (*Each) (AVal v, AVal k, AVal r, void* ud, AStatus* st);
+
+// Walks the collection of the arguments with `f(v, k)`, which is
+// argument `*next` (optional if `opt`).
+static AStatus walk (const char* name, int argc, AVal* argv, int nrest,
+    int opt, Each each, void* ud)
+{
+    Cur c;
+    int next;
+    if (cur_init(name, argc, argv, nrest, &c, &next) != A_OK) {
+        return A_ERROR;
+    }
+    AVal f = arg(argc, argv, next);
+    if (!(opt && f.type==A_NIL) && arg_fn(name, f)!=A_OK) {
+        return A_ERROR;
+    }
+    AStatus st = A_OK;
+    AVal pos=a_nil(), k=a_nil(), v=a_nil();
+    while (1) {
+        st = a_next(c.xs, c.lim, &pos, &k, &v);
+        if (st!=A_OK || k.type==A_NIL) {
+            break;
+        }
+        AVal vv = c.swap ? k : v;
+        AVal kk = c.swap ? v : k;
+        AVal r = a_nil();
+        if (f.type == A_FUNC) {
+            int base = a_top;
+            a_pushc(vv);
+            a_pushc(kk);
+            st = a_call(f, base);
+            if (st != A_OK) {
+                break;
+            }
+            r = (a_top > base) ? a_stk[base] : a_nil();
+            a_inc(r);
+            a_settop(base);
+        }
+        int stop = each(vv, kk, r, ud, &st);
+        a_dec(r);
+        if (stop || st!=A_OK) {
+            break;
+        }
+    }
+    a_clr(&k);
+    a_clr(&v);
+    return st;
+}
+
+// iter.find(xs, f): the first member `v` of `xs` for which `f(v, k)`
+// is truthy, and its `k`. Gives nil if there is none.
+static int find_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    (void) st;
+    if (!a_truthy(r)) {
+        return 0;
+    }
+    *((int*) ud) = 1;
+    a_pushc(v);
+    a_pushc(k);
+    return 1;
+}
+
+static AStatus std_find (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    int found = 0;
+    AStatus st = walk("find", argc, argv, 1, 0, find_each, &found);
+    if (st==A_OK && !found) {
+        a_push(a_nil());
+    }
+    return st;
+}
+
+// iter.any(xs, f), iter.all(xs, f): whether `f(v, k)` is truthy for
+// some member, or for every member (true if there is none).
+typedef struct {
+    int want;       // the answer of `f` that decides
+    int hit;
+} Any;
+
+static int any_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    (void) v;
+    (void) k;
+    (void) st;
+    Any* a = ud;
+    if (a_truthy(r) == a->want) {
+        a->hit = 1;
+        return 1;
+    }
+    return 0;
+}
+
+static AStatus std_any (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    Any a = { 1, 0 };
+    if (walk("any", argc, argv, 1, 0, any_each, &a) != A_OK) {
+        return A_ERROR;
+    }
+    a_push(a_bool(a.hit));
+    return A_OK;
+}
+
+static AStatus std_all (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    Any a = { 0, 0 };
+    if (walk("all", argc, argv, 1, 0, any_each, &a) != A_OK) {
+        return A_ERROR;
+    }
+    a_push(a_bool(!a.hit));
+    return A_OK;
+}
+
+// iter.filter(xs, f): a new vector with the members `v` of `xs` for
+// which `f(v, k)` is truthy, in the order of the walk.
+// iter.map(xs, f): a new vector with `f(v, k)` of each member, but
+// those that give nil.
+typedef struct {
+    AVal    t;
+    int64_t n;
+} Vec;
+
+static int filter_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    (void) k;
+    Vec* x = ud;
+    if (a_truthy(r)) {
+        *st = a_setindex(x->t, a_int(x->n++), v);
+    }
+    return 0;
+}
+
+static int map_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    (void) v;
+    (void) k;
+    Vec* x = ud;
+    // a vector has no nil: a nil result is left out
+    if (r.type != A_NIL) {
+        *st = a_setindex(x->t, a_int(x->n++), r);
+    }
+    return 0;
+}
+
+static AStatus to_vec (const char* name, Each each, int argc, AVal* argv) {
+    Vec x = { a_tab(), 0 };
+    if (walk(name, argc, argv, 1, 0, each, &x) != A_OK) {
+        a_dec(x.t);
+        return A_ERROR;
+    }
+    a_push(x.t);
+    return A_OK;
+}
+
+static AStatus std_filter (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return to_vec("filter", filter_each, argc, argv);
+}
+
+static AStatus std_map (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return to_vec("map", map_each, argc, argv);
+}
+
+// iter.fold(xs, acc, f): `acc` folded with `acc = f(acc, v, k)` over
+// each member.
+static AStatus std_fold (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    Cur c;
+    int next;
+    if (cur_init("fold", argc, argv, 2, &c, &next) != A_OK) {
+        return A_ERROR;
+    }
+    AVal acc = a_nil();
+    a_cpy(&acc, arg(argc, argv, next));
+    AVal f = arg(argc, argv, next+1);
+    if (arg_fn("fold", f) != A_OK) {
+        a_clr(&acc);
+        return A_ERROR;
+    }
+    AStatus st;
+    AVal pos=a_nil(), k=a_nil(), v=a_nil();
+    while (1) {
+        st = a_next(c.xs, c.lim, &pos, &k, &v);
+        if (st!=A_OK || k.type==A_NIL) {
+            break;
+        }
+        int base = a_top;
+        a_pushc(acc);
+        a_pushc(c.swap ? k : v);
+        a_pushc(c.swap ? v : k);
+        st = a_call(f, base);
+        if (st != A_OK) {
+            break;
+        }
+        a_cpy(&acc, (a_top > base) ? a_stk[base] : a_nil());
+        a_settop(base);
+    }
+    a_clr(&k);
+    a_clr(&v);
+    if (st != A_OK) {
+        a_clr(&acc);
+        return st;
+    }
+    a_push(acc);
+    return A_OK;
+}
+
+// iter.sum(xs): the sum of the members, `0` if there is none.
+static int sum_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    (void) k;
+    (void) r;
+    AVal* acc = ud;
+    if (!a_isnum(v)) {
+        *st = a_error("invalid argument to 'sum' : expected number : got %s",
+            a_typename(v));
+        return 1;
+    }
+    *st = a_add(acc, *acc, v);
+    return 0;
+}
+
+static AStatus std_sum (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal acc = a_int(0);
+    if (walk("sum", argc, argv, 0, 1, sum_each, &acc) != A_OK) {
+        return A_ERROR;
+    }
+    a_push(acc);
+    return A_OK;
+}
+
+// iter.min(xs [, f]), iter.max(xs [, f]): the least or the greatest
+// member `v` of `xs`, compared by `v` or by `f(v, k)` with `<`, and its
+// `k`; the first of those that tie. Gives nil if there is none.
+typedef struct {
+    int  max;
+    int  hasf;
+    int  some;
+    AVal v, k, by;
+} Best;
+
+static int best_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
+    Best* b = ud;
+    AVal by = b->hasf ? r : v;
+    int better = !b->some;
+    if (!better) {
+        AVal lt = a_nil();
+        *st = b->max ? a_lt(&lt, b->by, by) : a_lt(&lt, by, b->by);
+        if (*st != A_OK) {
+            return 1;
+        }
+        better = a_truthy(lt);
+    }
+    if (better) {
+        b->some = 1;
+        a_cpy(&b->v,  v);
+        a_cpy(&b->k,  k);
+        a_cpy(&b->by, by);
+    }
+    return 0;
+}
+
+static AStatus best (const char* name, int max, int argc, AVal* argv) {
+    Best b = { max, 0, 0, a_nil(), a_nil(), a_nil() };
+    // the function, if any, follows the collection or its range
+    int i = (argc>=2 && a_isnum(arg(argc,argv,0)) && a_isnum(arg(argc,argv,1))) ? 2 : 1;
+    b.hasf = (arg(argc, argv, i).type != A_NIL);
+    AStatus st = walk(name, argc, argv, 0, 1, best_each, &b);
+    if (st==A_OK && b.some) {
+        a_pushc(b.v);
+        a_pushc(b.k);
+    } else if (st == A_OK) {
+        a_push(a_nil());
+    }
+    a_clr(&b.v);
+    a_clr(&b.k);
+    a_clr(&b.by);
+    return st;
+}
+
+static AStatus std_min (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return best("min", 0, argc, argv);
+}
+
+static AStatus std_max (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return best("max", 1, argc, argv);
+}
+
+// iter.zip(xs, ys): an iterator over the members of `xs` and `ys` side
+// by side, `vx, vy` at each step, until the shorter ends. The captures
+// are, for each side, the collection, its limit, its position, and its
+// last two values.
+static AStatus zip_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    AVal* c = self->caps;
+    AVal out[2];
+    for (int i=0; i<2; i++) {
+        AVal* x = &c[i*5];
+        AStatus st = a_next(x[0], x[1], &x[2], &x[3], &x[4]);
+        if (st != A_OK) {
+            return st;
+        }
+        if (x[3].type == A_NIL) {
+            a_push(a_nil());
+            return A_OK;
+        }
+        // over a number or a function, the first value is the member
+        out[i] = (x[0].type==A_FUNC || a_isnum(x[0])) ? x[3] : x[4];
+    }
+    a_pushc(out[0]);
+    a_pushc(out[1]);
+    return A_OK;
+}
+
+static AStatus std_zip (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal it = a_func(zip_next, 10);
+    for (int i=0; i<2; i++) {
+        AVal xs = arg(argc, argv, i);
+        if (xs.type!=A_TAB && xs.type!=A_TASKS && xs.type!=A_FUNC && !a_isnum(xs)) {
+            a_dec(it);
+            return a_error("invalid argument to 'zip' : expected table, tasks, number or function : got %s",
+                a_typename(xs));
+        }
+        AVal* x = &A_FUNC_OF(it)->caps[i*5];
+        a_inc(xs);
+        x[0] = xs;
+        x[1] = x[2] = x[3] = x[4] = a_nil();
+    }
+    a_func_scope(it);
+    a_push(it);
+    return A_OK;
+}
+
+// The iterators of `iter.keys` and `iter.values`: the captures are the
+// table or pool, the position of the walk, and the last key.
+static AStatus iter_step (AFunc* self, int key) {
+    AVal* c = self->caps;
+    AVal k = a_nil(), v = a_nil();
+    a_cpy(&k, c[2]);
+    AStatus st = a_next(c[0], a_nil(), &c[1], &k, &v);
+    if (st != A_OK) {
+        a_clr(&k);
+        a_clr(&v);
+        return st;
+    }
+    a_cpy(&c[2], k);
+    if (k.type == A_NIL) {
+        a_push(a_nil());
+    } else {
+        a_pushc(key ? k : v);
+    }
+    a_clr(&k);
+    a_clr(&v);
+    return A_OK;
+}
+
+static AStatus keys_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    return iter_step(self, 1);
+}
+
+static AStatus values_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    return iter_step(self, 0);
+}
+
+static AStatus iter_of (const char* name, AFn fn, int argc, AVal* argv) {
+    AVal xs = arg(argc, argv, 0);
+    if (xs.type!=A_TAB && xs.type!=A_TASKS) {
+        return a_error("invalid argument to '%s' : expected table or tasks : got %s",
+            name, a_typename(xs));
+    }
+    AVal it = a_func(fn, 3);
+    a_inc(xs);
+    A_FUNC_OF(it)->caps[0] = xs;
+    A_FUNC_OF(it)->caps[1] = a_nil();
+    A_FUNC_OF(it)->caps[2] = a_nil();
+    a_func_scope(it);
+    a_push(it);
+    return A_OK;
+}
+
+// iter.keys(xs): an iterator over the keys of the table or pool `xs`,
+// in the order of the walk: `loop k in iter.keys(t) {...}`.
+static AStatus std_keys (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return iter_of("keys", keys_next, argc, argv);
+}
+
+// iter.values(xs): an iterator over the values of the table or pool
+// `xs`, in the order of the walk: `loop v in iter.values(t) {...}`.
+static AStatus std_values (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return iter_of("values", values_next, argc, argv);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -714,6 +1158,20 @@ void atm_std_init (void) {
     atm_g_tonumber = a_func(std_tonumber, 0);
     atm_g_assert   = a_func(std_assert, 0);
     atm_g_next     = a_func(std_next, 0);
+    // the library `iter`, over what `loop ... in` walks
+    atm_g_iter = a_tab();
+    field(atm_g_iter, "find",   std_find);
+    field(atm_g_iter, "filter", std_filter);
+    field(atm_g_iter, "map",    std_map);
+    field(atm_g_iter, "any",    std_any);
+    field(atm_g_iter, "all",    std_all);
+    field(atm_g_iter, "fold",   std_fold);
+    field(atm_g_iter, "sum",    std_sum);
+    field(atm_g_iter, "min",    std_min);
+    field(atm_g_iter, "max",    std_max);
+    field(atm_g_iter, "zip",    std_zip);
+    field(atm_g_iter, "keys",   std_keys);
+    field(atm_g_iter, "values", std_values);
 
     atm_g_X = a_tab();
     field(atm_g_X, "tostring", x_tostring);
@@ -769,6 +1227,7 @@ void atm_std_init (void) {
     a_own(atm_g_tonumber);
     a_own(atm_g_assert);
     a_own(atm_g_next);
+    a_own(atm_g_iter);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -785,6 +1244,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_tonumber);
     a_clr(&atm_g_assert);
     a_clr(&atm_g_next);
+    a_clr(&atm_g_iter);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {
         a_clr(&atm_envs[i]);

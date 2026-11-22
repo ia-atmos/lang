@@ -1,0 +1,7 @@
+;; zip: two collections side by side, until the shorter ends
+loop a, b in iter.zip([1,2,3], [:x, :y]) { print(a, b) }
+loop i, c in iter.zip(10, [:p, :q]) { print(i, c) }
+pin up = func (n) { var i = 0 ; \{ set i = i + 1 ; if i > n => nil => i } }
+loop a, b in iter.zip(up(2), [a=10, b=20, c=30]) { print(a, b) }
+X.print(iter.zip([1,2], [3,4]) -> iter.map(\(a, b) { a + b }))   ;; [4, 6]
+loop a, b in iter.zip([], [1]) { print(:never) }

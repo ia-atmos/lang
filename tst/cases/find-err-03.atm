@@ -1,0 +1,2 @@
+;; an error of the predicate goes through
+print(iter.filter([1,2], \(v) { throw :X }))
