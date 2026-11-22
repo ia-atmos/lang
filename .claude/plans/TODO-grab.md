@@ -61,6 +61,7 @@ the rule are `#1`..`#8`.
 
 ## Decided
 
+- Merge (2026-11-22): the author approved the merge of `grab` into `main` (f416c03), and with it #1–#4 and #6–#8 as implemented. 1048 pass with ASAN, test-rt and test-env pass. The ports must now rewrite their uses of `toggle` (#24) and two locals (#23).
 - #22 (2026-11-22): the form of `mute`/`solo`/`stage`, see the index.
 - #18 (2026-11-22): rename the parameter, keep the keyword `grab`; found already renamed in env-sdl (`grabbed`).
 - #5 (2026-11-22): kept as is. The pattern of the grab decides whether the time stops; the manual shows the predicate that lets it pass (`tst/cases/grab-08`, branch `grab`).
