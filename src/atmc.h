@@ -282,7 +282,7 @@ struct Expr {
         struct { int nf; Patt** fs; Expr* blk; }        toggle_on;
         // kind: 1 stage, 2 solo
         struct { int kind; int nf; Patt** fs; Expr* blk; } grab;
-        struct { Expr* enter; Expr* leave; Expr* blk; } context;
+        struct { Patt* patt; Expr* enter; Expr* leave; Expr* blk; } context;
         struct { ParMode mode; List blks; }             par;
         struct { Expr* cnd; Expr* blk; }                xcatch;
         // inl: lambda of an if/ifs/match, expanded in place

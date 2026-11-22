@@ -1,0 +1,4 @@
+;; #19: the pattern closes with >
+context <:draw (a, b) {
+    await :X
+}

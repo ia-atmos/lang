@@ -1037,6 +1037,9 @@ static void res (Expr* e) {
             break;
 
         case E_CONTEXT:
+            if (e->u.context.patt != NULL) {
+                res_patt(e->u.context.patt);
+            }
             res(e->u.context.enter);
             if (e->u.context.leave != NULL) {
                 res(e->u.context.leave);

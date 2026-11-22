@@ -2661,6 +2661,16 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
         opnd_rel(u, lv);
     }
     opnd_rel(u, en);
+    if (e->u.context.patt != NULL) {
+        int n;
+        Opnd* os = gen_filters(u, &e->u.context.patt, 1, &n);
+        out(u, "    st = a_trail_context_filt(t, %d, fs, 1);", id);
+        out(u, "}");
+        out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
+        for (int i=0; i<n; i++) {
+            opnd_rel(u, os[i]);
+        }
+    }
     out(u, "a_lin = %d;", lin_of(blk->tk));
     out_try(u, "a_trail_spawn(t, %d)", id);
     out(u, "st = a_await_trails(tr, %d, 1);", id);

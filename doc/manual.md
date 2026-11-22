@@ -3630,8 +3630,8 @@ code that lives in its block runs, and restores it before any other code
 runs:
 
 ```
-Context : `context´ `(´ Expr `,´ Expr `)´ Block
-        | `context´ Expr Block
+Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
+        | `context´ [`<´ Patt `>´] Expr Block
 ```
 
 The first expression is a function `enter`, which sets the state and returns
@@ -3651,6 +3651,14 @@ tasks of a pool declared inside a context run inside it, and a task spawned
 from inside a context into a pool declared outside does not.
 Contexts nest: the inner one is entered after the outer one, and left before
 it.
+
+The pattern is an [await pattern](#await), between `<` and `>` as in the
+first format of a [mute](#mute), since an expression follows.
+With a pattern, the context applies only while the traversal of an emit that
+matches it resumes code inside: for other emits, and outside an emit (the
+first reaction of the block, an `abort` from code), the code inside runs as if
+the context were not there.
+With no pattern, every event applies it.
 
 The switch is lazy: two tasks of the same context that awake in a row, such
 as the tasks of a pool, call `enter` and `leave` only once around both, and an
@@ -3702,6 +3710,20 @@ spawn {
             print(layer)    ;; --> panel
         }
     }
+}
+```
+
+With a pattern, the state is set only to draw: the watching of each coin, the
+clock and the keys run without it:
+
+```
+context <:draw> ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE) {
+    spawn { loop on :draw { tiles() } }
+    pin coins = tasks()
+    loop c in cs {
+        spawn @coins Coin(c)
+    }
+    await false
 }
 ```
 
