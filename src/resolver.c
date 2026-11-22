@@ -281,6 +281,13 @@ static void hoist (Expr* e) {
         case E_TOGGLE_ON:
             hoist(e->u.toggle_on.blk);
             break;
+        case E_CONTEXT:
+            hoist(e->u.context.enter);
+            if (e->u.context.leave != NULL) {
+                hoist(e->u.context.leave);
+            }
+            hoist(e->u.context.blk);
+            break;
         case E_PAR:
             hoist_list(&e->u.par.blks);
             break;
@@ -506,6 +513,7 @@ static int awaits (Expr* e) {
         case E_AWAIT:
         case E_PAR:
         case E_TOGGLE_ON:
+        case E_CONTEXT:
             return 1;
         case E_INDEX:
             return awaits(e->u.index.t) || awaits(e->u.index.idx);
@@ -1005,6 +1013,15 @@ static void res (Expr* e) {
             for (int i=0; i<e->u.toggle.nf; i++) {
                 res_patt(e->u.toggle.fs[i]);
             }
+            break;
+
+        case E_CONTEXT:
+            res(e->u.context.enter);
+            if (e->u.context.leave != NULL) {
+                res(e->u.context.leave);
+            }
+            chk_await(e->tk, "context");
+            res_block(e->u.context.blk, 1);
             break;
 
         case E_TOGGLE_ON:

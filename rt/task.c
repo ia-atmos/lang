@@ -840,10 +840,197 @@ static ATrailX* trail_x (ATrail* tr) {
     return tr->x;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// CONTEXT
+///////////////////////////////////////////////////////////////////////////////
+
+// A context is a trail whose `enter` runs before code that lives in its
+// subtree runs, and whose `leave` runs before code outside runs again.
+// The contexts applied now, from the outermost: the switch is lazy, so
+// two trails of the same context resumed in a row pay nothing between
+// them, and a subtree in which nothing awakes pays nothing at all.
+
+#define CTX_MAX 64
+static ATrail* CTX[CTX_MAX];
+static int     NCTX = 0;
+// contexts alive: with none, and none applied, the hooks cost nothing
+static int     LIVE = 0;
+// running `enter` or `leave`: `emit` and `spawn` are errors there
+static int     INCTX = 0;
+// set by the traversal of an emit just before it resumes a trail: the
+// switch back to the resumer waits for the end of the traversal
+static int     LAZY = 0;
+
+#define CTX_ON() (LIVE>0 || NCTX>0)
+
+// The contexts around trail `i` of task `t`, from the innermost.
+static int ctx_chain (ATask* t, int i, ATrail** out) {
+    int n = 0;
+    while (t != NULL) {
+        if (t->trs != NULL) {
+            const ATrailD* ds = t->desc->trails;
+            for (int j=i; j>=0; j=ds[j].up) {
+                ATrail* tr = &t->trs[j];
+                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF) {
+                    if (n == CTX_MAX) {
+                        return n;
+                    }
+                    out[n++] = tr;
+                }
+            }
+        }
+        // where the task lives: the trail of the task that holds it, or
+        // that holds its pool
+        ANode* nd = &t->node;
+        t = NULL;
+        while (nd->up != NULL) {
+            i  = nd->trail;
+            nd = nd->up;
+            if (nd->hdr.type == A_XTASK) {
+                t = (ATask*) nd;
+                break;
+            }
+        }
+    }
+    return n;
+}
+
+static AStatus ctx_call (AVal f, AVal arg, int has, AVal* res) {
+    int base = a_top;
+    if (has) {
+        a_pushc(arg);
+    }
+    INCTX++;
+    AStatus st = a_call(f, base);
+    INCTX--;
+    if (st != A_OK) {
+        return st;
+    }
+    AVal r = a_nil();
+    a_ret1(&r, base);
+    if (res != NULL) {
+        *res = r;
+    } else {
+        a_dec(r);
+    }
+    return A_OK;
+}
+
+// Leaves the applied contexts down to `n` of them, innermost first.
+static AStatus ctx_leave (int n) {
+    AStatus ret = A_OK;
+    while (NCTX > n) {
+        ATrailX* x = CTX[--NCTX]->x;
+        AVal v = x->cval;
+        x->cval = a_nil();
+        AStatus st = ctx_call(x->leave, v, 1, NULL);
+        a_dec(v);
+        if (ret == A_OK) {
+            ret = st;
+        }
+    }
+    return ret;
+}
+
+// Applies the contexts around trail `i` of task `t` (none for NULL).
+static AStatus ctx_switch (ATask* t, int i) {
+    ATrail* ch[CTX_MAX];
+    int n = (t == NULL) ? 0 : ctx_chain(t, i, ch);
+    // common prefix, from the outermost
+    int p = 0;
+    while (p<NCTX && p<n && CTX[p]==ch[n-1-p]) {
+        p++;
+    }
+    AStatus ret = ctx_leave(p);
+    for (int k=p; k<n && ret==A_OK; k++) {
+        ATrail* tr = ch[n-1-k];
+        ATrailX* x = tr->x;
+        CTX[NCTX++] = tr;
+        AStatus st = ctx_call(x->enter, a_nil(), 0, &x->cval);
+        if (st != A_OK) {
+            NCTX--;
+            ret = st;
+        }
+    }
+    return ret;
+}
+
+// Back to the contexts of the code that runs now.
+static AStatus ctx_here (void) {
+    if (!CTX_ON()) {
+        return A_OK;
+    }
+    return ctx_switch(a_cur, (a_trl == NULL) ? 0 : a_trl->idx);
+}
+
+AStatus a_trail_context (ATask* t, int i, AVal enter, AVal leave) {
+    if (enter.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(enter));
+    }
+    if (leave.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(leave));
+    }
+    ATrailX* x = trail_x(&t->trs[i]);
+    x->ctx = 1;
+    a_cpy(&x->enter, enter);
+    a_cpy(&x->leave, leave);
+    x->cval = a_nil();
+    LIVE++;
+    return A_OK;
+}
+
+// context X {...}: X holds the pair, enter at 0 and leave at 1.
+AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
+    if (pair.type != A_TAB) {
+        return a_error("invalid context : expected table : got %s",
+            a_typename(pair));
+    }
+    AVal en = a_nil();
+    AVal lv = a_nil();
+    if (a_index(&en, pair, a_int(0)) != A_OK) {
+        return A_ERROR;
+    }
+    if (a_index(&lv, pair, a_int(1)) != A_OK) {
+        a_dec(en);
+        return A_ERROR;
+    }
+    AStatus st = a_trail_context(t, i, en, lv);
+    a_dec(en);
+    a_dec(lv);
+    return st;
+}
+
+// A context trail ends: left if applied, with those inside it.
+static void ctx_drop (ATrail* tr) {
+    for (int k=0; k<NCTX; k++) {
+        if (CTX[k] == tr) {
+            ctx_leave(k);
+            break;
+        }
+    }
+    ATrailX* x = tr->x;
+    a_dec(x->enter);
+    a_dec(x->leave);
+    a_dec(x->cval);
+    LIVE--;
+}
+
+static AStatus ctx_chk (const char* op) {
+    if (INCTX > 0) {
+        return a_error("invalid %s : inside enter or leave of a context", op);
+    }
+    return A_OK;
+}
+
 // Releases the state of a trail, which becomes inactive.
 static void trail_off (ATrail* tr) {
     if (tr->root.kind != PK_NONE) {
         root_free(&tr->root);
+    }
+    if (tr->x!=NULL && tr->x->ctx) {
+        ctx_drop(tr);
     }
     ATrailX* x = tr->x;
     if (x != NULL) {
@@ -1122,6 +1309,21 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
         t->status = T_RUNNING;
     }
     int lin = a_lin;
+    // the contexts of the trail; back to those of the resumer at the
+    // end, unless the traversal of an emit resumes it (then at the end
+    // of the traversal)
+    int lazy = LAZY;
+    LAZY = 0;
+    AStatus cst = A_OK;
+    if (CTX_ON()) {
+        cst = ctx_switch(t, tr->idx);
+        if (cst!=A_OK && k==R_EVENT) {
+            // raised at the await of the trail
+            EXIT = cst;
+            k = R_EXIT;
+            cst = A_OK;
+        }
+    }
     RFrame rf = { ptrail, a_depth, RSTK };
     RSTK = &rf;
     AStatus st = t->desc->trails[tr->idx].resume(t, tr, k);
@@ -1130,6 +1332,12 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
     a_depth = rf.depth;
     a_cur = ptask;
     a_trl = ptrail;
+    if (!lazy && CTX_ON()) {
+        AStatus st2 = ctx_switch(ptask, (ptrail == NULL) ? 0 : ptrail->idx);
+        if (cst == A_OK) {
+            cst = st2;
+        }
+    }
     if (st == A_AWAIT) {
         tr->status = TR_SUSPENDED;
         if (tr->idx == 0) {
@@ -1138,6 +1346,10 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
         st = A_OK;
     } else {
         st = trail_end(t, tr, st);
+    }
+    if (st == A_OK) {
+        // an error in `enter` or `leave` is raised in the resumer
+        st = cst;
     }
     a_dec(me);
     return st;
@@ -1228,6 +1440,9 @@ static AStatus node_abort (ANode* n) {
 }
 
 AStatus a_abort (AVal v) {
+    if (ctx_chk("abort") != A_OK) {
+        return A_ERROR;
+    }
     if (v.type!=A_XTASK && v.type!=A_TASKS) {
         return a_error("invalid abort : expected task");
     }
@@ -1339,6 +1554,7 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
             } else if (tr->status == TR_SUSPENDED) {
                 // raised at the await of the parent
                 EXIT = st;
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EXIT);
             } else if (tr->status == TR_RUNNING) {
                 // the parent is on the C stack
@@ -1355,7 +1571,12 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
                 a_cur   = t;
                 a_trl   = tr;
                 a_depth = tr->adepth;
-                st = patt_match(tr->root.u.p, evt, &done);
+                if (CTX_ON()) {
+                    st = ctx_switch(t, tr->idx);
+                }
+                if (st == A_OK) {
+                    st = patt_match(tr->root.u.p, evt, &done);
+                }
                 a_cur   = ptask;
                 a_trl   = ptrail;
                 a_depth = depth;
@@ -1364,8 +1585,10 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
             }
             if (st != A_OK) {
                 EXIT = st;
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EXIT);
             } else if (done) {
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EVENT);
             }
         }
@@ -1423,9 +1646,11 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
 }
 
 AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
-    AStatus st = A_OK;
+    AStatus st = ctx_chk("toggle");
     ANode* x = (ANode*) t.u.o;
-    if (t.type!=A_XTASK && t.type!=A_TASKS) {
+    if (st != A_OK) {
+        // inside enter or leave of a context
+    } else if (t.type!=A_XTASK && t.type!=A_TASKS) {
         st = a_error("invalid toggle : expected task");
     } else if (on.type != A_BOOL) {
         st = a_error("invalid toggle : expected bool argument");
@@ -1446,7 +1671,9 @@ AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
     if (on.u.b) {
         // a zero tick awakes `await(true)` and lets the timers report
         node_untoggle(x);
-        return chk_aborted(emit_node(x, ++TIME, a_int(0)));
+        AStatus st2 = emit_node(x, ++TIME, a_int(0));
+        AStatus st3 = ctx_here();
+        return chk_aborted((st2 == A_OK) ? st3 : st2);
     }
     x->filt = malloc((n > 0 ? n : 1) * sizeof(APatt*));
     memcpy(x->filt, fs, n * sizeof(APatt*));
@@ -1471,8 +1698,12 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
     x->nfilt = n;
 }
 
+// An emit traverses the tree, and then the code that emitted goes on in
+// its own contexts.
 static AStatus emit_top (ANode* n, AVal evt) {
-    return emit_node(n, ++TIME, evt);
+    AStatus st = emit_node(n, ++TIME, evt);
+    AStatus st2 = ctx_here();
+    return (st == A_OK) ? st2 : st;
 }
 
 // Target of an emit: :task (default), :parent, :global, a task or
@@ -1591,7 +1822,11 @@ static AStatus emit_chk (ANode* n, AVal evt, int anc) {
 AStatus a_emit (AVal to, AVal evt) {
     ANode* n = NULL;
     int anc = 0;
-    AStatus st = emit_to(&n, to, &anc);
+    AStatus st = ctx_chk("emit");
+    if (st != A_OK) {
+        return st;
+    }
+    st = emit_to(&n, to, &anc);
     if (st != A_OK) {
         return st;
     }
@@ -1743,6 +1978,10 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
 }
 
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
+    if (ctx_chk("spawn") != A_OK) {
+        a_settop(base);
+        return A_ERROR;
+    }
     if (proto.type != A_TASK) {
         a_settop(base);
         return a_error("invalid spawn : expected task prototype");

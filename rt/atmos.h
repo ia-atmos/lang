@@ -829,6 +829,12 @@ typedef struct ATrailX {
     AVal     tog;
     struct APatt** filt;
     int      nfilt;
+    // `context`: the functions that set and restore the state, and
+    // what `enter` returned while the context is applied
+    uint8_t  ctx;
+    AVal     enter;
+    AVal     leave;
+    AVal     cval;
 } ATrailX;
 
 // Pattern of an await: a single leaf, or a tree. The value is what
@@ -972,6 +978,10 @@ void a_trail_doom (struct ATask* t, int i);
 // toggle on :T with P, ... {...}: events `:T [false]` and `:T [true]`
 // toggle trail `i` from now on. Takes over the filters.
 void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
+// `context (enter, leave) {...}`: makes trail `i` a context, before it
+// starts.
+AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
+AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;

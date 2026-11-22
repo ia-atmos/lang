@@ -2589,6 +2589,34 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
+// context (enter, leave) {...} | context X {...}: the block runs as a transparent task
+// that is a context, before its first reaction.
+static void gen_context (Unit* u, Expr* e, Dst d) {
+    Opnd en = gen_expr(u, e->u.context.enter);
+    Expr* le = e->u.context.leave;
+    Opnd lv = (le == NULL) ? opnd_c(NULL) : gen_expr(u, le);
+    Opnd r = opnd_tmp(u);
+    Blk b = blk_open(u);
+    int id = gen_trail(u);
+    gen_trail_end(u, id);
+    Expr* blk = e->u.context.blk;
+    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
+    out(u, "a_lin = %d;", lin_of(e->tk));
+    if (le == NULL) {
+        out_try(u, "a_trail_context_pair(t, %d, %s)", id, en.c);
+    } else {
+        out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
+        opnd_rel(u, lv);
+    }
+    opnd_rel(u, en);
+    out(u, "a_lin = %d;", lin_of(blk->tk));
+    out_try(u, "a_trail_spawn(t, %d)", id);
+    out(u, "st = a_await_trails(tr, %d, 1);", id);
+    gen_suspend(u, dst_none());
+    blk_close(u, b, dst_none(), hnd_none());
+    store(u, r, d);
+}
+
 // await P
 static void gen_await (Unit* u, Expr* e, Dst d) {
     gen_await_patt(u, e->u.await.p, lin_of(e->tk), d);
@@ -2760,6 +2788,9 @@ static void gen (Unit* u, Expr* e, Dst d) {
         case E_TOGGLE:
             gen_toggle(u, e);
             store_void(u, d);
+            break;
+        case E_CONTEXT:
+            gen_context(u, e, d);
             break;
         case E_TOGGLE_ON:
             gen_toggle_on(u, e, d);

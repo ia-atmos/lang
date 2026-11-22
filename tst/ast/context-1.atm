@@ -1,0 +1,4 @@
+;; #4 (the author, 2026-11-22): context (enter, leave) {...}
+context (\{ f() }, \(old) { g(old) }) {
+    await :X
+}
