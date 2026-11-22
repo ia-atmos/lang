@@ -17,3 +17,11 @@ X.print(string.split("a b c") -> iter.filter(\{ it != "b" }))
 ;; the search of basher.atm (sdl-pingus), over a number
 pin wall = [false, false, true, false]
 print(iter.find(#wall, \(i) { wall@i }))            ;; 2 nil
+;; a range, as in `loop i in (a, b)`: two numbers before the function
+print(iter.find((3, 9), \{ it*it > 20 }))           ;; 5 nil
+X.print(iter.filter((-2, 2), \{ it != 0 }))         ;; [-2, -1, 1, 2]
+X.print((1, 4) -> iter.filter(\{ it > 2 }))          ;; [3, 4]
+print(iter.find((5, 1), \{ true }))                 ;; nil
+;; the search of basher_walk (sdl-pingus), over a range
+pin hole = [false, false, true]
+print(iter.find((0, 2), \(i) { hole@i }))           ;; 2 nil
