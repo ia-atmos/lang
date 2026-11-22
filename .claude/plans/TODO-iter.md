@@ -11,7 +11,7 @@ The branch of this session is `iter`.
 |---|---|---|
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
-| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | He asked for a minimal functional set and a reference (2026-11-22); `#3d` (`find`, `filter`, `map`) recommended; waiting |
+| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | He asked for a minimal functional set and a reference, then the set of Python with fold (`#3f`, sketched 2026-11-22); waiting |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
@@ -53,6 +53,11 @@ The branch of this session is `iter`.
   accumulates (count, sum, the least) stays a loop with a `var`
   (recommended); `#3e` `fold` alone, the others written with it; the
   earlier `#3a` to `#3c` stand.
+  His next question: "o conjunto de python mais as suas sugestoes e mais
+  fold, como ficaria?". Sketched as `#3f`: `find`, `filter`, `map`,
+  `any`, `all`, `fold(xs, acc, f)` with `f(acc, v, k)`, `sum(xs)`,
+  `min(xs [, f])`, `max(xs [, f])` (giving `v, k`, or `nil` when
+  empty), plus `keys`, `values`: 11 names. Not implemented.
 - `#10` (asked by him before `#2`). Options: `#10a` one type of table,
   and a loop that can say which part it walks (recommended); `#10b`
   two types, vector and dictionary; `#10c` nothing changes. Facts run
