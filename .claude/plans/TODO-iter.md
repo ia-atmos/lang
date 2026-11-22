@@ -16,7 +16,7 @@ The branch of this session is `iter`.
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Decided 2026-11-22: `#6b` (his answer "b"); on the branch `iter`; measurement asked of `atmos-lang` |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
-| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
+| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | It reads `await :tick until iter.find(ts, f)` on the branch (`find-01`); told to `atmos-pool` on 2026-11-22 |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
@@ -27,7 +27,7 @@ The branch of this session is `iter`.
 | `#17` | A more primitive form of `tag` (his musing, 2026-11-22): out of the keys, in the header of the table | Moved 2026-11-22 to a session `atmos-tag` (his words: "passe pra sessao atmos-lang e mande ela abrir uma sessao atmos-tag. iremos fazer la"); opened by `atmos-lang` as session_011eECogjajEpy59YjN42Max, material `261122-tag.md`. There he decided `atmos-tag#1b` (2026-11-22, his "B", checked in its transcript): the tag becomes a field of the header of a table, never a key. The skip of `#14a` stays on `iter` until the branch `tag-rebased` is merged, then is dropped (`atmos-tag#2a`: `t.tag` and `t@("tag")` both reach the header, no walk sees it) |
 | `#18` | What else goes into `iter`: `sorted`, and the rule between `iter` (any iterable, not changed) and `vector` (changes a vector) | Decided 2026-11-22: no `sorted` (his words "sem sorted. com zip"): `iter` gains nothing from `vector` |
 | `#19` | `iter.zip` and `iter.enumerate` | Decided 2026-11-22: `iter.zip`, no `enumerate`; on the branch `iter` |
-| `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
+| `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Measured on 2026-11-22: about 10 ns more per element than a loop by hand; no port calls `iter` yet |
 
 ## A. Waiting for the author (one at a time)
 
@@ -168,6 +168,22 @@ On the branch `iter`, reversible by not merging:
   two values of each call), through the same `a_next` as `loop`;
   `nil` is left out (a walk with no end). Case `iter-01`; `make test`
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
+
+## Measured
+
+- `atmos-lang`, 2026-11-22, `iter` `3ee56a0` against `main` `a664b68`,
+  2197 `.atm` files of the ports: the same diagnostics in all; the C
+  differs in 127 files only by the renumbering of globals (the new
+  global `iter`) and the check of `#6b` before each `loop ... in e`;
+  `loop ... in nil` written: 0; a name `iter` in code: 0; `#14a` not
+  countable statically. sdl-pingus: `tst/run.sh` passes, and its
+  bomber test. The risks at run time (a loop over a field nil by
+  mistake, a loop that saw `tag`) are for the suite of each port.
+- `#9`, here, 1000 tables, 3000 rounds, `-O2`, ns per element:
+  a count by hand 28, `#iter.filter` 38, `iter.fold` 38 to 42; a
+  search by hand 25, `iter.find` 34. About 10 ns more, the call of the
+  closure. For the pools of the cases of `atmos-pool` (tens of
+  members, every tick) it is below a microsecond per frame.
 
 ## D. Decided by the author
 
