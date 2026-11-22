@@ -28,7 +28,7 @@ the rule are `#1`..`#8`.
 | #14 | Tell `atmos-context` about resuming | sent 2026-11-20: grab does not touch the resume |
 | #15 | `set :out` as an alternative to a dynamic `grabbable` | assessed: not comparable without a new design (#16) |
 | #16 | A grabbable as a value (`grab @g P {...}`), the lexical alternative to #1 | noted, not proposed |
-| #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | reported; rename or another keyword is the author's (#8) |
+| #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | decided by the author 2026-11-22: rename the parameter. Already done by the ports: env-sdl `sdl.display` now takes `grabbed` (sdl.atm:1280), and Pingus no longer copies `sdl.atm` (it uses `../env-sdl`); its `OPTIONS.grab` is a field, still valid. env-sdl passes the Atmos stage with the `grab` compiler (stops only at the missing SDL headers here). Nothing to change |
 | #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
 | #21 | sdl-snxkx `exp-grab` (1167084, the shop behind Options): fits; the click at 42 buys nothing; 41/41, the 40 old outputs identical. Did not fit: (1) tests that spawn screens without `main.atm` need their own `grabbable` (asks a default one, or a grab with none to be a no-op); (2) a `grabbable` is a block, so a task pinned above it cannot escape into it (pin moved inside, lent with `set :out`); printers must stay outside; (3) the input must come back before the 0.25 s tween ends: Options split in two tasks; (4) the shop's tutorial stays `toggle` (it freezes the shop's time); (5) five patterns repeated: a name for a set of patterns | reported; (1) weighs against #1 (the error); (4) and the clock of #20 b both ask #5 again |
 | #20 | env-iup `exp-grab` (local 3f0eadf, 7GUIs circles, +9 −6): fits; 15/15 plain and ASAN; a click on Undo during the dialog is denied with grab, acts without. Did not fit: (a) the look of a disabled dialog stays IUP's; (b) "all but the canvas and the time" is not obvious; (c) `grabbable` must be placed ahead around the reactions; (d) the patterns name what is denied, which reads backwards | reported; (b) answered: `grab <until ((it != :draw) && (type(it) != :number))>` lets the clock pass (checked on grab-05); time passing a grab by default is the author's (#5) |
@@ -58,6 +58,7 @@ the rule are `#1`..`#8`.
 
 ## Decided
 
+- #18 (2026-11-22): rename the parameter, keep the keyword `grab`; found already renamed in env-sdl (`grabbed`).
 - #5 (2026-11-22): kept as is. The pattern of the grab decides whether the time stops; the manual shows the predicate that lets it pass (`tst/cases/grab-08`, branch `grab`).
 
 ## By the session, to be confirmed (2026-11-20, rule "Work with no input")
