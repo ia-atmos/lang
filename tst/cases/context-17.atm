@@ -1,0 +1,10 @@
+;; #5 (the author, 2026-11-22): abort inside enter or leave is an error
+spawn {
+    pin t = spawn {
+        await false
+    }
+    context (\{ abort(t) }, \{ nil }) {
+        await false
+    }
+}
+print "never"

@@ -3551,8 +3551,9 @@ A context cannot set a state for code outside it to see.
 
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
-It is an error to `emit` or to `spawn` inside `enter` or `leave`, and for
-`enter` or `leave` not to be a function.
+It is an error to `emit`, `spawn`, `abort` or `toggle` inside `enter` or
+`leave`, also from a function they call, and for `enter` or `leave` not to be
+a function.
 
 Examples:
 

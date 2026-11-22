@@ -1440,6 +1440,9 @@ static AStatus node_abort (ANode* n) {
 }
 
 AStatus a_abort (AVal v) {
+    if (ctx_chk("abort") != A_OK) {
+        return A_ERROR;
+    }
     if (v.type!=A_XTASK && v.type!=A_TASKS) {
         return a_error("invalid abort : expected task");
     }
@@ -1643,9 +1646,11 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
 }
 
 AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
-    AStatus st = A_OK;
+    AStatus st = ctx_chk("toggle");
     ANode* x = (ANode*) t.u.o;
-    if (t.type!=A_XTASK && t.type!=A_TASKS) {
+    if (st != A_OK) {
+        // inside enter or leave of a context
+    } else if (t.type!=A_XTASK && t.type!=A_TASKS) {
         st = a_error("invalid toggle : expected task");
     } else if (on.type != A_BOOL) {
         st = a_error("invalid toggle : expected bool argument");
