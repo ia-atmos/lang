@@ -1,0 +1,21 @@
+;; #4 (the author, 2026-11-22): `context X {...}`, X gives [enter, leave]
+var layer = :world
+func in_layer (l) {
+    [\{ val o = layer ; set layer = l ; o }, \(o) { set layer = o }]
+}
+spawn {
+    context in_layer(:panel) {
+        loop on :draw { print("a", layer) }
+    }
+}
+spawn {
+    val p = in_layer(:menu)
+    context (p) {
+        loop on :draw { print("b", layer) }
+    }
+}
+spawn {
+    loop on :draw { print("c", layer) }
+}
+emit :draw
+print("end", layer)

@@ -1,0 +1,11 @@
+;; A `pin var` with no initial value owns what it gets later: it is
+;; finalized at the end of its block, and a place written with `set :out`
+;; goes back to nil then.
+var y
+do {
+    pin var t
+    set t = [10]
+    set :out y = t
+    print(y@0)
+}
+print(y)

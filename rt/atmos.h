@@ -10,12 +10,12 @@
 // ATMOS_PIN=unchecked (ATM_PIN_UNCHECKED): the checks of `pin` are
 // removed, and so is what only feeds them (the ceiling and the floor of
 // unpinned values). The semantics stays: pinned values are finalized at
-// the end of their block, deeply, and cycles are collected. A correct
-// program behaves the same; an incorrect one is not stopped.
+// the end of their block, deeply. A correct program behaves the same; an
+// incorrect one is not stopped.
 //
 // ATMOS_PIN=off (ATM_PIN_OFF): also, `pin` only holds for tasks and pools;
 // a pinned table, function, or native is a plain name, released by its
-// counts; no cycle is collected.
+// counts.
 #ifdef ATM_PIN_OFF
 #ifndef ATM_PIN_UNCHECKED
 #define ATM_PIN_UNCHECKED
@@ -372,19 +372,11 @@ static inline void a_pushm (AVal* src) {
 }
 
 // Releases all values from `top` up.
-extern uint32_t a_muts;
-static inline void a_orphan (AVal v);
-
 static inline void a_settop (int top) {
     while (a_top > top) {
-        a_top--;
-        a_orphan(a_stk[a_top]);
-        a_dec(a_stk[a_top]);
+        a_dec(a_stk[--a_top]);
     }
 }
-
-// Releases a temporary.
-static inline void a_clr_tmp (AVal* dst);
 
 // Moves the first result at `base` (or nil) into a slot and releases
 // the others.
@@ -849,6 +841,12 @@ typedef struct ATrailX {
     struct ATrail* gup;
     void**   gpath;
     int      gpn;
+    // `context`: the functions that set and restore the state, and
+    // what `enter` returned while the context is applied
+    uint8_t  ctx;
+    AVal     enter;
+    AVal     leave;
+    AVal     cval;
 } ATrailX;
 
 #define A_GRABBABLE 1
@@ -996,6 +994,10 @@ void a_trail_doom (struct ATask* t, int i);
 // toggle on :T with P, ... {...}: events `:T [false]` and `:T [true]`
 // toggle trail `i` from now on. Takes over the filters.
 void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
+// `context (enter, leave) {...}`: makes trail `i` a context, before it
+// starts.
+AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
+AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;
@@ -1129,59 +1131,15 @@ static inline void a_name (AVal v, int d) {
 }
 
 // The names `vs[0..n)` of the block `d` end: an unpinned value that only
-// they held loses its ceiling. The cycles of unpinned values that only
-// they reach are broken, if a reference was written since the block
-// began (`a_muts` was `mu` then): without a
-// write, no cycle may have formed.
+// they held loses its ceiling. The slots of a block are its names and its
+// temporaries, and most hold no value with a ceiling: the test is made
+// here, before any call.
 void a_unname_x (AVal* vs, int n, int d);
-void a_cycles (AVal* vs, int n, int d);
 
-// A reference to `v` is about to go, and it is not a name: a temporary,
-// a result that is dropped, an entry of a value that is freed. If `v`
-// is unpinned, has no name, and something else still refers to it, what
-// is left may be only a cycle: it is broken, as at the end of a block.
-void a_orphan_x (AVal v);
-
-static inline void a_orphan (AVal v) {
-#ifdef ATM_PIN_OFF
-    (void) v; return;
-#endif
-    // no cycle forms before a reference is written into an object
-    if (a_muts!=0 &&
-        (v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
-        v.u.o->rc>1 && v.u.o->pinned==0 && v.u.o->ceil==0)
-    {
-        a_orphan_x(v);
-    }
-}
-
-static inline void a_clr_tmp (AVal* dst) {
-    a_orphan(*dst);
-    a_clr(dst);
-}
-
-// The parameters of a task end with it: a cyclic argument that only
-// they still reach is broken, whatever its ceiling.
-void a_args_end (AVal* vs, int n);
-
-// Count of the writes of a reference into a table, a box, or a `pub`.
-extern uint32_t a_muts;
-
-// The slots of a block are its names and its temporaries, and most hold
-// no value with a ceiling: the test is made here, before any call.
-static inline void a_unname (AVal* vs, int n, int d, uint32_t mu) {
-#ifdef ATM_PIN_OFF
-    (void) vs; (void) n; (void) d; (void) mu; return;
-#endif
+static inline void a_unname (AVal* vs, int n, int d) {
 #ifdef ATM_PIN_UNCHECKED
-    if (mu != a_muts) {
-        a_cycles(vs, n, d);
-    }
-    return;
+    (void) vs; (void) n; (void) d; return;
 #endif
-    if (mu != a_muts) {
-        a_cycles(vs, n, d);
-    }
     for (int i=0; i<n; i++) {
         AVal v = vs[i];
         if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&

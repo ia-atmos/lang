@@ -157,6 +157,8 @@ typedef enum {
     E_TOGGLE, E_TOGGLE_ON,
     // grabbable P {...}  grab P {...}
     E_GRAB,
+    // context (enter, leave) {...}  |  context X {...} (leave NULL: enter is the pair)
+    E_CONTEXT,
     // par {...} with {...}
     E_PAR,
 } ETag;
@@ -280,6 +282,7 @@ struct Expr {
         struct { int nf; Patt** fs; Expr* blk; }        toggle_on;
         // kind: 1 grabbable, 2 grab
         struct { int kind; int nf; Patt** fs; Expr* blk; } grab;
+        struct { Expr* enter; Expr* leave; Expr* blk; } context;
         struct { ParMode mode; List blks; }             par;
         struct { Expr* cnd; Expr* blk; }                xcatch;
         // inl: lambda of an if/ifs/match, expanded in place

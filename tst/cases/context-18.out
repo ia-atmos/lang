@@ -1,0 +1,5 @@
+==> ERROR:
+ |  context-18.atm:10 (call)
+ |  context-18.atm:10 (call)
+ v  context-18.atm:4 (throw)
+==> invalid toggle : inside enter or leave of a context

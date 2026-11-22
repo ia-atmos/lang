@@ -1,0 +1,7 @@
+;; #4: the pair must be a table
+spawn {
+    context 10 {
+        await false
+    }
+}
+print "never"

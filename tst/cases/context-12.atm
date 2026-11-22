@@ -1,0 +1,13 @@
+;; #14: the layer of env-pico: a task that draws on a panel and awaits
+;; does not leave the panel set for the other tasks
+var layer = :world
+func set_layer (l) { val old = layer ; set layer = l ; old }
+spawn {
+    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+        loop on :draw { print("panel task draws on", layer) }
+    }
+}
+spawn {
+    loop on :draw { print("other task draws on", layer) }
+}
+emit :draw

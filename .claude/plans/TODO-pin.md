@@ -20,8 +20,8 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #3 | A compile flag that removes the costs of pin | approved by the author with both levels (2026-11-21), merged into `pin`; waits for the measurement and the merge by `atmos-lang`. Two levels: `ATMOS_PIN=unchecked` (no checks, no ceiling or floor; the semantics stays: finalization at the end of a block, deep pin, cycles collected) and `ATMOS_PIN=off` (also, `pin` only for tasks and pools, as the author asked; no collection of cycles). Measured with #17 (min of 5, s; main / normal with #17 / unchecked / off): binary-trees 0.74 / 0.29 / 0.24 / 0.23; a loop that writes numbers 0.86 / 0.78 / 0.70 / 0.68; one that writes tables 1.52 / 1.27 / 1.26 / 0.78; 20M table reads 0.61 / 0.58 / 0.51 / 0.50; 2M pinned tables 0.81 / 0.84 / 0.80 / 0.45. So the checks cost 5 to 15%, the semantics the rest: the finalization of pinned data (2M pinned tables) and the collection of cycles (the loop that writes tables) |
 | #4 | Choices of the implementation: a task owns its `pub` and its final value; an emitted event is owned by the emit, and a receiver cannot pin it; a native declares what it holds (`a_nat_holds`) | confirmed by the author, 2026-11-19 |
 | #5 | The `spawn` statement as the only implicit pin | confirmed by the author, 2026-11-19: it stays |
-| #6 | sdl-snxkx: the second migration (pins given away) and the contacts sent only to the two tasks | migration done (2026-11-20): 40 tests identical, 36 pins to `val`. Contacts: its branch `contacts` (not merged, waits for the author): each body task writes `set :out A.w.objs@(b).task = task`, and the physics emits to the two tasks; the broadcast is gone, the logic of the stress scenario is 19% faster (3.27 s against 4.04 s), 40 tests identical. `SHARED_SPRINGS` stays: it needs a conditional `set :out` (#16). Its branch `contacts-pinout` is now for its own session and the author (atmos-lang told it, 2026-11-21, after #16b) |
-| #7 | The two leaks of the collection of cycles: a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | fixed on `pin`, 2026-11-20 (by the session, under the rule "work with no input"; a defect, no rule changes): a reference that goes and is not a name (a temporary, a result that is dropped, an entry of a value that is freed) runs the same trial deletion on a value with no name that something else still holds; the parameters of a task do it when the task ends, whatever the ceiling, giving up beyond 256 values. No measurable cost. Test `cycle-02`. Waits for the measurement on the ports and the merge by `atmos-lang` |
+| #6 | sdl-snxkx: the second migration and the contacts sent only to the two tasks | closed, 2026-11-21: migrated (36 pins to `val`); its main (`ad37d31`) now has `contacts-pinout`: contacts to their two tasks, springs lent with a conditional `set :out`, the program-wide registry gone; 40 tests identical on `lang` after #17 and #3, no `invalid pin : shared` |
+| #7 | (superseded by #18) The two leaks of the collection of cycles: a cyclic value that a call returns and that is dropped without a name; a cyclic value given to a task of a pool of an outer block, when the task ends | fixed on `pin`, 2026-11-20 (by the session, under the rule "work with no input"; a defect, no rule changes): a reference that goes and is not a name (a temporary, a result that is dropped, an entry of a value that is freed) runs the same trial deletion on a value with no name that something else still holds; the parameters of a task do it when the task ends, whatever the ceiling, giving up beyond 256 values. No measurable cost. Test `cycle-02`. Waits for the measurement on the ports and the merge by `atmos-lang` |
 | #8 | Remarks of the ports: env-uv (a function that creates a handle and gives it away declares it with `val`, the weaker word; on a throw in the middle the handle is closed by the count, not by the block); Doom and env-uv (the same lines changed three times in three days) | closed, 2026-11-21 (reassessed with the author): on a throw, the block of the function unwinds and its `val`, the only reference, goes there, so the handle closes at the same point as with a `pin`, and the function is not the owner (who receives it decides); the churn was answered by the declaration of stability of 2026-11-19 and the lists of migration since. Answered to env-uv |
 | #9 | Declare the rules stable again, and tell `paper-pin` and the ports | done: the author declared the rules of `pin` stable on 2026-11-19, as they are in `main` `8361f88` (see "Stable" below). Told to `paper-pin` and, through `atmos-lang`, to the ports. The flag (#3) is outside: it changes no rule |
 | #10 | The ports on `8c9453c` (refined adoption, the ceiling of an argument of a task, the wider warning): look for `invalid pin : ... named at <a task's line>` | closed, 2026-11-20: no anomaly in sdl-pingus, env-uv, ray-lessmilk, env-ray (reported here), and in sdl-flare, doom, sdl-tux, env-iup, env-sdl, env-pico, pico-frescogo, pico-1oom (their suites on `4199167` or later, reported to `atmos-lang` for `atmos-lang#81`). sdl-snxkx is #6 |
@@ -32,6 +32,18 @@ A to H, E1 to E4, "item 2") stay valid for what was written with them.
 | #15 | Two escapes that no warning sees (sdl-snxkx) | closed, 2026-11-21 (reassessed with the author): the first is the ceiling doing its job; a warning for the second (a field of a pinned value put into a value that leaves) needs to follow values across variables, with false positives, and the error at run time already names the line of the pin. Not done |
 | #16 | `set :out` written in a function or in an `if` lasted only that block (sdl-flare, sdl-snxkx) | decided by the author, 2026-11-21: #16b, the place lasts until the VALUE ends (pinned data: when its block finalizes it; a task: when it terminates; a pool: when aborted), wherever the `set :out` is written; unpinned data still leaves at the end of the block of the `set`. The branch `pin-out` is merged into `pin`; waits for the measurement and the merge by `atmos-lang`. Evidence: sdl-flare (five places, traces identical, no slowdown), sdl-snxkx (contacts and springs, 40 tests identical, no slowdown). It only extends the life of a place (see the note in the history of this item) |
 | #17 | The ceiling cost two walks of a whole value per name (binary-trees, which pins nothing, 0.74 s against 0.23 s with no pin) | approved by the author (2026-11-21), merged into `pin`: the ceiling is set and reset on the value only; when a pin adopts, a visit counts the references among the values it would adopt, and a value held elsewhere is only referenced, with what it holds; pinning explicitly a value held elsewhere is `invalid pin : shared table` (it was `table named at`, for a value inside a named one). Also: no search for cycles from a released value before the first write of a reference, and that search gives up beyond 256 values. Binary-trees 0.74 -> 0.29 s. Full suite passes (pin-err-06 says `shared table`). Waits for the measurement on the ports and the merge by `atmos-lang` |
+| #18 | Remove the collection of unpinned cycles | decided by the author, 2026-11-21 ("Tire a checagem"; paper-pin had relayed "não checar"): back to the rule "a cyclic structure must be pinned; without a pin, reference counting applies and an unpinned cycle leaks". Removed: the trial deletion at the end of a block, the orphan path (temporaries, entries, task arguments), the write counter and its snapshots, the collection of the globals. `cycle-02` removed, `cycle-01` now pins its cycles. Found and fixed with it: `pin var x` with no initial value did not register the pin, so what it got later was not finalized (a recursive closure through `pin var g` leaked). Supersedes #7. Measured by `atmos-lang` (no anomaly); merge approved by the author, 2026-11-21 ("#18. Sim, main"; "Checagem sai de todo modo": from every mode) |
+| #19 | A forgotten pin on a cycle leaks silently (only ASAN sees it); the common case is a recursive closure through `var g; set g = func ... g ...` | open, bad case. Simple part: a warning at compile time for a variable captured by a closure that is assigned to that same variable, not `pin var` (suggest `func g` or `pin var g`) |
+| #20 | A global event cannot carry a value of an inner block (programs send ids instead) | open, bad case, by design (an event with a pinned value only reaches targets inside its block) |
+| #21 | `set :out` does not take `@+` | open, bad case. Moderate: the place is the new index, removed (set to nil) when the value ends |
+| #22 | `set :out` leaves nil holes in a vector when the value ends | open, bad case, inherent to clearing a place |
+| #23 | `set :out pub = v` (the whole `pub`) is not accepted | open, bad case. Simple: a third kind of place in the registry (the task and its `pub`) |
+| #24 | The errors of pin are only found at run time; the warnings cover part of them | open, bad case, by design |
+| #25 | An explicit pin of a value held elsewhere is `invalid pin : shared table` | open, bad case, inherent to a single owner |
+| #26 | A C global that holds Atmos values needs a finalizer written by hand | open, bad case. Moderate: a registration call for C roots |
+| #27 | The `pub` of a task that ended stays until its pool ends | open, bad case. Moderate: release it when the task ends and no one refers to the task |
+| #28 | The receiver of an event cannot pin its value | open, bad case, by design (the emit owns it) |
+| #29 | Rule 4 and the finalization of retired values are worded by reference counting ("at once"); paper-pin proposes wording by block | open, the author (2026-11-21) sees counting as part of the semantics (determinism), between design and implementation |
 
 ## Stable (2026-11-19)
 
@@ -53,8 +65,9 @@ migrates (the remark of Doom and env-uv, #8).
   unpinned value may rise while only its name refers to it. An
   argument of a task that outlives its spawner has its ceiling at the
   block that ends the task.
-- A cycle of unpinned values is broken at the end of the block of its
-  names, and when the last reference from outside it goes (#7).
+- Without a pin, reference counting applies, and an unpinned cycle
+  leaks: a cyclic structure must be pinned (#18, 2026-11-21; from
+  2026-11-18 to #18, unpinned cycles were collected).
 - An event with a pinned value only reaches a target attached inside
   the block of the pin. An emitted event is owned by the emit. A task
   owns its `pub` and its final value. A native declares what it holds.
@@ -64,7 +77,7 @@ migrates (the remark of Doom and env-uv, #8).
   ended). Finalized data may not be used (`invalid access : finalized
   ...`).
 - `ATMOS_PIN=unchecked` (no checks, same semantics) and `ATMOS_PIN=off`
-  (`pin` only for tasks and pools, no collection of cycles) (#3).
+  (`pin` only for tasks and pools) (#3).
 
 ### Cases of the suite for each sentence (audit of 2026-11-20)
 
@@ -81,7 +94,7 @@ migrates (the remark of Doom and env-uv, #8).
 | Reassigning an owned place retires the old value | `repin-01` to `04` |
 | The floor rises while only the name refers to the value | `floor-up-01` |
 | An argument of a task that outlives its spawner | `deep-07` |
-| A cycle of unpinned values is broken | `cycle-01`, `cycle-02` |
+| A cyclic structure is pinned (an unpinned one leaks) | `cycle-01` |
 | An event with a pinned value reaches a target inside the block of the pin | `emit-pin-01` |
 | An emitted event is owned by the emit | `stable-01` |
 | A task owns its `pub` and its final value | `stable-01`, `pin-await-01`, `deep-04` |

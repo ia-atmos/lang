@@ -328,14 +328,13 @@ reclaimed then, and does not wait for the block.
 
 A program may be built with fewer of these costs.
 With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
-(a pinned value is finalized at the end of its block, deeply, and cycles
-are collected), so a correct program behaves the same, and an incorrect
+(a pinned value is finalized at the end of its block, deeply), so a correct program behaves the same, and an incorrect
 one is not stopped (an escape reads an emptied value instead of raising
 an error).
 With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
 still end with their block, as a `spawn` does: a pinned table, function,
-or native value is a plain name, released by its counts, and no cycle is
-collected.
+or native value is a plain name, released by its counts, and a pinned
+cycle leaks.
 
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
@@ -354,11 +353,9 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
   executes (`invalid escape : table pinned at prog.atm:10`).
 
 A value that nobody pins is reclaimed by its counts, and a cycle among
-unpinned values is broken at the end of the block of the names that reach
-it, if nothing outside still refers to it.
-So is a cycle with no name, when the last reference from outside it goes:
-a value that a call returns and that is dropped, for instance.
-A cyclic structure whose moment of release matters should still be pinned.
+unpinned values leaks: a cyclic structure must be pinned.
+A function that builds a cyclic value returns it unpinned, and the caller
+pins it.
 
 The next example builds a cycle that is reclaimed when the block terminates:
 
@@ -675,15 +672,14 @@ The following keywords are reserved in Atmos:
     await               ;; await event
     break               ;; loop break
     catch               ;; catch exception
+    context             ;; context block
     defer               ;; defer block
     do                  ;; do block
     else                ;; else block
     emit                ;; emit event
     escape              ;; escape block
-    false               ;; false value
-    func                ;; function                         (10)
-    grab                ;; grab block
-    grabbable           ;; grabbable block
+    false               ;; false value                      (10)
+    func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
     in                  ;; in iterator
@@ -691,8 +687,8 @@ The following keywords are reserved in Atmos:
     it                  ;; implicit parameter
     loop                ;; loop block
     match               ;; match block
-    nil                 ;; nil value                        (20)
-    on                  ;; on event clause
+    nil                 ;; nil value
+    on                  ;; on event clause                  (20)
     par                 ;; par block
     pin                 ;; pin declaration
     pub                 ;; public variable
@@ -701,8 +697,8 @@ The following keywords are reserved in Atmos:
     skip                ;; loop skip
     spawn               ;; spawn task
     task                ;; task prototype
-    tasks               ;; task pool                        (30)
-    test                ;; test block
+    tasks               ;; task pool
+    test                ;; test block                       (30)
     throw               ;; throw error
     toggle              ;; toggle task
     true                ;; true value
@@ -711,8 +707,8 @@ The following keywords are reserved in Atmos:
     var                 ;; variable declaration
     watching            ;; watching block
     where               ;; where block
-    while               ;; while loop condition             (40)
-    with                ;; with block
+    while               ;; while loop condition
+    with                ;; with block                       (40)
 ```
 
 ## Symbols
@@ -1830,20 +1826,13 @@ A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
 A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-A cycle among unpinned values is also reclaimed there: when a block ends,
-the unpinned values that only its names reach, and that only refer to each
-other, have the references among them cut, and the counts free them.
-A value that something outside still refers to (a table of an outer block,
-a task of an outer pool, the result of the block) is kept, with all it
-reaches.
-The search only runs if a reference was written into a table, a captured
-variable, or a `pub` since the block began, since no cycle forms without a
-write.
-A cycle with no name is broken in the same way when the last reference
-from outside it goes: a temporary, a result that is dropped, an entry of a
-value that is freed, or the parameter of a task that ends.
-For a parameter of a task, the search gives up on a value that reaches
-more than a few hundred others, which is then left to the counts.
+A cycle among unpinned values is not reclaimed: the counts never reach
+zero, and the cycle leaks.
+A cyclic structure must be pinned, by its block or by a pinned value that
+holds it.
+A recursive closure through a variable is such a cycle (the function holds
+the variable, which holds the function): it is declared with `func`, or
+with `pin var`.
 
 A parameter of a task is a name as the others, but the task may outlive the
 block that spawned it, as a task of a pool of an outer block does.
@@ -3573,6 +3562,88 @@ emit :open
 emit :key [:b]      ;; --> modal b
 emit :key [:esc]    ;; --> modal esc
 emit :key [:c]      ;; --> behind c
+```
+
+### Context
+
+A `context` sets a state of a library (a canvas, a layer, a color) while the
+code that lives in its block runs, and restores it before any other code
+runs:
+
+```
+Context : `context´ `(´ Expr `,´ Expr `)´ Block
+        | `context´ Expr Block
+```
+
+The first expression is a function `enter`, which sets the state and returns
+what `leave` needs to restore it.
+The second is a function `leave`, which receives that value.
+In the second form, the expression is a pair `[enter, leave]`, so that a
+library can give both in one value (`context eng.on(STARS) {...}`).
+The block runs as a [transparent task](#tasks), as in a
+[toggle](#toggle) block.
+
+The runtime calls `enter` before it resumes a task or block that lives in the
+context, and `leave` before code outside the context runs again: an `emit`
+from inside, the end of a traversal of an `emit`, or the context itself
+terminating.
+Where a task lives decides its context, not where it was spawned from: the
+tasks of a pool declared inside a context run inside it, and a task spawned
+from inside a context into a pool declared outside does not.
+Contexts nest: the inner one is entered after the outer one, and left before
+it.
+
+The switch is lazy: two tasks of the same context that awake in a row, such
+as the tasks of a pool, call `enter` and `leave` only once around both, and an
+event that awakes no task in the context calls neither.
+
+Code inside that changes the state itself keeps the change only until it
+awaits: when it awakes, `enter` runs again and sets the state of the context.
+A context cannot set a state for code outside it to see.
+
+An error in `enter` or `leave` is raised in the task being resumed, or in the
+code that resumed it.
+It is an error to `emit`, `spawn`, `abort` or `toggle` inside `enter` or
+`leave`, also from a function they call, and for `enter` or `leave` not to be
+a function.
+
+Examples:
+
+```
+var layer = :world
+func set_layer (l) {        ;; returns the previous layer
+    val old = layer
+    set layer = l
+    old
+}
+spawn {
+    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
+spawn {
+    loop on :draw {
+        print(layer)        ;; --> world
+    }
+}
+emit :draw
+```
+
+A library can give the pair:
+
+```
+func in_layer (l) {         ;; [enter, leave]
+    [\{ set_layer(l) }, \(old) { set_layer(old) }]
+}
+spawn {
+    context in_layer(:panel) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
 ```
 
 ### Parallel
