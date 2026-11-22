@@ -2868,7 +2868,8 @@ supported:
     equivalent to `(0,x-1)` where `x` is the given number, which is the
     number of iterations
 - `:nil`:
-    ranges from `0` upwards, with no limit
+    raises an error, `invalid loop : unexpected nil` (a numeric infinite loop
+    is written `loop i {...}`)
 
 A loop evaluates to `nil` as a whole, unless a [break](#breaks) condition
 occurs.
@@ -3850,7 +3851,7 @@ string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
 
 The library `iter` has functions over what a [loop](#loop) walks.
 The collection comes first, so that a [pipe](#pipes) chains them.
-A collection `xs` is what a loop walks, but `nil`, and its members are:
+A collection `xs` is what a loop walks, and its members are:
 
 - in a table, each value `v` and its key `k`
 - in a [pool](#tasks), each task `v` and its position `k` among the live
