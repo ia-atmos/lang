@@ -16,7 +16,7 @@ the rule are `#1`..`#8`.
 | #2 | What is captured: patterns in both | by the session, to be confirmed |
 | #3 | Who receives: the `grab` block and its descendants | by the session, to be confirmed |
 | #4 | Nesting: a stack per `grabbable` | by the session, to be confirmed |
-| #5 | Time: timers outside a grab pause; no zero tick on release | by the session, to be confirmed |
+| #5 | Time: timers outside a grab pause; no zero tick on release | decided by the author 2026-11-22: kept; the pattern chooses (`<!:draw>` freezes, a predicate lets the clock pass) |
 | #6 | `grab` as an expression | by the session, to be confirmed |
 | #7 | Emits that do not traverse the `grabbable`: not captured | by the session, to be confirmed |
 | #8 | Keyword: `grabbable` (and `grab`) | by the session, to be confirmed |
@@ -58,7 +58,7 @@ the rule are `#1`..`#8`.
 
 ## Decided
 
-(none by the author yet)
+- #5 (2026-11-22): kept as is. The pattern of the grab decides whether the time stops; the manual shows the predicate that lets it pass (`tst/cases/grab-08`, branch `grab`).
 
 ## By the session, to be confirmed (2026-11-20, rule "Work with no input")
 
