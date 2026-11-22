@@ -11,23 +11,55 @@ The branch of this session is `iter`.
 |---|---|---|
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
-| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
+| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Decided 2026-11-22: `#3f` (his answer "F"), the 11 names; to implement on the branch `iter` |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
-| `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Open |
+| `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
-| `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Remark put to him on 2026-11-20; decision open |
+| `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
 | `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
-| `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Remark put to him on 2026-11-22; decision after `#4` |
-| `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Found 2026-11-22; to fix on a branch and send to `main` through `atmos-lang` |
+| `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Decided 2026-11-22: `#14a` (the walk does not visit `tag`); on the branch `iter` |
+| `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Closed 2026-11-22 by `#7`: a walk over a changed table is undefined, not a defect |
 | `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Decided 2026-11-22: `#16a` (his answer: "a"); on the branch `iter` |
+| `#17` | A more primitive form of `tag` (his musing, 2026-11-22): out of the keys, in the header of the table | Moved 2026-11-22 to a session `atmos-tag` (his words: "passe pra sessao atmos-lang e mande ela abrir uma sessao atmos-tag. iremos fazer la"); opened by `atmos-lang` as session_011eECogjajEpy59YjN42Max, material `261122-tag.md`. There he decided `atmos-tag#1b` (2026-11-22, his "B", checked in its transcript): the tag becomes a field of the header of a table, never a key. The skip of `#14a` stays on `iter` until the branch `tag` is merged, then is dropped |
+| `#18` | What else goes into `iter`: `sorted`, and the rule between `iter` (any iterable, not changed) and `vector` (changes a vector) | Put to him on 2026-11-22, recommended `#18a`; waiting |
+| `#19` | `iter.zip` and `iter.enumerate` | His question on 2026-11-22; after `#18` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
 
+- `#3` (2026-11-22). Loops by hand in Pingus and SNKRX, classified by
+  regular expressions (approximate): about 33 build a list from each
+  member (a `map`), 18 a list of some members (`filter`), 16 sum or
+  count, 8 tell whether any member passes (`until ..., true` with `||
+  false`), 5 search (`find`), 2 keep the least (`closest_enemy` in
+  `snxkx/src/attack.atm:78`). `#3a` add `map`, `any`, `count`
+  (recommended); `#3b` also `all`, `fold`, `min`/`max` by a function;
+  `#3c` nothing more. All with `f(v, k)` and the collection first; `map`
+  gives a vector (`#5a`).
+  His answer: "acho que teria que ser um conjunto funcional minimo. tem
+  alguma referencia de uma linguagem minima?". References given: Lua
+  (none: `pairs`, `ipairs`, `table.*`); R7RS small Scheme (`map`,
+  `for-each`, `member`; `filter` and `fold` in SRFI 1); Go 1.21
+  `slices` (`IndexFunc`, `ContainsFunc`, `DeleteFunc`, `SortFunc`,
+  `MinFunc`, no `Map` or `Filter`); Python (`map`, `filter`, `any`,
+  `all`, `sum`, `min`, `max`; `reduce` moved out to `functools` in
+  Python 3, as loops read better); Smalltalk-80 (`do:`, `select:`,
+  `reject:`, `collect:`, `detect:`, `inject:into:`); in theory `fold`
+  alone (Hutton, "A tutorial on the universality and expressiveness of
+  fold", 1999). New options: `#3d` `find`, `filter`, `map`: what a loop
+  writes badly; `any` is `iter.find(xs, f) != nil`, and what
+  accumulates (count, sum, the least) stays a loop with a `var`
+  (recommended); `#3e` `fold` alone, the others written with it; the
+  earlier `#3a` to `#3c` stand.
+  His next question: "o conjunto de python mais as suas sugestoes e mais
+  fold, como ficaria?". Sketched as `#3f`: `find`, `filter`, `map`,
+  `any`, `all`, `fold(xs, acc, f)` with `f(acc, v, k)`, `sum(xs)`,
+  `min(xs [, f])`, `max(xs [, f])` (giving `v, k`, or `nil` when
+  empty), plus `keys`, `values`: 11 names. Not implemented.
 - `#10` (asked by him before `#2`). Options: `#10a` one type of table,
   and a loop that can say which part it walks (recommended); `#10b`
   two types, vector and dictionary; `#10c` nothing changes. Facts run
@@ -139,6 +171,27 @@ On the branch `iter`, reversible by not merging:
 
 ## D. Decided by the author
 
+- `#3` (2026-11-22): `#3f`: `find`, `filter`, `map`, `any`, `all`,
+  `fold(xs, acc, f)`, `sum`, `min(xs [, f])`, `max(xs [, f])`, `keys`,
+  `values`. With it he said "mas ainda quero discutir outras coisas":
+  `vector.sorted` into `iter` (`#18`), what else is outside, `zip`,
+  `enumerate` (`#19`).
+
+- `#5` (2026-11-22): `#5a`, a function that gives a collection gives a
+  vector; `keys`, `values` and the functions of the user stay lazy.
+
+- `#14` (2026-11-22): `#14a`. On the branch: `a_next` skips the key
+  `tag` of a table, so neither `loop` nor `iter` visit it; `t.tag`,
+  `??`, `++`, `X` still see it (they walk with `a_tab_next`); no case
+  of the suite changed; `make test` with `ATMOS_ASAN=1` passes.
+- `#7` (2026-11-22), his words: "o usuario nao deve alterar a tabela
+  durante a travessia. a implementacao deve assumir isso se for
+  vantajoso". So `#15` is no defect. The manual on the branch says the
+  body "must not add or remove keys"; reading his rule as allowing to
+  assign an existing key (`loop i, v in t { set t@i = v*2 }`, which the
+  implementation walks safely) is the session's, to be confirmed. Pools
+  keep their rule (abort and spawn while walked).
+
 - `#16` (2026-11-22): `#16a`, `iter.keys(t)` and `iter.values(t)`. On
   the branch: native iterators over a table or a pool (a pool gives
   positions and tasks), in the order of the walk; they hold the
@@ -191,7 +244,7 @@ On the branch `iter`, reversible by not merging:
 
 ## Work known, not done
 
-- `#15`, the fix. The position of a walk must stop depending on `an`
+- (Closed by `#7`.) `#15`, the fix. The position of a walk must stop depending on `an`
   and on the compaction of the other keys. Easy part: a position that
   says which part it is in (a bit), so that a vector that grows does
   not move the walk of the other keys. Hard part: `rehash` drops the
