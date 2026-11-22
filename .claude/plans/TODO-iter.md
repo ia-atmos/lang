@@ -185,7 +185,7 @@ On the branch `iter`, reversible by not merging:
 - 2026-11-22: `tag-rebased` merged into `main` (`98e4787`), the tag is
   no longer a key; the skip of `#14a` in `a_next` removed on `iter`
   (`526031c`, a fast-forward of `main`), `make test` with
-  `ATMOS_ASAN=1` passes; sent to `atmos-lang` to fast-forward.
+  `ATMOS_ASAN=1` passes; merged by `atmos-lang` into `main` as `63ddd69` (cases 500, golden 443 with ASAN, 48 configurations).
 
 ## Measured
 
