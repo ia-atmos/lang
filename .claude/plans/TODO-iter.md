@@ -17,7 +17,7 @@ The branch of this session is `iter`.
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Remark put to him on 2026-11-20; decision open |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
-| `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | Put to him on 2026-11-22 (his question, before `#2`), recommended `#10a`; waiting |
+| `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
@@ -35,6 +35,23 @@ The branch of this session is `iter`.
   walked after the vector; with one variable the loop gives the key.
   In the ports (Pingus, SNKRX) the names say the intent: 22 `loop i,
   v` and 15 `loop k, v`; 195 `loop _, v`, mostly over vectors.
+- `#10d` (his idea, 2026-11-22: "o problema e ter que usar
+  iter.vetor/dict em vez de nada... seria possivel detectar o subtipo na
+  criacao e dar erro depois?"). Internally a table already keeps the two
+  parts apart (`arr`/`an` and `ents`, `rt/tab.c`): no flag, no scan;
+  `#t` is `an`. The kind would be a flag set by the first key: a
+  constructor with positions makes a vector, one with names a
+  dictionary, `[]` waits for its first write (`@0` or `@+` makes a
+  vector). A vector refuses a key that is not its next index, a nil
+  that is not the last, and keeps its tag aside (`:T [10, 20]` stays a
+  vector); `loop v in vs` gives the value. Read in Pingus and SNKRX
+  (outside `data/`): 1155 constructors with positions only, 1196 with
+  names only, 80 tagged with names, 163 empty, none mixed; 2 loops with
+  one variable over a table. Not known: tables made empty and then
+  given both kinds of keys at run time, and dictionaries with numbers
+  as keys from `0`, which the first write would take for a vector;
+  that needs a counting runtime over the suites of the ports
+  (`atmos-lang`).
 - `#11`, after `#10a`: `#11a` two iterators in `iter`, `iter.vector(t)`
   (indexes `0..#t-1`) and `iter.dict(t)` (the other keys, without the
   tag?), native so that they cost no closure (recommended); `#11b` a
