@@ -9,25 +9,29 @@ other sessions. The branch of this session is `tag`.
 
 | Item | Title | State |
 |---|---|---|
-| `#1` | Where the tag lives: a plain key `"tag"` (today, with the skip of `atmos-iter#14a`) or a field in the header of `ATab`, out of the keys | Put to him on 2026-11-22, recommended `#1b`; waiting |
+| `#1` | Where the tag lives: a plain key `"tag"` (today, with the skip of `atmos-iter#14a`) or a field in the header of `ATab`, out of the keys | Decided 2026-11-22: `#1b` (his answer: "B") |
+| `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Put to him on 2026-11-22, recommended `#2a`; waiting |
 
 ## A. Waiting for the author (one at a time)
 
-- `#1` (2026-11-22). `#1a` the tag stays the key `"tag"`; the walk
-  skips it (`atmos-iter#14a`), `#`, `++`, `X.copy`, `??` and `match`
-  see it as a key. `#1b` a field `tag` in the header of `ATab`
-  (`rt/atmos.h:541`), never a key: no walk, copy or length sees it,
-  `??` and `match` read it with no lookup, a tagged vector stays a
-  vector (`atmos-iter#12`). Cost of `#1b`: one `AVal` per table; the
-  six `a_strz("tag")` of the runtime change (`tab.c:436`, `ops.c:66`,
-  `std.c:381`, `lload.c:508, 949`, `task.c:1582`). How a program
-  reaches it (`t.tag`, a new form) is the next item, not this one.
+- `#2` (2026-11-22). `#2a` the name `tag` is reserved in a table:
+  `t.tag`, `t@"tag"`, `set t.tag = :Q` and `[tag=:T]` all reach the
+  header (no change in the ports; `a_index` compares the key with
+  `"tag"`). `#2b` only the static `t.tag` reaches it (the compiler
+  lowers it); `t@"tag"` is a plain key (0 uses in the ports), so
+  `t.tag` and `t@"tag"` differ. `#2c` a new form (`tag(t)`), `t.tag`
+  becomes a plain key; about 104 reads and 3 writes to migrate.
+
+## D. Decided by the author
+
+- `#1` (2026-11-22): `#1b`, the tag is a field in the header of
+  `ATab`, never a key.
 
 ## Later (not yet put to him)
 
-- How a program reads and writes it (`t.tag` kept, `tag(t)`, both;
-  `set t.tag`; removal).
+- Whether a tag can be removed (`set t.tag = nil`).
 - What `[tag=:T, x=1]` becomes (about 21 in the ports).
 - Whether a tag is its own type at run time (today a string).
 - `X.load` / `X.dump` with a field `tag`.
-- Tell `atmos-iter` to drop the skip of `#14a` if `#1b`.
+- `atmos-iter` told on 2026-11-22 that `#1b` is decided; it drops the
+  skip of `#14a` when `tag` merges.
