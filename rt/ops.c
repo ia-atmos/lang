@@ -174,11 +174,6 @@ AStatus a_cat (AVal* dst, AVal a, AVal b) {
     return A_OK;
 }
 
-// Whether `k` is the key `tag`.
-static int is_tag_key (AVal k) {
-    return k.type==A_STR && A_STR_OF(k)->len==3 && memcmp(A_STR_OF(k)->s, "tag", 3)==0;
-}
-
 AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {
@@ -188,11 +183,7 @@ AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
             }
             uint32_t i = (uint32_t) p;
             AVal x, y;
-            int more;
-            // the tag of a tagged table is not one of its members
-            while ((more = a_tab_next(A_TAB_OF(it), &i, &x, &y)) && is_tag_key(x)) {
-            }
-            if (more) {
+            if (a_tab_next(A_TAB_OF(it), &i, &x, &y)) {
                 a_cpy(k, x);
                 a_cpy(v, y);
             } else {
