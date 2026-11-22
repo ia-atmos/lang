@@ -3868,10 +3868,26 @@ Functions:
   truthy, and its `k`; evaluates to `nil` if there is none
 - `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
   for which `f(v, k)` is truthy, in the order of the walk
+- `iter.map(xs, f)`: a new vector with `f(v, k)` of each member, in the order
+  of the walk; a result `nil` is left out
+- `iter.any(xs, f)`, `iter.all(xs, f)`: whether `f(v, k)` is truthy for some
+  member, or for every member (`true` if there is none)
+- `iter.fold(xs, acc, f)`: `acc`, set to `f(acc, v, k)` at each member
+- `iter.sum(xs)`: the sum of the members, which are numbers; `0` if there is
+  none
+- `iter.min(xs [, f])`, `iter.max(xs [, f])`: the least or the greatest
+  member `v`, compared with `<` by itself or by `f(v, k)`, and its `k`; the
+  first of those that tie; `nil` if there is none
 - `iter.keys(xs)`: an iterator over the keys of the table or pool `xs`, in the
   order of the walk: `loop k in iter.keys(t) {...}`
 - `iter.values(xs)`: an iterator over the values of the table or pool `xs`, in
   the order of the walk: `loop v in iter.values(t) {...}`
+- `iter.zip(xs, ys)`: an iterator over the members of `xs` and `ys` side by
+  side, until the shorter ends: `loop a, b in iter.zip(xs, ys) {...}`
+
+The functions that give a collection give a new vector, which is a snapshot:
+it may be kept and walked across awaits.
+The iterators are lazy.
 
 An iterator refers to its collection, and follows the rules of a
 [closure](#pin): it does not escape the block of a pinned collection.
@@ -3885,6 +3901,8 @@ val i = iter.find(10, \{ it*it > 20 })               ;; 5
 val ls = io.lines("f.txt") -> iter.filter(\{ #it > 0 })  ;; the lines not empty
 loop k in iter.keys([x=1, y=2]) { print(k) }        ;; x, y
 loop v in iter.values([10, 20]) { print(v) }        ;; 10, 20
+val d = iter.min(enemies, \(e) { dist(me, e) })      ;; the closest enemy
+val n = iter.fold(ls, 0, \(n, l) { if l.solved => n+1 => n })
 ```
 
 ## Vector
