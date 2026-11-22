@@ -297,8 +297,8 @@ static AStatus std_all (AFunc* self, int argc, AVal* argv) {
 
 // iter.filter(xs, f): a new vector with the members `v` of `xs` for
 // which `f(v, k)` is truthy, in the order of the walk.
-// iter.map(xs, f): a new vector with `f(v, k)` of each member, but
-// those that give nil.
+// iter.map(xs, f): a new vector with `f(v, k)` of each member; a nil
+// is an error, since a vector has no nil (atmos-iter#22b).
 typedef struct {
     AVal    t;
     int64_t n;
@@ -317,10 +317,11 @@ static int map_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
     (void) v;
     (void) k;
     Vec* x = ud;
-    // a vector has no nil: a nil result is left out
-    if (r.type != A_NIL) {
-        *st = a_setindex(x->t, a_int(x->n++), r);
+    if (r.type == A_NIL) {
+        *st = a_error("invalid result to 'map' : unexpected nil");
+        return 1;
     }
+    *st = a_setindex(x->t, a_int(x->n++), r);
     return 0;
 }
 

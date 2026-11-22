@@ -155,8 +155,9 @@ may be changed.
 | `atmos-cli` | Created on 2026-11-20, asked by the author: the command line of the language (options, configuration, environments, install, cache, tests). Material `261120-cli.md`; list `TODO-cli.md`; branch `cli`; session_011eECoijhygAGqD1jDZ3pWZ |
 | `atmos-blocks` | Created on 2026-11-20, for `atmos-lang#6`: whether a transparent block emits an event when it ends, and the wait of a `par` that rides on it. Material `261120-blocks.md`; list `TODO-blocks.md`; branch `blocks`; session_011eECoipBcPZnUN2BbGAyuB |
 | `atmos-iter` | Created on 2026-11-20, asked by the author after `find`/`filter` of `atmos-pool`: iterators, loops and functions over iterables, to organize that part of the language. Material `261120-iter.md`; list `TODO-iter.md`; branch `iter`; session_011eECofmVokL6pRNJNTDjhd |
-| `atmos-tag` | Created on 2026-11-22, asked by the author through `atmos-iter` (its `#17`): whether the tag of a table should have a more primitive form, out of the keys. Material `261122-tag.md`; list `TODO-tag.md`; branch `tag-rebased` (the remote `tag` is stale, cut from an old main); session_011eECogjajEpy59YjN42Max |
+| `atmos-tag` | Created on 2026-11-22, asked by the author through `atmos-iter` (its `#17`): whether the tag of a table should have a more primitive form, out of the keys. Material `261122-tag.md`; list `TODO-tag.md`; branch `tag-rebased` (the remote `tag` is stale, cut from an old main); session_011eECogjajEpy59YjN42Max. Done and archived on 2026-11-22 (the author asked): #1 to #5 merged as 98e4787 |
 | `atmos-slices` | Created on 2026-11-22, asked by the author in `atmos-lang` (its `#116`, direction `#116c`): slices of vectors with no copy. Material `261122-slices.md`; list `TODO-slices.md`; branch `slices`; session_011eECoensrrB23ggBu4daLd |
+| `atmos-threads` | Created on 2026-11-22, asked by the author in `atmos-lang`: threads (none today; `thread` is only a reserved word; the reference has `thread { ... }`). Material `261122-threads.md`; list `TODO-threads.md`; branch `threads`; session_011eECohRAjCia6Hb5cAcrz2 |
 | `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Reads all its documents with `X.loadx` (its 39 tests load, reported 2026-11-20) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
@@ -193,6 +194,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
 | `atmos-tag` | session_011eECogjajEpy59YjN42Max | the tag of a table |
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
+| `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
 | `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
 | `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
