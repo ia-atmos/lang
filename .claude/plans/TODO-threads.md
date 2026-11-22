@@ -12,7 +12,7 @@ Last update: 2026-11-22.
 
 | # | Title | State |
 |---|---|---|
-| #1 | What threads are for (heavy computation, blocking C calls, several cores, parity with the reference) | asked, 2026-11-22 |
+| #1 | What threads are for (heavy computation, blocking C calls, several cores, parity with the reference) | asked, 2026-11-22; on hold until the week of 2026-11-30 (author: "Vamos aguardar semana que vem pra comecar aqui") |
 
 ## Facts (2026-11-22)
 
