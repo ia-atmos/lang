@@ -12,7 +12,7 @@ The branch of this session is `iter`.
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
-| `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Remark put to him on 2026-11-20; decision open |
+| `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Put to him on 2026-11-22 as the fix of his "menos conveniente ter que usar i,v quando so quer o v", recommended `#4a`; waiting |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Open |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Remark put to him on 2026-11-20; decision open |
@@ -21,6 +21,7 @@ The branch of this session is `iter`.
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
 | `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
+| `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Remark put to him on 2026-11-22; decision after `#4` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
@@ -54,6 +55,25 @@ The branch of this session is `iter`.
   as keys from `0`, which the first write would take for a vector;
   that needs a counting runtime over the suites of the ports
   (`atmos-lang`).
+- `#4` (2026-11-22). He wants to keep one table, and asked whether its
+  inconveniences can be solved: having to write `iter.vector`/`iter.dict`
+  instead of nothing, and `i, v` when only `v` is wanted. `#4a`: with
+  one variable a loop gives the element (the value of a table, the task
+  of a pool; a function and a number as today), with two the key and
+  the value (recommended); `#4b` as today. Read in Pingus and SNKRX:
+  2 loops with one variable over something that is not a number or a
+  function (`extra.atm:373`, `shop.atm:65`, both numbers). With `#4a`
+  and `#14`, a vector with no names walks only its elements, so the
+  part selectors are needed only for tables that mix both, which no
+  constructor of the two ports does. His names (`iter.idxs`,
+  `iter.keys`, `iter.vals`) wait for that: with `#4a`, `iter.vals` is
+  `loop v in t`, and the selectors would be views that a loop walks as
+  a table (not functions, whose first value would be the key).
+- `#13`, his syntax `#[]` and `%[]` (`@[]` refused by him, it reads as
+  an index): `#[1,2,3]` is today the length of a constructor (`3`), and
+  `x %[1]` is a modulo by a table (an error at run time); neither is in
+  the code of Pingus and SNKRX (149 matches, all inside strings). A
+  call with no parentheses (`f #[1]`) would need a rule, as `f [1]` has.
 - `#12` (2026-11-22, his "diferenciar por sintaxe? table.vector,
   table.xxx? vamos por partes"). `#12a` by the content, `[]` decided
   by its first write; `#12b` by the content, `[]` is an empty vector
