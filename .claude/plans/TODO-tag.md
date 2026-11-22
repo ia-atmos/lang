@@ -3,14 +3,14 @@
 Whether the tag of a table gets a more primitive form (`atmos-iter#17`,
 moved here on 2026-11-22). Material: `261122-tag.md` (from
 `atmos-lang`). Items are `#N`; those born here are `atmos-tag#N` from
-other sessions. The branch of this session is `tag`.
+other sessions. The branch of this session is `tag-rebased` (the author, 2026-11-22: the remote `tag` keeps an old base and is not used).
 
 ## Index
 
 | Item | Title | State |
 |---|---|---|
 | `#1` | Where the tag lives: a plain key `"tag"` (today, with the skip of `atmos-iter#14a`) or a field in the header of `ATab`, out of the keys | Decided 2026-11-22: `#1b` (his answer: "B") |
-| `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Decided 2026-11-22: `#2a` (his answer: "A"); on the branch `tag` |
+| `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Decided 2026-11-22: `#2a` (his answer: "A"); on the branch `tag-rebased` |
 | `#3` | What a tag may hold: a string or nil only (the prototype), or any value | Put to him on 2026-11-22, recommended `#3a` |
 
 ## A. Waiting for the author (one at a time)
@@ -24,7 +24,7 @@ other sessions. The branch of this session is `tag`.
 
 ## Settled by the session, to be confirmed
 
-On the branch `tag`, reversible by not merging:
+On the branch `tag-rebased`, reversible by not merging:
 
 - `#1b` + `#2a` (2026-11-22): `ATab` has a field `tag`; `a_tab_get`
   and `a_tab_set` send the string `"tag"` to it, so `t.tag`,
