@@ -6,7 +6,7 @@ pin t = spawn {
     await(10ms)
     print(:a)
 }
-toggle t(false)
+mute t(true)
 emit @:global 1ms
-toggle t(true)
+mute t(false)
 emit @:global 30ms

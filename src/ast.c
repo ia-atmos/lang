@@ -279,21 +279,43 @@ void ast_dump (Expr* e) {
             printf(")");
             break;
         case E_TOGGLE:
-            printf("(toggle ");
+            printf("(mute ");
+            for (int i=0; i<e->u.toggle.nf; i++) {
+                dump_patt(e->u.toggle.fs[i]);
+                printf(" ");
+            }
             ast_dump(e->u.toggle.t);
             dump_list(&e->u.toggle.args);
-            for (int i=0; i<e->u.toggle.nf; i++) {
-                printf(" with ");
-                dump_patt(e->u.toggle.fs[i]);
+            printf(")");
+            break;
+        case E_GRAB:
+            printf("(%s", (e->u.grab.kind == 1) ? "stage" : "solo");
+            for (int i=0; i<e->u.grab.nf; i++) {
+                printf(" ");
+                dump_patt(e->u.grab.fs[i]);
             }
+            printf(" ");
+            ast_dump(e->u.grab.blk);
+            printf(")");
+            break;
+        case E_CONTEXT:
+            printf("(context ");
+            ast_dump(e->u.context.enter);
+            printf(" ");
+            if (e->u.context.leave != NULL) {
+                ast_dump(e->u.context.leave);
+                printf(" ");
+            }
+            ast_dump(e->u.context.blk);
             printf(")");
             break;
         case E_TOGGLE_ON:
-            printf("(toggle on %s", e->tk.str);
+            printf("(mute");
             for (int i=0; i<e->u.toggle_on.nf; i++) {
-                printf(" with ");
+                printf(" ");
                 dump_patt(e->u.toggle_on.fs[i]);
             }
+            printf(" on %s", e->tk.str);
             printf(" ");
             ast_dump(e->u.toggle_on.blk);
             printf(")");

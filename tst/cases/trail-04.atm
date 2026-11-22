@@ -1,4 +1,4 @@
-;; nested blocks, values of par :all and of toggle on
+;; nested blocks, values of par :all and of mute on
 spawn {
     val a, b, c = par :all {
         val x, y = par :all {
@@ -16,7 +16,7 @@ spawn {
         20
     }
     print(a, b, c)
-    val v = toggle on :T {
+    val v = mute on :T {
         loop i in 3 {
             await(:E)
             print(:e, i)
@@ -28,10 +28,10 @@ spawn {
 emit(:B)
 emit(:A)
 emit(:E)
-emit(:T [false])
-emit(:E)
-emit(:E)
 emit(:T [true])
+emit(:E)
+emit(:E)
+emit(:T [false])
 emit(:E)
 emit(:E)
 print(:end)

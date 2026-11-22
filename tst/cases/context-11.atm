@@ -1,0 +1,25 @@
+;; #13: the stars of SNKRX, a context around the pool: 2 switches per frame
+;; for 50 stars (100 when each star switches), and none for :update and :key
+var N = 0
+var cur = :MAIN
+func target (c) { set N = N + 1 ; set cur = c }
+task Star (i) {
+    loop on :draw {
+        assert(cur == :STARS)
+    }
+}
+spawn {
+    context (\{ target(:STARS) }, \{ target(:MAIN) }) {
+        pin stars = tasks()
+        loop i in 50 { spawn @stars Star(i) }
+        await false
+    }
+}
+set N = 0
+loop f in 60 {
+    emit :update
+    emit :key
+    emit :draw
+}
+print("switches per frame:", N / 60)
+assert(cur == :MAIN)

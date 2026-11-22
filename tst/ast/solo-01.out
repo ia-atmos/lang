@@ -1,0 +1,2 @@
+(stage { (solo (! :draw) { (await :key) }) })
+(stage :key { (solo { (await :key) }) })

@@ -1,3 +1,0 @@
-task T () { await(false) }
-pin t = spawn T()
-toggle t(true)

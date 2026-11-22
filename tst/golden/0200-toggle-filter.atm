@@ -7,9 +7,9 @@
         pin t = spawn T()
         emit(:Draw)                 ;; on  -> draw
         emit(:Tick)                 ;; on  -> tick
-        toggle t (false) with :Draw ;; off, but :Draw passes
+        mute <!:Draw> t(true) ;; muted, but :Draw passes
         emit(:Draw)                 ;; passes filter -> draw
         emit(:Tick)                 ;; gated -> frozen
-        toggle t (true)
+        mute t (false)
         emit(:Tick)                 ;; on  -> tick
     

@@ -1,0 +1,4 @@
+;; #4: the two functions close with a parenthesis
+context (a, b {
+    await :X
+}

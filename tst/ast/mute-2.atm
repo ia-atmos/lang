@@ -1,0 +1,3 @@
+mute on :T { f() }
+mute <!<:Draw || :X>> on :Ok { g() }
+mute :X on :T { h() }

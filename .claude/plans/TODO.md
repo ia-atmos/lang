@@ -151,11 +151,11 @@ may be changed.
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
 | `atmos-oo` | Created on 2026-11-18, after the method call (`::`) was removed (`b4424ff`): whether and how to declare and dispatch functions of the same name by tag. Material `261118-oo.md`; list `TODO-oo.md`; branch `oo` |
 | `atmos-float` | Created on 2026-11-19, after `ATMOS_REAL=float` (`4565af1`, `atmos-lang#3`): the numeric types of a build, and whether integers and reals should be configurable for other systems. Material `261119-float.md`; list `TODO-float.md`; branch `float`; session_011eECog5kQDX9i1eN1gKzDJ |
-| `atmos-loadx` | Created on 2026-11-19, asked by the author through `pico-slides`: a loader of data that accepts names (`TITLE = [...]`, `[TITLE...]`). Material `261119-loadx.md`; list `TODO-loadx.md`; branch `loadx`; session_011eECoiJyx2tmrJg6HgoknZ |
+| `atmos-loadx` | Created on 2026-11-19, asked by the author through `pico-slides`: a loader of data that accepts names. Done on `main` (2026-11-20): `X.loadx([dir,] s)` with `TITLE = [...]` definitions, a name used as a value (a copy), `include "file"`; no spread; `X.load` unchanged; manual "Load with Names"; all 23 items closed. Material `261119-loadx.md`; list `TODO-loadx.md`; branch `loadx`; session_011eECoiJyx2tmrJg6HgoknZ |
 | `atmos-cli` | Created on 2026-11-20, asked by the author: the command line of the language (options, configuration, environments, install, cache, tests). Material `261120-cli.md`; list `TODO-cli.md`; branch `cli`; session_011eECoijhygAGqD1jDZ3pWZ |
 | `atmos-blocks` | Created on 2026-11-20, for `atmos-lang#6`: whether a transparent block emits an event when it ends, and the wait of a `par` that rides on it. Material `261120-blocks.md`; list `TODO-blocks.md`; branch `blocks`; session_011eECoipBcPZnUN2BbGAyuB |
 | `atmos-iter` | Created on 2026-11-20, asked by the author after `find`/`filter` of `atmos-pool`: iterators, loops and functions over iterables, to organize that part of the language. Material `261120-iter.md`; list `TODO-iter.md`; branch `iter`; session_011eECofmVokL6pRNJNTDjhd |
-| `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Waits for the result of `atmos-loadx` |
+| `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Reads all its documents with `X.loadx` (its 39 tests load, reported 2026-11-20) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
 | `atmos-args` (was `args`; its branch stays `args`) | Created on 2026-11-18, to discuss one rule for arguments with and without parentheses (calls, statements, `await`): item 31 moved there. Material `261118-args.md`; list `TODO-args.md` |
@@ -170,6 +170,44 @@ every session was told its new name: `env-pico`, `env-iup`, `env-uv`,
 `env-ray`, `ray-lessmilk`, `sdl-pingus`, `sdl-snxkx`, `sdl-flare`,
 `paper-src-games`, `sdl-tux`; `doom` and `lang` kept theirs. The titles
 of the sessions still have the old names.
+
+## Session ids
+
+To message a session with `send_message` (`atmos-args` is archived).
+
+| Session | Id | Topic |
+|---|---|---|
+| `atmos-lang` | session_011eECogKVQ7ZzmWCoMST2wK | the compiler; measurements on the ports; merges |
+| `atmos-pin` | session_011eECogSDhkVfyt7qme5DLh | the rules of `pin` |
+| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools |
+| `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
+| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` |
+| `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
+| `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
+| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build |
+| `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
+| `atmos-cli` | session_011eECoijhygAGqD1jDZ3pWZ | the command line |
+| `atmos-blocks` | session_011eECoipBcPZnUN2BbGAyuB | the end of a transparent block |
+| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
+| `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
+| `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
+| `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
+| `sdl-tux` | session_011eECoijTqoBzMrEaknmW9P | port: SuperTux |
+| `ray-lessmilk` | session_011eECohyasjWkvCHdxGxJ6D | port: Lessmilk games |
+| `doom` | session_011eECoiGQuUE9LUpGJZ7yFf | port: Doom |
+| `pico-1oom` | session_011eECoiEGgQ6ZBFHUCoxt77 | port: 1oom |
+| `pico-frescogo` | session_011eECoitGg7fJwfZh8JDNnR | port: FrescoGO! |
+| `pico-slides` | session_011eECogEdSaHMwZpk7NGmgk | presentations over pico |
+| `env-sdl` | session_011eECogZjerUUUp2BmsSRgW | environment: SDL |
+| `env-pico` | session_011eECoikzsmBiPNXNF7ffpf | environment: pico-sdl |
+| `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
+| `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
+| `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
+| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards |
+| `paper-pin` | session_011eECofALi31oSimzbLxYZp | paper on `pin` |
+| `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
+| `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
+| `paper-media` | session_011eECoiQwcXzsrFhTMMYGr7 | paper on media |
 
 ## Standing rules from the author, for all sessions
 

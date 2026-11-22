@@ -1,0 +1,24 @@
+;; #22: the pattern names what is muted: `<:X>` only :X, `<!:X>` all but
+;; :X, none all; bare before `on`
+task T () {
+    loop {
+        val e = await(true)
+        print(:t, e)
+    }
+}
+pin t = spawn T()
+mute <:X> t(true)       ;; only :X
+emit :X
+emit :Y                 ;; --> t Y
+mute t(false)           ;; --> t 0 (the zero tick)
+spawn {
+    mute :X on :T {
+        loop {
+            val e = await(true)
+            print(:b, e)
+        }
+    }
+}
+emit :T [true]          ;; seen by the block before it mutes
+emit :X
+emit :Y                 ;; --> b Y

@@ -8,9 +8,9 @@
         }
         print(1)
         pin t = spawn T()
-        toggle t (false)
+        mute t (true)
         emit (:nil)
         print(2)
-        toggle t (true)
+        mute t (false)
         emit (:nil)
     

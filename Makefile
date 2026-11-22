@@ -16,7 +16,7 @@ CC_HDR := src/atmc.h
 # (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`, `ATMOS_ASAN`).
 # `_` stands for an option that is off.
 CFGS := $(foreach r,_ -f32,$(foreach i,_ -i32,$(foreach t,_ -ms,\
-            $(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(a))+))))
+            $(foreach p,_ -nopin -unchecked,$(foreach a,_ -asan,$(subst _,,$(r)$(i)$(t)$(p)$(a))+)))))
 CFGS := $(patsubst %+,%,$(CFGS))
 # Only the default configuration is built in advance: the compiler
 # builds another one when a program first asks for it, and those that
@@ -46,18 +46,22 @@ env: $(CC_SRC) $(CC_HDR) $(LIBS)
 	    -DATMOS_ENV_LDFLAGS='"$(ENV_LDFLAGS)"' \
 	    -Isrc $(CC_SRC) -o $(OUT)
 
-# $(1): the suffix of a configuration
+# $(1): the suffix of a configuration. The libraries go to $(BLD).
+BLD ?= build
+
 define RT_RULES
-build/rt$(1)/%.o: rt/%.c $$(RT_HDR)
-	@mkdir -p build/rt$(1)
+$$(BLD)/rt$(1)/%.o: rt/%.c $$(RT_HDR)
+	@mkdir -p $$(BLD)/rt$(1)
 	$$(CC) $$(CFLAGS) \
 	    $$(if $$(findstring -asan,$(1)),$$(ASAN)) \
 	    $$(if $$(findstring -f32,$(1)),-DATM_FLOAT_32) \
 	    $$(if $$(findstring -i32,$(1)),-DATM_INTEGER_32) \
 	    $$(if $$(findstring -ms,$(1)),-DATM_CLOCK_MS) \
+	    $$(if $$(findstring -nopin,$(1)),-DATM_PIN_OFF) \
+	    $$(if $$(findstring -unchecked,$(1)),-DATM_PIN_UNCHECKED) \
 	    -Irt -c $$< -o $$@
 
-build/libatmos$(1).a: $$(RT_SRC:rt/%.c=build/rt$(1)/%.o) build/rt$(1)/main.o
+$$(BLD)/libatmos$(1).a: $$(RT_SRC:rt/%.c=$$(BLD)/rt$(1)/%.o) $$(BLD)/rt$(1)/main.o
 	ar rcs $$@ $$^
 endef
 
@@ -92,7 +96,17 @@ test-env: all
 
 test: test-rt test-lex test-ast test-cases test-golden test-env
 
+# Every configuration of the runtime, from clean and with -Werror, in
+# build/cfgs (the libraries of build/ are not touched). Not part of
+# `make test`: run before a merge that touches rt/ or the Makefile.
+test-cfgs:
+	rm -rf build/cfgs
+	$(MAKE) -j8 BLD=build/cfgs CFLAGS="$(CFLAGS) -Werror" cfgs-all
+	@echo "pass=$(words x $(CFGS)) configurations"
+
+cfgs-all: $(BLD)/libatmos.a $(foreach c,$(CFGS),$(BLD)/libatmos$(c).a)
+
 clean:
 	rm -rf build
 
-.PHONY: all env test test-rt test-lex test-ast test-cases test-golden test-env clean
+.PHONY: all env test test-cfgs cfgs-all test-rt test-lex test-ast test-cases test-golden test-env clean

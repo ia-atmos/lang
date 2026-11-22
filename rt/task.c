@@ -47,6 +47,7 @@ static void    clr_deep (AVal v, uint32_t d);
 static int     adopt_ok (AVal v, int d, int root);
 static void    pin_kid  (AVal v, int d);
 static AStatus adopt_err (const char* what);
+static void    adopt_end (void);
 static void    evt_own (AVal evt);
 static AStatus trail_abort (ATask* t, ATrail* tr);
 static AStatus trail_resume (ATask* t, ATrail* tr, AKind k);
@@ -802,6 +803,9 @@ static void node_sweep (ANode* n) {
 // A child died: it leaves now, or when the traversals end.
 static void node_died (ANode* n) {
     n->dead = 1;
+    if (a_nouts > 0) {
+        a_out_ended(&n->hdr);
+    }
     ANode* up = n->up;
     if (up != NULL) {
         up->dirty = 1;
@@ -818,7 +822,7 @@ static void node_trav (ANode* n, int inc) {
     }
 }
 
-// Releases the toggle state of a node.
+// Releases the mute state of a node.
 static void node_untoggle (ANode* n) {
     for (int i=0; i<n->nfilt; i++) {
         patt_free(n->filt[i]);
@@ -836,10 +840,224 @@ static ATrailX* trail_x (ATrail* tr) {
     return tr->x;
 }
 
+// A solo that ends leaves the stack of its stage; a stage that ends
+// leaves its solos without one (they end with it, in its block).
+static void grab_off (ATrail* tr, ATrailX* x) {
+    if (x->gkind == A_GRAB && x->gup != NULL && x->gup->x != NULL) {
+        ATrailX* u = x->gup->x;
+        for (int i=0; i<u->gn; i++) {
+            if (u->gs[i] == tr) {
+                memmove(&u->gs[i], &u->gs[i+1], (u->gn-i-1) * sizeof(ATrail*));
+                u->gn--;
+                break;
+            }
+        }
+    } else if (x->gkind == A_GRABBABLE) {
+        for (int i=0; i<x->gn; i++) {
+            if (x->gs[i]->x != NULL) {
+                x->gs[i]->x->gup = NULL;
+            }
+        }
+    }
+    for (int i=0; i<x->ngfilt; i++) {
+        patt_free(x->gfilt[i]);
+    }
+    free(x->gfilt);
+    free(x->gs);
+    free(x->gpath);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// CONTEXT
+///////////////////////////////////////////////////////////////////////////////
+
+// A context is a trail whose `enter` runs before code that lives in its
+// subtree runs, and whose `leave` runs before code outside runs again.
+// The contexts applied now, from the outermost: the switch is lazy, so
+// two trails of the same context resumed in a row pay nothing between
+// them, and a subtree in which nothing awakes pays nothing at all.
+
+#define CTX_MAX 64
+static ATrail* CTX[CTX_MAX];
+static int     NCTX = 0;
+// contexts alive: with none, and none applied, the hooks cost nothing
+static int     LIVE = 0;
+// running `enter` or `leave`: `emit` and `spawn` are errors there
+static int     INCTX = 0;
+// set by the traversal of an emit just before it resumes a trail: the
+// switch back to the resumer waits for the end of the traversal
+static int     LAZY = 0;
+
+#define CTX_ON() (LIVE>0 || NCTX>0)
+
+// The contexts around trail `i` of task `t`, from the innermost.
+static int ctx_chain (ATask* t, int i, ATrail** out) {
+    int n = 0;
+    while (t != NULL) {
+        if (t->trs != NULL) {
+            const ATrailD* ds = t->desc->trails;
+            for (int j=i; j>=0; j=ds[j].up) {
+                ATrail* tr = &t->trs[j];
+                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF) {
+                    if (n == CTX_MAX) {
+                        return n;
+                    }
+                    out[n++] = tr;
+                }
+            }
+        }
+        // where the task lives: the trail of the task that holds it, or
+        // that holds its pool
+        ANode* nd = &t->node;
+        t = NULL;
+        while (nd->up != NULL) {
+            i  = nd->trail;
+            nd = nd->up;
+            if (nd->hdr.type == A_XTASK) {
+                t = (ATask*) nd;
+                break;
+            }
+        }
+    }
+    return n;
+}
+
+static AStatus ctx_call (AVal f, AVal arg, int has, AVal* res) {
+    int base = a_top;
+    if (has) {
+        a_pushc(arg);
+    }
+    INCTX++;
+    AStatus st = a_call(f, base);
+    INCTX--;
+    if (st != A_OK) {
+        return st;
+    }
+    AVal r = a_nil();
+    a_ret1(&r, base);
+    if (res != NULL) {
+        *res = r;
+    } else {
+        a_dec(r);
+    }
+    return A_OK;
+}
+
+// Leaves the applied contexts down to `n` of them, innermost first.
+static AStatus ctx_leave (int n) {
+    AStatus ret = A_OK;
+    while (NCTX > n) {
+        ATrailX* x = CTX[--NCTX]->x;
+        AVal v = x->cval;
+        x->cval = a_nil();
+        AStatus st = ctx_call(x->leave, v, 1, NULL);
+        a_dec(v);
+        if (ret == A_OK) {
+            ret = st;
+        }
+    }
+    return ret;
+}
+
+// Applies the contexts around trail `i` of task `t` (none for NULL).
+static AStatus ctx_switch (ATask* t, int i) {
+    ATrail* ch[CTX_MAX];
+    int n = (t == NULL) ? 0 : ctx_chain(t, i, ch);
+    // common prefix, from the outermost
+    int p = 0;
+    while (p<NCTX && p<n && CTX[p]==ch[n-1-p]) {
+        p++;
+    }
+    AStatus ret = ctx_leave(p);
+    for (int k=p; k<n && ret==A_OK; k++) {
+        ATrail* tr = ch[n-1-k];
+        ATrailX* x = tr->x;
+        CTX[NCTX++] = tr;
+        AStatus st = ctx_call(x->enter, a_nil(), 0, &x->cval);
+        if (st != A_OK) {
+            NCTX--;
+            ret = st;
+        }
+    }
+    return ret;
+}
+
+// Back to the contexts of the code that runs now.
+static AStatus ctx_here (void) {
+    if (!CTX_ON()) {
+        return A_OK;
+    }
+    return ctx_switch(a_cur, (a_trl == NULL) ? 0 : a_trl->idx);
+}
+
+AStatus a_trail_context (ATask* t, int i, AVal enter, AVal leave) {
+    if (enter.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(enter));
+    }
+    if (leave.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(leave));
+    }
+    ATrailX* x = trail_x(&t->trs[i]);
+    x->ctx = 1;
+    a_cpy(&x->enter, enter);
+    a_cpy(&x->leave, leave);
+    x->cval = a_nil();
+    LIVE++;
+    return A_OK;
+}
+
+// context X {...}: X holds the pair, enter at 0 and leave at 1.
+AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
+    if (pair.type != A_TAB) {
+        return a_error("invalid context : expected table : got %s",
+            a_typename(pair));
+    }
+    AVal en = a_nil();
+    AVal lv = a_nil();
+    if (a_index(&en, pair, a_int(0)) != A_OK) {
+        return A_ERROR;
+    }
+    if (a_index(&lv, pair, a_int(1)) != A_OK) {
+        a_dec(en);
+        return A_ERROR;
+    }
+    AStatus st = a_trail_context(t, i, en, lv);
+    a_dec(en);
+    a_dec(lv);
+    return st;
+}
+
+// A context trail ends: left if applied, with those inside it.
+static void ctx_drop (ATrail* tr) {
+    for (int k=0; k<NCTX; k++) {
+        if (CTX[k] == tr) {
+            ctx_leave(k);
+            break;
+        }
+    }
+    ATrailX* x = tr->x;
+    a_dec(x->enter);
+    a_dec(x->leave);
+    a_dec(x->cval);
+    LIVE--;
+}
+
+static AStatus ctx_chk (const char* op) {
+    if (INCTX > 0) {
+        return a_error("invalid %s : inside enter or leave of a context", op);
+    }
+    return A_OK;
+}
+
 // Releases the state of a trail, which becomes inactive.
 static void trail_off (ATrail* tr) {
     if (tr->root.kind != PK_NONE) {
         root_free(&tr->root);
+    }
+    if (tr->x!=NULL && tr->x->ctx) {
+        ctx_drop(tr);
     }
     ATrailX* x = tr->x;
     if (x != NULL) {
@@ -848,6 +1066,7 @@ static void trail_off (ATrail* tr) {
             patt_free(x->filt[i]);
         }
         free(x->filt);
+        grab_off(tr, x);
         a_dec(x->tog);
         a_pay_drop(&x->wpay);
         a_pay_drop(&x->ppay);
@@ -1118,6 +1337,21 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
         t->status = T_RUNNING;
     }
     int lin = a_lin;
+    // the contexts of the trail; back to those of the resumer at the
+    // end, unless the traversal of an emit resumes it (then at the end
+    // of the traversal)
+    int lazy = LAZY;
+    LAZY = 0;
+    AStatus cst = A_OK;
+    if (CTX_ON()) {
+        cst = ctx_switch(t, tr->idx);
+        if (cst!=A_OK && k==R_EVENT) {
+            // raised at the await of the trail
+            EXIT = cst;
+            k = R_EXIT;
+            cst = A_OK;
+        }
+    }
     RFrame rf = { ptrail, a_depth, RSTK };
     RSTK = &rf;
     AStatus st = t->desc->trails[tr->idx].resume(t, tr, k);
@@ -1126,6 +1360,12 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
     a_depth = rf.depth;
     a_cur = ptask;
     a_trl = ptrail;
+    if (!lazy && CTX_ON()) {
+        AStatus st2 = ctx_switch(ptask, (ptrail == NULL) ? 0 : ptrail->idx);
+        if (cst == A_OK) {
+            cst = st2;
+        }
+    }
     if (st == A_AWAIT) {
         tr->status = TR_SUSPENDED;
         if (tr->idx == 0) {
@@ -1134,6 +1374,10 @@ static AStatus trail_resume (ATask* t, ATrail* tr, AKind k) {
         st = A_OK;
     } else {
         st = trail_end(t, tr, st);
+    }
+    if (st == A_OK) {
+        // an error in `enter` or `leave` is raised in the resumer
+        st = cst;
     }
     a_dec(me);
     return st;
@@ -1224,6 +1468,9 @@ static AStatus node_abort (ANode* n) {
 }
 
 AStatus a_abort (AVal v) {
+    if (ctx_chk("abort") != A_OK) {
+        return A_ERROR;
+    }
     if (v.type!=A_XTASK && v.type!=A_TASKS) {
         return a_error("invalid abort : expected task");
     }
@@ -1263,7 +1510,71 @@ static AStatus filt_pass (APatt** fs, int n, AVal evt, int* pass) {
     return st;
 }
 
-// The event is `:T [b]` for the tag of an automatic toggle.
+// An emit that a solo captures: while it traverses the subtree of the
+// stage, it only follows the path down to the solo (the trails on
+// the path do not awake), and then the whole subtree of the solo. The
+// path is a copy: the solo may end in the middle of the emit. A nested
+// emit has its own time, so it is not affected.
+typedef struct ACap {
+    uint32_t time;
+    ATrail*  g;
+    void**   path;
+    int      n;
+    int      in;
+} ACap;
+static ACap CAP = { 0, NULL, NULL, 0, 0 };
+
+// Whether the emit at `time` is captured, outside the grab.
+static int cap_out (uint32_t time) {
+    return CAP.g!=NULL && CAP.time==time && !CAP.in;
+}
+
+// Whether the emit at `time` skips a child (a trail or a node).
+static int cap_skip (uint32_t time, void* p) {
+    if (!cap_out(time)) {
+        return 0;
+    }
+    for (int i=0; i<CAP.n; i++) {
+        if (CAP.path[i] == p) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// The emit reaches a stage: the most recent of its solos whose
+// patterns match the event, if the stage's match too, captures it.
+// A stage or solo with no pattern takes every event.
+static AStatus grab_pass (ATrailX* x, AVal evt, int* pass) {
+    if (x->ngfilt == 0) {
+        *pass = 1;
+        return A_OK;
+    }
+    return filt_pass(x->gfilt, x->ngfilt, evt, pass);
+}
+
+static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
+    ATrailX* x = tr->x;
+    int pass = 0;
+    AStatus st = grab_pass(x, evt, &pass);
+    for (int k=x->gn-1; st==A_OK && pass && k>=0; k--) {
+        ATrailX* g = x->gs[k]->x;
+        int p = 0;
+        st = grab_pass(g, evt, &p);
+        if (st==A_OK && p) {
+            CAP.time = time;
+            CAP.g    = x->gs[k];
+            CAP.n    = g->gpn;
+            CAP.in   = 0;
+            CAP.path = malloc((g->gpn > 0 ? g->gpn : 1) * sizeof(void*));
+            memcpy(CAP.path, g->gpath, g->gpn * sizeof(void*));
+            break;
+        }
+    }
+    return st;
+}
+
+// The event is `:T [b]` for the tag of a `mute on`: `b` mutes.
 static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (tog.type==A_NIL || evt.type!=A_TAB) {
         return 0;
@@ -1275,7 +1586,7 @@ static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (b.type!=A_BOOL || !a_gte(tog, tag)) {
         return 0;
     }
-    *on = b.u.b;
+    *on = !b.u.b;
     return 1;
 }
 
@@ -1286,6 +1597,9 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
         // only nested trails, which keep their places
         const ATrailD* ds = t->desc->trails;
         for (int j=ds[tr->idx].kid; j>=0 && st==A_OK; j=ds[j].next) {
+            if (cap_skip(time, &t->trs[j])) {
+                continue;
+            }
             st = emit_trail(t, &t->trs[j], time, evt);
             if (t->trs == NULL) {
                 break;
@@ -1300,6 +1614,9 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     ANode*  n = NULL;
     int kind;
     while (st==A_OK && (kind = kit_next(&it,&c,&n))!=0) {
+        if (cap_skip(time, (kind == 1) ? (void*)c : (void*)n)) {
+            continue;
+        }
         st = (kind == 1) ? emit_trail(t, c, time, evt)
                          : emit_node(n, time, evt);
     }
@@ -1309,10 +1626,7 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
 
 // Traverses the subtree of a trail: its children in order, then the
 // trail itself at its await.
-static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
-    if (tr->status==TR_OFF || tr->doomed) {
-        return A_OK;
-    }
+static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     AStatus st = A_OK;
     int pass = 1;
     if (tr->toggled) {
@@ -1335,13 +1649,15 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
             } else if (tr->status == TR_SUSPENDED) {
                 // raised at the await of the parent
                 EXIT = st;
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EXIT);
             } else if (tr->status == TR_RUNNING) {
                 // the parent is on the C stack
                 exit_park(t, tr, st);
                 st = A_OK;
             }
-        } else if (tr->status==TR_SUSPENDED && tr->time<time && !tr->waiting) {
+        } else if (tr->status==TR_SUSPENDED && tr->time<time && !tr->waiting &&
+                   !cap_out(time)) {
             int done = 0;
             if (tr->root.kind == PK_HEAP) {
                 // predicates run in the context of the awaiting trail
@@ -1351,7 +1667,12 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
                 a_cur   = t;
                 a_trl   = tr;
                 a_depth = tr->adepth;
-                st = patt_match(tr->root.u.p, evt, &done);
+                if (CTX_ON()) {
+                    st = ctx_switch(t, tr->idx);
+                }
+                if (st == A_OK) {
+                    st = patt_match(tr->root.u.p, evt, &done);
+                }
                 a_cur   = ptask;
                 a_trl   = ptrail;
                 a_depth = depth;
@@ -1360,14 +1681,16 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
             }
             if (st != A_OK) {
                 EXIT = st;
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EXIT);
             } else if (done) {
+                LAZY = 1;
                 st = trail_resume(t, tr, R_EVENT);
             }
         }
     }
 
-    // automatic toggle, after the trail has seen the event: a trail
+    // `mute on`, after the trail has seen the event: a trail
     // toggled on receives a zero tick, which awakes `await(true)` and
     // lets its timers report again
     int on;
@@ -1382,6 +1705,29 @@ static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
             st = filt_start(tr->x->filt, tr->x->nfilt);
         }
     }
+    return st;
+}
+
+// A solo and a stage change how the emit goes on below them.
+static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+    if (tr->status==TR_OFF || tr->doomed) {
+        return A_OK;
+    }
+    ACap save = CAP;
+    AStatus st = A_OK;
+    if (cap_out(time) && tr==CAP.g) {
+        CAP.in = 1;
+    } else if (tr->x!=NULL && tr->x->gkind==A_GRABBABLE && tr->x->gn>0 &&
+               !cap_out(time)) {
+        st = cap_find(tr, evt, time);
+    }
+    if (st == A_OK) {
+        st = emit_trail_(t, tr, time, evt);
+    }
+    if (CAP.path != save.path) {
+        free(CAP.path);
+    }
+    CAP = save;
     return st;
 }
 
@@ -1408,6 +1754,9 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
             node_trav(n, 1);
             int cnt = n->ndns;
             for (int i=0; i<cnt && st==A_OK; i++) {
+                if (cap_skip(time, n->dns[i])) {
+                    continue;
+                }
                 st = emit_node(n->dns[i], time, evt);
             }
             node_trav(n, -1);
@@ -1418,19 +1767,23 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
     return st;
 }
 
-AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
-    AStatus st = A_OK;
+AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
+    AStatus st = ctx_chk("mute");
     ANode* x = (ANode*) t.u.o;
-    if (t.type!=A_XTASK && t.type!=A_TASKS) {
-        st = a_error("invalid toggle : expected task");
-    } else if (on.type != A_BOOL) {
-        st = a_error("invalid toggle : expected bool argument");
+    // `mute t(true)` silences, `mute t(false)` gives the events back
+    AVal on = a_bool(mute.type==A_BOOL && !mute.u.b);
+    if (st != A_OK) {
+        // inside enter or leave of a context
+    } else if (t.type!=A_XTASK && t.type!=A_TASKS) {
+        st = a_error("invalid mute : expected task");
+    } else if (mute.type != A_BOOL) {
+        st = a_error("invalid mute : expected bool argument");
     } else if (on.u.b && n>0) {
-        st = a_error("invalid toggle : unexpected argument");
+        st = a_error("invalid mute : unexpected pattern");
     } else if (on.u.b && !x->toggled) {
-        st = a_error("invalid toggle : expected toggled off task");
+        st = a_error("invalid mute : expected muted task");
     } else if (!on.u.b && x->toggled) {
-        st = a_error("invalid toggle : expected awaiting task");
+        st = a_error("invalid mute : expected unmuted task");
     }
     if (st != A_OK) {
         for (int i=0; i<n; i++) {
@@ -1442,7 +1795,9 @@ AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
     if (on.u.b) {
         // a zero tick awakes `await(true)` and lets the timers report
         node_untoggle(x);
-        return chk_aborted(emit_node(x, ++TIME, a_int(0)));
+        AStatus st2 = emit_node(x, ++TIME, a_int(0));
+        AStatus st3 = ctx_here();
+        return chk_aborted((st2 == A_OK) ? st3 : st2);
     }
     x->filt = malloc((n > 0 ? n : 1) * sizeof(APatt*));
     memcpy(x->filt, fs, n * sizeof(APatt*));
@@ -1467,8 +1822,69 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
     x->nfilt = n;
 }
 
+// `stage P {...}` and `solo P {...}`, before the block starts. A solo
+// takes the nearest stage above it, in the tree of tasks.
+AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
+    ATrail* me = &t->trs[i];
+    ATrailX* x = trail_x(me);
+    x->gkind  = kind;
+    x->gfilt  = malloc((n > 0 ? n : 1) * sizeof(APatt*));
+    memcpy(x->gfilt, fs, n * sizeof(APatt*));
+    x->ngfilt = n;
+    AStatus st = filt_start(x->gfilt, x->ngfilt);
+    if (st!=A_OK || kind==A_GRABBABLE) {
+        return st;
+    }
+    int cap = 0;
+    int k   = 0;
+    void** path = NULL;
+    ATrail* up = NULL;
+    while (up == NULL) {
+        ATrail* tr = &t->trs[i];
+        if (tr!=me && tr->x!=NULL && tr->x->gkind==A_GRABBABLE) {
+            up = tr;
+            break;
+        }
+        if (k+2 > cap) {
+            cap  = (cap == 0) ? 8 : cap*2;
+            path = realloc(path, cap * sizeof(void*));
+        }
+        path[k++] = tr;
+        if (i > 0) {
+            i = t->desc->trails[i].up;
+            continue;
+        }
+        ANode* nd = &t->node;
+        do {
+            if (k+1 > cap) {
+                cap  = cap*2;
+                path = realloc(path, cap * sizeof(void*));
+            }
+            path[k++] = nd;
+            i  = nd->trail;
+            nd = nd->up;
+        } while (nd!=NULL && nd->hdr.type!=A_XTASK);
+        if (nd == NULL) {
+            free(path);
+            return a_error("invalid solo : expected enclosing stage");
+        }
+        t = (ATask*) nd;
+    }
+    x->gpath = path;
+    x->gpn   = k;
+    x->gup   = up;
+    ATrailX* u = up->x;
+    u->gs = realloc(u->gs, (u->gn+1) * sizeof(ATrail*));
+    u->gs[u->gn++] = me;
+    return A_OK;
+}
+
+// An emit traverses the tree, and then the code that emitted goes on in
+// its own contexts.
 static AStatus emit_top (ANode* n, AVal evt) {
-    return emit_node(n, ++TIME, evt);
+    AStatus st = emit_node(n, ++TIME, evt);
+    AStatus st2 = ctx_here();
+    return (st == A_OK) ? st2 : st;
 }
 
 // Target of an emit: :task (default), :parent, :global, a task or
@@ -1565,6 +1981,9 @@ static int emit_depth (ANode* n) {
 }
 
 static AStatus emit_chk (ANode* n, AVal evt, int anc) {
+#ifdef ATM_PIN_UNCHECKED
+    (void) n; (void) evt; (void) anc; return A_OK;
+#endif
     int p = a_pdepth(evt);
     if (p == 0) {
         return A_OK;
@@ -1584,7 +2003,11 @@ static AStatus emit_chk (ANode* n, AVal evt, int anc) {
 AStatus a_emit (AVal to, AVal evt) {
     ANode* n = NULL;
     int anc = 0;
-    AStatus st = emit_to(&n, to, &anc);
+    AStatus st = ctx_chk("emit");
+    if (st != A_OK) {
+        return st;
+    }
+    st = emit_to(&n, to, &anc);
     if (st != A_OK) {
         return st;
     }
@@ -1736,6 +2159,10 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
 }
 
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
+    if (ctx_chk("spawn") != A_OK) {
+        a_settop(base);
+        return A_ERROR;
+    }
     if (proto.type != A_TASK) {
         a_settop(base);
         return a_error("invalid spawn : expected task prototype");
@@ -2002,6 +2429,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, d);
+        adopt_end();
     } else if (own->hdr.ceil != 0) {
         a_ceil(v, own->hdr.ceil, own->hdr.clin);
     }
@@ -2022,6 +2450,12 @@ AStatus a_pub_set (ATask* t, AVal v) {
 // values it holds: by a declaration (`how` is 1) or by the value that
 // holds it (2).
 static void pin_deep (AVal v, int d, int how) {
+#ifdef ATM_PIN_OFF
+    // only a task or a pool is pinned, and not what it holds
+    if (v.type!=A_XTASK && v.type!=A_TASKS) {
+        return;
+    }
+#endif
     if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
         return;
     }
@@ -2060,6 +2494,7 @@ static void pin_deep (AVal v, int d, int how) {
             o->pinned = how;
             o->depth  = d;
             o->lin    = a_lin;
+#ifndef ATM_PIN_OFF
             if (v.type == A_XTASK) {
                 pin_kid(A_TASK_OF(v)->pub, d);
                 pin_kid(A_TASK_OF(v)->ret, d);
@@ -2069,6 +2504,7 @@ static void pin_deep (AVal v, int d, int how) {
                     pin_kid(t->ret, d);
                 }
             }
+#endif
             // held by data: the block of the holder aborts it
             if (how==2 && n->up!=NULL && n->up->hdr.type==A_XTASK) {
                 ATask* up = (ATask*) n->up;
@@ -2100,6 +2536,14 @@ static void pin_deep (AVal v, int d, int how) {
 // with no name is pinned with it. One with a name is only referenced:
 // a name already keeps it, and it may no longer be pinned inside `d`.
 static void pin_kid (AVal v, int d) {
+#ifdef ATM_PIN_OFF
+    // a task or a pool held by data still ends with the block of the
+    // holder; nothing else is pinned
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        pin_deep(v, d, 2);
+    }
+    return;
+#endif
     if (v.type>=A_TAB && v.type!=A_BOX && !v.u.o->pinned &&
         v.u.o->ceil!=0 && d>(int)v.u.o->ceil)
     {
@@ -2128,49 +2572,16 @@ AStatus a_nat_holds (AVal nat, AVal v) {
             return adopt_err("pin");
         }
         pin_kid(v, nat.u.o->depth);
+        adopt_end();
     }
     return A_OK;
 }
 
-// The unpinned values that `v` holds, for `f`.
-static void unpinned_kids (AVal v, void (*f)(AVal,int,uint32_t), int d,
-                        uint32_t lin)
-{
-    switch (v.type) {
-        case A_TAB: {
-            uint32_t pos = 0;
-            AVal k, x;
-            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-                f(k, d, lin);
-                f(x, d, lin);
-            }
-            break;
-        }
-        case A_FUNC:
-        case A_TASK: {
-            AFunc* fn = A_FUNC_OF(v);
-            for (int i=0; i<fn->ncap; i++) {
-                f(fn->caps[i], d, lin);
-            }
-            break;
-        }
-        case A_XTASK:
-            f(A_TASK_OF(v)->pub, d, lin);
-            f(A_TASK_OF(v)->ret, d, lin);
-            break;
-        case A_NAT: {
-            ANat* n = A_NAT_OF(v);
-            for (int i=0; i<n->nholds; i++) {
-                f(n->holds[i], d, lin);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
 
 void a_name_arg (AVal v, int d) {
+#ifdef ATM_PIN_UNCHECKED
+    (void) v; (void) d; return;
+#endif
     if (v.type<A_TAB || v.u.o->pinned) {
         return;
     }
@@ -2196,7 +2607,10 @@ void a_ceil (AVal v, int d, uint32_t lin) {
     }
     o->ceil = (d < 0xFFFF) ? d : 0xFFFF;
     o->clin = lin;
-    unpinned_kids(v, a_ceil, d, lin);
+    // Only the value itself: what it holds is protected by its count.
+    // A value held by others than its holder (rc > 1) is not adopted
+    // with it (`adopt_rec`, `pin_kid`), and one held only by it goes
+    // with it.
 }
 
 // The names of the block `d` end: what only they held loses that
@@ -2211,344 +2625,109 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
         return;
     }
     o->ceil = 0;
-    unpinned_kids(v, ceil_up, d, 0);
 }
 
-// Cycles of unpinned values that end with the names of a block.
-//
-// A value whose ceiling is the block `d` that ends is held by no name
-// of an outer block. What still refers to it, besides the names of `d`,
-// is either outside (a result of the block, a task of an outer pool, an
-// unnamed holder, C) or the values of a cycle that only these names
-// reach. The candidates are the unpinned values reachable from the
-// names, with their ceiling at `d` or none, and the boxes of `d`. A
-// trial deletion counts, for each one, the references that come from
-// the other candidates and from the names: a candidate with more
-// references than those is alive, and so is all it reaches. The others
-// are only referred to among themselves: they are cleared, as a pin
-// clears its value, which breaks the cycle, and reference counting
-// frees them.
-//
-// The ceiling only selects the candidates: the counts alone decide. So
-// a value referred to by something the ceiling does not see (a pool of
-// an outer block, C) is kept.
+// The places written with `set :out` that wait for the end of a value.
+typedef struct OutE {
+    AObj* v;        // not counted: the entry goes when the value ends
+    AVal  t;        // a table and a key (counted), or
+    AVal  k;
+    AVal* slot;     // a variable, with its box (counted) if captured
+    AVal  box;
+} OutE;
 
-typedef struct CycM {
-    AObj*    o;
-    uint32_t clin;      // saved: the index of the candidate meanwhile
-    int      ext;       // references from outside the candidates
-    int      in;        // references from the other candidates
-    int      live;      // 1 alive, 2 freed by counting, 0 in a cycle
-} CycM;
+static OutE* OUTS   = NULL;
+static int   OUTS_C = 0;
+int a_nouts = 0;
 
-static CycM* CYC     = NULL;
-static int   CYC_N   = 0;
-static int   CYC_CAP = 0;
-
-#define CYC_MARK 0x80
-
-static int cyc_marked (AVal v) {
-    return v.type>=A_TAB && (v.u.o->pinned & CYC_MARK);
+static int out_ends (AVal v) {
+    if (v.type < A_TAB) {
+        return 0;
+    }
+    if (v.type==A_XTASK || v.type==A_TASKS) {
+        return !((ANode*)v.u.o)->dead;
+    }
+    return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
 }
 
-// With CYC_ANY, a candidate may have any ceiling (an argument of a
-// task that ends: its ceiling is the block that ends the task, see
-// `a_name_arg`), and the search gives up beyond CYC_MAX candidates,
-// since it may then be walking data of an outer block.
-static int CYC_ANY = 0;
-#define CYC_MAX 256
-
-static int cyc_cand (AVal v, int d) {
-    AObj* o = v.u.o;
-    switch (v.type) {
-        case A_BOX:
-            return o->pinned==1 && (int)o->depth==d;
-        case A_TAB:
-        case A_FUNC:
-        case A_TASK:
-            return o->pinned==0 &&
-                   (CYC_ANY || o->ceil==0 || (int)o->ceil==d);
-        default:
-            return 0;
+static void out_add (OutE e) {
+    if (a_nouts == OUTS_C) {
+        OUTS_C = (OUTS_C == 0) ? 16 : OUTS_C*2;
+        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
     }
+    OUTS[a_nouts++] = e;
 }
 
-static void cyc_add (AVal v, int d) {
-    if (v.type<A_TAB || cyc_marked(v) || !cyc_cand(v,d)) {
-        return;
+int a_out_reg_tab (AVal t, AVal k, AVal v) {
+    if (!out_ends(v)) {
+        return 0;
     }
-    if (CYC_N == CYC_CAP) {
-        CYC_CAP = (CYC_CAP == 0) ? 32 : CYC_CAP*2;
-        CYC = realloc(CYC, CYC_CAP * sizeof(CycM));
-    }
-    AObj* o = v.u.o;
-    CYC[CYC_N] = (CycM) { o, o->clin, o->rc, 0, 0 };
-    o->clin    = CYC_N++;
-    o->pinned |= CYC_MARK;
+    a_inc(t);
+    a_inc(k);
+    out_add((OutE) { v.u.o, t, k, NULL, a_nil() });
+    return 1;
 }
 
-// The references that `v` holds, for `f`.
-static void cyc_refs (AVal v, void (*f)(AVal,int), int d) {
-    switch (v.type) {
-        case A_TAB: {
-            uint32_t pos = 0;
-            AVal k, x;
-            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-                f(k, d);
-                f(x, d);
-            }
-            break;
-        }
-        case A_FUNC:
-        case A_TASK: {
-            AFunc* fn = A_FUNC_OF(v);
-            for (int i=0; i<fn->ncap; i++) {
-                f(fn->caps[i], d);
-            }
-            break;
-        }
-        case A_BOX:
-            f(A_BOX_OF(v)->v, d);
-            break;
-        default:
-            break;
+int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
+    if (!out_ends(v) || d>a_pdepth(v)) {
+        return 0;
     }
+    a_inc(box);
+    out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box });
+    return 1;
 }
 
-// references found among the candidates: with none, there is no cycle
-static int CYC_IN = 0;
-
-static void cyc_inner (AVal v, int d) {
-    (void) d;
-    if (cyc_marked(v)) {
-        CYC[v.u.o->clin].ext--;
-        CYC[v.u.o->clin].in++;
-        CYC_IN++;
+// set :out pub = v: the pub of the running task refers to `v`, with no
+// check and no adoption, until `v` ends (registered: `*reg` false), or
+// until the block of the `set` ends. `*task` gets the task, counted, the
+// holder of the place.
+AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
+    ATask* t = a_cur;
+    if (t == NULL) {
+        return a_error("invalid pub : expected enclosing task");
     }
-}
-
-// the candidates found alive, still to visit
-static int* CYS     = NULL;
-static int  CYS_N   = 0;
-static int  CYS_CAP = 0;
-
-static void cys_push (int i) {
-    if (CYS_N == CYS_CAP) {
-        CYS_CAP = (CYS_CAP == 0) ? 32 : CYS_CAP*2;
-        CYS = realloc(CYS, CYS_CAP * sizeof(int));
-    }
-    CYS[CYS_N++] = i;
-}
-
-static void cyc_alive (int i) {
-    CYC[i].live = 1;
-    cys_push(i);
-}
-
-static void cyc_live (AVal v, int d) {
-    (void) d;
-    if (cyc_marked(v) && !CYC[v.u.o->clin].live) {
-        cyc_alive(v.u.o->clin);
-    }
-}
-
-static void cyc_visit (AVal v, int d) {
-    cyc_add(v, d);
-    cyc_inner(v, d);
-}
-
-static void cyc_freed (AVal v, int d) {
-    (void) d;
-    if (cyc_marked(v)) {
-        CycM* c = &CYC[v.u.o->clin];
-        if (c->live==0 && --c->in==0) {
-            c->live = 2;
-            cys_push(v.u.o->clin);
-        }
-    }
-}
-
-static void cyc_collect (AVal* vs, int n, int d) {
-    CYC_N = 0;
-    for (int i=0; i<n; i++) {
-        if (vs[i].type < A_TAB) {
-            continue;
-        }
-        // a name of an outer block keeps it, and all it reaches
-        if (!CYC_ANY && vs[i].type!=A_BOX && vs[i].u.o->ceil!=0 &&
-            (int)vs[i].u.o->ceil<d)
-        {
-            continue;
-        }
-        cyc_add(vs[i], d);
-    }
-    // what the candidates reach, in the order they are found, and,
-    // in the same pass, the references among them (trial deletion)
-    CYC_IN = 0;
-    for (int i=0; i<CYC_N; i++) {
-        cyc_refs(a_obj(CYC[i].o), cyc_visit, d);
-        if (CYC_ANY && CYC_N>CYC_MAX) {
-            // too much: it gives up
-            CYC_IN = 0;
-            break;
-        }
-    }
-    if (CYC_N == 0) {
-        return;
-    }
-    if (CYC_IN == 0) {
-        // no reference among the candidates: no cycle
-        for (int i=0; i<CYC_N; i++) {
-            CYC[i].o->pinned &= ~CYC_MARK;
-            CYC[i].o->clin = CYC[i].clin;
-        }
-        return;
-    }
-    // and from the names, which are about to go
-    for (int i=0; i<n; i++) {
-        if (cyc_marked(vs[i])) {
-            CYC[vs[i].u.o->clin].ext--;
-        }
-    }
-    CYS_N = 0;
-    for (int i=0; i<CYC_N; i++) {
-        if (CYC[i].ext > 0 && !CYC[i].live) {
-            cyc_alive(i);
-        }
-    }
-    while (CYS_N > 0) {
-        int j = CYS[--CYS_N];
-        cyc_refs(a_obj(CYC[j].o), cyc_live, d);
-    }
-    // What counting alone would free (as the names go, a value that no
-    // other garbage refers to, and so on) is left to it: what remains
-    // is in a cycle, or reached only through one.
-    CYS_N = 0;
-    for (int i=0; i<CYC_N; i++) {
-        if (!CYC[i].live && CYC[i].in==0) {
-            CYC[i].live = 2;
-            cys_push(i);
-        }
-    }
-    while (CYS_N > 0) {
-        int j = CYS[--CYS_N];
-        cyc_refs(a_obj(CYC[j].o), cyc_freed, d);
-    }
-    // the live ones are unmarked; the garbage keeps its mark meanwhile
-    int ngarb = 0;
-    for (int i=0; i<CYC_N; i++) {
-        AObj* o = CYC[i].o;
-        o->clin = CYC[i].clin;
-        if (CYC[i].live != 0) {
-            o->pinned &= ~CYC_MARK;
-        } else {
-            CYC[ngarb++].o = o;
-        }
-    }
-    if (ngarb == 0) {
-        return;
-    }
-    // Only the references among the garbage are cut: that breaks its
-    // cycles, and the rest is released as reference counting releases
-    // it, when the names go. A garbage value in no cycle has no such
-    // reference, and so it is left as it was. The garbage is held
-    // meanwhile, so that no cut frees anything (and no code runs), and
-    // it is copied, since a release may end blocks and reuse CYC.
-    int m = ngarb;
-    AObj** os = malloc(m * sizeof(AObj*));
-    for (int i=0; i<m; i++) {
-        os[i] = CYC[i].o;
-        os[i]->rc++;
-    }
-    for (int i=0; i<m; i++) {
-        AVal v = a_obj(os[i]);
-        switch (v.type) {
-            case A_TAB: {
-                ATab* t = A_TAB_OF(v);
-                // the keys of the entries to cut, then the cut
-                int nk = 0, ck = 0;
-                AVal* ks = NULL;
-                uint32_t pos = 0;
-                AVal k, x;
-                while (a_tab_next(t, &pos, &k, &x)) {
-                    if (cyc_marked(k) || cyc_marked(x)) {
-                        if (nk == ck) {
-                            ck = (ck == 0) ? 8 : ck*2;
-                            ks = realloc(ks, ck * sizeof(AVal));
-                        }
-                        ks[nk++] = k;
-                    }
-                }
-                for (int j=0; j<nk; j++) {
-                    a_tab_set(t, ks[j], a_nil());
-                }
-                free(ks);
-                break;
-            }
-            case A_FUNC:
-            case A_TASK: {
-                AFunc* fn = A_FUNC_OF(v);
-                for (int j=0; j<fn->ncap; j++) {
-                    if (cyc_marked(fn->caps[j])) {
-                        a_clr(&fn->caps[j]);
-                    }
-                }
-                break;
-            }
-            case A_BOX:
-                if (cyc_marked(A_BOX_OF(v)->v)) {
-                    a_clr(&A_BOX_OF(v)->v);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-    for (int i=0; i<m; i++) {
-        os[i]->pinned &= ~CYC_MARK;
-    }
-    for (int i=0; i<m; i++) {
-        a_dec(a_obj(os[i]));
-    }
-    free(os);
-}
-
-uint32_t a_muts = 0;
-
-void a_cycles (AVal* vs, int n, int d) {
-    cyc_collect(vs, n, d);
-}
-
-void a_orphan_x (AVal v) {
-    // a value that refers to no object is in no cycle
-    int ref = 0;
-    if (v.type == A_TAB) {
-        uint32_t pos = 0;
-        AVal k, x;
-        while (!ref && a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
-            ref = (k.type>=A_TAB || x.type>=A_TAB);
-        }
+    a_cpy(task, a_obj(&t->node.hdr));
+    AVal old = t->pub;
+    a_inc(v);
+    t->pub = v;
+    int d = node_adepth(&t->node);
+    if (old.type>=A_TAB && old.u.o->pinned==2 && (int)old.u.o->depth==d &&
+        !(old.type==v.type && old.u.o==v.u.o))
+    {
+        a_retire(old, d, &t->node.hdr);
     } else {
-        AFunc* f = A_FUNC_OF(v);
-        for (int i=0; !ref && i<f->ncap; i++) {
-            ref = (f->caps[i].type >= A_TAB);
-        }
+        a_dec(old);
     }
-    if (ref) {
-        cyc_collect(&v, 1, 0);
-    }
+    a_set(reg, a_bool(!a_out_reg_var(&t->pub, *task, v, d)));
+    return A_OK;
 }
 
-void a_args_end (AVal* vs, int n) {
-    for (int i=0; i<n; i++) {
-        AVal v = vs[i];
-        if ((v.type==A_TAB || v.type==A_FUNC || v.type==A_TASK) &&
-            v.u.o->pinned==0 && v.u.o->rc>1)
-        {
-            CYC_ANY = 1;
-            cyc_collect(&vs[i], 1, 0);
-            CYC_ANY = 0;
+void a_out_ended (AObj* o) {
+    for (int i=0; i<a_nouts; ) {
+        if (OUTS[i].v != o) {
+            i++;
+            continue;
         }
+        OutE e = OUTS[i];
+        OUTS[i] = OUTS[--a_nouts];
+        // the place goes back to nil, if it still refers to the value;
+        // a release here may end other values, and change the list
+        AVal v = a_obj(o);
+        if (e.slot != NULL) {
+            if (a_same(*e.slot, v)) {
+                a_clr(e.slot);
+            }
+            a_dec(e.box);
+        } else {
+            if (e.t.type==A_TAB && !a_is_fin(e.t) &&
+                a_same(a_tab_get(A_TAB_OF(e.t),e.k), v))
+            {
+                a_tab_set(A_TAB_OF(e.t), e.k, a_nil());
+            }
+            a_dec(e.t);
+            a_dec(e.k);
+        }
+        i = 0;
     }
 }
 
@@ -2562,32 +2741,175 @@ void a_unname_x (AVal* vs, int n, int d) {
 // block `d` only if it is their ceiling or an outer block: the names
 // that hold them must not see them finalized.
 static AObj*  ADOPT_BAD = NULL;
-static AObj** ADOPT_VIS = NULL;
-static int    ADOPT_N   = 0;
-static int    ADOPT_CAP = 0;
-static int adopt_rec (AVal v, int d, int root);
+static int    ADOPT_SHARED = 0;
 
-// `root`: the value itself is adopted, as by `pin x = v`; else it is
-// only held, and a named one is only referenced (`pin_kid`).
+// The values that a pin adopts, found by a visit. Each one gets the
+// number of references that come to it from the others (`in`): a value
+// that has more references than those is also held elsewhere (by a name,
+// whose ceiling no longer reaches what that name holds, or by a table of
+// another owner), and so it is only referenced, with all it holds. The
+// value at the top may also have one reference from where it is going
+// (the variable of the pin, or the temporary of a store).
+typedef struct AdoptV {
+    AObj*    o;
+    uint32_t clin;      // saved: the index of the value meanwhile
+    int      in;
+    int      ext;
+} AdoptV;
+
+static AdoptV* ADOPT_VIS = NULL;
+static int     ADOPT_N   = 0;
+static int     ADOPT_CAP = 0;
+// the values left marked (7) as not adopted, until `adopt_end`
+static AObj**  ADOPT_EXT   = NULL;
+static int     ADOPT_NEXT  = 0;
+static int     ADOPT_CEXT  = 0;
+
+#define ADOPT_SEEN 5
+#define ADOPT_OUT  7
+
+static int adopt_rec (AVal v, int d, int top);
+
+static int adopt_data (AObj* o) {
+    return o->type==A_TAB || o->type==A_FUNC || o->type==A_TASK;
+}
+
+// The values that `v` refers to, for `f`.
+static void adopt_kids (AVal v, void (*f)(AVal)) {
+    switch (v.type) {
+        case A_TAB: {
+            uint32_t pos = 0;
+            AVal k, x;
+            while (a_tab_next(A_TAB_OF(v), &pos, &k, &x)) {
+                f(k);
+                f(x);
+            }
+            break;
+        }
+        case A_FUNC:
+        case A_TASK: {
+            AFunc* fn = A_FUNC_OF(v);
+            for (int i=0; i<fn->ncap; i++) {
+                f(fn->caps[i]);
+            }
+            break;
+        }
+        case A_XTASK:
+            f(A_TASK_OF(v)->pub);
+            f(A_TASK_OF(v)->ret);
+            break;
+        case A_NAT: {
+            ANat* n = A_NAT_OF(v);
+            for (int i=0; i<n->nholds; i++) {
+                f(n->holds[i]);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+static int*    ADOPT_STK   = NULL;
+static int     ADOPT_NSTK  = 0;
+static int     ADOPT_CSTK  = 0;
+
+static void adopt_out (AVal v) {
+    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned!=ADOPT_SEEN) {
+        return;
+    }
+    AdoptV* x = &ADOPT_VIS[v.u.o->clin];
+    if (x->ext) {
+        return;
+    }
+    x->ext = 1;
+    if (ADOPT_NSTK == ADOPT_CSTK) {
+        ADOPT_CSTK = (ADOPT_CSTK == 0) ? 16 : ADOPT_CSTK*2;
+        ADOPT_STK = realloc(ADOPT_STK, ADOPT_CSTK * sizeof(int));
+    }
+    ADOPT_STK[ADOPT_NSTK++] = v.u.o->clin;
+}
+
+// `root`: the value itself is adopted, as by `pin x = v`, and it is an
+// error if it is held elsewhere; else it is only held, and then it may
+// be only referenced. Leaves the values that are not adopted marked:
+// `adopt_end` unmarks them, after the pin.
 static int adopt_ok (AVal v, int d, int root) {
     ADOPT_N = 0;
     int ok = adopt_rec(v, d, root);
-    // the marks of the visit are undone
-    for (int i=0; i<ADOPT_N; i++) {
-        ADOPT_VIS[i]->pinned = 0;
+    int n = ADOPT_N;
+    if (ok && n>0) {
+        // held elsewhere: more references than those from the others
+        for (int i=0; i<n; i++) {
+            AdoptV* x = &ADOPT_VIS[i];
+            int own = (i == 0) ? 1 : 0;
+            // a named value: its names count too, and its ceiling
+            // decides (`adopt_rec`)
+            if (adopt_data(x->o) && x->o->ceil==0 && x->o->rc-x->in-own>0) {
+                if (i==0 && root) {
+#ifndef ATM_PIN_UNCHECKED
+                    ADOPT_BAD = x->o;
+                    ADOPT_SHARED = 1;
+                    ok = 0;
+                    break;
+#else
+                    continue;
+#endif
+                }
+                adopt_out(a_obj(x->o));
+            }
+        }
+        // and what they hold, with them
+        while (ok && ADOPT_NSTK>0) {
+            int j = ADOPT_STK[--ADOPT_NSTK];
+            adopt_kids(a_obj(ADOPT_VIS[j].o), adopt_out);
+        }
+        ADOPT_NSTK = 0;
+    }
+    ADOPT_NEXT = 0;
+    for (int i=0; i<n; i++) {
+        AdoptV* x = &ADOPT_VIS[i];
+        x->o->clin = x->clin;
+        if (ok && x->ext) {
+            x->o->pinned = ADOPT_OUT;
+            if (ADOPT_NEXT == ADOPT_CEXT) {
+                ADOPT_CEXT = (ADOPT_CEXT == 0) ? 16 : ADOPT_CEXT*2;
+                ADOPT_EXT = realloc(ADOPT_EXT, ADOPT_CEXT * sizeof(AObj*));
+            }
+            ADOPT_EXT[ADOPT_NEXT++] = x->o;
+        } else {
+            x->o->pinned = 0;
+        }
     }
     return ok;
 }
 
-static int adopt_rec (AVal v, int d, int root) {
-    // pinned, or already visited (a cycle among unpinned values)
-    if (v.type<A_TAB || v.type==A_BOX || v.u.o->pinned) {
+static void adopt_end (void) {
+    for (int i=0; i<ADOPT_NEXT; i++) {
+        if (ADOPT_EXT[i]->pinned == ADOPT_OUT) {
+            ADOPT_EXT[i]->pinned = 0;
+        }
+    }
+    ADOPT_NEXT = 0;
+}
+
+static int adopt_rec (AVal v, int d, int top) {
+    if (v.type<A_TAB || v.type==A_BOX) {
         return 1;
     }
     AObj* o = v.u.o;
+    // already visited (a cycle, or a value held twice)
+    if (o->pinned == ADOPT_SEEN) {
+        ADOPT_VIS[o->clin].in++;
+        return 1;
+    }
+    // pinned
+    if (o->pinned) {
+        return 1;
+    }
     // a named value that is held by a holder inside the block of its
     // name is only referenced
-    if (!root && o->ceil!=0 && d>(int)o->ceil) {
+    if (!top && o->ceil!=0 && d>(int)o->ceil) {
         return 1;
     }
     if (o->ceil!=0 && d>o->ceil) {
@@ -2596,10 +2918,12 @@ static int adopt_rec (AVal v, int d, int root) {
     }
     if (ADOPT_N == ADOPT_CAP) {
         ADOPT_CAP = (ADOPT_CAP == 0) ? 16 : ADOPT_CAP*2;
-        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AObj*));
+        ADOPT_VIS = realloc(ADOPT_VIS, ADOPT_CAP * sizeof(AdoptV));
     }
-    ADOPT_VIS[ADOPT_N++] = o;
-    o->pinned = 5;
+    // the first one is the value that goes to its owner
+    ADOPT_VIS[ADOPT_N] = (AdoptV) { o, o->clin, (ADOPT_N==0) ? 0 : 1, 0 };
+    o->clin   = ADOPT_N++;
+    o->pinned = ADOPT_SEEN;
     switch (v.type) {
         case A_TAB: {
             uint32_t pos = 0;
@@ -2644,12 +2968,20 @@ static AStatus adopt_err (const char* what) {
     AVal v = a_obj(o);
     const char* type = (v.type == A_XTASK) ? "task" :
                        (v.type == A_TASKS) ? "pool" : a_typename(v);
+    if (ADOPT_SHARED) {
+        ADOPT_SHARED = 0;
+        return a_error("invalid %s : shared %s", what, type);
+    }
     uint32_t lin = o->clin;
     return a_error("invalid %s : %s named at %s:%d", what, type,
         atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
 }
 
 AStatus a_hold (AObj* h, AVal v) {
+#ifdef ATM_PIN_OFF
+    (void) h; (void) v; return A_OK;
+#endif
+#ifndef ATM_PIN_UNCHECKED
     int p = a_pdepth(v);
     if (p > (int)h->depth) {
         // An unpinned holder that only its name refers to may receive a
@@ -2663,11 +2995,13 @@ AStatus a_hold (AObj* h, AVal v) {
             return a_err_pinned(v);
         }
     }
+#endif
     if (h->pinned) {
         if (!adopt_ok(v, h->depth, 0)) {
             return adopt_err("pin");
         }
         pin_kid(v, h->depth);
+        adopt_end();
     } else if (h->ceil != 0) {
         // the names of the holder see it too
         a_ceil(v, h->ceil, h->clin);
@@ -2737,13 +3071,18 @@ AStatus a_pin (AVal* slot) {
     }
     // an unpinned value is pinned at its floor or deeper, and at its
     // ceiling or outer
+#ifndef ATM_PIN_UNCHECKED
     if (a_pdepth(v) > a_depth) {
         return a_err_pinned(v);
     }
+#endif
+#ifndef ATM_PIN_OFF
     if (!adopt_ok(v, a_depth, 1)) {
         return adopt_err("pin");
     }
+#endif
     pin_deep(v, a_depth, 1);
+    adopt_end();
     return A_OK;
 }
 
@@ -3172,13 +3511,18 @@ AStatus a_pin_set (AVal* slot, AVal v, int d) {
         if ((v.type==A_XTASK || v.type==A_TASKS) && is_up((ANode*)v.u.o)) {
             return a_error("invalid assignment : unexpected parent task");
         }
+#ifndef ATM_PIN_UNCHECKED
         if (a_pdepth(v) > d) {
             return a_err_pinned(v);
         }
+#endif
+#ifndef ATM_PIN_OFF
         if (!adopt_ok(v, d, 1)) {
             return adopt_err("pin");
         }
+#endif
         pin_deep(v, d, 1);
+        adopt_end();
     }
     AVal old = *slot;
     a_inc(v);
@@ -3300,6 +3644,9 @@ static void clr_deep (AVal v, uint32_t d) {
     } else {
         o->pinned = A_FIN;
         o->depth  = 0;
+    }
+    if (a_nouts > 0) {
+        a_out_ended(o);
     }
     switch (v.type) {
         case A_TAB: {

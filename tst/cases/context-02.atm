@@ -1,0 +1,15 @@
+;; #1: a task inside emits outward: it leaves the context first
+spawn {
+    loop on :hit { print "hit" }
+}
+spawn {
+    context (\{ print "+A" }, \{ print "-A" }) {
+        loop on :draw {
+            print "a1"
+            emit @:global :hit
+            print "a2"
+        }
+    }
+}
+emit :draw
+print "end"

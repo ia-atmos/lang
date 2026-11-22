@@ -1,0 +1,6 @@
+warn-cycle-01.atm : line 6 : near 'g' : warning : unpinned cycle : the function refers to 'g', which holds it (expected 'func g' or 'pin var g')
+warn-cycle-01.atm : line 21 : near 'f' : warning : unpinned cycle : the function refers to 'f', which holds it (expected 'func f' or 'pin var f')
+a
+b
+c
+1
