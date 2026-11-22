@@ -23,7 +23,7 @@ The branch of this session is `iter`.
 | `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
 | `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Remark put to him on 2026-11-22; decision after `#4` |
 | `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Found 2026-11-22; to fix on a branch and send to `main` through `atmos-lang` |
-| `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Put to him on 2026-11-22, recommended `#16a` (both); waiting |
+| `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Decided 2026-11-22: `#16a` (his answer: "a"); on the branch `iter` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
@@ -139,6 +139,12 @@ On the branch `iter`, reversible by not merging:
 
 ## D. Decided by the author
 
+- `#16` (2026-11-22): `#16a`, `iter.keys(t)` and `iter.values(t)`. On
+  the branch: native iterators over a table or a pool (a pool gives
+  positions and tasks), in the order of the walk; they hold the
+  collection as a closure would, so they do not escape the block of a
+  pinned one (`iter-err-02`); `make test` with `ATMOS_ASAN=1` passes.
+
 - `#4` (2026-11-22): `#4b`, the variables of `loop ... in` keep their
   meaning (one variable over a table is the key). He noted that with
   `#4a` an `iter.values` would be needed too.
@@ -182,6 +188,20 @@ On the branch `iter`, reversible by not merging:
 - `vector.remove(t, i)` inside `loop i, v in t`: the element that
   follows is not visited, with no error (`#7`).
 - A string is not iterable (`invalid loop : unexpected string`).
+
+## Work known, not done
+
+- `#15`, the fix. The position of a walk must stop depending on `an`
+  and on the compaction of the other keys. Easy part: a position that
+  says which part it is in (a bit), so that a vector that grows does
+  not move the walk of the other keys. Hard part: `rehash` drops the
+  tombstones and moves the live keys left, and the walk cannot tell by
+  how much; resuming from the last key fails when that key was the one
+  removed (the case of `#15`). Candidates: count the walks in progress
+  on a table and not compact while there are any; or keep the
+  tombstones until the part is twice as large. Not started: the
+  promise it keeps (keys added are visited, removed are not, the
+  others once) is a rule for `#7`.
 
 ## C. What was read in the ports (sdl-pingus, snxkx)
 
