@@ -3504,22 +3504,141 @@ static int node_dropped (ANode* n) {
 // the list holds one reference to each. The key is the place: the slot
 // of a `pin`, or the table or task whose field or `pub` it left. They
 // are finalized when the place is: at the end of its block.
-typedef struct { AObj* o; int d; const void* key; } ARet;
+typedef struct {
+    AObj*       o;
+    int         d;
+    const void* key;
+    int         prev, next;     // the chain of the same key, or free
+} ARet;
 static ARet* RETS  = NULL;
 static int   CRETS = 0;
-int a_nrets = 0;
+static int   FRETS = -1;        // free entries
+int a_nrets = 0;                // entries in use
 #define NRETS a_nrets
+
+// A map from a pointer to an entry (open addressing; empty: NULL): one
+// by place (the first entry of its chain), one by value.
+typedef struct { const void* p; int e; } PSlot;
+typedef struct { PSlot* v; int c; int n; } PMap;
+#define PMAP_DEL ((const void*)1)
+static PMap RETS_K = { NULL, 0, 0 };
+static PMap RETS_O = { NULL, 0, 0 };
+
+static uint32_t pmap_hash (const void* p) {
+    uintptr_t x = (uintptr_t) p;
+    x ^= x >> 17;
+    x *= 0x9E3779B1u;
+    return (uint32_t) (x ^ (x >> 15));
+}
+
+static int pmap_slot (PMap* m, const void* p) {
+    uint32_t k = m->c - 1;
+    uint32_t i = pmap_hash(p) & k;
+    int del = -1;
+    while (m->v[i].p != NULL) {
+        if (m->v[i].p == p) {
+            return i;
+        }
+        if (m->v[i].p==PMAP_DEL && del<0) {
+            del = i;
+        }
+        i = (i + 1) & k;
+    }
+    return (del >= 0) ? del : (int)i;
+}
+
+// The entry of `p`, or -1.
+static int pmap_get (PMap* m, const void* p) {
+    if (m->c == 0) {
+        return -1;
+    }
+    int i = pmap_slot(m, p);
+    return (m->v[i].p == p) ? m->v[i].e : -1;
+}
+
+static void pmap_put (PMap* m, const void* p, int e) {
+    if ((m->n+1)*2 > m->c) {
+        PSlot* old = m->v;
+        int    n   = m->c;
+        m->c = (n == 0) ? 64 : n*2;
+        m->v = calloc(m->c, sizeof(PSlot));
+        m->n = 0;
+        for (int i=0; i<n; i++) {
+            if (old[i].p!=NULL && old[i].p!=PMAP_DEL) {
+                m->v[pmap_slot(m, old[i].p)] = old[i];
+                m->n++;
+            }
+        }
+        free(old);
+    }
+    int i = pmap_slot(m, p);
+    if (m->v[i].p == NULL) {
+        m->n++;
+    }
+    m->v[i].p = p;
+    m->v[i].e = e;
+}
+
+static void pmap_del (PMap* m, const void* p) {
+    if (m->c == 0) {
+        return;
+    }
+    int i = pmap_slot(m, p);
+    if (m->v[i].p == p) {
+        m->v[i].p = PMAP_DEL;
+    }
+}
+
+static void pmap_free (PMap* m) {
+    free(m->v);
+    m->v = NULL;
+    m->c = 0;
+    m->n = 0;
+}
+
+// Takes the entry `i` out of its chain and of the maps, and frees it.
+static ARet ret_take (int i) {
+    ARet r = RETS[i];
+    if (r.prev >= 0) {
+        RETS[r.prev].next = r.next;
+    } else if (r.next >= 0) {
+        pmap_put(&RETS_K, r.key, r.next);
+    } else {
+        pmap_del(&RETS_K, r.key);
+    }
+    if (r.next >= 0) {
+        RETS[r.next].prev = r.prev;
+    }
+    pmap_del(&RETS_O, r.o);
+    RETS[i].o    = NULL;
+    RETS[i].next = FRETS;
+    FRETS = i;
+    NRETS--;
+    return r;
+}
 
 static void ret_release (AObj* o);
 
 static void ret_add (AObj* o, int d, const void* key) {
-    if (NRETS == CRETS) {
-        CRETS = (CRETS == 0) ? 8 : CRETS*2;
+    if (FRETS < 0) {
+        int n = CRETS;
+        CRETS = (n == 0) ? 8 : n*2;
         RETS  = realloc(RETS, CRETS * sizeof(ARet));
+        for (int i=CRETS-1; i>=n; i--) {
+            RETS[i].o    = NULL;
+            RETS[i].next = FRETS;
+            FRETS = i;
+        }
     }
-    RETS[NRETS].o   = o;
-    RETS[NRETS].d   = d;
-    RETS[NRETS].key = key;
+    int i = FRETS;
+    FRETS = RETS[i].next;
+    int h = pmap_get(&RETS_K, key);
+    RETS[i] = (ARet) { o, d, key, -1, h };
+    if (h >= 0) {
+        RETS[h].prev = i;
+    }
+    pmap_put(&RETS_K, key, i);
+    pmap_put(&RETS_O, o, i);
     NRETS++;
 }
 
@@ -3593,14 +3712,11 @@ static void ret_children (AVal v, int d, const void* key) {
 }
 
 static const void* ret_remove (AObj* o) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (RETS[i].o == o) {
-            const void* key = RETS[i].key;
-            RETS[i] = RETS[--NRETS];
-            return key;
-        }
+    int i = pmap_get(&RETS_O, o);
+    if (i < 0) {
+        return NULL;
     }
-    return NULL;
+    return ret_take(i).key;
 }
 
 // The list has the last reference: the value goes now.
@@ -3614,27 +3730,33 @@ static void ret_release (AObj* o) {
     a_dec(v);
 }
 
+static void ret_end_one (ARet r) {
+    AVal v = a_obj(r.o);
+    if (r.o->pinned==4 && (int)r.o->depth==r.d) {
+        r.o->pinned = 2;
+        clr_deep(v, r.d);
+    }
+    a_dec(v);
+}
+
 // The place `key` ends (NULL: all of them): what left it and is still
 // alive, in practice a cycle, is finalized as a pin of its block.
 void a_ret_end (const void* key) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (i >= NRETS) {
-            i = NRETS;
-            continue;
+    if (key == NULL) {
+        // all of them: the list may change at each one
+        while (NRETS > 0) {
+            for (int i=0; i<CRETS; i++) {
+                if (RETS[i].o != NULL) {
+                    ret_end_one(ret_take(i));
+                    break;
+                }
+            }
         }
-        if (key!=NULL && RETS[i].key!=key) {
-            continue;
-        }
-        ARet r = RETS[i];
-        RETS[i] = RETS[--NRETS];
-        AVal v = a_obj(r.o);
-        if (r.o->pinned==4 && (int)r.o->depth==r.d) {
-            r.o->pinned = 2;
-            clr_deep(v, r.d);
-        }
-        a_dec(v);
-        // the list may have changed
-        i = NRETS;
+        return;
+    }
+    int i;
+    while ((i = pmap_get(&RETS_K, key)) >= 0) {
+        ret_end_one(ret_take(i));
     }
 }
 
@@ -3642,21 +3764,13 @@ void a_ret_end (const void* key) {
 // still referred to is no longer owned by a place, and stays confined
 // to its block by its floor.
 void a_ret_forget (AObj* o) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (i >= NRETS) {
-            i = NRETS;
-            continue;
-        }
-        if (RETS[i].key != o) {
-            continue;
-        }
-        ARet r = RETS[i];
-        RETS[i] = RETS[--NRETS];
+    int i;
+    while ((i = pmap_get(&RETS_K, o)) >= 0) {
+        ARet r = ret_take(i);
         if (r.o->pinned == 4) {
             r.o->pinned = 0;
         }
         a_dec(a_obj(r.o));
-        i = NRETS;
     }
 }
 
@@ -4273,6 +4387,9 @@ void a_task_quit (void) {
     ADOPT_CAP = 0;
     free(RETS);
     RETS  = NULL;
+    FRETS = -1;
+    pmap_free(&RETS_K);
+    pmap_free(&RETS_O);
     a_nrets = 0;
     CRETS = 0;
 }
