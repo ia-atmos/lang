@@ -11,16 +11,18 @@ other sessions. The branch of this session is `tag-rebased` (the author, 2026-11
 |---|---|---|
 | `#1` | Where the tag lives: a plain key `"tag"` (today, with the skip of `atmos-iter#14a`) or a field in the header of `ATab`, out of the keys | Decided 2026-11-22: `#1b` (his answer: "B") |
 | `#2` | How a program reaches the tag: `t.tag` and `t@"tag"` both reach the header, only `t.tag`, or a new form | Decided 2026-11-22: `#2a` (his answer: "A"); on the branch `tag-rebased` |
-| `#3` | What a tag may hold: a string or nil only (the prototype), or any value | Put to him on 2026-11-22, recommended `#3a` |
+| `#3` | What a tag may hold: a string or nil only (the prototype), or any value | Decided 2026-11-22: `#3a` (his answer: "a"); on the branch |
+| `#4` | Whether a tag is its own type at run time, or stays a string (`:x == 'x'`) | Put to him on 2026-11-22, recommended `#4a` |
 
 ## A. Waiting for the author (one at a time)
 
-- `#3` (2026-11-22). `#3a` a tag is a string or nil; `set t.tag = 10`
-  and `X.load("[tag=[]]")` are errors; `nil` removes the tag (the
-  prototype). `#3b` any value, as a key holds today: then the walks
-  of pin and of the cycles (`rt/task.c`, nine of them) must also visit
-  the header, or a table held only as a tag escapes its block. In the
-  ports every tag written is a tag or the tag of another table.
+- `#4` (2026-11-22). `#4a` a tag stays a string at run time
+  (`:x == 'x'`, `type(:x)` is `:string`), as the manual says today;
+  the header field of `#1b` already gives `??` and `match` their speed
+  (no lookup), and strings are interned, so `==` is a pointer compare.
+  `#4b` its own type (`:tag`): `:x != 'x'`, `type`, `tostring`, the
+  keys `t.x`/`t@:x` (two keys for one name?), `X.load`/`X.dump` and
+  the ports (`??` with strings, `t.tag == "Pos"`) change.
 
 ## Settled by the session, to be confirmed
 
@@ -37,7 +39,6 @@ On the branch `tag-rebased`, reversible by not merging:
   (`[tag="not a tag!", 1]`, was last; `dump-01.out` changed). Manual:
   a paragraph in "Hierarchical Tags". Cases `tag-01`, `tag-err-01`,
   `tag-err-02`.
-- `#3a` in the prototype, pending his answer.
 
 ## D. Decided by the author
 
@@ -45,9 +46,10 @@ On the branch `tag-rebased`, reversible by not merging:
   `ATab`, never a key.
 - `#2` (2026-11-22): `#2a`, the name `tag` is reserved: `t.tag`,
   `t@("tag")`, `set t.tag` and `[tag=...]` all reach the header.
+- `#3` (2026-11-22): `#3a`, a tag is a string or nil; any other value
+  is an error (golden `0243` accepted as a departure).
 
 ## Later (not yet put to him)
 
-- Whether a tag is its own type at run time (today a string).
 - `atmos-iter` told on 2026-11-22 that `#1b` is decided; it drops the
   skip of `#14a` when `tag` merges.
