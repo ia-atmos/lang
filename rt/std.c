@@ -252,6 +252,71 @@ static AStatus std_filter (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
+// The iterators of `iter.keys` and `iter.values`: the captures are the
+// table or pool, the position of the walk, and the last key.
+static AStatus iter_step (AFunc* self, int key) {
+    AVal* c = self->caps;
+    AVal k = a_nil(), v = a_nil();
+    a_cpy(&k, c[2]);
+    AStatus st = a_next(c[0], a_nil(), &c[1], &k, &v);
+    if (st != A_OK) {
+        a_clr(&k);
+        a_clr(&v);
+        return st;
+    }
+    a_cpy(&c[2], k);
+    if (k.type == A_NIL) {
+        a_push(a_nil());
+    } else {
+        a_pushc(key ? k : v);
+    }
+    a_clr(&k);
+    a_clr(&v);
+    return A_OK;
+}
+
+static AStatus keys_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    return iter_step(self, 1);
+}
+
+static AStatus values_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    return iter_step(self, 0);
+}
+
+static AStatus iter_of (const char* name, AFn fn, int argc, AVal* argv) {
+    AVal xs = arg(argc, argv, 0);
+    if (xs.type!=A_TAB && xs.type!=A_TASKS) {
+        return a_error("invalid argument to '%s' : expected table or tasks : got %s",
+            name, a_typename(xs));
+    }
+    AVal it = a_func(fn, 3);
+    a_inc(xs);
+    A_FUNC_OF(it)->caps[0] = xs;
+    A_FUNC_OF(it)->caps[1] = a_nil();
+    A_FUNC_OF(it)->caps[2] = a_nil();
+    a_func_scope(it);
+    a_push(it);
+    return A_OK;
+}
+
+// iter.keys(xs): an iterator over the keys of the table or pool `xs`,
+// in the order of the walk: `loop k in iter.keys(t) {...}`.
+static AStatus std_keys (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return iter_of("keys", keys_next, argc, argv);
+}
+
+// iter.values(xs): an iterator over the values of the table or pool
+// `xs`, in the order of the walk: `loop v in iter.values(t) {...}`.
+static AStatus std_values (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    return iter_of("values", values_next, argc, argv);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // MATH
 ///////////////////////////////////////////////////////////////////////////////
@@ -831,6 +896,8 @@ void atm_std_init (void) {
     atm_g_iter = a_tab();
     field(atm_g_iter, "find",   std_find);
     field(atm_g_iter, "filter", std_filter);
+    field(atm_g_iter, "keys",   std_keys);
+    field(atm_g_iter, "values", std_values);
 
     atm_g_X = a_tab();
     field(atm_g_X, "tostring", x_tostring);
