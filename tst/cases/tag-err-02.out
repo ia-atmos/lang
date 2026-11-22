@@ -1,0 +1,4 @@
+==> ERROR:
+ |  tag-err-02.atm:1 (call)
+ v  tag-err-02.atm:1 (throw)
+==> invalid load : line 1 : invalid tag : expected string

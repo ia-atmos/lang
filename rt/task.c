@@ -1579,9 +1579,7 @@ static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (tog.type==A_NIL || evt.type!=A_TAB) {
         return 0;
     }
-    AVal k = a_strz("tag");
-    AVal tag = a_tab_get(A_TAB_OF(evt), k);
-    a_dec(k);
+    AVal tag = A_TAB_OF(evt)->tag;
     AVal b = a_tab_get(A_TAB_OF(evt), a_int(0));
     if (b.type!=A_BOOL || !a_gte(tog, tag)) {
         return 0;

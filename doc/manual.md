@@ -282,6 +282,22 @@ Tags can also be used to "tag" tables, introducing the notion of lightweight
 user types in Atmos.
 The constructor `:Pos [x=10,y=20]` is equivalent to `[tag=:Pos,x=10,y=20]`.
 
+The tag of a table is not one of its keys: the name `tag` is reserved in
+tables, and `t.tag`, `t@("tag")`, `set t.tag = :Q` and the field `tag=` of
+a constructor all read or write the tag.
+A loop over the table, its length `#`, and `next` do not see it, while
+`??`, `match`, `X.copy`, `X.dump` and `++` carry it (the tag of `a ++ b`
+is the tag of `b`, or else the tag of `a`).
+A tag is a string or `nil` (no tag); assigning any other value is an error.
+
+```
+pin t = :T [10, 20]
+loop k, v in t {
+    print(k, v)     ;; --> 0 10, then 1 20 (no tag)
+}
+print(#t, t.tag)    ;; --> 2, T
+```
+
 Tags can describe type hierarchies by splitting identifiers with (`.`).
 For instance, a tag such as `:T.A.x` is a subtype of `:T`, `:T.A`, and
 `:T.A.x` at the same time, as verified by the

@@ -1,0 +1,22 @@
+;; the tag is in the header of the table, never one of its keys
+pin t = :T.A [10, 20, x=1]
+loop k, v in t {
+    print(k, v)
+}
+print(#t, t.tag, t@("tag"), t ?? :T)
+set t.tag = :Q
+print(t.tag, t ?? :T, t ?? :Q)
+set t@("tag") = nil
+print(t.tag, t ?? :Q)
+pin u = [tag=:U, y=2]
+print(u.tag, u ?? :U, u ?? :U [y=2], u ?? :U.V [], u ?? [tag=:U])
+pin c = X.copy(:C [1])
+print(c.tag, #c)
+pin p = :A [1] ++ :B [x=2]
+print(p.tag, p@0, p.x)
+pin q = :A [1] ++ [x=2]
+print(q.tag)
+print(X.dump(:P [x=1, 2]), X.dump([tag="a b", 1]))
+pin l = X.load(":L [1, tag2=2]")
+print(l.tag, l.tag2, X.load("[tag='z']").tag)
+print(X.tostring(:S [1]))

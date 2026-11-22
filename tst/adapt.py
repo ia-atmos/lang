@@ -73,6 +73,7 @@ ADAPT = {
     '0235': { 'sub': PUSH },
     '0241': { 'ops': True, 'accept': '?? compares tables field by field' },
     '0242': { 'ops': True },
+    '0243': { 'accept': 'a tag is a string or nil (atmos-tag#3a)' },
     '0244': { 'sub': [('(\\===)(', 'X.eq(')] },
     '0253': END,
     '0254': END,
