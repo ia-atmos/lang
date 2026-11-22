@@ -3541,7 +3541,11 @@ does not see the event, nor do the trails on the path; outside the
 The grabs of a `grabbable` form a stack: the most recent one whose
 patterns match the event captures it, and its end gives the events back
 to the previous one. A `grab` that captures the time (as `<!:draw>`)
-stops the timers outside it, which go on from where they were. A
+stops the timers outside it, which go on from where they were (the
+pause of a game). A clock event is a number, so a `grab` that leaves
+the time running names it in a predicate, as in
+`grab <until ((it != :draw) && (type(it) != :number))>` (a modal over
+a GUI with a clock). A
 `grab` evaluates to the value of its block.
 
 Examples:
