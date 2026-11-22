@@ -9,8 +9,8 @@ The branch of this session is `iter`.
 
 | Item | Title | State |
 |---|---|---|
-| `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Put to him on 2026-11-20, recommended `#1a` (a library `iter`); `#1a` on the branch `iter`, by the session, to be confirmed |
-| `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Open, after `#1` |
+| `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
+| `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Put to him on 2026-11-22, recommended `#2a`; `#2a` on the branch `iter`, by the session, to be confirmed |
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Remark put to him on 2026-11-20; decision open |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Open |
@@ -21,9 +21,10 @@ The branch of this session is `iter`.
 
 ## A. Waiting for the author (one at a time)
 
-- `#1`. Options: `#1a` a library `iter` (`iter.find(xs, f)`,
-  recommended); `#1b` globals, as on the branch `pool`; `#1c` the
-  library of each collection (`vector.filter`, `tasks.find`).
+- `#2`. Options: `#2a` what `loop ... in` walks but `nil` (a table,
+  a pool, a number, a function), and a user value is walked by giving
+  a function (recommended); `#2b` tables and pools only; `#2c` as
+  `#2a`, and a user value may also say how it is walked (a field).
 
 ## Settled by the session, to be confirmed (rule `atmos-lang#95`)
 
@@ -41,6 +42,17 @@ On the branch `iter`, reversible by not merging:
 - 2026-11-21: `main` at `d19d40f` (the branch `float`) brought into
   `iter` (`535efb0`) with no conflict; `make test` with `ATMOS_ASAN=1`
   passes. The prototype has no word "real" to change.
+
+- `#2a` (2026-11-22): `iter.find` and `iter.filter` also take a number
+  (`v` from `0` to `n-1`, `k` nil) and a function (`v`, `k` the first
+  two values of each call), through the same `a_next` as `loop`;
+  `nil` is left out (a walk with no end). Case `iter-01`; `make test`
+  with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
+
+## D. Decided by the author
+
+- `#1` (2026-11-22): `#1a`, the functions over iterables live in a
+  library `iter`, the collection first.
 
 ## Received
 
