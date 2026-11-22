@@ -2905,6 +2905,12 @@ loop i in 3 {
 ```
 
 ```
+loop in 3 {         ;; with no variable: three times
+    print("hello")
+}
+```
+
+```
 loop i,v in [10,20,30] {
     print(i,v)      ;; --> (0,10), (1,20), (2,30)
 }
