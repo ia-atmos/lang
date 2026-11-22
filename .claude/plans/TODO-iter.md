@@ -182,6 +182,11 @@ On the branch `iter`, reversible by not merging:
   while walking is allowed) and of `map` (a nil result is left out),
   stated to him with the merge and not objected to.
 
+- 2026-11-22: `tag-rebased` merged into `main` (`98e4787`), the tag is
+  no longer a key; the skip of `#14a` in `a_next` removed on `iter`
+  (`526031c`, a fast-forward of `main`), `make test` with
+  `ATMOS_ASAN=1` passes; sent to `atmos-lang` to fast-forward.
+
 ## Measured
 
 - `atmos-lang`, 2026-11-22, `iter` `3ee56a0` against `main` `a664b68`,
