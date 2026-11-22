@@ -186,4 +186,5 @@ On the branch `context` (2026-11-20), with B lazy and the syntax
 
 ## 8. Decided
 
-(nothing yet)
+- 2026-11-22, the author: B, lazy (section 3). The implementation of
+  section 7 stands.

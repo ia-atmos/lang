@@ -11,7 +11,7 @@ session, never reused; from another session, `session#N`.
 
 | # | Item | Kind | State |
 |---|---|---|---|
-| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | by the session, to be confirmed (2026-11-20): around each resume, lazy; on the branch `context` |
+| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | decided by the author (2026-11-22): B, around each resume, lazy (as on the branch `context`) |
 | #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | by the session, to be confirmed: no filter |
 | #3 | `leave` receives what `enter` returned | decision | by the session, to be confirmed: yes |
 | #4 | Syntax | decision | by the session, to be confirmed: `context (enter, leave) {...}`, two functions (`\{...}`, `\(old) {...}`); `context` becomes a keyword |
@@ -32,10 +32,7 @@ session, never reused; from another session, `session#N`.
 
 ## Waiting for the author (one at a time, in this order)
 
-- **#1 When enter and leave run** (asked 2026-11-18): around each
-  resume of a task inside, lazy (recommended), or once around the block
-  per emit. See `261118-context-semantics.md`, sections 3 to 6.
-- #2 Filter: bracket every reaction inside, or only those to some
+- **#2 Filter** (asked 2026-11-22): bracket every reaction inside, or only those to some
   events (`context ... with :draw`)? Recommended: no filter (the lazy
   switch already costs nothing when nothing inside awakes).
 - #3 Can `leave` receive what `enter` returned (the pico idiom
@@ -101,7 +98,7 @@ Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 
 | # | Taken | Tests |
 |---|---|---|
-| #1 | around each resume, lazy | context-01 to 05 |
+| #1 | around each resume, lazy (decided 2026-11-22) | context-01 to 05 |
 | #2 | no filter | context-06 |
 | #3 | `leave` receives what `enter` returned | context-07 |
 | #4 | `context (enter, leave) {...}` | ast context-1, context-err-1 |
@@ -114,4 +111,6 @@ it awaits.
 
 ## Decided
 
-(nothing yet)
+- #1 (2026-11-22, the author, "B"): `enter` and `leave` run around each
+  resume of code that lives in the block, lazily; see
+  `261118-context-semantics.md`, sections 3 to 6 and 8.
