@@ -10,7 +10,7 @@ The branch of this session is `iter`.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
-| `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Put to him on 2026-11-22, recommended `#2a`; `#2a` on the branch `iter`, by the session, to be confirmed |
+| `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Remark put to him on 2026-11-20; decision open |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Open |
@@ -41,10 +41,6 @@ The branch of this session is `iter`.
   mark in the header of the loop; `#11c` the default walk changes to
   the vector part only (touches the 1490 loops).
 
-- `#2`. Options: `#2a` what `loop ... in` walks but `nil` (a table,
-  a pool, a number, a function), and a user value is walked by giving
-  a function (recommended); `#2b` tables and pools only; `#2c` as
-  `#2a`, and a user value may also say how it is walked (a field).
 
 ## Settled by the session, to be confirmed (rule `atmos-lang#95`)
 
@@ -70,6 +66,15 @@ On the branch `iter`, reversible by not merging:
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
 
 ## D. Decided by the author
+
+- `#2` (2026-11-22): `#2a`, `iter` takes what `loop ... in` takes but
+  `nil` (a table, a pool, a number, a function), plus a range `(a,
+  b)` as two numbers before the function; a user value is walked by
+  giving a function. On the branch: a range spreads into two
+  arguments, as in any call (`iter.find((3, 9), f)`, `(1, 4) ->
+  iter.filter(f)`); a call that gives two values is cut to its first
+  when it is not the last argument, as in Lua, so `r() ->
+  iter.find(f)` walks `0..r-1`, not the range.
 
 - `#1` (2026-11-22): `#1a`, the functions over iterables live in a
   library `iter`, the collection first.
