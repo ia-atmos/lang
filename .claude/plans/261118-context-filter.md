@@ -75,3 +75,11 @@ bare pattern. No pattern is today's `context`, every event (#2).
 - `<!:draw>`: the complement.
 - nested: an outer context without a pattern and an inner one with.
 - a pool in a `context <:draw>`: one `enter` per `:draw`, none per `:frame`.
+
+## 7. Decided
+
+- 2026-11-22, the author ("Sim"): A, `context <P> X {...}`, with the
+  semantics of section 3. Implemented on the branch `context` 1d48c2a: the
+  match is done once per emit per context (`ctime`), the zero tick of
+  `mute t(false)` is the event `0`; an error in the pattern counts as
+  no match.
