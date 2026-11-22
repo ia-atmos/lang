@@ -851,6 +851,12 @@ typedef struct ATrailX {
     AVal     enter;
     AVal     leave;
     AVal     cval;
+    // `context <P>`: applied only for the emits that match the filter,
+    // matched once per emit (`ctime`: the time of the last match)
+    struct APatt** cfilt;
+    int      ncfilt;
+    uint32_t ctime;
+    uint8_t  cpass;
 } ATrailX;
 
 #define A_GRABBABLE 1
@@ -1002,6 +1008,8 @@ void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
 // starts.
 AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
 AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
+// context <P> ...: takes over the `n` filters
+AStatus a_trail_context_filt (struct ATask* t, int i, struct APatt** fs, int n);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;

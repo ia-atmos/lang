@@ -1324,9 +1324,17 @@ static Expr* parser_1_prim (void) {
         e->u.grab.blk = parser_block();
         return e;
 
-    // context (enter, leave) {...}  |  context X {...}
+    // context [<P>] (enter, leave) {...}  |  context [<P>] X {...}
+    // The pattern is between `<` `>`, as in `mute <P> t(b)`: an
+    // expression follows.
     } else if (accept_str("context")) {
         Expr* e = mk(E_CONTEXT, TK0);
+        e->u.context.patt = NULL;
+        if (check_str("<") || check_str("<<")) {
+            ANGLE_TARGET = 1;
+            e->u.context.patt = parser_await();
+            ANGLE_TARGET = 0;
+        }
         if (accept_str("(")) {
             e->u.context.enter = parser_6_pip(NULL);
             if (accept_str(",")) {

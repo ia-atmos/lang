@@ -890,6 +890,33 @@ static int     LAZY = 0;
 
 #define CTX_ON() (LIVE>0 || NCTX>0)
 
+// The emit being traversed, for the filters of `context <P>`: time 0
+// outside an emit (a spawn, an abort from code), where they never pass.
+static uint32_t EVT_TIME = 0;
+static AVal     EVT_VAL;
+
+static AStatus filt_start (APatt** fs, int n);
+static AStatus filt_pass  (APatt** fs, int n, AVal evt, int* pass);
+
+// Whether a context applies to the emit being traversed.
+static int ctx_pass (ATrailX* x) {
+    if (x->ncfilt == 0) {
+        return 1;
+    }
+    if (EVT_TIME == 0) {
+        return 0;
+    }
+    if (x->ctime != EVT_TIME) {
+        int pass = 0;
+        if (filt_pass(x->cfilt, x->ncfilt, EVT_VAL, &pass) != A_OK) {
+            pass = 0;
+        }
+        x->ctime = EVT_TIME;
+        x->cpass = pass;
+    }
+    return x->cpass;
+}
+
 // The contexts around trail `i` of task `t`, from the innermost.
 static int ctx_chain (ATask* t, int i, ATrail** out) {
     int n = 0;
@@ -898,7 +925,9 @@ static int ctx_chain (ATask* t, int i, ATrail** out) {
             const ATrailD* ds = t->desc->trails;
             for (int j=i; j>=0; j=ds[j].up) {
                 ATrail* tr = &t->trs[j];
-                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF) {
+                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF &&
+                    ctx_pass(tr->x))
+                {
                     if (n == CTX_MAX) {
                         return n;
                     }
@@ -1029,6 +1058,16 @@ AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
     return st;
 }
 
+AStatus a_trail_context_filt (ATask* t, int i, APatt** fs, int n) {
+    ATrailX* x = trail_x(&t->trs[i]);
+    x->cfilt  = malloc((n > 0 ? n : 1) * sizeof(APatt*));
+    memcpy(x->cfilt, fs, n * sizeof(APatt*));
+    x->ncfilt = n;
+    x->ctime  = 0;
+    x->cpass  = 0;
+    return filt_start(x->cfilt, x->ncfilt);
+}
+
 // A context trail ends: left if applied, with those inside it.
 static void ctx_drop (ATrail* tr) {
     for (int k=0; k<NCTX; k++) {
@@ -1041,6 +1080,12 @@ static void ctx_drop (ATrail* tr) {
     a_dec(x->enter);
     a_dec(x->leave);
     a_dec(x->cval);
+    for (int i=0; i<x->ncfilt; i++) {
+        patt_free(x->cfilt[i]);
+    }
+    free(x->cfilt);
+    x->cfilt  = NULL;
+    x->ncfilt = 0;
     LIVE--;
 }
 
@@ -1793,7 +1838,13 @@ AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
     if (on.u.b) {
         // a zero tick awakes `await(true)` and lets the timers report
         node_untoggle(x);
-        AStatus st2 = emit_node(x, ++TIME, a_int(0));
+        uint32_t otime = EVT_TIME;
+        AVal     oval  = EVT_VAL;
+        EVT_TIME = ++TIME;
+        EVT_VAL  = a_int(0);
+        AStatus st2 = emit_node(x, EVT_TIME, EVT_VAL);
+        EVT_TIME = otime;
+        EVT_VAL  = oval;
         AStatus st3 = ctx_here();
         return chk_aborted((st2 == A_OK) ? st3 : st2);
     }
@@ -1880,7 +1931,13 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
 // An emit traverses the tree, and then the code that emitted goes on in
 // its own contexts.
 static AStatus emit_top (ANode* n, AVal evt) {
-    AStatus st = emit_node(n, ++TIME, evt);
+    uint32_t otime = EVT_TIME;
+    AVal     oval  = EVT_VAL;
+    EVT_TIME = ++TIME;
+    EVT_VAL  = evt;
+    AStatus st = emit_node(n, EVT_TIME, evt);
+    EVT_TIME = otime;
+    EVT_VAL  = oval;
     AStatus st2 = ctx_here();
     return (st == A_OK) ? st2 : st;
 }
