@@ -11,9 +11,9 @@ The branch of this session is `iter`.
 |---|---|---|
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
-| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Open |
+| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Put to him on 2026-11-22, recommended `#3a`; waiting |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
-| `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Put to him on 2026-11-22, recommended `#5a`; waiting |
+| `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
@@ -29,23 +29,15 @@ The branch of this session is `iter`.
 
 ## A. Waiting for the author (one at a time)
 
-- `#5` (2026-11-22, his "as funcoes aqui sao todas eager? possivel
-  lazy? nao me importo se eager se for bem mais simples. o lazy seria
-  mais imperativo com loop e await?"). Today on the branch: `find`
-  eager but stops at the first; `filter` eager, a new vector; `keys`,
-  `values` lazy (native iterators). `#5a` the functions that give a
-  collection give a vector, the iterators stay lazy (recommended);
-  `#5b` all lazy, a chain with no tables in between; `#5c` both, a lazy
-  variant of each. Against lazy: the result is walked once and has no
-  `#` or index, and SNKRX needs them (`#enemies_in_circle(...) == 0` in
-  `characters.atm:733`, `rtable(es)` and `#es` in `attack.atm:96`,
-  `curse_targets` in `characters.atm:160`); a walk that awaits spans
-  time (`sdl-pingus/game/objs/entrance.atm:20`, an `await` in each
-  step), and a lazy chain over a pool or a table pending across awaits
-  meets `#7` (the table must not change while walked) and members
-  that end, while a vector is a snapshot that a dead task in it keeps
-  safe. A function cannot await, so neither form lets `f` await.
-
+- `#3` (2026-11-22). Loops by hand in Pingus and SNKRX, classified by
+  regular expressions (approximate): about 33 build a list from each
+  member (a `map`), 18 a list of some members (`filter`), 16 sum or
+  count, 8 tell whether any member passes (`until ..., true` with `||
+  false`), 5 search (`find`), 2 keep the least (`closest_enemy` in
+  `snxkx/src/attack.atm:78`). `#3a` add `map`, `any`, `count`
+  (recommended); `#3b` also `all`, `fold`, `min`/`max` by a function;
+  `#3c` nothing more. All with `f(v, k)` and the collection first; `map`
+  gives a vector (`#5a`).
 - `#10` (asked by him before `#2`). Options: `#10a` one type of table,
   and a loop that can say which part it walks (recommended); `#10b`
   two types, vector and dictionary; `#10c` nothing changes. Facts run
@@ -156,6 +148,9 @@ On the branch `iter`, reversible by not merging:
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
 
 ## D. Decided by the author
+
+- `#5` (2026-11-22): `#5a`, a function that gives a collection gives a
+  vector; `keys`, `values` and the functions of the user stay lazy.
 
 - `#14` (2026-11-22): `#14a`. On the branch: `a_next` skips the key
   `tag` of a table, so neither `loop` nor `iter` visit it; `t.tag`,
