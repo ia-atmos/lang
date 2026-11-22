@@ -2688,17 +2688,71 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
 }
 
 // The places written with `set :out` that wait for the end of a value.
+// The entries of a value are chained, and found through a hash of the
+// values: a value that ends (most have no entry) is looked up at once.
 typedef struct OutE {
     AObj* v;        // not counted: the entry goes when the value ends
     AVal  t;        // a table and a key (counted), or
     AVal  k;
     AVal* slot;     // a variable, with its box (counted) if captured
     AVal  box;
+    int   next;     // the next entry of the same value, or free (-1: none)
 } OutE;
 
 static OutE* OUTS   = NULL;
 static int   OUTS_C = 0;
-int a_nouts = 0;
+static int   OUTS_F = -1;   // free entries
+int a_nouts = 0;            // entries in use
+
+// value -> first entry (open addressing; empty: NULL)
+typedef struct OutH {
+    AObj* v;
+    int   e;
+} OutH;
+static OutH* OUTH   = NULL;
+static int   OUTH_C = 0;    // a power of 2
+static int   OUTH_N = 0;    // keys in use, with tombstones
+#define OUTH_DEL ((AObj*)1)
+
+static uint32_t outh_hash (AObj* o) {
+    uintptr_t x = (uintptr_t) o;
+    x ^= x >> 17;
+    x *= 0x9E3779B1u;
+    return (uint32_t) (x ^ (x >> 15));
+}
+
+// The slot of `o`, or of an empty key where it would go.
+static int outh_find (AObj* o) {
+    uint32_t m = OUTH_C - 1;
+    uint32_t i = outh_hash(o) & m;
+    int del = -1;
+    while (OUTH[i].v != NULL) {
+        if (OUTH[i].v == o) {
+            return i;
+        }
+        if (OUTH[i].v==OUTH_DEL && del<0) {
+            del = i;
+        }
+        i = (i + 1) & m;
+    }
+    return (del >= 0) ? del : (int)i;
+}
+
+static void outh_grow (void) {
+    OutH* old = OUTH;
+    int   n   = OUTH_C;
+    OUTH_C = (n == 0) ? 64 : n*2;
+    OUTH   = calloc(OUTH_C, sizeof(OutH));
+    OUTH_N = 0;
+    for (int i=0; i<n; i++) {
+        if (old[i].v!=NULL && old[i].v!=OUTH_DEL) {
+            int j = outh_find(old[i].v);
+            OUTH[j] = old[i];
+            OUTH_N++;
+        }
+    }
+    free(old);
+}
 
 static int out_ends (AVal v) {
     if (v.type < A_TAB) {
@@ -2710,21 +2764,59 @@ static int out_ends (AVal v) {
     return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
 }
 
-static void out_add (OutE e) {
-    if (a_nouts == OUTS_C) {
-        OUTS_C = (OUTS_C == 0) ? 16 : OUTS_C*2;
-        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+static int out_same (OutE* x, OutE* e) {
+    if (e->slot != NULL) {
+        return x->slot == e->slot;
     }
-    OUTS[a_nouts++] = e;
+    return x->slot==NULL && a_same(x->t, e->t) && a_same(x->k, e->k);
+}
+
+// Adds the entry, unless the value already has one for the same place.
+// Returns 0 if it had (the counted fields of `e` are not taken).
+static int out_add (OutE e) {
+    if ((OUTH_N+1)*2 > OUTH_C) {
+        outh_grow();
+    }
+    int h = outh_find(e.v);
+    if (OUTH[h].v == e.v) {
+        for (int i=OUTH[h].e; i>=0; i=OUTS[i].next) {
+            if (out_same(&OUTS[i], &e)) {
+                return 0;
+            }
+        }
+    } else {
+        if (OUTH[h].v == NULL) {
+            OUTH_N++;
+        }
+        OUTH[h].v = e.v;
+        OUTH[h].e = -1;
+    }
+    if (OUTS_F < 0) {
+        int n = OUTS_C;
+        OUTS_C = (n == 0) ? 16 : n*2;
+        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+        for (int i=OUTS_C-1; i>=n; i--) {
+            OUTS[i].next = OUTS_F;
+            OUTS_F = i;
+        }
+    }
+    int i = OUTS_F;
+    OUTS_F = OUTS[i].next;
+    e.next = OUTH[h].e;
+    OUTS[i] = e;
+    OUTH[h].e = i;
+    a_nouts++;
+    return 1;
 }
 
 int a_out_reg_tab (AVal t, AVal k, AVal v) {
     if (!out_ends(v)) {
         return 0;
     }
-    a_inc(t);
-    a_inc(k);
-    out_add((OutE) { v.u.o, t, k, NULL, a_nil() });
+    if (out_add((OutE) { v.u.o, t, k, NULL, a_nil(), -1 })) {
+        a_inc(t);
+        a_inc(k);
+    }
     return 1;
 }
 
@@ -2732,8 +2824,9 @@ int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
     if (!out_ends(v) || d>a_pdepth(v)) {
         return 0;
     }
-    a_inc(box);
-    out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box });
+    if (out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box, -1 })) {
+        a_inc(box);
+    }
     return 1;
 }
 
@@ -2763,16 +2856,25 @@ AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
 }
 
 void a_out_ended (AObj* o) {
-    for (int i=0; i<a_nouts; ) {
-        if (OUTS[i].v != o) {
-            i++;
-            continue;
-        }
+    if (OUTH_C == 0) {
+        return;
+    }
+    int h = outh_find(o);
+    if (OUTH[h].v != o) {
+        return;
+    }
+    // the chain leaves the index first: a release here may end other
+    // values, and change the index
+    int i = OUTH[h].e;
+    OUTH[h].v = OUTH_DEL;
+    AVal v = a_obj(o);
+    while (i >= 0) {
         OutE e = OUTS[i];
-        OUTS[i] = OUTS[--a_nouts];
-        // the place goes back to nil, if it still refers to the value;
-        // a release here may end other values, and change the list
-        AVal v = a_obj(o);
+        OUTS[i].next = OUTS_F;
+        OUTS_F = i;
+        a_nouts--;
+        i = e.next;
+        // the place goes back to nil, if it still refers to the value
         if (e.slot != NULL) {
             if (a_same(*e.slot, v)) {
                 a_clr(e.slot);
@@ -2787,7 +2889,6 @@ void a_out_ended (AObj* o) {
             a_dec(e.t);
             a_dec(e.k);
         }
-        i = 0;
     }
 }
 
