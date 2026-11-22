@@ -27,6 +27,7 @@ The branch of this session is `iter`.
 | `#17` | A more primitive form of `tag` (his musing, 2026-11-22): out of the keys, in the header of the table | Moved 2026-11-22 to a session `atmos-tag` (his words: "passe pra sessao atmos-lang e mande ela abrir uma sessao atmos-tag. iremos fazer la"); opened by `atmos-lang` as session_011eECogjajEpy59YjN42Max, material `261122-tag.md`. There he decided `atmos-tag#1b` (2026-11-22, his "B", checked in its transcript): the tag becomes a field of the header of a table, never a key. The skip of `#14a` stays on `iter` until the branch `tag-rebased` is merged, then is dropped (`atmos-tag#2a`: `t.tag` and `t@("tag")` both reach the header, no walk sees it) |
 | `#18` | What else goes into `iter`: `sorted`, and the rule between `iter` (any iterable, not changed) and `vector` (changes a vector) | Decided 2026-11-22: no `sorted` (his words "sem sorted. com zip"): `iter` gains nothing from `vector` |
 | `#19` | `iter.zip` and `iter.enumerate` | Decided 2026-11-22: `iter.zip`, no `enumerate`; on the branch `iter` |
+| `#20` | `loop in 10 {...}`, a loop with no variable (his question, 2026-11-22) | It works today (the grammar is `ID*`); the ports write `loop _ in` 83 times in Pingus and SNKRX, `loop in` 0; an example added to the manual on the branch `iter`. Whether `loop _ in` should give way to it: his |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Measured on 2026-11-22: about 10 ns more per element than a loop by hand; no port calls `iter` yet |
 
 ## A. Waiting for the author (one at a time)
