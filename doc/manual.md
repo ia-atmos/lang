@@ -2852,7 +2852,10 @@ The following iterator expression types with predefined behaviors are
 supported:
 
 - `:table`:
-    ranges over vector indexes and values, and than over key-values of a table
+    ranges over vector indexes and values, and then over the other keys and
+    values of a table, in the order they were inserted; the key `tag` of a
+    [tagged table](#hierarchical-tags) is not visited; the body must not add
+    or remove keys of the table, which leaves the rest of the walk undefined
 - `:tasks`:
     ranges over the indexes and tasks of a task pool, in the order they were
     spawned; the body may abort tasks of the pool, which are then not
