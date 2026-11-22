@@ -2677,6 +2677,31 @@ int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
     return 1;
 }
 
+// set :out pub = v: the pub of the running task refers to `v`, with no
+// check and no adoption, until `v` ends (registered: `*reg` false), or
+// until the block of the `set` ends. `*task` gets the task, counted, the
+// holder of the place.
+AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
+    ATask* t = a_cur;
+    if (t == NULL) {
+        return a_error("invalid pub : expected enclosing task");
+    }
+    a_cpy(task, a_obj(&t->node.hdr));
+    AVal old = t->pub;
+    a_inc(v);
+    t->pub = v;
+    int d = node_adepth(&t->node);
+    if (old.type>=A_TAB && old.u.o->pinned==2 && (int)old.u.o->depth==d &&
+        !(old.type==v.type && old.u.o==v.u.o))
+    {
+        a_retire(old, d, &t->node.hdr);
+    } else {
+        a_dec(old);
+    }
+    a_set(reg, a_bool(!a_out_reg_var(&t->pub, *task, v, d)));
+    return A_OK;
+}
+
 void a_out_ended (AObj* o) {
     for (int i=0; i<a_nouts; ) {
         if (OUTS[i].v != o) {

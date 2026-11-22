@@ -1274,6 +1274,7 @@ static inline int a_same (AVal a, AVal b) {
 // depth `d`) is the block of the value or an outer one.
 int a_out_reg_tab (AVal t, AVal k, AVal v);
 int a_out_reg_var (AVal* slot, AVal box, AVal v, int d);
+AStatus a_out_pub (AVal* task, AVal v, AVal* reg);
 
 // The value ended (or is freed): its places go back to nil.
 extern int a_nouts;

@@ -1434,7 +1434,7 @@ static void gen_set_out (Unit* u, Expr* e) {
         err(dst->tk, "invalid set :out : unexpected pin");
     }
     Loc l = gen_loc(u, dst);
-    if (dst->tag!=E_INDEX && dst->tag!=E_ACC) {
+    if (dst->tag!=E_INDEX && dst->tag!=E_ACC && dst->tag!=E_PUB) {
         err(dst->tk, "invalid set :out : expected variable, field, or index");
     }
     Opnd v = gen_expr(u, e->u.set.src);
@@ -1456,6 +1456,12 @@ static void gen_set_out (Unit* u, Expr* e) {
         // this block ends
         out(u, "a_set(&L[%d], a_bool(!a_out_reg_tab(L[%d], L[%d], L[%d])));",
             d.flag, d.ot, d.ok, d.ov);
+    } else if (dst->tag == E_PUB) {
+        // the place is in the running task, which the entry holds
+        d.out  = 2;
+        d.ot   = slot_new(u);
+        d.odst = xfmt("A_TASK_OF(L[%d])->pub", d.ot);
+        out_try(u, "a_out_pub(&L[%d], L[%d], &L[%d])", d.ot, d.ov, d.flag);
     } else {
         Var* x = dst->var;
         d.out  = 2;
