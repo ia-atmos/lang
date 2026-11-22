@@ -144,13 +144,20 @@ static AStatus std_next (AFunc* self, int argc, AVal* argv) {
 // calls `f(v, k)` on each member, and `hit` on those it accepts. `hit`
 // stops the walk by returning 1. In a table or a pool, `v` is the
 // value and `k` its key; over a number `n`, `v` goes from `0` to `n-1`
-// and `k` is `nil`; over a function, `v` and `k` are the first and
-// second values of each call, until it gives `nil`.
+// and `k` is `nil`; over two numbers `a, b`, from `a` up to `b`
+// inclusive, as the range of a loop; over a function, `v` and `k` are
+// the first and second values of each call, until it gives `nil`.
 static AStatus walk (const char* name, int argc, AVal* argv,
     int (*hit) (AVal k, AVal v, void* ud), void* ud)
 {
-    AVal xs = arg(argc, argv, 0);
-    AVal f  = arg(argc, argv, 1);
+    AVal xs  = arg(argc, argv, 0);
+    AVal lim = a_nil();
+    AVal f   = arg(argc, argv, 1);
+    // a range `(a, b)` comes as two numbers before the function
+    if (a_isnum(xs) && a_isnum(f)) {
+        lim = f;
+        f   = arg(argc, argv, 2);
+    }
     if (xs.type!=A_TAB && xs.type!=A_TASKS && xs.type!=A_FUNC && !a_isnum(xs)) {
         return a_error("invalid argument to '%s' : expected table, tasks, number or function : got %s",
             name, a_typename(xs));
@@ -164,7 +171,7 @@ static AStatus walk (const char* name, int argc, AVal* argv,
     AVal pos=a_nil(), k=a_nil(), v=a_nil();
     AStatus st = A_OK;
     while (1) {
-        st = a_next(xs, a_nil(), &pos, &k, &v);
+        st = a_next(xs, lim, &pos, &k, &v);
         if (st!=A_OK || k.type==A_NIL) {
             break;
         }
