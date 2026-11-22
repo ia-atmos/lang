@@ -1,3 +1,0 @@
-==> ERROR:
- v  toggle-err-02.atm:3 (throw)
-==> invalid toggle : expected bool argument

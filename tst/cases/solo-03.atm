@@ -1,0 +1,24 @@
+;; #3: the solo block and all it holds receive: a pool declared inside
+;; it does; a pool declared outside it, in the stage, does not
+task T (s) {
+    loop on :key {
+        print(s)
+    }
+}
+spawn {
+    stage {
+        pin outs = tasks()
+        spawn @outs T("out")
+        solo :key {
+            pin ins = tasks()
+            spawn @ins T("in")
+            spawn T("nested")
+            await :key
+            print("block")
+        }
+        print("released")
+        await(false)
+    }
+}
+emit :key
+emit :key

@@ -1,5 +1,5 @@
 spawn {
-    toggle on :Ok with :Draw {
+    mute <!:Draw> on :Ok {
         par {
             loop on :Tick {
                 print :tick
@@ -12,13 +12,13 @@ spawn {
     }
 }
 emit(:Tick)
-emit(:Ok [false])
-emit(:Tick)
-emit(:Draw)
 emit(:Ok [true])
 emit(:Tick)
+emit(:Draw)
+emit(:Ok [false])
+emit(:Tick)
 spawn {
-    val v = toggle on :Z { await(:end) ; :value }
+    val v = mute on :Z { await(:end) ; :value }
     print(v)
 }
 emit(:end)

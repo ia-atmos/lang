@@ -1,7 +1,7 @@
-;; #5 (the author, 2026-11-22): toggle inside leave is an error, also when
+;; #5 (the author, 2026-11-22): mute inside leave is an error, also when
 ;; called from a function
 func off (t) {
-    toggle t(false)
+    mute t(true)
 }
 spawn {
     pin t = spawn {

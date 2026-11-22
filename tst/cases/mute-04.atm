@@ -1,5 +1,5 @@
 spawn {
-    toggle on :T {
+    mute on :T {
         loop {
             val e = await(:E)
             print(e@0)
@@ -7,7 +7,7 @@ spawn {
     }
 }
 emit :E [1]
-emit :T [false]
-emit :E [2]
 emit :T [true]
+emit :E [2]
+emit :T [false]
 emit :E [3]

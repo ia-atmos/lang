@@ -3,8 +3,8 @@ task T () {
     print :ok
 }
 pin t = spawn T()
-toggle t(false)
+mute t(true)
 emit :X
 print(:off)
-toggle t(true)
+mute t(false)
 emit :X

@@ -281,6 +281,9 @@ static void hoist (Expr* e) {
         case E_TOGGLE_ON:
             hoist(e->u.toggle_on.blk);
             break;
+        case E_GRAB:
+            hoist(e->u.grab.blk);
+            break;
         case E_CONTEXT:
             hoist(e->u.context.enter);
             if (e->u.context.leave != NULL) {
@@ -513,6 +516,7 @@ static int awaits (Expr* e) {
         case E_AWAIT:
         case E_PAR:
         case E_TOGGLE_ON:
+        case E_GRAB:
         case E_CONTEXT:
             return 1;
         case E_INDEX:
@@ -1041,11 +1045,19 @@ static void res (Expr* e) {
             break;
 
         case E_TOGGLE_ON:
-            chk_await(e->tk, "toggle");
+            chk_await(e->tk, "mute");
             for (int i=0; i<e->u.toggle_on.nf; i++) {
                 res_patt(e->u.toggle_on.fs[i]);
             }
             res_block(e->u.toggle_on.blk, 1);
+            break;
+
+        case E_GRAB:
+            chk_await(e->tk, (e->u.grab.kind == 1) ? "stage" : "solo");
+            for (int i=0; i<e->u.grab.nf; i++) {
+                res_patt(e->u.grab.fs[i]);
+            }
+            res_block(e->u.grab.blk, 1);
             break;
 
         case E_PROTO: {

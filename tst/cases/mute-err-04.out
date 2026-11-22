@@ -1,0 +1,3 @@
+==> ERROR:
+ v  mute-err-04.atm:4 (throw)
+==> invalid mute : expected unmuted task

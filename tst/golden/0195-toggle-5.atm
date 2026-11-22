@@ -7,7 +7,7 @@
             print(999)
         }
         pin t = spawn T()
-        toggle t (false)
+        mute t (true)
         print(1)
         emit (:nil)
         print(2)

@@ -5,9 +5,9 @@ pin T = task () {
 }
 pin t = spawn T()
 emit(:Tick)
-toggle t (false) with <:Draw || :Click>
+mute <!<:Draw || :Click>> t(true)
 emit(:Draw)
 emit(:Click)
 emit(:Tick)
-toggle t (true)
+mute t (false)
 emit(:Tick)
