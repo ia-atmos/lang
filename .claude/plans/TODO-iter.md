@@ -11,7 +11,7 @@ The branch of this session is `iter`.
 |---|---|---|
 | `#1` | Where the functions over iterables live: a library `iter`, globals, or the library of each collection | Decided 2026-11-22: `#1a`, a library `iter` (his answer: "A"); on the branch `iter` |
 | `#2` | What an iterable is: the library takes exactly what `loop ... in` takes; whether a user value can say how it is walked | Decided 2026-11-22: `#2a`, and ranges at once (his words: "#2a, mas pq nao aceitar intervalos ja?"); on the branch `iter` |
-| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | He asked for a minimal functional set and a reference, then the set of Python with fold (`#3f`, sketched 2026-11-22); waiting |
+| `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Decided 2026-11-22: `#3f` (his answer "F"), the 11 names; to implement on the branch `iter` |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Open |
@@ -25,6 +25,8 @@ The branch of this session is `iter`.
 | `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Closed 2026-11-22 by `#7`: a walk over a changed table is undefined, not a defect |
 | `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Decided 2026-11-22: `#16a` (his answer: "a"); on the branch `iter` |
 | `#17` | A more primitive form of `tag` (his musing, 2026-11-22): out of the keys, in the header of the table | Moved 2026-11-22 to a session `atmos-tag` (his words: "passe pra sessao atmos-lang e mande ela abrir uma sessao atmos-tag. iremos fazer la"); opened by `atmos-lang` as session_011eECogjajEpy59YjN42Max, material `261122-tag.md`. There he decided `atmos-tag#1b` (2026-11-22, his "B", checked in its transcript): the tag becomes a field of the header of a table, never a key. The skip of `#14a` stays on `iter` until the branch `tag` is merged, then is dropped |
+| `#18` | What else goes into `iter`: `sorted`, and the rule between `iter` (any iterable, not changed) and `vector` (changes a vector) | Put to him on 2026-11-22, recommended `#18a`; waiting |
+| `#19` | `iter.zip` and `iter.enumerate` | His question on 2026-11-22; after `#18` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
@@ -168,6 +170,12 @@ On the branch `iter`, reversible by not merging:
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
 
 ## D. Decided by the author
+
+- `#3` (2026-11-22): `#3f`: `find`, `filter`, `map`, `any`, `all`,
+  `fold(xs, acc, f)`, `sum`, `min(xs [, f])`, `max(xs [, f])`, `keys`,
+  `values`. With it he said "mas ainda quero discutir outras coisas":
+  `vector.sorted` into `iter` (`#18`), what else is outside, `zip`,
+  `enumerate` (`#19`).
 
 - `#5` (2026-11-22): `#5a`, a function that gives a collection gives a
   vector; `keys`, `values` and the functions of the user stay lazy.
