@@ -25,8 +25,6 @@ static AStatus arg_vec (int argc, AVal* argv, const char* f, int64_t* n) {
 // the elements from `i` on.
 // Both give `v`, which the vector may have just pinned.
 static AStatus vec_insert (AFunc* self, int argc, AVal* argv) {
-    // a reference written may close a cycle
-    a_muts += (argc>0 && argv[argc-1].type>=A_TAB);
     (void) self;
     int64_t n;
     if (arg_vec(argc, argv, "insert", &n) != A_OK) {

@@ -1,0 +1,7 @@
+;; #4: the pair must hold two functions
+spawn {
+    context [1, 2] {
+        await false
+    }
+}
+print "never"

@@ -325,14 +325,6 @@ static Opnd opnd_c (const char* c) {
 // Releases a consumed operand.
 static void opnd_rel (Unit* u, Opnd o) {
     if (o.tmp >= 0) {
-        out(u, "a_clr_tmp(&L[%d]);", o.tmp);
-    }
-}
-
-// Releases a temporary whose value was just stored somewhere (a field
-// of a constructor, the destination of an assignment): it is no orphan.
-static void opnd_rel_kept (Unit* u, Opnd o) {
-    if (o.tmp >= 0) {
         out(u, "a_clr(&L[%d]);", o.tmp);
     }
 }
@@ -705,7 +697,7 @@ static Opnd gen_table (Unit* u, Expr* e) {
             Opnd v = gen_expr(u, val);
             out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, a_int(%d), %s)", d.c, n++, v.c);
-            opnd_rel_kept(u, v);
+            opnd_rel(u, v);
         } else {
             Opnd k = gen_expr(u, key);
             gen_born_in(u, val, d.c);
@@ -713,8 +705,8 @@ static Opnd gen_table (Unit* u, Expr* e) {
             out(u, "a_born(%s, %s);", d.c, k.c);
             out(u, "a_born(%s, %s);", d.c, v.c);
             out_try(u, "a_setindex(%s, %s, %s)", d.c, k.c, v.c);
-            opnd_rel_kept(u, k);
-            opnd_rel_kept(u, v);
+            opnd_rel(u, k);
+            opnd_rel(u, v);
         }
     }
     return d;
@@ -796,7 +788,6 @@ typedef struct Blk {
     Defer* defs;
     int ndefs;
     int box;
-    const char* mu;     // the writes of references before the block
 } Blk;
 
 static Blk blk_open (Unit* u) {
@@ -828,16 +819,6 @@ static Blk blk_open (Unit* u) {
     out(u, "{");
     u->ind++;
     out(u, "a_depth = D + %d;", u->level);
-    // the writes of references before the block, for its cycles: in a
-    // local, or in a slot of the block in a task, which may await
-    if (u->task) {
-        int s = slot_new(u);
-        out(u, "L[%d] = a_int(a_muts);", s);
-        b.mu = xfmt("(uint32_t)L[%d].u.i", s);
-    } else {
-        out(u, "uint32_t MU_%d A_UNUSED = a_muts;", b.cl);
-        b.mu = xfmt("MU_%d", b.cl);
-    }
     return b;
 }
 
@@ -1017,17 +998,13 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     u->ndefs = b.ndefs;
 
     if (*nslots(u) > b.lo) {
-        out(u, "a_unname(&L[%d], %d, D + %d, %s);", b.lo, *nslots(u)-b.lo,
-            u->level, b.mu);
+        out(u, "a_unname(&L[%d], %d, D + %d);", b.lo, *nslots(u)-b.lo,
+            u->level);
         out(u, "a_clrs(&L[%d], %d);", b.lo, *nslots(u)-b.lo);
     }
     // the parameters of a function or task end with its body
-    if (u->level==0 && u->npar>0 && u->root==NULL && u->task) {
-        // a cyclic argument that only the parameters still reach
-        out(u, "a_args_end(&L[0], %d);", u->npar);
-    }
     if (u->level==0 && u->npar>0 && u->root==NULL) {
-        out(u, "a_unname(&L[0], %d, D, %s);", u->npar, b.mu);
+        out(u, "a_unname(&L[0], %d, D);", u->npar);
     }
     u->level--;
     out(u, "a_depth = D + %d;", u->level);
@@ -1247,7 +1224,11 @@ static void gen_dcl (Unit* u, Expr* e) {
     const char** vs = xalloc(k * sizeof(char*));
     if (e->u.dcl.set == NULL) {
         for (int i=0; i<k; i++) {
-            var_c(u, e->vars[i]);
+            const char* v = var_c(u, e->vars[i]);
+            // pin var x: what it gets later ends with the block
+            if (e->vars[i]->kind == V_PIN) {
+                gen_pin_end(u, v, 1);
+            }
         }
     } else if (k == 1) {
         // pin x = [...]  |  pin x = :T [...]
@@ -1333,7 +1314,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         } else {
             out_try(u, "a_pin_set(&%s, %s, D + %d)", dst, v.c, x->level);
         }
-        opnd_rel_kept(u, v);
+        opnd_rel(u, v);
         return;
     }
     if (l.e->tag == E_ACC) {
@@ -1348,9 +1329,6 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         if (x->boxed) {
             out_try(u, "a_chk_store(%s, (int)%s.u.o->depth)", v.c,
                 var_raw(u,x));
-            // a box is an object: a reference written into it may close
-            // a cycle
-            out(u, "a_muts += (%s.type >= A_TAB);", v.c);
         } else if (x->global) {
             out_try(u, "a_chk_store(%s, 1)", v.c);
         } else if (x->level < u->level) {
@@ -1359,11 +1337,9 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
         opnd_mov(u, v, dst);
         return;
     }
-    // a reference written into an object may close a cycle
-    out(u, "a_muts += (%s.type >= A_TAB);", v.c);
     if (l.e->tag == E_PUB) {
         out_try(u, "a_pub_set(NULL, %s)", v.c);
-        opnd_rel_kept(u, v);
+        opnd_rel(u, v);
         return;
     }
     switch (l.e->u.index.kind) {
@@ -1378,7 +1354,7 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
             out_try(u, "a_setindex_next(%s, %s)", l.t.c, v.c);
             break;
     }
-    opnd_rel_kept(u, v);
+    opnd_rel(u, v);
     opnd_rel(u, l.t);
 }
 
@@ -1458,7 +1434,7 @@ static void gen_set_out (Unit* u, Expr* e) {
         err(dst->tk, "invalid set :out : unexpected pin");
     }
     Loc l = gen_loc(u, dst);
-    if (dst->tag!=E_INDEX && dst->tag!=E_ACC) {
+    if (dst->tag!=E_INDEX && dst->tag!=E_ACC && dst->tag!=E_PUB) {
         err(dst->tk, "invalid set :out : expected variable, field, or index");
     }
     Opnd v = gen_expr(u, e->u.set.src);
@@ -1480,12 +1456,17 @@ static void gen_set_out (Unit* u, Expr* e) {
         // this block ends
         out(u, "a_set(&L[%d], a_bool(!a_out_reg_tab(L[%d], L[%d], L[%d])));",
             d.flag, d.ot, d.ok, d.ov);
+    } else if (dst->tag == E_PUB) {
+        // the place is in the running task, which the entry holds
+        d.out  = 2;
+        d.ot   = slot_new(u);
+        d.odst = xfmt("A_TASK_OF(L[%d])->pub", d.ot);
+        out_try(u, "a_out_pub(&L[%d], L[%d], &L[%d])", d.ot, d.ov, d.flag);
     } else {
         Var* x = dst->var;
         d.out  = 2;
         d.odst = var_c(u, x);
         out(u, "a_name(L[%d], %s);", d.ov, var_depth(u, x));
-        out(u, "a_muts += (L[%d].type >= A_TAB);", d.ov);
         out(u, "a_cpy(&%s, L[%d]);", d.odst, d.ov);
         out(u, "a_set(&L[%d], a_bool(!a_out_reg_var(&%s, %s, L[%d], %s)));",
             d.flag, d.odst, x->boxed ? var_raw(u,x) : "a_nil()", d.ov,
@@ -1669,6 +1650,9 @@ static void gen_loop (Unit* u, Expr* e, Dst d) {
             out(u, "a_adj(%s, 2);", m.n);
             out(u, "a_pop(&%s);", lim.c);
             out(u, "a_pop(&%s);", it.c);
+            // `loop i` counts with no end: `loop i in nil` is not its
+            // other spelling (atmos-iter#6b)
+            out_try(u, "((%s.type == A_NIL) ? a_error(\"invalid loop : unexpected nil\") : A_OK)", it.c);
         }
         k = (e->u.loop.n > 0) ? var_c(u,e->vars[0]) : opnd_tmp(u).c;
         v = (e->u.loop.n > 1) ? var_c(u,e->vars[1]) : opnd_tmp(u).c;
@@ -2545,7 +2529,7 @@ static void gen_await_patt (Unit* u, Patt* p, int lin, Dst d) {
     gen_suspend(u, d);
 }
 
-// Evaluates and builds the filters of a toggle into the C array
+// Evaluates and builds the filters of a mute, stage or solo into the C array
 // `fs`, inside an open C block. Returns the operands to release.
 static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n) {
     int size = 0;
@@ -2568,17 +2552,33 @@ static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n) {
     return os;
 }
 
-// toggle t(b) with P, ...
+// The pattern of a mute names the events silenced: what is muted
+// reacts to the others, its filter is `!P`.
+static Patt** mute_filt (Patt** fs, int nf) {
+    if (nf == 0) {
+        return fs;
+    }
+    Patt* p = xalloc(sizeof(Patt));
+    p->kind = PT_NOT;
+    p->tk   = fs[0]->tk;
+    p->a    = fs[0];
+    Patt** r = xalloc(sizeof(Patt*));
+    r[0] = p;
+    return r;
+}
+
+// mute [<P>] t(b)
 static void gen_toggle (Unit* u, Expr* e) {
     List args = { 0, NULL };
     flatten(&args, &e->u.toggle.args);
     if (args.n != 1) {
-        err(e->tk, "invalid toggle : expected single argument");
+        err(e->tk, "invalid mute : expected single argument");
     }
     Opnd t  = gen_expr(u, e->u.toggle.t);
     Opnd on = gen_expr(u, args.v[0]);
     int n;
-    Opnd* os = gen_filters(u, e->u.toggle.fs, e->u.toggle.nf, &n);
+    Patt** fs = mute_filt(e->u.toggle.fs, e->u.toggle.nf);
+    Opnd* os = gen_filters(u, fs, e->u.toggle.nf, &n);
     out(u, "    a_lin = %d;", lin_of(e->tk));
     out(u, "    st = a_toggle(%s, %s, fs, %d);", t.c, on.c, e->u.toggle.nf);
     out(u, "}");
@@ -2590,8 +2590,8 @@ static void gen_toggle (Unit* u, Expr* e) {
     opnd_rel(u, on);
 }
 
-// toggle on :T with P, ... {...}: the block runs as a transparent
-// task that events `:T [false]` and `:T [true]` toggle.
+// mute [P] on :T {...}: the block runs as a transparent task that the
+// events `:T [true]` and `:T [false]` mute and unmute.
 static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
@@ -2600,7 +2600,8 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     gen_spawn_tra(u, id, e->u.toggle_on.blk, PAR_NONE, 0, r.c, D_NONE);
 
     int n;
-    Opnd* os = gen_filters(u, e->u.toggle_on.fs, e->u.toggle_on.nf, &n);
+    Patt** fs = mute_filt(e->u.toggle_on.fs, e->u.toggle_on.nf);
+    Opnd* os = gen_filters(u, fs, e->u.toggle_on.nf, &n);
     out(u, "    a_trail_toggle(t, %d, atm_K[%d], fs, %d);",
         id, konst(e->tk.str+1,e->tk.len-1), e->u.toggle_on.nf);
     out(u, "}");
@@ -2608,6 +2609,60 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
         opnd_rel(u, os[i]);
     }
 
+    out(u, "st = a_await_trails(tr, %d, 1);", id);
+    gen_suspend(u, dst_none());
+    blk_close(u, b, dst_none(), hnd_none());
+    store(u, r, d);
+}
+
+// stage [P] {...}  |  solo [P] {...}: the block runs as a transparent
+// task, registered before it starts. No pattern: every event.
+static void gen_grab (Unit* u, Expr* e, Dst d) {
+    Opnd r = opnd_tmp(u);
+    Blk b = blk_open(u);
+    int id = gen_trail(u);
+    gen_trail_end(u, id);
+
+    int n;
+    Opnd* os = gen_filters(u, e->u.grab.fs, e->u.grab.nf, &n);
+    out(u, "    a_lin = %d;", lin_of(e->tk));
+    out(u, "    st = a_trail_grab(t, %d, %d, fs, %d);",
+        id, e->u.grab.kind, e->u.grab.nf);
+    out(u, "}");
+    out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
+    for (int i=0; i<n; i++) {
+        opnd_rel(u, os[i]);
+    }
+    gen_spawn_tra(u, id, e->u.grab.blk, PAR_NONE, 0, r.c, D_NONE);
+
+    out(u, "st = a_await_trails(tr, %d, 1);", id);
+    gen_suspend(u, dst_none());
+    blk_close(u, b, dst_none(), hnd_none());
+    store(u, r, d);
+}
+
+// context (enter, leave) {...} | context X {...}: the block runs as a transparent task
+// that is a context, before its first reaction.
+static void gen_context (Unit* u, Expr* e, Dst d) {
+    Opnd en = gen_expr(u, e->u.context.enter);
+    Expr* le = e->u.context.leave;
+    Opnd lv = (le == NULL) ? opnd_c(NULL) : gen_expr(u, le);
+    Opnd r = opnd_tmp(u);
+    Blk b = blk_open(u);
+    int id = gen_trail(u);
+    gen_trail_end(u, id);
+    Expr* blk = e->u.context.blk;
+    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
+    out(u, "a_lin = %d;", lin_of(e->tk));
+    if (le == NULL) {
+        out_try(u, "a_trail_context_pair(t, %d, %s)", id, en.c);
+    } else {
+        out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
+        opnd_rel(u, lv);
+    }
+    opnd_rel(u, en);
+    out(u, "a_lin = %d;", lin_of(blk->tk));
+    out_try(u, "a_trail_spawn(t, %d)", id);
     out(u, "st = a_await_trails(tr, %d, 1);", id);
     gen_suspend(u, dst_none());
     blk_close(u, b, dst_none(), hnd_none());
@@ -2786,8 +2841,14 @@ static void gen (Unit* u, Expr* e, Dst d) {
             gen_toggle(u, e);
             store_void(u, d);
             break;
+        case E_CONTEXT:
+            gen_context(u, e, d);
+            break;
         case E_TOGGLE_ON:
             gen_toggle_on(u, e, d);
+            break;
+        case E_GRAB:
+            gen_grab(u, e, d);
             break;
         case E_NAT:
             gen_nat(u, e, d);
@@ -2846,17 +2907,6 @@ char* coder_main (Expr* prog, Var** globals, int nglobals) {
     buf_add(&c, "}\n\n");
 
     buf_add(&c, "void atm_free (void) {\n");
-    // the variables of the program are the names of its block: what
-    // only they reach, in a cycle, is cleared with them
-    if (nglobals > 0) {
-        buf_add(&c, xfmt("    AVal gs[%d] = {", nglobals));
-        for (int i=0; i<nglobals; i++) {
-            buf_add(&c, xfmt("%s%s", (i==0 ? "" : ", "),
-                var_raw(&u,globals[i])));
-        }
-        buf_add(&c, "};\n");
-        buf_add(&c, xfmt("    a_cycles(gs, %d, 1);\n", nglobals));
-    }
     for (int i=nglobals-1; i>=0; i--) {
         buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
     }

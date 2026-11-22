@@ -1,0 +1,19 @@
+;; #22: a stage with a pattern lends only it; a solo with none takes all
+;; that its stage lends
+spawn {
+    stage :key {
+        par {
+            loop e on :key { print("behind", e@0) }
+        } with {
+            loop on :tick { print("tick behind") }
+        } with {
+            await :open
+            solo {
+                loop e on :key { print("modal", e@0) }
+            }
+        }
+    }
+}
+emit :open
+emit :key [:a]      ;; --> modal a
+emit :tick          ;; --> tick behind (the stage does not lend it)

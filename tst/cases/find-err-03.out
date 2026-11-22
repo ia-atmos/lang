@@ -1,0 +1,5 @@
+==> ERROR:
+ |  find-err-03.atm:2 (call)
+ |  find-err-03.atm:2 (call)
+ v  find-err-03.atm:2 (throw)
+==> X

@@ -9,7 +9,7 @@ prefix; those born here are `atmos-pool#N`.
 
 | Item | Title | State |
 |---|---|---|
-| `atmos-lang#1` | An await over a pool with a condition | Waits for `atmos-iter#1`: there, on its branch `iter`, as `iter.find`/`iter.filter` (`#1a`, to be confirmed); the await reads `await :tick until iter.find(ts, f)` |
+| `atmos-lang#1` | An await over a pool with a condition | Waits for the merge of the branch `iter`: the author decided `atmos-iter#1` = `#1a` (2026-11-22), library `iter`, collection first; the await reads `await :tick until iter.find(ts, f)` |
 | `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |

@@ -1,0 +1,3 @@
+==> ERROR:
+ v  context-14.atm:3 (throw)
+==> invalid context : expected function : got number

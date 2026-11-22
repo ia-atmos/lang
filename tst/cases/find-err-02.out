@@ -1,0 +1,4 @@
+==> ERROR:
+ |  find-err-02.atm:1 (call)
+ v  find-err-02.atm:1 (throw)
+==> invalid argument to 'filter' : expected function : got number

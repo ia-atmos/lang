@@ -6,8 +6,8 @@
             await(10ms)
             print(:a)
         }
-        toggle t(false)
+        mute t(true)
         emit @:global 1ms               ;; t frozen: timer not re-reported
-        toggle t(true)
+        mute t(false)
         emit @:global 30ms              ;; a (10ms) before b (19ms)
     

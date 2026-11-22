@@ -1,0 +1,41 @@
+;; map, any, all, fold, sum, min, max (atmos-iter#3f)
+X.print(iter.map([1,2,3], \{ it * 10 }))                ;; [10, 20, 30]
+X.print(iter.map([a=1,b=2], \(v, k) { k ++ v }))        ;; [a1, b2]
+X.print(iter.map(4, \{ if it % 2 == 0 => it => nil }))  ;; [0, 2]: a nil is left out
+X.print((1, 3) -> iter.map(\{ it * it }))               ;; [1, 4, 9]
+print(iter.any([1,2,3], \{ it > 2 }), iter.any([1,2], \{ it > 2 }), iter.any([], \{ true }))
+print(iter.all([1,2,3], \{ it > 0 }), iter.all([1,2], \{ it > 1 }), iter.all([], \{ false }))
+print(iter.fold([1,2,3], 0, \(a, v) { a + v }))         ;; 6
+print(iter.fold(4, 1, \(a, v) { a * (v+1) }))           ;; 24
+print(iter.fold((1, 4), 0, \(a, v) { a + v }))          ;; 10
+print(iter.fold([x=1], :z, \(a, v, k) { a ++ k ++ v })) ;; zx1
+print(iter.sum([1,2,3.5]), iter.sum([]), iter.sum(5), iter.sum((1, 10)))
+print(iter.min([3,1,2]))                                ;; 1 1
+print(iter.max([3,1,2]))                                ;; 3 0
+print(iter.min([]))                                     ;; nil
+print(iter.min(["b", "a", "c"]))                        ;; a 1
+print(iter.min([[n=3], [n=1], [n=1]], \{ it.n }).n)     ;; 1 (the first that ties)
+print(iter.max([a=5, b=9, c=2]))                        ;; 9 b
+print(iter.min((3, 7)), iter.max(4))
+;; closest_enemy (snxkx, src/attack.atm)
+pin es = [[x=10, y=0, id=:a], [x=3, y=4, id=:b], [x=0, y=9, id=:c]]
+val e = es -> iter.filter(\{ it.id != :c }) -> iter.min(\{ math.sqrt(it.x*it.x + it.y*it.y) })
+print(e.id)                                             ;; b
+;; levelset_solved (sdl-pingus, screens/levels.atm), a count
+print([:a, :b, :c] -> iter.fold(0, \(n, p) { if p != :b => n+1 => n }))  ;; 2
+;; over a pool
+task P (x) { set pub = x ; await(false) }
+pin ts = tasks()
+spawn @ts P(5)
+spawn @ts P(7)
+print(iter.any(ts, \{ it.pub == 7 }), iter.max(ts, \{ it.pub }).pub)
+X.print(iter.map(ts, \{ it.pub }))
+;; a member kept from a walk, then another walk (no reference is lost)
+pin us = tasks()
+spawn @us P(1)
+spawn @us P(2)
+val u = iter.find(us, \{ it.pub == 1 })
+print(u.pub, iter.find(us, \{ false }), iter.any(us, \{ it == u }))
+pin tt = [[], []]
+print(catch true { iter.sum(tt) })
+print(catch true { iter.min(tt) })

@@ -1,71 +1,49 @@
-;; A cycle of unpinned values that only the names of a block reach is
-;; broken when the block ends: no pin is needed. One that something
-;; outside still refers to stays alive. (The tests run with the address
-;; sanitizer, which reports a cycle that leaks.) A cycle that a call
-;; returns and that is dropped without a name is not reached: it leaks,
-;; as with plain reference counting.
+;; Without a pin, reference counting applies: a cycle of unpinned values
+;; leaks. A cyclic structure is pinned, and is finalized at the end of
+;; the block of its pin, deeply. (The tests run with the address
+;; sanitizer, which reports a cycle that leaks.)
 
 do {                            ;; reached only by its name
-    val a = []
+    pin a = []
     set a.self = a
 }
 
 loop i in 100 {                 ;; a table and a closure
-    val a = [i]
+    pin a = [i]
     set a.f = func () { a }
 }
 
 do {                            ;; a recursive closure, through its box
-    var g
+    pin var g
     set g = func (n) { if n > 0 { g(n - 1) } else { :done } }
     print(g(3))
 }
 
-val out = []
-do {                            ;; kept by a table of an outer block
+pin out = []
+do {                            ;; held by a pinned table of an outer block
     val a = [v=10]
     set a.self = a
     set out.x = a
 }
 print(out.x.self.v)
 
-val r = do {                    ;; kept as the result of the block
-    val a = [v=20]
-    set a.self = a
-    a
-}
-print(r.self.v)
-
-func mk () {                    ;; kept as the result of a function
+func mk () {                    ;; built by a function, pinned by the caller
     val b = [v=30]
     val a = [b=b]
     set b.a = a
     b
 }
-val m = mk()
+pin m = mk()
 print(m.a.b.v)
-
-do {                            ;; kept through a value that leaves
-    val b = []
-    val a = [v=40]
-    set a.self = a
-    set b.x = a
-    set out.y = b
-}
-print(out.y.x.self.v)
 
 task T (t) {
     await(:go)
     print(t.self.v)
-    set t.self = nil            ;; (see below)
 }
-pin ts = tasks()
-;; A cyclic value that is given to a task of an outer pool is kept, but
-;; it is not reached when the task ends (its ceiling is the block of
-;; the pool, and not a block of the task): the task breaks the cycle.
-do {                            ;; kept by a task of an outer pool
-    val a = [v=50]
+do {                            ;; given to a task of the same block
+    pin a = [v=50]
+    pin ts = tasks()
     set a.self = a
     spawn @ts T(a)
+    emit(:go)
 }
-emit(:go)

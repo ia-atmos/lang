@@ -1,0 +1,4 @@
+==> ERROR:
+ |  iter-err-02.atm:6 (call)
+ v  iter-err-02.atm:4 (throw)
+==> invalid escape : table pinned at iter-err-02.atm:3

@@ -1,0 +1,15 @@
+;; #5 (the author, 2026-11-22): mute inside leave is an error, also when
+;; called from a function
+func off (t) {
+    mute t(true)
+}
+spawn {
+    pin t = spawn {
+        await false
+    }
+    context (\{ nil }, \{ off(t) }) {
+        await :x
+    }
+}
+emit :x
+print "never"

@@ -1,0 +1,28 @@
+;; 7GUIs, circle drawer today: the branch that awaits the dialog is deaf
+;; by sequence, but its siblings (undo) are not; the program needs the
+;; toolkit to deactivate the main window (`iup.set(dlg, "ACTIVE", false)`)
+spawn {
+    par {
+        loop on :button {
+            print("adjust opens")
+            loop on :value {
+                print("adjust", "value")
+                until true
+            }
+            print("adjust closes")
+        }
+    } with {
+        loop on :undo {
+            print("undo")           ;; still alive while adjusting
+        }
+    } with {
+        loop on :action {
+            print("draw")
+        }
+    }
+}
+emit :button
+emit :undo
+emit :action
+emit :value
+emit :undo

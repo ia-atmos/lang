@@ -1,0 +1,24 @@
+;; filter over a pool and over a table: a new vector, in order.
+task P (x) {
+    set pub = [x=x]
+    await(false)
+}
+pin ts = tasks()
+spawn @ts P(10)
+spawn @ts P(20)
+spawn @ts P(30)
+do {
+    val us = iter.filter(ts, \(t) { t.pub.x > 15 })
+    print(#us, (us@0).pub.x, (us@1).pub.x)      ;; 2 20 30
+    loop _, t in us {
+        set t.pub.x += 1
+    }
+}
+print(#iter.filter(ts, \(t) { t.pub.x == 21 }))      ;; 1
+print(#iter.filter(ts, \(t) { false }))              ;; 0
+print(#iter.filter(tasks(), \(t) { true }))          ;; 0
+X.print(iter.filter([1,2,3,4], \(v) { v % 2 == 0 })) ;; [2,4]
+X.print(iter.filter([a=1,b=2,c=3], \(v,k) { k != :b }))
+;; the collection comes first: a pipe chains them
+X.print([1,2,3,4,5] -> iter.filter(\{ it > 1 }) -> iter.filter(\{ it < 5 }))
+print([1,2,3] -> iter.find(\{ it > 1 }))

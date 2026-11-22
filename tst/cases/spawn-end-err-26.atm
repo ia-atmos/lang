@@ -1,7 +1,7 @@
-;; block with toggle on
+;; block with mute on
 if true {
     spawn {
-        toggle on :t { }
+        mute on :t { }
     }
 }
 emit(:x)

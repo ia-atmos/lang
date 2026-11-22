@@ -1,0 +1,19 @@
+;; find over a pool, as the condition of an await: the await evaluates
+;; to the task that satisfies the predicate.
+task P (x) {
+    set pub = [x=x]
+    loop on :tick {
+        set pub.x += 1
+    }
+}
+pin ts = tasks()
+spawn @ts P(0)
+spawn @ts P(5)
+spawn {
+    val t = await :tick until iter.find(ts, \(t) { t.pub.x >= 8 })
+    print(t ?? :xtask, t.pub.x)
+}
+loop i in 5 {
+    print(:tick, i)
+    emit :tick
+}
