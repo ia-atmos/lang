@@ -1,0 +1,7 @@
+;; a loop may assign the keys of the table it walks (atmos-iter#21a)
+pin t = [1, 2, 3]
+loop i, v in t { set t@i = v * 10 }
+X.print(t)                                      ;; [10, 20, 30]
+pin d = [x=1, y=2]
+loop k, v in d { set d@(k) = v + 1 }
+X.print(d)                                      ;; [x=2, y=3]

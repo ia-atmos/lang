@@ -1,0 +1,2 @@
+;; a nil from the function of map is an error (atmos-iter#22b)
+print(iter.map([1, 2, 3], \{ if it != 2 => it => nil }))
