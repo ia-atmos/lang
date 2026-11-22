@@ -3865,6 +3865,13 @@ Functions:
   truthy, and its `k`; evaluates to `nil` if there is none
 - `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
   for which `f(v, k)` is truthy, in the order of the walk
+- `iter.keys(xs)`: an iterator over the keys of the table or pool `xs`, in the
+  order of the walk: `loop k in iter.keys(t) {...}`
+- `iter.values(xs)`: an iterator over the values of the table or pool `xs`, in
+  the order of the walk: `loop v in iter.values(t) {...}`
+
+An iterator refers to its collection, and follows the rules of a
+[closure](#pin): it does not escape the block of a pinned collection.
 
 Examples:
 
@@ -3873,6 +3880,8 @@ val e = iter.find(enemies, \(e) { e.hp <= 0 })      ;; the first dead enemy, or 
 val es = enemies -> iter.filter(\{ it.hp > 0 })     ;; the live enemies
 val i = iter.find(10, \{ it*it > 20 })               ;; 5
 val ls = io.lines("f.txt") -> iter.filter(\{ #it > 0 })  ;; the lines not empty
+loop k in iter.keys([x=1, y=2]) { print(k) }        ;; x, y
+loop v in iter.values([10, 20]) { print(v) }        ;; 10, 20
 ```
 
 ## Vector
