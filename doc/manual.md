@@ -3664,20 +3664,29 @@ string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
 
 The library `iter` has functions over what a [loop](#loop) walks.
 The collection comes first, so that a [pipe](#pipes) chains them.
-For now they take a [pool](#tasks) or a table.
+A collection `xs` is what a loop walks, but `nil`, and its members are:
 
-- `iter.find(xs, f)`: the first member `v` of the pool or table `xs` for
-  which `f(v, k)` is truthy, and its key `k` (in a pool, its position
-  among the live tasks); evaluates to `nil` if there is none
-- `iter.filter(xs, f)`: a new [vector](#vector) with the members of the pool
-  or table `xs` for which `f(v, k)` is truthy, in the order of the
-  [loop](#loop) over `xs`
+- in a table, each value `v` and its key `k`
+- in a [pool](#tasks), each task `v` and its position `k` among the live
+  tasks
+- in a number `n`, each `v` from `0` to `n-1`, with `k` as `nil`
+- in a function, the first and second values `v` and `k` of each call, until
+  it evaluates to `nil`
+
+Functions:
+
+- `iter.find(xs, f)`: the first member `v` of `xs` for which `f(v, k)` is
+  truthy, and its `k`; evaluates to `nil` if there is none
+- `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
+  for which `f(v, k)` is truthy, in the order of the walk
 
 Examples:
 
 ```
 val e = iter.find(enemies, \(e) { e.hp <= 0 })      ;; the first dead enemy, or nil
 val es = enemies -> iter.filter(\{ it.hp > 0 })     ;; the live enemies
+val i = iter.find(10, \{ it*it > 20 })               ;; 5
+val ls = io.lines("f.txt") -> iter.filter(\{ #it > 0 })  ;; the lines not empty
 ```
 
 ## Vector
