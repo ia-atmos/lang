@@ -3853,6 +3853,9 @@ A collection `xs` is what a loop walks, but `nil`, and its members are:
 - in a [pool](#tasks), each task `v` and its position `k` among the live
   tasks
 - in a number `n`, each `v` from `0` to `n-1`, with `k` as `nil`
+- in a range `(a, b)`, each `v` from `a` up to `b` inclusive, with `k` as
+  `nil`: the two numbers come before the function, as in
+  `iter.find((a, b), f)` or `(a, b) -> iter.find(f)`
 - in a function, the first and second values `v` and `k` of each call, until
   it evaluates to `nil`
 
