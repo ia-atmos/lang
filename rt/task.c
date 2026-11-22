@@ -907,10 +907,15 @@ static int ctx_pass (ATrailX* x) {
         return 0;
     }
     if (x->ctime != EVT_TIME) {
+        // the match clears the payload: keep the one being delivered
+        // (the value of a task that ended, of an await)
+        APay pay;
+        a_pay_save(&pay);
         int pass = 0;
         if (filt_pass(x->cfilt, x->ncfilt, EVT_VAL, &pass) != A_OK) {
             pass = 0;
         }
+        a_pay_restore(&pay);
         x->ctime = EVT_TIME;
         x->cpass = pass;
     }

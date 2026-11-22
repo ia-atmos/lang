@@ -1,0 +1,21 @@
+;; #19: a context with a pattern does not lose the value of a task that
+;; ends inside it (reported by env-ray, retro_maze_3d)
+task T () {
+    await :X
+    :ok
+}
+spawn {
+    context <:draw> (\{ nil }, \(_) { nil }) {
+        pin s = spawn T()
+        val v = await(s)
+        print(:filtered, v)
+    }
+}
+spawn {
+    context (\{ nil }, \(_) { nil }) {
+        pin s = spawn T()
+        val v = await(s)
+        print(:plain, v)
+    }
+}
+emit :X
