@@ -377,8 +377,7 @@ static AStatus xtostring (Buf* b, AVal v) {
     // collects the entries, except the tag
     ATab* t = A_TAB_OF(v);
     AEnt* es = malloc((t->an + t->en + 1) * sizeof(AEnt));
-    AVal tag = a_nil();
-    AVal ktag = a_strz("tag");
+    AVal tag = t->tag;
     int n = 0;
     uint32_t pos = 0;
     AVal k, x;
@@ -389,15 +388,10 @@ static AStatus xtostring (Buf* b, AVal v) {
                 a_typename(k));
             break;
         }
-        if (a_eq(k, ktag)) {
-            tag = x;
-        } else {
-            es[n].k = k;
-            es[n].v = x;
-            n++;
-        }
+        es[n].k = k;
+        es[n].v = x;
+        n++;
     }
-    a_dec(ktag);
 
     if (st == A_OK) {
         qsort(es, n, sizeof(AEnt), kcmp);
@@ -468,6 +462,7 @@ AStatus a_xcopy (AVal* dst, AVal v) {
         a_dec(c);
     }
     if (st == A_OK) {
+        a_cpy(&A_TAB_OF(ret)->tag, A_TAB_OF(v)->tag);
         a_set(dst, ret);
     } else {
         a_dec(ret);

@@ -549,9 +549,13 @@ typedef struct ATab {
     uint32_t elive;
     int32_t* idx;
     uint32_t icap;
+    AVal     tag;   // the tag: a string or nil, never one of the keys
 } ATab;
 
 #define A_TAB_OF(v) ((ATab*)(v).u.o)
+
+// Whether `k` is the string "tag", the name of the tag of a table.
+int a_is_ktag (AVal k);
 
 // New empty table (owned).
 AVal a_tab (void);
