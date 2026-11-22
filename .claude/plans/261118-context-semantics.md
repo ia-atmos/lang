@@ -191,3 +191,5 @@ On the branch `context` (2026-11-20), with B lazy and the syntax
 - 2026-11-22, the author: no filter of events (every resume inside is
   bracketed); a filter stays as a TODO (`TODO-context.md` #19).
 - 2026-11-22, the author: `leave` receives what `enter` returned.
+- 2026-11-22, the author: syntax `context (enter, leave) {...}` or
+  `context X {...}` with X giving `[enter, leave]`.
