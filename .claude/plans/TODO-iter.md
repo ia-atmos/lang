@@ -14,7 +14,7 @@ The branch of this session is `iter`.
 | `#3` | Which functions (`find`, `filter`, `map`, `any`, `all`, `count`, `fold`, more) | Decided 2026-11-22: `#3f` (his answer "F"); on the branch `iter` |
 | `#4` | The element of a walk: the first variable of `loop` is the key over a table or a pool and the value over a function or a number; the library has `f(v, k)` | Decided 2026-11-22: `#4b`, `loop k, v` stays as it is (his words: "acredito que a forma atual k,v deve ser mantida pq e unica e causa menos confusao") |
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
-| `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Put to him on 2026-11-22, recommended `#6b`; waiting |
+| `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Decided 2026-11-22: `#6b` (his answer "b"); on the branch `iter`; measurement asked of `atmos-lang` |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Open, follows `#1` |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
@@ -30,16 +30,6 @@ The branch of this session is `iter`.
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Open, before any merge |
 
 ## A. Waiting for the author (one at a time)
-
-- `#6` (2026-11-22, after his "ok"). In Pingus and SNKRX (outside
-  `data/`): `loop i in n` 99, `loop _ in` 83, `loop i in (a, b)` 29
-  (from `1` 6, from `0` 5), `loop i {` 3, `loop i in nil` 0. A range
-  as a value is not needed: it spreads into a call (`#2`), and a loop
-  that builds a list is `iter.map` or `iter.filter` (`#3f`). `#6a`
-  nothing changes; `#6b` `loop i in nil` goes, the same as `loop i`,
-  the other forms stay (recommended); `#6c` also `loop i` goes, the
-  counters are `in n` and `in (a, b)` only. Measure on the 15
-  repositories before (`atmos-lang`).
 
 - `#3` (2026-11-22). Loops by hand in Pingus and SNKRX, classified by
   regular expressions (approximate): about 33 build a list from each
@@ -180,6 +170,15 @@ On the branch `iter`, reversible by not merging:
   with `ATMOS_ASAN=1` passes; branch at `6bcd61d`.
 
 ## D. Decided by the author
+
+- `#6` (2026-11-22): `#6b`. On the branch (`3ee56a0`): `loop ... in e`
+  with `e` nil raises `invalid loop : unexpected nil` (the coder checks
+  the iterator before the walk); `loop i {...}` stays the counter with
+  no end (it walks nil inside, with no check); the manual and
+  `loop-nil-01`. A loop over a field that is nil by mistake used to
+  hang, and now throws. Asked of `atmos-lang`: the count of `in nil` in
+  the 15 repositories, the diagnostics and the C over the ports, any
+  name `iter`, the suite of sdl-pingus.
 
 - `#18`, `#19` (2026-11-22): "sem sorted. com zip". On the branch
   (`a5b914d`): `map` (a nil result is left out, as a vector has no nil:
