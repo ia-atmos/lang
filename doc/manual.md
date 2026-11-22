@@ -55,7 +55,7 @@
     * Exceptions
         - `throw` `catch`
     * Task Operations
-        - `spawn` `await` `emit` `toggle`
+        - `spawn` `await` `emit` `mute`
         - `par` `watching`
 * STANDARD LIBRARIES
     - `math` `string` `vector` `io` `os` `X` `atmos`
@@ -677,8 +677,8 @@ The following keywords are reserved in Atmos:
     do                  ;; do block
     else                ;; else block
     emit                ;; emit event
-    escape              ;; escape block
-    false               ;; false value                      (10)
+    escape              ;; escape block                     (10)
+    false               ;; false value
     func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
@@ -687,28 +687,30 @@ The following keywords are reserved in Atmos:
     it                  ;; implicit parameter
     loop                ;; loop block
     match               ;; match block
+    mute                ;; mute task or block               (20)
     nil                 ;; nil value
-    on                  ;; on event clause                  (20)
+    on                  ;; on event clause
     par                 ;; par block
     pin                 ;; pin declaration
     pub                 ;; public variable
     return              ;; escape prototype
     set                 ;; assign expression
     skip                ;; loop skip
-    spawn               ;; spawn task
+    solo                ;; solo block
+    spawn               ;; spawn task                       (30)
+    stage               ;; stage block
     task                ;; task prototype
     tasks               ;; task pool
-    test                ;; test block                       (30)
+    test                ;; test block
     throw               ;; throw error
-    toggle              ;; toggle task
     true                ;; true value
     until               ;; until loop condition
     val                 ;; constant declaration
     var                 ;; variable declaration
-    watching            ;; watching block
+    watching            ;; watching block                   (40)
     where               ;; where block
     while               ;; while loop condition
-    with                ;; with block                       (40)
+    with                ;; with block
 ```
 
 ## Symbols
@@ -1265,7 +1267,7 @@ the following hold:
   The block may be the body of any construct, such as an `if`, a `loop`, a
   `do`, a branch of a `par`, a task, or the main chunk.
 - The task may await: a `spawn { ... }` has an `await`, a `watching`, a
-  `loop on`, a `par`, or a `toggle on` (not counting nested functions,
+  `loop on`, a `par`, a `mute on`, a `stage`, or a `solo` (not counting nested functions,
   tasks, and spawned blocks), or a `spawn T(...)` refers to a task prototype
   that is known at compile time and has one.
 
@@ -3423,37 +3425,44 @@ task T () {
 }
 ```
 
-### Toggle
+### Mute
 
-A `toggle` configures a task or block to either consider or disregard further
-[emit](#emit) operations:
+A `mute` silences a task or block: what is muted disregards the
+[emits](#emit) that match its pattern, and never awakes on them:
 
 ```
-Toggle : `toggle´ Expr `(´ Expr `)´ [`with´ Patt {`,´ Patt}]
-       | `toggle´ `on´ TAG [`with´ Patt {`,´ Patt}] Block
+Mute : `mute´ [`<´ Patt `>´] Expr `(´ Expr `)´
+     | `mute´ [Patt] `on´ TAG Block
 ```
 
-By default, tasks and blocks are toggled on, thus reacting to all events.
+The pattern is an [await pattern](#await) that names the events
+silenced: `<:X>` silences only `:X`, `<!:X>` all but `:X`, and no
+pattern silences every event, the time included. Before `on` the pattern
+may be bare, as in `mute :X on :T {...}`; in the first format it needs
+`<` and `>`, since `mute t(b)` is the task and its boolean.
 
-In the first format for tasks, a toggle expects the task and a
+By default, tasks and blocks are not muted, thus reacting to all events.
+
+In the first format for tasks, a mute expects the task and a
 [boolean](#types--values), which is handled as follows:
 
-- `true`: the task considers further broadcasts
-- `false`: the task disregards further emits and never awakes
+- `true`: the task disregards further emits that match the pattern
+- `false`: the task considers further broadcasts again (with no pattern)
 
-In the second format for blocks, a toggle spawns and awaits a block as a
+In the second format for blocks, a mute spawns and awaits a block as a
 [transparent task](#tasks).
-It also specifies a [tag](#literals) to toggle the block when matching an
+It also specifies a [tag](#literals) to mute the block when matching an
 [emit](#emit).
-The emit must be in the format `emit(<tag> [<boolean>])`, which sets the
-toggle state.
+The emit must be in the format `emit(<tag> [<boolean>])`: `true` mutes
+the block, and `false` gives it the events back.
 
-An optional `with` filter clause specifies [await patterns](#await), which
-keep the task/block responsive when matching any.
+What is muted gets no clock: its timers stop, and go on from where they
+were when it is given the events back, with a zero tick that awakes
+`await(true)`.
 
 Examples:
 
-<!-- exs/exp-28-toggle.atm -->
+<!-- exs/exp-28-mute.atm -->
 
 ```
 task T () {
@@ -3461,15 +3470,15 @@ task T () {
     print :ok
 }
 pin t = spawn T()
-toggle t(false)
+mute t(true)
 emit :X         ;; event ignored
-toggle t(true)
+mute t(false)
 emit :X         ;; --> ok
 ```
 
 ```
 spawn {
-    toggle on :T {
+    mute on :T {
         loop {
             val e = await(:E)
             print(e@0)          ;; --> 1 3
@@ -3477,78 +3486,82 @@ spawn {
     }
 }
 emit :E [1]
-emit :T [false]
-emit :E [2]
 emit :T [true]
+emit :E [2]
+emit :T [false]
 emit :E [3]
 ```
 
 ```
 spawn {
-    toggle on :Ok with :Draw {
+    mute <!:Draw> on :Ok {
         par {
             loop on :Tick {
-                print :tick     ;; ignored during :Ok=false
+                print :tick     ;; ignored during :Ok=true
             }
         } with {
             loop on :Draw {
-                print :draw     ;; responsive during :Ok=false
+                print :draw     ;; responsive during :Ok=true
             }
         }
     }
 }
-emit(:Ok [false])
+emit(:Ok [true])
 emit(:Tick)         ;; (nop)
 emit(:Draw)         ;; --> draw
 ```
 
-### Grab
+### Solo
 
-A `grab` captures the events that match its patterns: while its block
-runs, only the block reacts to them, inside the nearest `grabbable`
-above it:
+A `solo` takes the events that match its pattern: while its block runs,
+only the block reacts to them, inside the nearest `stage` above it:
 
 ```
-Grab : (`grabbable´ | `grab´) Patt {`,´ Patt} Block
+Solo : (`stage´ | `solo´) [Patt] Block
 ```
 
-Both spawn and await their block as a [transparent task](#tasks), as a
-`toggle on`. A `grabbable` lends to the grabs below it the events that
-match any of its patterns. A `grab` takes the nearest `grabbable` above
-it in the tree of tasks, which may be in another task, as a modal that
-is spawned deep inside what it silences. A `grab` with no `grabbable`
-above it raises `invalid grab : expected enclosing grabbable`.
+The pattern is an [await pattern](#await), bare or between `<` and `>`;
+with none, every event. Both spawn and await their block as a
+[transparent task](#tasks), as a `mute on`. A `stage` lends to the
+solos below it the events that match its pattern. A `solo` takes the
+nearest `stage` above it in the tree of tasks, which may be in another
+task, as a modal that is spawned deep inside what it silences. A `solo`
+with no `stage` above it raises `invalid solo : expected enclosing
+stage`.
 
-While a `grab` is active, an emit that traverses its `grabbable`, and
-that matches the patterns of both, only follows the path down to the
-`grab`, and then the whole block of the `grab` (its trails, its tasks
-and the pools it declares). The rest of the subtree of the `grabbable`
-does not see the event, nor do the trails on the path; outside the
-`grabbable`, nothing changes. An emit that does not traverse the
-`grabbable`, as one aimed at a task below it, is not captured.
+A `mute` and a `solo` are duals: a `mute` silences a task or block that
+is known, from outside it; a `solo` is said by the block that will
+receive, which needs to know nothing of what it silences.
 
-The grabs of a `grabbable` form a stack: the most recent one whose
-patterns match the event captures it, and its end gives the events back
-to the previous one. A `grab` that captures the time (as `<!:draw>`)
-stops the timers outside it, which go on from where they were (the
-pause of a game). A clock event is a number, so a `grab` that leaves
-the time running names it in a predicate, as in
-`grab <until ((it != :draw) && (type(it) != :number))>` (a modal over
-a GUI with a clock). A
-`grab` evaluates to the value of its block.
+While a `solo` is active, an emit that traverses its `stage`, and that
+matches the patterns of both, only follows the path down to the `solo`,
+and then the whole block of the `solo` (its trails, its tasks and the
+pools it declares). The rest of the subtree of the `stage` does not see
+the event, nor do the trails on the path; outside the `stage`, nothing
+changes. An emit that does not traverse the `stage`, as one aimed at a
+task below it, is not captured.
+
+The solos of a `stage` form a stack: the most recent one whose pattern
+matches the event captures it, and its end gives the events back to the
+previous one. A `solo` that captures the time (as `<!:draw>`) stops the
+timers outside it, which go on from where they were (the pause of a
+game). A clock event is a number, so a `solo` that leaves the time
+running names it in a predicate, as in
+`solo <until ((it != :draw) && (type(it) != :number))>` (a modal over a
+GUI with a clock). A `solo` evaluates to the value of its block.
 
 Examples:
 
 ```
 spawn {
-    grabbable true {
+    stage {
         par {
             loop e on :key {
                 print("behind", e@0)    ;; deaf while the modal is open
             }
         } with {
             await :open
-            grab :key {
+            solo :key {
                 loop e on :key {
                     print("modal", e@0)
                     until e@0 == :esc
@@ -3581,7 +3594,7 @@ The second is a function `leave`, which receives that value.
 In the second form, the expression is a pair `[enter, leave]`, so that a
 library can give both in one value (`context eng.on(STARS) {...}`).
 The block runs as a [transparent task](#tasks), as in a
-[toggle](#toggle) block.
+[mute](#mute) block.
 
 The runtime calls `enter` before it resumes a task or block that lives in the
 context, and `leave` before code outside the context runs again: an `emit`
@@ -3603,7 +3616,7 @@ A context cannot set a state for code outside it to see.
 
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
-It is an error to `emit`, `spawn`, `abort` or `toggle` inside `enter` or
+It is an error to `emit`, `spawn`, `abort` or `mute` inside `enter` or
 `leave`, also from a function they call, and for `enter` or `leave` not to be
 a function.
 
@@ -4240,8 +4253,10 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
       | `await´ Patt                                ;; await pattern
       | `emit´ [At] Expr                            ;; emit event
 
-      | `toggle´ Expr `(´ Expr `)´ [`with´ Patt {`,´ Patt}] ;; toggle task
-      | `toggle´ `on´ TAG [`with´ Patt {`,´ Patt}] Block    ;; toggle block
+      | `mute´ [`<´ Patt `>´] Expr `(´ Expr `)´       ;; mute task
+      | `mute´ [Patt] `on´ TAG Block                ;; mute block
+      | `stage´ [Patt] Block                        ;; stage block
+      | `solo´ [Patt] Block                         ;; solo block
 
       | `par´ [ `:all´ | `:any´ ]                   ;; parallel
             Block { `with´ Block }

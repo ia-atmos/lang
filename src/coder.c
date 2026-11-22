@@ -2520,7 +2520,7 @@ static void gen_await_patt (Unit* u, Patt* p, int lin, Dst d) {
     gen_suspend(u, d);
 }
 
-// Evaluates and builds the filters of a toggle into the C array
+// Evaluates and builds the filters of a mute, stage or solo into the C array
 // `fs`, inside an open C block. Returns the operands to release.
 static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n) {
     int size = 0;
@@ -2543,17 +2543,33 @@ static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n) {
     return os;
 }
 
-// toggle t(b) with P, ...
+// The pattern of a mute names the events silenced: what is muted
+// reacts to the others, its filter is `!P`.
+static Patt** mute_filt (Patt** fs, int nf) {
+    if (nf == 0) {
+        return fs;
+    }
+    Patt* p = xalloc(sizeof(Patt));
+    p->kind = PT_NOT;
+    p->tk   = fs[0]->tk;
+    p->a    = fs[0];
+    Patt** r = xalloc(sizeof(Patt*));
+    r[0] = p;
+    return r;
+}
+
+// mute [<P>] t(b)
 static void gen_toggle (Unit* u, Expr* e) {
     List args = { 0, NULL };
     flatten(&args, &e->u.toggle.args);
     if (args.n != 1) {
-        err(e->tk, "invalid toggle : expected single argument");
+        err(e->tk, "invalid mute : expected single argument");
     }
     Opnd t  = gen_expr(u, e->u.toggle.t);
     Opnd on = gen_expr(u, args.v[0]);
     int n;
-    Opnd* os = gen_filters(u, e->u.toggle.fs, e->u.toggle.nf, &n);
+    Patt** fs = mute_filt(e->u.toggle.fs, e->u.toggle.nf);
+    Opnd* os = gen_filters(u, fs, e->u.toggle.nf, &n);
     out(u, "    a_lin = %d;", lin_of(e->tk));
     out(u, "    st = a_toggle(%s, %s, fs, %d);", t.c, on.c, e->u.toggle.nf);
     out(u, "}");
@@ -2565,8 +2581,8 @@ static void gen_toggle (Unit* u, Expr* e) {
     opnd_rel(u, on);
 }
 
-// toggle on :T with P, ... {...}: the block runs as a transparent
-// task that events `:T [false]` and `:T [true]` toggle.
+// mute [P] on :T {...}: the block runs as a transparent task that the
+// events `:T [true]` and `:T [false]` mute and unmute.
 static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
@@ -2575,7 +2591,8 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     gen_spawn_tra(u, id, e->u.toggle_on.blk, PAR_NONE, 0, r.c, D_NONE);
 
     int n;
-    Opnd* os = gen_filters(u, e->u.toggle_on.fs, e->u.toggle_on.nf, &n);
+    Patt** fs = mute_filt(e->u.toggle_on.fs, e->u.toggle_on.nf);
+    Opnd* os = gen_filters(u, fs, e->u.toggle_on.nf, &n);
     out(u, "    a_trail_toggle(t, %d, atm_K[%d], fs, %d);",
         id, konst(e->tk.str+1,e->tk.len-1), e->u.toggle_on.nf);
     out(u, "}");
@@ -2589,8 +2606,8 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
-// grabbable P, ... {...}  |  grab P, ... {...}: the block runs as a
-// transparent task, registered before it starts.
+// stage [P] {...}  |  solo [P] {...}: the block runs as a transparent
+// task, registered before it starts. No pattern: every event.
 static void gen_grab (Unit* u, Expr* e, Dst d) {
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);

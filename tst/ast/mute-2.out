@@ -1,0 +1,3 @@
+(mute on :T { (call f) })
+(mute (! (|| :Draw :X)) on :Ok { (call g) })
+(mute :X on :T { (call h) })

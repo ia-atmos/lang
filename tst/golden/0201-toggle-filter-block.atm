@@ -1,5 +1,5 @@
         spawn {
-            toggle on :Show with :Draw {
+            mute <!:Draw> on :Show {
                 par {
                     loop on :Draw { print(:draw) }
                 } with {
@@ -9,9 +9,9 @@
         }
         emit(:Draw)             ;; on  -> draw
         emit(:Tick)             ;; on  -> tick
-        emit :Show [false]     ;; toggle off, filter :Draw
+        emit :Show [true]     ;; muted, :Draw passes
         emit(:Draw)             ;; passes filter -> draw
         emit(:Tick)             ;; gated -> frozen
-        emit :Show [true]      ;; toggle on
+        emit :Show [false]      ;; unmuted
         emit(:Tick)             ;; on  -> tick
     

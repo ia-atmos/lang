@@ -1,0 +1,5 @@
+(mute t true)
+(mute t false)
+(mute (! :Draw) t true)
+(mute (! (|| :a :b)) t true)
+(mute :X t true)

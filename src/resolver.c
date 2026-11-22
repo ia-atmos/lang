@@ -1029,7 +1029,7 @@ static void res (Expr* e) {
             break;
 
         case E_TOGGLE_ON:
-            chk_await(e->tk, "toggle");
+            chk_await(e->tk, "mute");
             for (int i=0; i<e->u.toggle_on.nf; i++) {
                 res_patt(e->u.toggle_on.fs[i]);
             }
@@ -1037,7 +1037,7 @@ static void res (Expr* e) {
             break;
 
         case E_GRAB:
-            chk_await(e->tk, (e->u.grab.kind == 1) ? "grabbable" : "grab");
+            chk_await(e->tk, (e->u.grab.kind == 1) ? "stage" : "solo");
             for (int i=0; i<e->u.grab.nf; i++) {
                 res_patt(e->u.grab.fs[i]);
             }

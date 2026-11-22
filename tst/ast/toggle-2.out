@@ -1,2 +1,0 @@
-(toggle on :T { (call f) })
-(toggle on :Ok with :Draw with :X { (call g) })

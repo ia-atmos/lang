@@ -1,0 +1,37 @@
+;; #1: a solo takes the nearest stage in the tree of tasks: here,
+;; the modal is a task spawned deep inside what it silences (SNKRX)
+task Modal () {
+    solo :key {
+        loop e on :key {
+            print("modal", e@0)
+            until e@0 == :esc
+        }
+    }
+}
+task Screen () {
+    par {
+        loop e on :key {
+            print("screen", e@0)
+        }
+    } with {
+        loop {
+            await :key [:esc]
+            await Modal()
+        }
+    }
+}
+spawn {
+    stage {
+        await Screen()
+    }
+}
+spawn {
+    loop e on :key {
+        print("outside", e@0)     ;; outside the stage: always hears
+    }
+}
+emit :key [:a]
+emit :key [:esc]
+emit :key [:b]
+emit :key [:esc]
+emit :key [:c]

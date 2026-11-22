@@ -1,7 +1,0 @@
-;; #1: a grab with no grabbable above it is an error
-spawn {
-    grab :key {
-        await :key
-    }
-}
-emit :key

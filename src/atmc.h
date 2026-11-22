@@ -153,9 +153,9 @@ typedef enum {
     E_EMIT,
     // await P
     E_AWAIT,
-    // toggle t(b) with P  toggle on :T with P {...}
+    // mute <P> t(b)  mute P on :T {...}
     E_TOGGLE, E_TOGGLE_ON,
-    // grabbable P {...}  grab P {...}
+    // stage P {...}  solo P {...}
     E_GRAB,
     // context (enter, leave) {...}  |  context X {...} (leave NULL: enter is the pair)
     E_CONTEXT,
@@ -280,7 +280,7 @@ struct Expr {
         struct { Expr* t; List args; int nf; Patt** fs; } toggle;
         // tk is the tag
         struct { int nf; Patt** fs; Expr* blk; }        toggle_on;
-        // kind: 1 grabbable, 2 grab
+        // kind: 1 stage, 2 solo
         struct { int kind; int nf; Patt** fs; Expr* blk; } grab;
         struct { Expr* enter; Expr* leave; Expr* blk; } context;
         struct { ParMode mode; List blks; }             par;

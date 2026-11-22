@@ -738,7 +738,7 @@ typedef enum {
 
 // A trail is a line of execution of a task: its body, or a transparent
 // block nested in it (a branch of a `par`, a `spawn {...}`, the block
-// of a `toggle on`). A transparent block has no identity: it shares
+// of a `mute on`). A transparent block has no identity: it shares
 // the frame of its task, and its state lives inside that frame. The
 // trails of a prototype are known at compile time, and so is their
 // tree: a block that spawns another is its parent.
@@ -824,20 +824,20 @@ typedef struct ATrailX {
     // it takes when control returns to it
     AStatus  pst;
     APay     ppay;
-    // `toggle on`: tag of the events that toggle the trail, and the
-    // filters that pass while it is off
+    // `mute on`: tag of the events that mute the trail, and the
+    // filters that pass while it is muted
     AVal     tog;
     struct APatt** filt;
     int      nfilt;
-    // `grabbable` (A_GRABBABLE) or `grab` (A_GRAB): its patterns
+    // `stage` (A_GRABBABLE) or `solo` (A_GRAB): its pattern (none: all)
     uint8_t  gkind;
     struct APatt** gfilt;
     int      ngfilt;
-    // a grabbable: the grabs that it holds, the most recent last
+    // a stage: the solos that it holds, the most recent last
     struct ATrail** gs;
     int      gn;
-    // a grab: its grabbable, and the trails and nodes from the grab up
-    // to it (the grabbable excluded), which an emit it captures follows
+    // a solo: its stage, and the trails and nodes from the solo up
+    // to it (the stage excluded), which an emit it captures follows
     struct ATrail* gup;
     void**   gpath;
     int      gpn;
@@ -991,8 +991,8 @@ AStatus a_trail_grab  (struct ATask* t, int i, int kind, struct APatt** fs, int 
 int  a_trail_end (struct ATrail* me, int i, AStatus* st, int base);
 void a_trail_doom (struct ATask* t, int i);
 
-// toggle on :T with P, ... {...}: events `:T [false]` and `:T [true]`
-// toggle trail `i` from now on. Takes over the filters.
+// mute P on :T {...}: events `:T [true]` and `:T [false]` mute and
+// unmute trail `i` from now on. Takes over the filters (`!P`).
 void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
 // `context (enter, leave) {...}`: makes trail `i` a context, before it
 // starts.
@@ -1020,8 +1020,8 @@ struct ATask* a_tasks_iter (struct ATasks* ts, int64_t* pos);
 // Table with the live tasks of a pool (owned).
 AVal a_tasks_tab (AVal ts);
 
-// toggle t(on) with P, ...: takes over the `n` filters.
-AStatus a_toggle (AVal t, AVal on, APatt** fs, int n);
+// mute <P> t(b): `b` mutes; the `n` filters (`!P`) are taken over.
+AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n);
 
 // abort(t)
 AStatus a_abort (AVal v);

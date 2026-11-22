@@ -822,7 +822,7 @@ static void node_trav (ANode* n, int inc) {
     }
 }
 
-// Releases the toggle state of a node.
+// Releases the mute state of a node.
 static void node_untoggle (ANode* n) {
     for (int i=0; i<n->nfilt; i++) {
         patt_free(n->filt[i]);
@@ -840,8 +840,8 @@ static ATrailX* trail_x (ATrail* tr) {
     return tr->x;
 }
 
-// A grab that ends leaves the stack of its grabbable; a grabbable that
-// ends leaves its grabs without one (they end with it, in its block).
+// A solo that ends leaves the stack of its stage; a stage that ends
+// leaves its solos without one (they end with it, in its block).
 static void grab_off (ATrail* tr, ATrailX* x) {
     if (x->gkind == A_GRAB && x->gup != NULL && x->gup->x != NULL) {
         ATrailX* u = x->gup->x;
@@ -1510,10 +1510,10 @@ static AStatus filt_pass (APatt** fs, int n, AVal evt, int* pass) {
     return st;
 }
 
-// An emit that a grab captures: while it traverses the subtree of the
-// grabbable, it only follows the path down to the grab (the trails on
-// the path do not awake), and then the whole subtree of the grab. The
-// path is a copy: the grab may end in the middle of the emit. A nested
+// An emit that a solo captures: while it traverses the subtree of the
+// stage, it only follows the path down to the solo (the trails on
+// the path do not awake), and then the whole subtree of the solo. The
+// path is a copy: the solo may end in the middle of the emit. A nested
 // emit has its own time, so it is not affected.
 typedef struct ACap {
     uint32_t time;
@@ -1542,16 +1542,25 @@ static int cap_skip (uint32_t time, void* p) {
     return 1;
 }
 
-// The emit reaches a grabbable: the most recent of its grabs whose
-// patterns match the event, if the grabbable's match too, captures it.
+// The emit reaches a stage: the most recent of its solos whose
+// patterns match the event, if the stage's match too, captures it.
+// A stage or solo with no pattern takes every event.
+static AStatus grab_pass (ATrailX* x, AVal evt, int* pass) {
+    if (x->ngfilt == 0) {
+        *pass = 1;
+        return A_OK;
+    }
+    return filt_pass(x->gfilt, x->ngfilt, evt, pass);
+}
+
 static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
     ATrailX* x = tr->x;
     int pass = 0;
-    AStatus st = filt_pass(x->gfilt, x->ngfilt, evt, &pass);
+    AStatus st = grab_pass(x, evt, &pass);
     for (int k=x->gn-1; st==A_OK && pass && k>=0; k--) {
         ATrailX* g = x->gs[k]->x;
         int p = 0;
-        st = filt_pass(g->gfilt, g->ngfilt, evt, &p);
+        st = grab_pass(g, evt, &p);
         if (st==A_OK && p) {
             CAP.time = time;
             CAP.g    = x->gs[k];
@@ -1565,7 +1574,7 @@ static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
     return st;
 }
 
-// The event is `:T [b]` for the tag of an automatic toggle.
+// The event is `:T [b]` for the tag of a `mute on`: `b` mutes.
 static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (tog.type==A_NIL || evt.type!=A_TAB) {
         return 0;
@@ -1577,7 +1586,7 @@ static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (b.type!=A_BOOL || !a_gte(tog, tag)) {
         return 0;
     }
-    *on = b.u.b;
+    *on = !b.u.b;
     return 1;
 }
 
@@ -1681,7 +1690,7 @@ static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
         }
     }
 
-    // automatic toggle, after the trail has seen the event: a trail
+    // `mute on`, after the trail has seen the event: a trail
     // toggled on receives a zero tick, which awakes `await(true)` and
     // lets its timers report again
     int on;
@@ -1699,7 +1708,7 @@ static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     return st;
 }
 
-// A grab and a grabbable change how the emit goes on below them.
+// A solo and a stage change how the emit goes on below them.
 static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     if (tr->status==TR_OFF || tr->doomed) {
         return A_OK;
@@ -1758,21 +1767,23 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
     return st;
 }
 
-AStatus a_toggle (AVal t, AVal on, APatt** fs, int n) {
-    AStatus st = ctx_chk("toggle");
+AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
+    AStatus st = ctx_chk("mute");
     ANode* x = (ANode*) t.u.o;
+    // `mute t(true)` silences, `mute t(false)` gives the events back
+    AVal on = a_bool(mute.type==A_BOOL && !mute.u.b);
     if (st != A_OK) {
         // inside enter or leave of a context
     } else if (t.type!=A_XTASK && t.type!=A_TASKS) {
-        st = a_error("invalid toggle : expected task");
-    } else if (on.type != A_BOOL) {
-        st = a_error("invalid toggle : expected bool argument");
+        st = a_error("invalid mute : expected task");
+    } else if (mute.type != A_BOOL) {
+        st = a_error("invalid mute : expected bool argument");
     } else if (on.u.b && n>0) {
-        st = a_error("invalid toggle : unexpected argument");
+        st = a_error("invalid mute : unexpected pattern");
     } else if (on.u.b && !x->toggled) {
-        st = a_error("invalid toggle : expected toggled off task");
+        st = a_error("invalid mute : expected muted task");
     } else if (!on.u.b && x->toggled) {
-        st = a_error("invalid toggle : expected awaiting task");
+        st = a_error("invalid mute : expected unmuted task");
     }
     if (st != A_OK) {
         for (int i=0; i<n; i++) {
@@ -1811,8 +1822,8 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
     x->nfilt = n;
 }
 
-// `grabbable P {...}` and `grab P {...}`, before the block starts. A
-// grab takes the nearest grabbable above it, in the tree of tasks.
+// `stage P {...}` and `solo P {...}`, before the block starts. A solo
+// takes the nearest stage above it, in the tree of tasks.
 AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
     ATrail* me = &t->trs[i];
     ATrailX* x = trail_x(me);
@@ -1855,7 +1866,7 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
         } while (nd!=NULL && nd->hdr.type!=A_XTASK);
         if (nd == NULL) {
             free(path);
-            return a_error("invalid grab : expected enclosing grabbable");
+            return a_error("invalid solo : expected enclosing stage");
         }
         t = (ATask*) nd;
     }
