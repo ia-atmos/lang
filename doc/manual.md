@@ -3520,11 +3520,14 @@ runs:
 
 ```
 Context : `context´ `(´ Expr `,´ Expr `)´ Block
+        | `context´ Expr Block
 ```
 
 The first expression is a function `enter`, which sets the state and returns
 what `leave` needs to restore it.
 The second is a function `leave`, which receives that value.
+In the second form, the expression is a pair `[enter, leave]`, so that a
+library can give both in one value (`context eng.on(STARS) {...}`).
 The block runs as a [transparent task](#tasks), as in a
 [toggle](#toggle) block.
 
@@ -3548,7 +3551,8 @@ A context cannot set a state for code outside it to see.
 
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
-It is an error to `emit` or to `spawn` inside `enter` or `leave`.
+It is an error to `emit` or to `spawn` inside `enter` or `leave`, and for
+`enter` or `leave` not to be a function.
 
 Examples:
 
@@ -3572,6 +3576,21 @@ spawn {
     }
 }
 emit :draw
+```
+
+A library can give the pair:
+
+```
+func in_layer (l) {         ;; [enter, leave]
+    [\{ set_layer(l) }, \(old) { set_layer(old) }]
+}
+spawn {
+    context in_layer(:panel) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
 ```
 
 ### Parallel

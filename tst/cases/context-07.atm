@@ -1,4 +1,4 @@
-;; #3 (by the session, to be confirmed): leave receives what enter returned
+;; #3 (the author, 2026-11-22): leave receives what enter returned
 var layer = :world
 func set_layer (l) {
     val old = layer

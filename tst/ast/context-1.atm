@@ -1,4 +1,4 @@
-;; #4 (by the session, to be confirmed): context (enter, leave) {...}
+;; #4 (the author, 2026-11-22): context (enter, leave) {...}
 context (\{ f() }, \(old) { g(old) }) {
     await :X
 }

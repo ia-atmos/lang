@@ -989,6 +989,7 @@ void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
 // `context (enter, leave) {...}`: makes trail `i` a context, before it
 // starts.
 AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
+AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;

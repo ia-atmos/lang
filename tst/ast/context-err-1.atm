@@ -1,4 +1,4 @@
-;; #4: the two functions are in parentheses
-context \{ f() } {
+;; #4: the two functions close with a parenthesis
+context (a, b {
     await :X
 }

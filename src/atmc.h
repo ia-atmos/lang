@@ -155,7 +155,7 @@ typedef enum {
     E_AWAIT,
     // toggle t(b) with P  toggle on :T with P {...}
     E_TOGGLE, E_TOGGLE_ON,
-    // context (enter, leave) {...}
+    // context (enter, leave) {...}  |  context X {...} (leave NULL: enter is the pair)
     E_CONTEXT,
     // par {...} with {...}
     E_PAR,

@@ -2614,11 +2614,12 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
-// context (enter, leave) {...}: the block runs as a transparent task
+// context (enter, leave) {...} | context X {...}: the block runs as a transparent task
 // that is a context, before its first reaction.
 static void gen_context (Unit* u, Expr* e, Dst d) {
     Opnd en = gen_expr(u, e->u.context.enter);
-    Opnd lv = gen_expr(u, e->u.context.leave);
+    Expr* le = e->u.context.leave;
+    Opnd lv = (le == NULL) ? opnd_c(NULL) : gen_expr(u, le);
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
     int id = gen_trail(u);
@@ -2626,9 +2627,13 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     Expr* blk = e->u.context.blk;
     gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
     out(u, "a_lin = %d;", lin_of(e->tk));
-    out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
+    if (le == NULL) {
+        out_try(u, "a_trail_context_pair(t, %d, %s)", id, en.c);
+    } else {
+        out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
+        opnd_rel(u, lv);
+    }
     opnd_rel(u, en);
-    opnd_rel(u, lv);
     out(u, "a_lin = %d;", lin_of(blk->tk));
     out_try(u, "a_trail_spawn(t, %d)", id);
     out(u, "st = a_await_trails(tr, %d, 1);", id);

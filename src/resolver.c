@@ -283,7 +283,9 @@ static void hoist (Expr* e) {
             break;
         case E_CONTEXT:
             hoist(e->u.context.enter);
-            hoist(e->u.context.leave);
+            if (e->u.context.leave != NULL) {
+                hoist(e->u.context.leave);
+            }
             hoist(e->u.context.blk);
             break;
         case E_PAR:
@@ -1015,7 +1017,9 @@ static void res (Expr* e) {
 
         case E_CONTEXT:
             res(e->u.context.enter);
-            res(e->u.context.leave);
+            if (e->u.context.leave != NULL) {
+                res(e->u.context.leave);
+            }
             chk_await(e->tk, "context");
             res_block(e->u.context.blk, 1);
             break;

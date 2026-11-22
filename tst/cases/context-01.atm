@@ -1,4 +1,4 @@
-;; #1 (by the session, to be confirmed): enter and leave run around each
+;; #1 (the author, 2026-11-22): enter and leave run around each
 ;; resume of a trail inside, with a lazy switch
 spawn {
     context (\{ print "+A" }, \{ print "-A" }) {

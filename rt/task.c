@@ -964,6 +964,14 @@ static AStatus ctx_here (void) {
 }
 
 AStatus a_trail_context (ATask* t, int i, AVal enter, AVal leave) {
+    if (enter.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(enter));
+    }
+    if (leave.type != A_FUNC) {
+        return a_error("invalid context : expected function : got %s",
+            a_typename(leave));
+    }
     ATrailX* x = trail_x(&t->trs[i]);
     x->ctx = 1;
     a_cpy(&x->enter, enter);
@@ -971,6 +979,27 @@ AStatus a_trail_context (ATask* t, int i, AVal enter, AVal leave) {
     x->cval = a_nil();
     LIVE++;
     return A_OK;
+}
+
+// context X {...}: X holds the pair, enter at 0 and leave at 1.
+AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
+    if (pair.type != A_TAB) {
+        return a_error("invalid context : expected table : got %s",
+            a_typename(pair));
+    }
+    AVal en = a_nil();
+    AVal lv = a_nil();
+    if (a_index(&en, pair, a_int(0)) != A_OK) {
+        return A_ERROR;
+    }
+    if (a_index(&lv, pair, a_int(1)) != A_OK) {
+        a_dec(en);
+        return A_ERROR;
+    }
+    AStatus st = a_trail_context(t, i, en, lv);
+    a_dec(en);
+    a_dec(lv);
+    return st;
 }
 
 // A context trail ends: left if applied, with those inside it.

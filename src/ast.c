@@ -292,8 +292,10 @@ void ast_dump (Expr* e) {
             printf("(context ");
             ast_dump(e->u.context.enter);
             printf(" ");
-            ast_dump(e->u.context.leave);
-            printf(" ");
+            if (e->u.context.leave != NULL) {
+                ast_dump(e->u.context.leave);
+                printf(" ");
+            }
             ast_dump(e->u.context.blk);
             printf(")");
             break;
