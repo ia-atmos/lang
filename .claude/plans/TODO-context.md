@@ -13,7 +13,7 @@ session, never reused; from another session, `session#N`.
 |---|---|---|---|
 | #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | decided by the author (2026-11-22): B, around each resume, lazy (as on the branch `context`) |
 | #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | decided by the author (2026-11-22): no filter; a filter stays as #19 |
-| #3 | `leave` receives what `enter` returned | decision | by the session, to be confirmed: yes |
+| #3 | `leave` receives what `enter` returned (decided 2026-11-22) | decision | decided by the author (2026-11-22): yes |
 | #4 | Syntax | decision | by the session, to be confirmed: `context (enter, leave) {...}`, two functions (`\{...}`, `\(old) {...}`); `context` becomes a keyword |
 | #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | by the session, to be confirmed: `emit` and `spawn` there are errors (`abort` not checked); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer |
 | #6 | SNKRX and env-ray not readable by this session | remark | open: cloning `ia-atmos/snxkx` and `ia-atmos/raylib` refused again (2026-11-20) |
@@ -33,10 +33,7 @@ session, never reused; from another session, `session#N`.
 
 ## Waiting for the author (one at a time, in this order)
 
-- **#3** Can `leave` receive what `enter` returned (the pico idiom
-  `val old = pico.set.layer(l)` ... `pico.set.layer(old)`)?
-  Recommended: yes.
-- #4 Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang/atmos`
+- **#4** Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang/atmos`
   plan's `:init :enter :body :leave`, or `context (enter, leave) {...}`
   with functions as expressions.
 - #5 Errors: `emit`, `spawn`, `abort` inside `enter`/`leave`.
@@ -114,3 +111,5 @@ it awaits.
   `261118-context-semantics.md`, sections 3 to 6 and 8.
 - #2 (2026-11-22, the author, "sem filtro, mas deixar como TODO"): no
   filter of events; a filter is #19, known, not done.
+- #3 (2026-11-22, the author, "sim"): `leave` receives what `enter`
+  returned.
