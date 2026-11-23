@@ -8,6 +8,13 @@ Items are `#N` (standing rule of 2026-11-18, `TODO.md`): unique here,
 never reused nor changed. The questions asked as "questão 1..8" before
 the rule are `#1`..`#8`.
 
+## Paused (2026-11-23)
+
+The author pauses new steps until next week. Waiting meanwhile: the
+merge of `grab` eb028ad by `atmos-lang` (#26), the rewrite of the ports
+(#23, #24). Next decision: #21 (1), a default `stage`, once the ports are
+rewritten.
+
 ## Index
 
 | # | Item | State |
