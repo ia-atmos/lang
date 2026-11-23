@@ -282,6 +282,22 @@ Tags can also be used to "tag" tables, introducing the notion of lightweight
 user types in Atmos.
 The constructor `:Pos [x=10,y=20]` is equivalent to `[tag=:Pos,x=10,y=20]`.
 
+The tag of a table is not one of its keys: the name `tag` is reserved in
+tables, and `t.tag`, `t@("tag")`, `set t.tag = :Q` and the field `tag=` of
+a constructor all read or write the tag.
+A loop over the table, its length `#`, and `next` do not see it, while
+`??`, `match`, `X.copy`, `X.dump` and `++` carry it (the tag of `a ++ b`
+is the tag of `b`, or else the tag of `a`).
+A tag is a string or `nil` (no tag); assigning any other value is an error.
+
+```
+pin t = :T [10, 20]
+loop k, v in t {
+    print(k, v)     ;; --> 0 10, then 1 20 (no tag)
+}
+print(#t, t.tag)    ;; --> 2, T
+```
+
 Tags can describe type hierarchies by splitting identifiers with (`.`).
 For instance, a tag such as `:T.A.x` is a subtype of `:T`, `:T.A`, and
 `:T.A.x` at the same time, as verified by the
@@ -1316,6 +1332,10 @@ A transparent task has no own identity and is owned by its enclosing
 non-transparent task.
 In addition, it delegates [pub](#pub) and [emit](#emit) operations to its
 owner.
+Since it has no identity, its termination is not an event: unlike a task, it
+does not awake an `await` of any kind (not even `await(true)` or
+`await :xtask`).
+Only what awaits it by structure goes on, such as the enclosing `par`.
 Note that other compound constructs of Atmos, including
 [par and watching](#parallel), also rely on transparent tasks internally.
 
@@ -2855,7 +2875,8 @@ supported:
     ranges over vector indexes and values, and then over the other keys and
     values of a table, in the order they were inserted; the key `tag` of a
     [tagged table](#hierarchical-tags) is not visited; the body must not add
-    or remove keys of the table, which leaves the rest of the walk undefined
+    or remove keys of the table, which leaves the rest of the walk undefined,
+    but may assign the keys it already has (`set t@i = v * 2`)
 - `:tasks`:
     ranges over the indexes and tasks of a task pool, in the order they were
     spawned; the body may abort tasks of the pool, which are then not
@@ -3624,8 +3645,8 @@ code that lives in its block runs, and restores it before any other code
 runs:
 
 ```
-Context : `context´ `(´ Expr `,´ Expr `)´ Block
-        | `context´ Expr Block
+Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
+        | `context´ [`<´ Patt `>´] Expr Block
 ```
 
 The first expression is a function `enter`, which sets the state and returns
@@ -3645,6 +3666,14 @@ tasks of a pool declared inside a context run inside it, and a task spawned
 from inside a context into a pool declared outside does not.
 Contexts nest: the inner one is entered after the outer one, and left before
 it.
+
+The pattern is an [await pattern](#await), between `<` and `>` as in the
+first format of a [mute](#mute), since an expression follows.
+With a pattern, the context applies only while the traversal of an emit that
+matches it resumes code inside: for other emits, and outside an emit (the
+first reaction of the block, an `abort` from code), the code inside runs as if
+the context were not there.
+With no pattern, every event applies it.
 
 The switch is lazy: two tasks of the same context that awake in a row, such
 as the tasks of a pool, call `enter` and `leave` only once around both, and an
@@ -3696,6 +3725,20 @@ spawn {
             print(layer)    ;; --> panel
         }
     }
+}
+```
+
+With a pattern, the state is set only to draw: the watching of each coin, the
+clock and the keys run without it:
+
+```
+context <:draw> ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE) {
+    spawn { loop on :draw { tiles() } }
+    pin coins = tasks()
+    loop c in cs {
+        spawn @coins Coin(c)
+    }
+    await false
 }
 ```
 
@@ -3886,7 +3929,8 @@ Functions:
 - `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
   for which `f(v, k)` is truthy, in the order of the walk
 - `iter.map(xs, f)`: a new vector with `f(v, k)` of each member, in the order
-  of the walk; a result `nil` is left out
+  of the walk; a result `nil` raises an error, since a vector has no `nil`
+  (to leave members out, `iter.filter` comes first)
 - `iter.any(xs, f)`, `iter.all(xs, f)`: whether `f(v, k)` is truthy for some
   member, or for every member (`true` if there is none)
 - `iter.fold(xs, acc, f)`: `acc`, set to `f(acc, v, k)` at each member

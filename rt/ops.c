@@ -25,6 +25,10 @@ int a_gte (AVal a, AVal b) {
         // every pair in `a` is more general than the same key in `b`
         uint32_t pos = 0;
         AVal k, v;
+        AVal at = A_TAB_OF(a)->tag;
+        if (at.type!=A_NIL && !a_gte(at, A_TAB_OF(b)->tag)) {
+            return 0;
+        }
         while (a_tab_next(A_TAB_OF(a), &pos, &k, &v)) {
             if (!a_gte(v, a_tab_get(A_TAB_OF(b), k))) {
                 return 0;
@@ -44,6 +48,10 @@ int a_is (AVal v, AVal x) {
         // every field of the pattern matches the same field of the value
         uint32_t pos = 0;
         AVal k, xv;
+        AVal xt = A_TAB_OF(x)->tag;
+        if (xt.type!=A_NIL && !a_is(A_TAB_OF(v)->tag, xt)) {
+            return 0;
+        }
         while (a_tab_next(A_TAB_OF(x), &pos, &k, &xv)) {
             if (!a_is(a_tab_get(A_TAB_OF(v), k), xv)) {
                 return 0;
@@ -63,9 +71,7 @@ int a_is (AVal v, AVal x) {
         return prefix(sx, A_STR_OF(v));
     }
     if (v.type == A_TAB) {
-        AVal k = a_strz("tag");
-        AVal tag = a_tab_get(A_TAB_OF(v), k);
-        a_dec(k);
+        AVal tag = A_TAB_OF(v)->tag;
         return (tag.type == A_STR) && prefix(sx, A_STR_OF(tag));
     }
     return 0;
@@ -149,6 +155,8 @@ AStatus a_cat (AVal* dst, AVal a, AVal b) {
         a_born(ret, v);
         a_tab_set(t, k, v);
     }
+    // the tag of `b`, if any, else the tag of `a`
+    a_cpy(&t->tag, A_TAB_OF(b)->tag.type!=A_NIL ? A_TAB_OF(b)->tag : A_TAB_OF(a)->tag);
     // keys 0,1,... of `b` in sequence are appended
     int64_t n = 0;
     pos = 0;
@@ -166,11 +174,6 @@ AStatus a_cat (AVal* dst, AVal a, AVal b) {
     return A_OK;
 }
 
-// Whether `k` is the key `tag`.
-static int is_tag_key (AVal k) {
-    return k.type==A_STR && A_STR_OF(k)->len==3 && memcmp(A_STR_OF(k)->s, "tag", 3)==0;
-}
-
 AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {
@@ -180,11 +183,7 @@ AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
             }
             uint32_t i = (uint32_t) p;
             AVal x, y;
-            int more;
-            // the tag of a tagged table is not one of its members
-            while ((more = a_tab_next(A_TAB_OF(it), &i, &x, &y)) && is_tag_key(x)) {
-            }
-            if (more) {
+            if (a_tab_next(A_TAB_OF(it), &i, &x, &y)) {
                 a_cpy(k, x);
                 a_cpy(v, y);
             } else {

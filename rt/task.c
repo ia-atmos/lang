@@ -891,6 +891,38 @@ static int     LAZY = 0;
 
 #define CTX_ON() (LIVE>0 || NCTX>0)
 
+// The emit being traversed, for the filters of `context <P>`: time 0
+// outside an emit (a spawn, an abort from code), where they never pass.
+static uint32_t EVT_TIME = 0;
+static AVal     EVT_VAL;
+
+static AStatus filt_start (APatt** fs, int n);
+static AStatus filt_pass  (APatt** fs, int n, AVal evt, int* pass);
+
+// Whether a context applies to the emit being traversed.
+static int ctx_pass (ATrailX* x) {
+    if (x->ncfilt == 0) {
+        return 1;
+    }
+    if (EVT_TIME == 0) {
+        return 0;
+    }
+    if (x->ctime != EVT_TIME) {
+        // the match clears the payload: keep the one being delivered
+        // (the value of a task that ended, of an await)
+        APay pay;
+        a_pay_save(&pay);
+        int pass = 0;
+        if (filt_pass(x->cfilt, x->ncfilt, EVT_VAL, &pass) != A_OK) {
+            pass = 0;
+        }
+        a_pay_restore(&pay);
+        x->ctime = EVT_TIME;
+        x->cpass = pass;
+    }
+    return x->cpass;
+}
+
 // The contexts around trail `i` of task `t`, from the innermost.
 static int ctx_chain (ATask* t, int i, ATrail** out) {
     int n = 0;
@@ -899,7 +931,9 @@ static int ctx_chain (ATask* t, int i, ATrail** out) {
             const ATrailD* ds = t->desc->trails;
             for (int j=i; j>=0; j=ds[j].up) {
                 ATrail* tr = &t->trs[j];
-                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF) {
+                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF &&
+                    ctx_pass(tr->x))
+                {
                     if (n == CTX_MAX) {
                         return n;
                     }
@@ -1030,6 +1064,16 @@ AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
     return st;
 }
 
+AStatus a_trail_context_filt (ATask* t, int i, APatt** fs, int n) {
+    ATrailX* x = trail_x(&t->trs[i]);
+    x->cfilt  = malloc((n > 0 ? n : 1) * sizeof(APatt*));
+    memcpy(x->cfilt, fs, n * sizeof(APatt*));
+    x->ncfilt = n;
+    x->ctime  = 0;
+    x->cpass  = 0;
+    return filt_start(x->cfilt, x->ncfilt);
+}
+
 // A context trail ends: left if applied, with those inside it.
 static void ctx_drop (ATrail* tr) {
     for (int k=0; k<NCTX; k++) {
@@ -1042,6 +1086,12 @@ static void ctx_drop (ATrail* tr) {
     a_dec(x->enter);
     a_dec(x->leave);
     a_dec(x->cval);
+    for (int i=0; i<x->ncfilt; i++) {
+        patt_free(x->cfilt[i]);
+    }
+    free(x->cfilt);
+    x->cfilt  = NULL;
+    x->ncfilt = 0;
     LIVE--;
 }
 
@@ -1212,28 +1262,33 @@ static int kit_next (KIt* it, ATrail** tr, ANode** n) {
 // RESUME
 ///////////////////////////////////////////////////////////////////////////////
 
-// Termination of a transparent block: as for a task, it is an emit of
-// a task to the subtree of its task. The block has no identity, so the
-// event is a terminated task made up for the occasion, with the result
-// of the block.
-static AStatus trail_emit (ATask* t, AVal ret) {
-    ATask* x = calloc(1, sizeof(ATask));
-    node_init(&x->node, A_XTASK);
-    x->node.dead = 1;
-    x->status = T_DONE;
-    x->ret    = ret;
-    AStatus st = emit_top(&t->node, a_obj(&x->node.hdr));
-    a_dec(a_obj(&x->node.hdr));
-    return st;
+// Termination of a transparent block: it has no identity and is not
+// an event. Only what awaits it by structure goes on: its parent, if
+// it awaits the trails of a `par :all` or of a `toggle` and this was
+// the last one. The parent is resumed directly, with no emit.
+static AStatus trail_wake (ATask* t, int idx) {
+    int up = t->desc->trails[idx].up;
+    if (up < 0) {
+        return A_OK;
+    }
+    ATrail* p = &t->trs[up];
+    if (p->status!=TR_SUSPENDED || p->waiting || p->doomed ||
+        p->root.kind!=PK_TRAILS ||
+        idx<p->root.u.trs.lo || idx>=p->root.u.trs.lo+p->root.u.trs.n ||
+        !trails_off(t, p->root.u.trs.lo, p->root.u.trs.n))
+    {
+        return A_OK;
+    }
+    a_pay_clear();
+    return trail_resume(t, p, R_EVENT);
 }
 
 // The trail terminated with `st`. Returns the status its resumer
 // continues with.
 static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
-    // the result of a transparent block arrives in the payload
-    AVal ret = a_nil();
+    // the result of a transparent block arrives in the payload: its
+    // destination, if any, already has it
     if (tr->idx>0 && st==A_OK) {
-        a_pay_take(&ret, 0);
         a_pay_clear();
     }
     if (tr->root.kind != PK_NONE) {
@@ -1270,7 +1325,7 @@ static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
         // a transparent block
         switch (st) {
             case A_OK:
-                st = trail_emit(t, ret);
+                st = trail_wake(t, idx);
                 break;
             case A_ABORT:
                 st = A_OK;
@@ -1580,9 +1635,7 @@ static int toggle_evt (AVal tog, AVal evt, int* on) {
     if (tog.type==A_NIL || evt.type!=A_TAB) {
         return 0;
     }
-    AVal k = a_strz("tag");
-    AVal tag = a_tab_get(A_TAB_OF(evt), k);
-    a_dec(k);
+    AVal tag = A_TAB_OF(evt)->tag;
     AVal b = a_tab_get(A_TAB_OF(evt), a_int(0));
     if (b.type!=A_BOOL || !a_gte(tog, tag)) {
         return 0;
@@ -1796,7 +1849,13 @@ AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
     if (on.u.b) {
         // a zero tick awakes `await(true)` and lets the timers report
         node_untoggle(x);
-        AStatus st2 = emit_node(x, ++TIME, a_int(0));
+        uint32_t otime = EVT_TIME;
+        AVal     oval  = EVT_VAL;
+        EVT_TIME = ++TIME;
+        EVT_VAL  = a_int(0);
+        AStatus st2 = emit_node(x, EVT_TIME, EVT_VAL);
+        EVT_TIME = otime;
+        EVT_VAL  = oval;
         AStatus st3 = ctx_here();
         return chk_aborted((st2 == A_OK) ? st3 : st2);
     }
@@ -1883,7 +1942,13 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
 // An emit traverses the tree, and then the code that emitted goes on in
 // its own contexts.
 static AStatus emit_top (ANode* n, AVal evt) {
-    AStatus st = emit_node(n, ++TIME, evt);
+    uint32_t otime = EVT_TIME;
+    AVal     oval  = EVT_VAL;
+    EVT_TIME = ++TIME;
+    EVT_VAL  = evt;
+    AStatus st = emit_node(n, EVT_TIME, evt);
+    EVT_TIME = otime;
+    EVT_VAL  = oval;
     AStatus st2 = ctx_here();
     return (st == A_OK) ? st2 : st;
 }
@@ -2634,17 +2699,71 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
 }
 
 // The places written with `set :out` that wait for the end of a value.
+// The entries of a value are chained, and found through a hash of the
+// values: a value that ends (most have no entry) is looked up at once.
 typedef struct OutE {
     AObj* v;        // not counted: the entry goes when the value ends
     AVal  t;        // a table and a key (counted), or
     AVal  k;
     AVal* slot;     // a variable, with its box (counted) if captured
     AVal  box;
+    int   next;     // the next entry of the same value, or free (-1: none)
 } OutE;
 
 static OutE* OUTS   = NULL;
 static int   OUTS_C = 0;
-int a_nouts = 0;
+static int   OUTS_F = -1;   // free entries
+int a_nouts = 0;            // entries in use
+
+// value -> first entry (open addressing; empty: NULL)
+typedef struct OutH {
+    AObj* v;
+    int   e;
+} OutH;
+static OutH* OUTH   = NULL;
+static int   OUTH_C = 0;    // a power of 2
+static int   OUTH_N = 0;    // keys in use, with tombstones
+#define OUTH_DEL ((AObj*)1)
+
+static uint32_t outh_hash (AObj* o) {
+    uintptr_t x = (uintptr_t) o;
+    x ^= x >> 17;
+    x *= 0x9E3779B1u;
+    return (uint32_t) (x ^ (x >> 15));
+}
+
+// The slot of `o`, or of an empty key where it would go.
+static int outh_find (AObj* o) {
+    uint32_t m = OUTH_C - 1;
+    uint32_t i = outh_hash(o) & m;
+    int del = -1;
+    while (OUTH[i].v != NULL) {
+        if (OUTH[i].v == o) {
+            return i;
+        }
+        if (OUTH[i].v==OUTH_DEL && del<0) {
+            del = i;
+        }
+        i = (i + 1) & m;
+    }
+    return (del >= 0) ? del : (int)i;
+}
+
+static void outh_grow (void) {
+    OutH* old = OUTH;
+    int   n   = OUTH_C;
+    OUTH_C = (n == 0) ? 64 : n*2;
+    OUTH   = calloc(OUTH_C, sizeof(OutH));
+    OUTH_N = 0;
+    for (int i=0; i<n; i++) {
+        if (old[i].v!=NULL && old[i].v!=OUTH_DEL) {
+            int j = outh_find(old[i].v);
+            OUTH[j] = old[i];
+            OUTH_N++;
+        }
+    }
+    free(old);
+}
 
 static int out_ends (AVal v) {
     if (v.type < A_TAB) {
@@ -2656,21 +2775,59 @@ static int out_ends (AVal v) {
     return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
 }
 
-static void out_add (OutE e) {
-    if (a_nouts == OUTS_C) {
-        OUTS_C = (OUTS_C == 0) ? 16 : OUTS_C*2;
-        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+static int out_same (OutE* x, OutE* e) {
+    if (e->slot != NULL) {
+        return x->slot == e->slot;
     }
-    OUTS[a_nouts++] = e;
+    return x->slot==NULL && a_same(x->t, e->t) && a_same(x->k, e->k);
+}
+
+// Adds the entry, unless the value already has one for the same place.
+// Returns 0 if it had (the counted fields of `e` are not taken).
+static int out_add (OutE e) {
+    if ((OUTH_N+1)*2 > OUTH_C) {
+        outh_grow();
+    }
+    int h = outh_find(e.v);
+    if (OUTH[h].v == e.v) {
+        for (int i=OUTH[h].e; i>=0; i=OUTS[i].next) {
+            if (out_same(&OUTS[i], &e)) {
+                return 0;
+            }
+        }
+    } else {
+        if (OUTH[h].v == NULL) {
+            OUTH_N++;
+        }
+        OUTH[h].v = e.v;
+        OUTH[h].e = -1;
+    }
+    if (OUTS_F < 0) {
+        int n = OUTS_C;
+        OUTS_C = (n == 0) ? 16 : n*2;
+        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
+        for (int i=OUTS_C-1; i>=n; i--) {
+            OUTS[i].next = OUTS_F;
+            OUTS_F = i;
+        }
+    }
+    int i = OUTS_F;
+    OUTS_F = OUTS[i].next;
+    e.next = OUTH[h].e;
+    OUTS[i] = e;
+    OUTH[h].e = i;
+    a_nouts++;
+    return 1;
 }
 
 int a_out_reg_tab (AVal t, AVal k, AVal v) {
     if (!out_ends(v)) {
         return 0;
     }
-    a_inc(t);
-    a_inc(k);
-    out_add((OutE) { v.u.o, t, k, NULL, a_nil() });
+    if (out_add((OutE) { v.u.o, t, k, NULL, a_nil(), -1 })) {
+        a_inc(t);
+        a_inc(k);
+    }
     return 1;
 }
 
@@ -2678,8 +2835,9 @@ int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
     if (!out_ends(v) || d>a_pdepth(v)) {
         return 0;
     }
-    a_inc(box);
-    out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box });
+    if (out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box, -1 })) {
+        a_inc(box);
+    }
     return 1;
 }
 
@@ -2709,16 +2867,25 @@ AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
 }
 
 void a_out_ended (AObj* o) {
-    for (int i=0; i<a_nouts; ) {
-        if (OUTS[i].v != o) {
-            i++;
-            continue;
-        }
+    if (OUTH_C == 0) {
+        return;
+    }
+    int h = outh_find(o);
+    if (OUTH[h].v != o) {
+        return;
+    }
+    // the chain leaves the index first: a release here may end other
+    // values, and change the index
+    int i = OUTH[h].e;
+    OUTH[h].v = OUTH_DEL;
+    AVal v = a_obj(o);
+    while (i >= 0) {
         OutE e = OUTS[i];
-        OUTS[i] = OUTS[--a_nouts];
-        // the place goes back to nil, if it still refers to the value;
-        // a release here may end other values, and change the list
-        AVal v = a_obj(o);
+        OUTS[i].next = OUTS_F;
+        OUTS_F = i;
+        a_nouts--;
+        i = e.next;
+        // the place goes back to nil, if it still refers to the value
         if (e.slot != NULL) {
             if (a_same(*e.slot, v)) {
                 a_clr(e.slot);
@@ -2733,7 +2900,6 @@ void a_out_ended (AObj* o) {
             a_dec(e.t);
             a_dec(e.k);
         }
-        i = 0;
     }
 }
 
@@ -3349,22 +3515,141 @@ static int node_dropped (ANode* n) {
 // the list holds one reference to each. The key is the place: the slot
 // of a `pin`, or the table or task whose field or `pub` it left. They
 // are finalized when the place is: at the end of its block.
-typedef struct { AObj* o; int d; const void* key; } ARet;
+typedef struct {
+    AObj*       o;
+    int         d;
+    const void* key;
+    int         prev, next;     // the chain of the same key, or free
+} ARet;
 static ARet* RETS  = NULL;
 static int   CRETS = 0;
-int a_nrets = 0;
+static int   FRETS = -1;        // free entries
+int a_nrets = 0;                // entries in use
 #define NRETS a_nrets
+
+// A map from a pointer to an entry (open addressing; empty: NULL): one
+// by place (the first entry of its chain), one by value.
+typedef struct { const void* p; int e; } PSlot;
+typedef struct { PSlot* v; int c; int n; } PMap;
+#define PMAP_DEL ((const void*)1)
+static PMap RETS_K = { NULL, 0, 0 };
+static PMap RETS_O = { NULL, 0, 0 };
+
+static uint32_t pmap_hash (const void* p) {
+    uintptr_t x = (uintptr_t) p;
+    x ^= x >> 17;
+    x *= 0x9E3779B1u;
+    return (uint32_t) (x ^ (x >> 15));
+}
+
+static int pmap_slot (PMap* m, const void* p) {
+    uint32_t k = m->c - 1;
+    uint32_t i = pmap_hash(p) & k;
+    int del = -1;
+    while (m->v[i].p != NULL) {
+        if (m->v[i].p == p) {
+            return i;
+        }
+        if (m->v[i].p==PMAP_DEL && del<0) {
+            del = i;
+        }
+        i = (i + 1) & k;
+    }
+    return (del >= 0) ? del : (int)i;
+}
+
+// The entry of `p`, or -1.
+static int pmap_get (PMap* m, const void* p) {
+    if (m->c == 0) {
+        return -1;
+    }
+    int i = pmap_slot(m, p);
+    return (m->v[i].p == p) ? m->v[i].e : -1;
+}
+
+static void pmap_put (PMap* m, const void* p, int e) {
+    if ((m->n+1)*2 > m->c) {
+        PSlot* old = m->v;
+        int    n   = m->c;
+        m->c = (n == 0) ? 64 : n*2;
+        m->v = calloc(m->c, sizeof(PSlot));
+        m->n = 0;
+        for (int i=0; i<n; i++) {
+            if (old[i].p!=NULL && old[i].p!=PMAP_DEL) {
+                m->v[pmap_slot(m, old[i].p)] = old[i];
+                m->n++;
+            }
+        }
+        free(old);
+    }
+    int i = pmap_slot(m, p);
+    if (m->v[i].p == NULL) {
+        m->n++;
+    }
+    m->v[i].p = p;
+    m->v[i].e = e;
+}
+
+static void pmap_del (PMap* m, const void* p) {
+    if (m->c == 0) {
+        return;
+    }
+    int i = pmap_slot(m, p);
+    if (m->v[i].p == p) {
+        m->v[i].p = PMAP_DEL;
+    }
+}
+
+static void pmap_free (PMap* m) {
+    free(m->v);
+    m->v = NULL;
+    m->c = 0;
+    m->n = 0;
+}
+
+// Takes the entry `i` out of its chain and of the maps, and frees it.
+static ARet ret_take (int i) {
+    ARet r = RETS[i];
+    if (r.prev >= 0) {
+        RETS[r.prev].next = r.next;
+    } else if (r.next >= 0) {
+        pmap_put(&RETS_K, r.key, r.next);
+    } else {
+        pmap_del(&RETS_K, r.key);
+    }
+    if (r.next >= 0) {
+        RETS[r.next].prev = r.prev;
+    }
+    pmap_del(&RETS_O, r.o);
+    RETS[i].o    = NULL;
+    RETS[i].next = FRETS;
+    FRETS = i;
+    NRETS--;
+    return r;
+}
 
 static void ret_release (AObj* o);
 
 static void ret_add (AObj* o, int d, const void* key) {
-    if (NRETS == CRETS) {
-        CRETS = (CRETS == 0) ? 8 : CRETS*2;
+    if (FRETS < 0) {
+        int n = CRETS;
+        CRETS = (n == 0) ? 8 : n*2;
         RETS  = realloc(RETS, CRETS * sizeof(ARet));
+        for (int i=CRETS-1; i>=n; i--) {
+            RETS[i].o    = NULL;
+            RETS[i].next = FRETS;
+            FRETS = i;
+        }
     }
-    RETS[NRETS].o   = o;
-    RETS[NRETS].d   = d;
-    RETS[NRETS].key = key;
+    int i = FRETS;
+    FRETS = RETS[i].next;
+    int h = pmap_get(&RETS_K, key);
+    RETS[i] = (ARet) { o, d, key, -1, h };
+    if (h >= 0) {
+        RETS[h].prev = i;
+    }
+    pmap_put(&RETS_K, key, i);
+    pmap_put(&RETS_O, o, i);
     NRETS++;
 }
 
@@ -3438,14 +3723,11 @@ static void ret_children (AVal v, int d, const void* key) {
 }
 
 static const void* ret_remove (AObj* o) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (RETS[i].o == o) {
-            const void* key = RETS[i].key;
-            RETS[i] = RETS[--NRETS];
-            return key;
-        }
+    int i = pmap_get(&RETS_O, o);
+    if (i < 0) {
+        return NULL;
     }
-    return NULL;
+    return ret_take(i).key;
 }
 
 // The list has the last reference: the value goes now.
@@ -3459,27 +3741,33 @@ static void ret_release (AObj* o) {
     a_dec(v);
 }
 
+static void ret_end_one (ARet r) {
+    AVal v = a_obj(r.o);
+    if (r.o->pinned==4 && (int)r.o->depth==r.d) {
+        r.o->pinned = 2;
+        clr_deep(v, r.d);
+    }
+    a_dec(v);
+}
+
 // The place `key` ends (NULL: all of them): what left it and is still
 // alive, in practice a cycle, is finalized as a pin of its block.
 void a_ret_end (const void* key) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (i >= NRETS) {
-            i = NRETS;
-            continue;
+    if (key == NULL) {
+        // all of them: the list may change at each one
+        while (NRETS > 0) {
+            for (int i=0; i<CRETS; i++) {
+                if (RETS[i].o != NULL) {
+                    ret_end_one(ret_take(i));
+                    break;
+                }
+            }
         }
-        if (key!=NULL && RETS[i].key!=key) {
-            continue;
-        }
-        ARet r = RETS[i];
-        RETS[i] = RETS[--NRETS];
-        AVal v = a_obj(r.o);
-        if (r.o->pinned==4 && (int)r.o->depth==r.d) {
-            r.o->pinned = 2;
-            clr_deep(v, r.d);
-        }
-        a_dec(v);
-        // the list may have changed
-        i = NRETS;
+        return;
+    }
+    int i;
+    while ((i = pmap_get(&RETS_K, key)) >= 0) {
+        ret_end_one(ret_take(i));
     }
 }
 
@@ -3487,21 +3775,13 @@ void a_ret_end (const void* key) {
 // still referred to is no longer owned by a place, and stays confined
 // to its block by its floor.
 void a_ret_forget (AObj* o) {
-    for (int i=NRETS-1; i>=0; i--) {
-        if (i >= NRETS) {
-            i = NRETS;
-            continue;
-        }
-        if (RETS[i].key != o) {
-            continue;
-        }
-        ARet r = RETS[i];
-        RETS[i] = RETS[--NRETS];
+    int i;
+    while ((i = pmap_get(&RETS_K, o)) >= 0) {
+        ARet r = ret_take(i);
         if (r.o->pinned == 4) {
             r.o->pinned = 0;
         }
         a_dec(a_obj(r.o));
-        i = NRETS;
     }
 }
 
@@ -4118,6 +4398,9 @@ void a_task_quit (void) {
     ADOPT_CAP = 0;
     free(RETS);
     RETS  = NULL;
+    FRETS = -1;
+    pmap_free(&RETS_K);
+    pmap_free(&RETS_O);
     a_nrets = 0;
     CRETS = 0;
 }

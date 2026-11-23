@@ -300,6 +300,11 @@ void ast_dump (Expr* e) {
             break;
         case E_CONTEXT:
             printf("(context ");
+            if (e->u.context.patt != NULL) {
+                printf("<");
+                dump_patt(e->u.context.patt);
+                printf("> ");
+            }
             ast_dump(e->u.context.enter);
             printf(" ");
             if (e->u.context.leave != NULL) {

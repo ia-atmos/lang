@@ -8,7 +8,7 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Should the end of a transparent block be an event that programs see? | decided 2026-11-21: `#1a`, no, it ends in silence |
-| `#2` | Implementation on branch `blocks` (`77b2ff3`, `bc32a05`, `d2825ef`) | measured by `atmos-lang` 2026-11-21 (`atmos-lang#109`): nothing changes on the ports, about 8 times faster; main (`009d99b`, with `pin`) merged into `blocks` as `8ed593f`, checked again by `atmos-lang`; waiting for the author's approval |
+| `#2` | Merge of the branch `blocks` into `main` | approved 2026-11-23 (`#2a`); merged as `95946fe` (fast-forward) |
 | `#3` | A `par :all` under a block toggled off: today and now, see below | remark, no decision asked |
 
 ## Facts found by the session (2026-11-20)

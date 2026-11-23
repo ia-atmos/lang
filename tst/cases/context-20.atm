@@ -1,0 +1,12 @@
+;; #19 (the author, 2026-11-22): <!:draw> is the complement
+var lit = false
+spawn {
+    context <!:draw> (\{ set lit = true }, \(_) { set lit = false }) {
+        spawn { loop on :draw { print("draw", lit) } }
+        spawn { loop on :key  { print("key", lit) } }
+        await false
+    }
+}
+emit :draw
+emit :key
+print("end", lit)

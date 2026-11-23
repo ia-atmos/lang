@@ -1,0 +1,18 @@
+;; #19 (the author, 2026-11-22): an outer context without a pattern and an
+;; inner one with: a key applies only the outer one
+var s = ""
+spawn {
+    context (\{ set s = s ++ "+A" }, \(_) { set s = s ++ "-A" }) {
+        context <:draw> (\{ set s = s ++ "+B" }, \(_) { set s = s ++ "-B" }) {
+            spawn { loop on :draw { set s = s ++ "d" } }
+            spawn { loop on :key  { set s = s ++ "k" } }
+            await false
+        }
+    }
+}
+set s = ""
+emit :draw
+print(s)
+set s = ""
+emit :key
+print(s)

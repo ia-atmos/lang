@@ -9,7 +9,7 @@ prefix; those born here are `atmos-pool#N`.
 
 | Item | Title | State |
 |---|---|---|
-| `atmos-lang#1` | An await over a pool with a condition | Waits for the merge of the branch `iter`: the author decided `atmos-iter#1` = `#1a` (2026-11-22), library `iter`, collection first; the await reads `await :tick until iter.find(ts, f)` |
+| `atmos-lang#1` | An await over a pool with a condition | Done: `await :tick until iter.find(ts, f)`, on main with the branch `iter` (7c64f69, 2026-11-22) |
 | `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
@@ -72,6 +72,10 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#1` (2026-11-22, through `atmos-iter#1` = `#1a`): no new
+  pattern; the library `iter` (`iter.find`, `iter.filter`, `iter.any`),
+  merged into main at 7c64f69. The branch `pool-find` is obsolete.
 
 - `atmos-lang#1` (2026-11-20, in `atmos-lang`): `find`/`filter` belong
   to a library over iterables, in the session `atmos-iter`. Done: the
