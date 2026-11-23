@@ -120,10 +120,37 @@ What the rewrite showed:
   its state (`b`, `pub`, `cls`) as one tagged table. That is the real
   cost for a port, not the dispatch.
 
-## 7. Open
+## 7. The parent clause: `super(...)` (#8, decided "Super", 2026-11-23)
 
-- A form to call the parent clause (`super(...)`, or the clause of a
-  given tag).
+On the branch `oo` at `0ba6917`.
+
+```
+func area (s :Shape)         { 0 }
+func area (s :Shape.Rect)    { s.w * s.h }
+func area (s :Shape.Rect.Sq) { super() + 1 }       ;; calls area (s :Shape.Rect)
+```
+
+| Point | Rule |
+|---|---|
+| The parent | among the clauses of the name whose every tag is as or more general than the tag of the running clause (no tag, the same, or a dot prefix) and that differ in some, the most specific that applies to the arguments, by the rule of the call |
+| Arguments | `super()` passes the parameters of the clause (and `...`); `super(a, b)` passes others, and the choice is still among the parents |
+| Multimethods | in `hit (a :Ship, b :Rock)`, the parents `(Ship, any)` and `(any, Rock)`: the left one wins |
+| No parent | error: `invalid super : no parent clause of 'f'` |
+| Where | in the body of a clause, nested lambdas included; elsewhere `super` is an ordinary name, so no program changes; in a task clause, a compile error (not done) |
+| How | the parser turns it into `$super(f, n, tags..., args...)`; the runtime picks and calls the clause |
+
+`collision` of SuperTux again (`261118-oo-tux/c.atm`): the two helpers
+that stood for the parents (`walker_bad`, `player_bad`) are gone, the
+ice block and the flying snowball call `super()`. Same 4704 results
+as the port; 3 helpers instead of 5, 3 `return` instead of 5.
+
+Tests: `tst/cases/clause-super-01`, `clause-super-err-01`. Suite on the
+branch over main of 2026-11-23: `tst/run.sh` pass=1091 fail=0 with ASAN,
+`make test-rt test-env` pass.
+
+## 8. Open
+
+- `super` in a task clause.
 - Clauses of local names (`val func`), and anonymous ones.
 - A cache of the choice per combination of tags.
 - The manual: nothing written yet ("Prototypes", "Calls", the grammar).

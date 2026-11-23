@@ -15,22 +15,10 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed by `atmos-lang` to `sdl-tux` on 2026-11-20; it is of `sdl-tux` to take or not |
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 | #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; measured by `atmos-lang` on 2026-11-20 (2197 files of 15 clones: no port changes; `atmos-lang#99`); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
-| #8 | A form to call the parent clause | asked 2026-11-20, options #8a `super(...)` (recommended), #8b `f@:Tag(...)`, #8c a named function; see "Waiting for the author" |
+| #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
-
-- **#8**, the parent clause. Options:
-  - #8a (recommended): `super(...)` inside a clause calls the most
-    specific clause that is less specific than this one and applies to
-    the arguments (`call-next-method` of CLOS); `super()` passes the same
-    arguments. Error when there is none, or when used outside a clause.
-    `next` would read better, but it is a builtin.
-  - #8b: `area@:Shape(s)`, the clause of a given tag, as a value. Explicit,
-    but awkward with several parameters. `area(s :Shape)` at a call is
-    not available: it already reads as `area(s(:Shape))`.
-  - #8c: nothing; a named function shared by both clauses, as in the
-    rewrite of `collision`.
 
 - **#7**: approve the merge of the clauses into main, or say what to
   change. Recommended: not to merge yet; first #8 (the parent clause)
@@ -74,3 +62,4 @@ To confirm or undo when he reads:
 - #7, 2026-11-20: "ok va em frente", to the prototype of clauses with
   one or more tagged parameters, chosen by specificity, with no
   grouping and no order. Not yet an approval to merge.
+- #8, 2026-11-23: "Super": the parent clause is called by `super(...)`.
