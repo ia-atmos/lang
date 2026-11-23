@@ -3,8 +3,8 @@ pin t = spawn {
     print(:ok)
 }
 emit @:global 5ms
-toggle t(false)
+mute t(true)
 emit @:global 20ms
-toggle t(true)
+mute t(false)
 print("-")
 emit @:global 5ms

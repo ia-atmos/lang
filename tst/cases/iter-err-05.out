@@ -1,0 +1,4 @@
+==> ERROR:
+ |  iter-err-05.atm:1 (call)
+ v  iter-err-05.atm:1 (throw)
+==> invalid comparison : string with number

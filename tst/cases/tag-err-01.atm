@@ -1,0 +1,2 @@
+pin t = []
+set t.tag = 10

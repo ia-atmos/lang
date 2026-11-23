@@ -1,0 +1,5 @@
+ok
+false	invalid loop : unexpected nil
+==> ERROR:
+ v  loop-nil-01.atm:7 (throw)
+==> invalid loop : unexpected nil

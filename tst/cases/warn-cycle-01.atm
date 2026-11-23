@@ -1,0 +1,29 @@
+;; A function assigned to a `var` that it refers to holds the box of the
+;; variable, which holds the function: a cycle that no pin owns, which
+;; leaks. A warning; `func g` or `pin var g` own it.
+do {
+    var g
+    set g = func (n) { if n > 0 { g(n - 1) } else { :a } }  ;; warning
+    print(g(3))
+    set g = nil                     ;; breaks the cycle
+}
+do {
+    func h (n) { if n > 0 { h(n - 1) } else { :b } }        ;; ok
+    print(h(3))
+}
+do {
+    pin var k
+    set k = func (n) { if n > 0 { k(n - 1) } else { :c } }  ;; ok
+    print(k(3))
+}
+do {
+    var f
+    set f = func () { func () { f } }                       ;; warning
+    set f = nil
+}
+do {
+    var x = 1
+    var y
+    set y = func () { x }                                   ;; ok
+    print(y())
+}

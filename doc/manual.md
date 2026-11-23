@@ -55,10 +55,10 @@
     * Exceptions
         - `throw` `catch`
     * Task Operations
-        - `spawn` `await` `emit` `toggle`
+        - `spawn` `await` `emit` `mute`
         - `par` `watching`
 * STANDARD LIBRARIES
-    - `math` `string` `vector` `io` `os` `X` `atmos`
+    - `math` `string` `iter` `vector` `io` `os` `X` `atmos`
 * SYNTAX
     * Ambiguities
 
@@ -282,6 +282,22 @@ Tags can also be used to "tag" tables, introducing the notion of lightweight
 user types in Atmos.
 The constructor `:Pos [x=10,y=20]` is equivalent to `[tag=:Pos,x=10,y=20]`.
 
+The tag of a table is not one of its keys: the name `tag` is reserved in
+tables, and `t.tag`, `t@("tag")`, `set t.tag = :Q` and the field `tag=` of
+a constructor all read or write the tag.
+A loop over the table, its length `#`, and `next` do not see it, while
+`??`, `match`, `X.copy`, `X.dump` and `++` carry it (the tag of `a ++ b`
+is the tag of `b`, or else the tag of `a`).
+A tag is a string or `nil` (no tag); assigning any other value is an error.
+
+```
+pin t = :T [10, 20]
+loop k, v in t {
+    print(k, v)     ;; --> 0 10, then 1 20 (no tag)
+}
+print(#t, t.tag)    ;; --> 2, T
+```
+
 Tags can describe type hierarchies by splitting identifiers with (`.`).
 For instance, a tag such as `:T.A.x` is a subtype of `:T`, `:T.A`, and
 `:T.A.x` at the same time, as verified by the
@@ -306,10 +322,12 @@ print(t ?? :T)              ;; --> true
 ## Lexical Memory Management
 
 Atmos has no tracing garbage collector: no pauses and no scans of the heap.
-Values are reference counted underneath, and the blocks of the program add
-what counting alone cannot do: they reclaim cycles, they give each value a
-lexical point of death, and they rule out the use of a value that was
-reclaimed.
+Values are reference counted, and the counts are part of the semantics:
+a value that is no longer referred to is finalized at once, at a point
+that is deterministic.
+The blocks of the program add what counting alone cannot do: they reclaim
+pinned cycles, they give each value a lexical point of death, and they
+rule out the use of a value that was reclaimed.
 
 Every dynamic value (a table, a function, a native value, a task, or a pool
 of tasks) belongs to a block of the program, which reclaims the value when
@@ -328,14 +346,13 @@ reclaimed then, and does not wait for the block.
 
 A program may be built with fewer of these costs.
 With `ATMOS_PIN=unchecked`, no rule below is checked: the semantics stays
-(a pinned value is finalized at the end of its block, deeply, and cycles
-are collected), so a correct program behaves the same, and an incorrect
+(a pinned value is finalized at the end of its block, deeply), so a correct program behaves the same, and an incorrect
 one is not stopped (an escape reads an emptied value instead of raising
 an error).
 With `ATMOS_PIN=off`, also, `pin` only holds for tasks and pools, which
 still end with their block, as a `spawn` does: a pinned table, function,
-or native value is a plain name, released by its counts, and no cycle is
-collected.
+or native value is a plain name, released by its counts, and a pinned
+cycle leaks.
 
 Leaving the tracing collector out is a design choice, with a price.
 A block bounds how long a value may live, but it does not collect what
@@ -354,11 +371,9 @@ A [`pin` declaration](#pin) attaches a value to its enclosing block:
   executes (`invalid escape : table pinned at prog.atm:10`).
 
 A value that nobody pins is reclaimed by its counts, and a cycle among
-unpinned values is broken at the end of the block of the names that reach
-it, if nothing outside still refers to it.
-So is a cycle with no name, when the last reference from outside it goes:
-a value that a call returns and that is dropped, for instance.
-A cyclic structure whose moment of release matters should still be pinned.
+unpinned values leaks: a cyclic structure must be pinned.
+A function that builds a cyclic value returns it unpinned, and the caller
+pins it.
 
 The next example builds a cycle that is reclaimed when the block terminates:
 
@@ -675,13 +690,14 @@ The following keywords are reserved in Atmos:
     await               ;; await event
     break               ;; loop break
     catch               ;; catch exception
+    context             ;; context block
     defer               ;; defer block
     do                  ;; do block
     else                ;; else block
     emit                ;; emit event
-    escape              ;; escape block
+    escape              ;; escape block                     (10)
     false               ;; false value
-    func                ;; function                         (10)
+    func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
     in                  ;; in iterator
@@ -689,28 +705,30 @@ The following keywords are reserved in Atmos:
     it                  ;; implicit parameter
     loop                ;; loop block
     match               ;; match block
+    mute                ;; mute task or block               (20)
     nil                 ;; nil value
     on                  ;; on event clause
     par                 ;; par block
-    pin                 ;; pin declaration                  (20)
+    pin                 ;; pin declaration
     pub                 ;; public variable
     return              ;; escape prototype
     set                 ;; assign expression
     skip                ;; loop skip
-    spawn               ;; spawn task
+    solo                ;; solo block
+    spawn               ;; spawn task                       (30)
+    stage               ;; stage block
     task                ;; task prototype
     tasks               ;; task pool
     test                ;; test block
     throw               ;; throw error
-    toggle              ;; toggle task                      (30)
     true                ;; true value
     until               ;; until loop condition
     val                 ;; constant declaration
     var                 ;; variable declaration
-    watching            ;; watching block
+    watching            ;; watching block                   (40)
     where               ;; where block
     while               ;; while loop condition
-    with                ;; with block                       (38)
+    with                ;; with block
 ```
 
 ## Symbols
@@ -1267,7 +1285,7 @@ the following hold:
   The block may be the body of any construct, such as an `if`, a `loop`, a
   `do`, a branch of a `par`, a task, or the main chunk.
 - The task may await: a `spawn { ... }` has an `await`, a `watching`, a
-  `loop on`, a `par`, or a `toggle on` (not counting nested functions,
+  `loop on`, a `par`, a `mute on`, a `stage`, or a `solo` (not counting nested functions,
   tasks, and spawned blocks), or a `spawn T(...)` refers to a task prototype
   that is known at compile time and has one.
 
@@ -1828,20 +1846,13 @@ A value that nobody pins is reclaimed when it is dropped, which is in
 practice at the end of the block of its last name.
 A `val` of an unpinned value is thus an implicit pin, which a block outside may
 still adopt.
-A cycle among unpinned values is also reclaimed there: when a block ends,
-the unpinned values that only its names reach, and that only refer to each
-other, have the references among them cut, and the counts free them.
-A value that something outside still refers to (a table of an outer block,
-a task of an outer pool, the result of the block) is kept, with all it
-reaches.
-The search only runs if a reference was written into a table, a captured
-variable, or a `pub` since the block began, since no cycle forms without a
-write.
-A cycle with no name is broken in the same way when the last reference
-from outside it goes: a temporary, a result that is dropped, an entry of a
-value that is freed, or the parameter of a task that ends.
-For a parameter of a task, the search gives up on a value that reaches
-more than a few hundred others, which is then left to the counts.
+A cycle among unpinned values is not reclaimed: the counts never reach
+zero, and the cycle leaks.
+A cyclic structure must be pinned, by its block or by a pinned value that
+holds it.
+A recursive closure through a variable is such a cycle (the function holds
+the variable, which holds the function): it is declared with `func`, or
+with `pin var`.
 
 A parameter of a task is a name as the others, but the task may outlive the
 block that spawned it, as a task of a pool of an outer block does.
@@ -2063,8 +2074,8 @@ do {                                ;; a map
 }                                   ;; `play.enemies` is nil again
 ```
 
-The place may be a field or an index of a table, or a variable of an outer
-block.
+The place may be a field or an index of a table, a variable of an outer
+block, or the `pub` of the running task.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
 The place goes back to `nil`, if it still refers to the value, when the
@@ -2089,6 +2100,8 @@ task Widget () {
     <...>
 }
 ```
+
+The whole `pub` may also refer to such a value, as `set :out pub = spring`.
 
 Code outside the block may read the place while the value lasts.
 If it keeps the value in a name and the block terminates, the name refers
@@ -2855,7 +2868,11 @@ The following iterator expression types with predefined behaviors are
 supported:
 
 - `:table`:
-    ranges over vector indexes and values, and than over key-values of a table
+    ranges over vector indexes and values, and then over the other keys and
+    values of a table, in the order they were inserted; the key `tag` of a
+    [tagged table](#hierarchical-tags) is not visited; the body must not add
+    or remove keys of the table, which leaves the rest of the walk undefined,
+    but may assign the keys it already has (`set t@i = v * 2`)
 - `:tasks`:
     ranges over the indexes and tasks of a task pool, in the order they were
     spawned; the body may abort tasks of the pool, which are then not
@@ -2868,7 +2885,8 @@ supported:
     equivalent to `(0,x-1)` where `x` is the given number, which is the
     number of iterations
 - `:nil`:
-    ranges from `0` upwards, with no limit
+    raises an error, `invalid loop : unexpected nil` (a numeric infinite loop
+    is written `loop i {...}`)
 
 A loop evaluates to `nil` as a whole, unless a [break](#breaks) condition
 occurs.
@@ -2900,6 +2918,12 @@ print(x)            ;; --> nil
 ```
 loop i in 3 {
     print(i)        ;; --> 0, 1, 2
+}
+```
+
+```
+loop in 3 {         ;; with no variable: three times
+    print("hello")
 }
 ```
 
@@ -3328,6 +3352,22 @@ arguments of a spawned call.
 However, the `until`/`while` predicate is lazy, re-evaluating its condition on
 each event.
 
+Since an `until` evaluates to the result of its condition, an await over the
+members of a [pool](#tasks) is written with [iter.find](#iter): the
+await awakes at the first event in which a member satisfies the predicate,
+and evaluates to that member.
+The condition is checked again at each event that the pattern accepts, such
+as the tick of an environment:
+
+```
+task Trap (pingus, zone) {
+    loop {
+        val t = await :tick until iter.find(pingus, \(t) { inside(zone, t.pub) })
+        emit @t :kill               ;; `t` is the pingu that entered the zone
+    }
+}
+```
+
 Examples:
 
 <!-- exs/exp-26-await.atm -->
@@ -3432,37 +3472,44 @@ task T () {
 }
 ```
 
-### Toggle
+### Mute
 
-A `toggle` configures a task or block to either consider or disregard further
-[emit](#emit) operations:
+A `mute` silences a task or block: what is muted disregards the
+[emits](#emit) that match its pattern, and never awakes on them:
 
 ```
-Toggle : `toggle´ Expr `(´ Expr `)´ [`with´ Patt {`,´ Patt}]
-       | `toggle´ `on´ TAG [`with´ Patt {`,´ Patt}] Block
+Mute : `mute´ [`<´ Patt `>´] Expr `(´ Expr `)´
+     | `mute´ [Patt] `on´ TAG Block
 ```
 
-By default, tasks and blocks are toggled on, thus reacting to all events.
+The pattern is an [await pattern](#await) that names the events
+silenced: `<:X>` silences only `:X`, `<!:X>` all but `:X`, and no
+pattern silences every event, the time included. Before `on` the pattern
+may be bare, as in `mute :X on :T {...}`; in the first format it needs
+`<` and `>`, since `mute t(b)` is the task and its boolean.
 
-In the first format for tasks, a toggle expects the task and a
+By default, tasks and blocks are not muted, thus reacting to all events.
+
+In the first format for tasks, a mute expects the task and a
 [boolean](#types--values), which is handled as follows:
 
-- `true`: the task considers further broadcasts
-- `false`: the task disregards further emits and never awakes
+- `true`: the task disregards further emits that match the pattern
+- `false`: the task considers further broadcasts again (with no pattern)
 
-In the second format for blocks, a toggle spawns and awaits a block as a
+In the second format for blocks, a mute spawns and awaits a block as a
 [transparent task](#tasks).
-It also specifies a [tag](#literals) to toggle the block when matching an
+It also specifies a [tag](#literals) to mute the block when matching an
 [emit](#emit).
-The emit must be in the format `emit(<tag> [<boolean>])`, which sets the
-toggle state.
+The emit must be in the format `emit(<tag> [<boolean>])`: `true` mutes
+the block, and `false` gives it the events back.
 
-An optional `with` filter clause specifies [await patterns](#await), which
-keep the task/block responsive when matching any.
+What is muted gets no clock: its timers stop, and go on from where they
+were when it is given the events back, with a zero tick that awakes
+`await(true)`.
 
 Examples:
 
-<!-- exs/exp-28-toggle.atm -->
+<!-- exs/exp-28-mute.atm -->
 
 ```
 task T () {
@@ -3470,15 +3517,15 @@ task T () {
     print :ok
 }
 pin t = spawn T()
-toggle t(false)
+mute t(true)
 emit :X         ;; event ignored
-toggle t(true)
+mute t(false)
 emit :X         ;; --> ok
 ```
 
 ```
 spawn {
-    toggle on :T {
+    mute on :T {
         loop {
             val e = await(:E)
             print(e@0)          ;; --> 1 3
@@ -3486,29 +3533,199 @@ spawn {
     }
 }
 emit :E [1]
-emit :T [false]
-emit :E [2]
 emit :T [true]
+emit :E [2]
+emit :T [false]
 emit :E [3]
 ```
 
 ```
 spawn {
-    toggle on :Ok with :Draw {
+    mute <!:Draw> on :Ok {
         par {
             loop on :Tick {
-                print :tick     ;; ignored during :Ok=false
+                print :tick     ;; ignored during :Ok=true
             }
         } with {
             loop on :Draw {
-                print :draw     ;; responsive during :Ok=false
+                print :draw     ;; responsive during :Ok=true
             }
         }
     }
 }
-emit(:Ok [false])
+emit(:Ok [true])
 emit(:Tick)         ;; (nop)
 emit(:Draw)         ;; --> draw
+```
+
+### Solo
+
+A `solo` takes the events that match its pattern: while its block runs,
+only the block reacts to them, inside the nearest `stage` above it:
+
+```
+Solo : (`stage´ | `solo´) [Patt] Block
+```
+
+The pattern is an [await pattern](#await), bare or between `<` and `>`;
+with none, every event. Both spawn and await their block as a
+[transparent task](#tasks), as a `mute on`. A `stage` lends to the
+solos below it the events that match its pattern. A `solo` takes the
+nearest `stage` above it in the tree of tasks, which may be in another
+task, as a modal that is spawned deep inside what it silences. A `solo`
+with no `stage` above it raises `invalid solo : expected enclosing
+stage`.
+
+A `mute` and a `solo` are duals: a `mute` silences a task or block that
+is known, from outside it; a `solo` is said by the block that will
+receive, which needs to know nothing of what it silences.
+
+While a `solo` is active, an emit that traverses its `stage`, and that
+matches the patterns of both, only follows the path down to the `solo`,
+and then the whole block of the `solo` (its trails, its tasks and the
+pools it declares). The rest of the subtree of the `stage` does not see
+the event, nor do the trails on the path; outside the `stage`, nothing
+changes. An emit that does not traverse the `stage`, as one aimed at a
+task below it, is not captured.
+
+The solos of a `stage` form a stack: the most recent one whose pattern
+matches the event captures it, and its end gives the events back to the
+previous one. A `solo` that captures the time (as `<!:draw>`) stops the
+timers outside it, which go on from where they were (the pause of a
+game). A clock event is a number, so a `solo` that leaves the time
+running names it in a predicate, as in
+`solo <until ((it != :draw) && (type(it) != :number))>` (a modal over a
+GUI with a clock). A `solo` evaluates to the value of its block.
+
+Examples:
+
+```
+spawn {
+    stage {
+        par {
+            loop e on :key {
+                print("behind", e@0)    ;; deaf while the modal is open
+            }
+        } with {
+            await :open
+            solo :key {
+                loop e on :key {
+                    print("modal", e@0)
+                    until e@0 == :esc
+                }
+            }
+        }
+    }
+}
+emit :key [:a]      ;; --> behind a
+emit :open
+emit :key [:b]      ;; --> modal b
+emit :key [:esc]    ;; --> modal esc
+emit :key [:c]      ;; --> behind c
+```
+
+### Context
+
+A `context` sets a state of a library (a canvas, a layer, a color) while the
+code that lives in its block runs, and restores it before any other code
+runs:
+
+```
+Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
+        | `context´ [`<´ Patt `>´] Expr Block
+```
+
+The first expression is a function `enter`, which sets the state and returns
+what `leave` needs to restore it.
+The second is a function `leave`, which receives that value.
+In the second form, the expression is a pair `[enter, leave]`, so that a
+library can give both in one value (`context eng.on(STARS) {...}`).
+The block runs as a [transparent task](#tasks), as in a
+[mute](#mute) block.
+
+The runtime calls `enter` before it resumes a task or block that lives in the
+context, and `leave` before code outside the context runs again: an `emit`
+from inside, the end of a traversal of an `emit`, or the context itself
+terminating.
+Where a task lives decides its context, not where it was spawned from: the
+tasks of a pool declared inside a context run inside it, and a task spawned
+from inside a context into a pool declared outside does not.
+Contexts nest: the inner one is entered after the outer one, and left before
+it.
+
+The pattern is an [await pattern](#await), between `<` and `>` as in the
+first format of a [mute](#mute), since an expression follows.
+With a pattern, the context applies only while the traversal of an emit that
+matches it resumes code inside: for other emits, and outside an emit (the
+first reaction of the block, an `abort` from code), the code inside runs as if
+the context were not there.
+With no pattern, every event applies it.
+
+The switch is lazy: two tasks of the same context that awake in a row, such
+as the tasks of a pool, call `enter` and `leave` only once around both, and an
+event that awakes no task in the context calls neither.
+
+Code inside that changes the state itself keeps the change only until it
+awaits: when it awakes, `enter` runs again and sets the state of the context.
+A context cannot set a state for code outside it to see.
+
+An error in `enter` or `leave` is raised in the task being resumed, or in the
+code that resumed it.
+It is an error to `emit`, `spawn`, `abort` or `mute` inside `enter` or
+`leave`, also from a function they call, and for `enter` or `leave` not to be
+a function.
+
+Examples:
+
+```
+var layer = :world
+func set_layer (l) {        ;; returns the previous layer
+    val old = layer
+    set layer = l
+    old
+}
+spawn {
+    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
+spawn {
+    loop on :draw {
+        print(layer)        ;; --> world
+    }
+}
+emit :draw
+```
+
+A library can give the pair:
+
+```
+func in_layer (l) {         ;; [enter, leave]
+    [\{ set_layer(l) }, \(old) { set_layer(old) }]
+}
+spawn {
+    context in_layer(:panel) {
+        loop on :draw {
+            print(layer)    ;; --> panel
+        }
+    }
+}
+```
+
+With a pattern, the state is set only to draw: the watching of each coin, the
+clock and the keys run without it:
+
+```
+context <:draw> ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE) {
+    spawn { loop on :draw { tiles() } }
+    pin coins = tasks()
+    loop c in cs {
+        spawn @coins Coin(c)
+    }
+    await false
+}
 ```
 
 ### Parallel
@@ -3627,7 +3844,6 @@ there is no `require`.
   evaluates to its arguments otherwise
 - `next(t [, k])`: the key and value that follow the key `k` in the table
   `t`, or the first ones if `k` is absent; evaluates to `nil` after the last
-
 ## Math
 
 - `math.floor(x)`, `math.ceil(x)`: rounds `x` down or up to an integer
@@ -3674,6 +3890,66 @@ string.sub("hello", 1, 3)           ;; ell
 string.find("hello", "l")           ;; 2, 2
 string.split("a,b,,c", ",")         ;; ["a", "b", "", "c"]
 string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
+```
+
+## Iter
+
+The library `iter` has functions over what a [loop](#loop) walks.
+The collection comes first, so that a [pipe](#pipes) chains them.
+A collection `xs` is what a loop walks, and its members are:
+
+- in a table, each value `v` and its key `k`
+- in a [pool](#tasks), each task `v` and its position `k` among the live
+  tasks
+- in a number `n`, each `v` from `0` to `n-1`, with `k` as `nil`
+- in a range `(a, b)`, each `v` from `a` up to `b` inclusive, with `k` as
+  `nil`: the two numbers come before the function, as in
+  `iter.find((a, b), f)` or `(a, b) -> iter.find(f)`
+- in a function, the first and second values `v` and `k` of each call, until
+  it evaluates to `nil`
+
+Functions:
+
+- `iter.find(xs, f)`: the first member `v` of `xs` for which `f(v, k)` is
+  truthy, and its `k`; evaluates to `nil` if there is none
+- `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
+  for which `f(v, k)` is truthy, in the order of the walk
+- `iter.map(xs, f)`: a new vector with `f(v, k)` of each member, in the order
+  of the walk; a result `nil` raises an error, since a vector has no `nil`
+  (to leave members out, `iter.filter` comes first)
+- `iter.any(xs, f)`, `iter.all(xs, f)`: whether `f(v, k)` is truthy for some
+  member, or for every member (`true` if there is none)
+- `iter.fold(xs, acc, f)`: `acc`, set to `f(acc, v, k)` at each member
+- `iter.sum(xs)`: the sum of the members, which are numbers; `0` if there is
+  none
+- `iter.min(xs [, f])`, `iter.max(xs [, f])`: the least or the greatest
+  member `v`, compared with `<` by itself or by `f(v, k)`, and its `k`; the
+  first of those that tie; `nil` if there is none
+- `iter.keys(xs)`: an iterator over the keys of the table or pool `xs`, in the
+  order of the walk: `loop k in iter.keys(t) {...}`
+- `iter.values(xs)`: an iterator over the values of the table or pool `xs`, in
+  the order of the walk: `loop v in iter.values(t) {...}`
+- `iter.zip(xs, ys)`: an iterator over the members of `xs` and `ys` side by
+  side, until the shorter ends: `loop a, b in iter.zip(xs, ys) {...}`
+
+The functions that give a collection give a new vector, which is a snapshot:
+it may be kept and walked across awaits.
+The iterators are lazy.
+
+An iterator refers to its collection, and follows the rules of a
+[closure](#pin): it does not escape the block of a pinned collection.
+
+Examples:
+
+```
+val e = iter.find(enemies, \(e) { e.hp <= 0 })      ;; the first dead enemy, or nil
+val es = enemies -> iter.filter(\{ it.hp > 0 })     ;; the live enemies
+val i = iter.find(10, \{ it*it > 20 })               ;; 5
+val ls = io.lines("f.txt") -> iter.filter(\{ #it > 0 })  ;; the lines not empty
+loop k in iter.keys([x=1, y=2]) { print(k) }        ;; x, y
+loop v in iter.values([10, 20]) { print(v) }        ;; 10, 20
+val d = iter.min(enemies, \(e) { dist(me, e) })      ;; the closest enemy
+val n = iter.fold(ls, 0, \(n, l) { if l.solved => n+1 => n })
 ```
 
 ## Vector
@@ -4105,8 +4381,10 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
       | `await´ Patt                                ;; await pattern
       | `emit´ [At] Expr                            ;; emit event
 
-      | `toggle´ Expr `(´ Expr `)´ [`with´ Patt {`,´ Patt}] ;; toggle task
-      | `toggle´ `on´ TAG [`with´ Patt {`,´ Patt}] Block    ;; toggle block
+      | `mute´ [`<´ Patt `>´] Expr `(´ Expr `)´       ;; mute task
+      | `mute´ [Patt] `on´ TAG Block                ;; mute block
+      | `stage´ [Patt] Block                        ;; stage block
+      | `solo´ [Patt] Block                         ;; solo block
 
       | `par´ [ `:all´ | `:any´ ]                   ;; parallel
             Block { `with´ Block }

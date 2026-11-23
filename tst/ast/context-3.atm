@@ -1,0 +1,7 @@
+;; #19 (the author, 2026-11-22): context <P> X {...}
+context <:draw> eng.on(X) {
+    await :X
+}
+context <!:draw> (a, b) {
+    await :Y
+}

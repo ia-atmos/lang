@@ -5,10 +5,10 @@
         }
         pin t = spawn T()
         emit(:Tick)                            ;; on  -> tick
-        toggle t (false) with <:Draw || :Click>  ;; off, both pass
+        mute <!<:Draw || :Click>> t(true)  ;; muted, both pass
         emit(:Draw)                            ;; passes -> draw
         emit(:Click)                           ;; passes -> click
         emit(:Tick)                            ;; gated
-        toggle t (true)
+        mute t (false)
         emit(:Tick)                            ;; on  -> tick
     

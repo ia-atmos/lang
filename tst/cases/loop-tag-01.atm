@@ -1,0 +1,12 @@
+;; the tag of a tagged table is not walked by a loop or by iter
+pin tg = :T [10, 20, name=:n]
+loop k, v in tg { print(k, v) }                 ;; 0 10, 1 20, name n
+print(tg.tag, tg ?? :T)                         ;; T true
+X.print(tg ++ [])                               ;; the tag is kept
+X.print(iter.keys(tg) -> iter.filter(\{ true }))        ;; [0, 1, name]
+print(iter.find(tg, \(v, k) { k == :tag }))     ;; nil
+;; the Tween of snxkx (eng/anim.atm) over a tagged source
+pin source = :Pos [x=5, y=6]
+pin target = [x=1, y=2]
+loop k, v in source { set target@(k) = v }
+X.print(target)                                 ;; [x=5, y=6]

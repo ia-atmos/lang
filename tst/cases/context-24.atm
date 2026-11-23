@@ -1,0 +1,19 @@
+;; #19: the payload of an emit reaches the awaits inside a context with a
+;; pattern, whether the event matches it or not
+spawn {
+    context <:draw> (\{ nil }, \(_) { nil }) {
+        par {
+            loop {
+                val e = await(:key)
+                print(:key, e@0)
+            }
+        } with {
+            loop {
+                val e = await(:draw)
+                print(:draw, e@0)
+            }
+        }
+    }
+}
+emit :key [1]
+emit :draw [2]

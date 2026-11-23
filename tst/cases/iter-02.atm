@@ -1,0 +1,24 @@
+;; iter.keys and iter.values: the keys only and the values only
+pin t = [10, 20, x=1, y=2]
+loop k in iter.keys(t) { print(:k, k) }         ;; 0 1 x y
+loop v in iter.values(t) { print(:v, v) }       ;; 10 20 1 2
+loop k in iter.keys([]) { print(:never) }
+;; over a pool: the positions and the tasks
+task P (x) { set pub = x ; await(false) }
+pin ts = tasks()
+spawn @ts P(:a)
+spawn @ts P(:b)
+loop i in iter.keys(ts) { print(:i, i) }        ;; 0 1
+loop p in iter.values(ts) { print(:p, p.pub) }  ;; a b
+;; with the other functions of iter
+print(iter.find(iter.keys(t), \{ it == :y }))   ;; y nil
+X.print(iter.values(t) -> iter.filter(\{ it > 5 }))     ;; [10, 20]
+;; the Tween of snxkx (eng/anim.atm): the keys of the source
+pin source = [x=5, y=6]
+pin target = [x=1, y=2]
+pin from = []
+loop k in iter.keys(source) { set from@(k) = target@(k) }
+X.print(from)
+;; an iterator ends once, and then stays at its end
+pin it = iter.values([7])
+print(it(), it(), it())                         ;; 7 nil nil

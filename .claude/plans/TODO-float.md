@@ -26,7 +26,7 @@ Last update: 2026-11-19.
 | `#12` | The value of 8 bytes (integers and reals of 32 bits, pointers of 32 bits) | Measured by `env-esp32` on 2026-11-20 (compiled, not run): `sizeof(AVal)` 16 to 8, code -25.4 KB (-16%), static DRAM -912 B. Left: heap and stack at run time, which need a board |
 | `#13` | Merge of the branch `float` into `main` | Done 2026-11-20 (`#13a`, approved by the author after the measurement of the ports): `main` is 692af43, fast-forward, suite passing with ASAN over the latest main |
 | `#14` | Each environment says which numeric options it supports | Decided 2026-11-20 by the author (`#14c`): no declaration in the compiler; an environment refuses an option with `#error` in its prelude (works also with `-e`). On main (d19d40f), from the branch `float` (91ab493), in the manual and in `tst/env` |
-| `#15` | The build on demand needs `make`, the sources and a writable `<home>/build` | Done 2026-11-20 as documentation (d96b8b0); the error already names the command |
+| `#15` | The build on demand: needs `make`, the sources and a writable `<home>/build`; its output | Done: documented (d96b8b0). Defect found by `atmos-lang` on 2026-11-21 (with `ATMOS_PIN`, 48 configurations): the warnings of a build on first use reached the output of the program. Fixed on main e0f25e1: the output goes to `build/libatmos-<cfg>.a.log`, shown only if the build fails |
 | `#16` | `sdl-tux` keeps two pieces in C for `fmodf`, `powf`, `sinf`, "because Atmos has no fmod" | Answered 2026-11-20: nothing is missing. `%` on reals is `fmod` (`fmodf` under `float`), and `math.pow`, `math.sin` exist. Told `sdl-tux`; a divergence, if it tries, would be a defect to report here |
 | `#17` | A time field of an event of an environment | Decided 2026-11-20 by the author (`#17a`): a field named after a unit (`us`) keeps it in every build. In the manual |
 | `#18` | The names: subtypes `integer` and `float` as in Lua (the manual said "real"); the options `ATMOS_FLOAT=64\|32`, `ATMOS_INTEGER=64\|32`, `ATMOS_CLOCK=us\|ms` | Decided 2026-11-20 by the author ("sim tudo", with `ATMOS_INTEGER`). On main (d19d40f), from the branch `float` (1bb1edf), suite passing with ASAN: a former name is refused with the new one. Measured by `atmos-lang`: the default build is untouched (2197 files of 15 clones give the same C). At the merge two ports must rename: `sdl-tux` (3 scripts with `ATMOS_REAL=float`) and `env-esp32` (`Makefile:60` reads `$ATMOS_TIME`); six files only name the variables in text. The merge waits for the author |
@@ -157,6 +157,16 @@ Last update: 2026-11-19.
   Most of the libm is the math library itself (`powf`, the trig), which
   a fixed-point build would still need or drop as a feature. Speed not
   measured (needs a board).
+- 2026-11-21, `env-esp32` (`#12`), board build, lang 34c381b, no
+  warnings, `libmain.a` in bytes (runtime, generated C, drivers):
+
+  | Program | Default | `PIN_OFF` | `PIN_OFF` + the three numeric options |
+  |---|---|---|---|
+  | `app/init.atm` | 140631 | 136037 (-3.3%) | 121246 (-13.8%) |
+  | `app/ultrat.atm` | 215219 | 198269 (-7.9%) | 161172 (-25.1%) |
+
+  Static DRAM 17830 / 18998 B in the default, 17086 / 17654 B with all
+  four. Heap and speed need the board.
 
 ## The matrix of configurations (2026-11-20)
 

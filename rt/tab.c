@@ -21,24 +21,22 @@ void a_tab_clear (ATab* t) {
     AEnt*    ents = t->ents;
     uint32_t an   = t->an;
     uint32_t en   = t->en;
+    AVal     tag  = t->tag;
+    t->tag  = a_nil();
     free(t->idx);
     t->arr  = NULL;
     t->ents = NULL;
     t->idx  = NULL;
     t->an = t->acap = 0;
     t->en = t->ecap = t->elive = t->icap = 0;
-    // an entry that something else still refers to may be left as a
-    // cycle with no name
     for (uint32_t i=0; i<an; i++) {
-        a_orphan(arr[i]);
         a_dec(arr[i]);
     }
     for (uint32_t i=0; i<en; i++) {
-        a_orphan(ents[i].k);
         a_dec(ents[i].k);
-        a_orphan(ents[i].v);
         a_dec(ents[i].v);
     }
+    a_dec(tag);
     free(arr);
     free(ents);
 }
@@ -203,7 +201,18 @@ static void apush (ATab* t, AVal v) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+int a_is_ktag (AVal k) {
+    if (k.type != A_STR) {
+        return 0;
+    }
+    AStr* s = A_STR_OF(k);
+    return s->len==3 && s->s[0]=='t' && s->s[1]=='a' && s->s[2]=='g';
+}
+
 AVal a_tab_get (ATab* t, AVal k) {
+    if (a_is_ktag(k)) {
+        return t->tag;
+    }
     k = norm(k);
     int64_t i = aidx(k);
     if (i>=0 && i<t->an) {
@@ -213,6 +222,10 @@ AVal a_tab_get (ATab* t, AVal k) {
 }
 
 void a_tab_set (ATab* t, AVal k, AVal v) {
+    if (a_is_ktag(k)) {
+        a_cpy(&t->tag, v);
+        return;
+    }
     k = norm(k);
     int64_t i = aidx(k);
     if (i>=0 && i<t->an) {
@@ -330,6 +343,10 @@ AStatus a_setindex (AVal t, AVal k, AVal v) {
         return a_error("invalid index : unexpected %s",
             (k.type == A_NIL) ? "nil" : "nan");
     }
+    if (a_is_ktag(k) && v.type!=A_STR && v.type!=A_NIL) {
+        return a_error("invalid tag : expected string : got %s",
+            a_typename(v));
+    }
     if (a_chk_tab(A_TAB_OF(t),k)!=A_OK || a_chk_tab(A_TAB_OF(t),v)!=A_OK) {
         return A_ERROR;
     }
@@ -351,8 +368,6 @@ AStatus a_out_tab (AVal t, AVal k, AVal v) {
         return a_error("invalid index : unexpected %s",
             (k.type == A_NIL) ? "nil" : "nan");
     }
-    // a reference written into an object may close a cycle
-    a_muts += (v.type >= A_TAB);
     a_tab_put(A_TAB_OF(t), k, v);
     return A_OK;
 }
@@ -440,9 +455,7 @@ AStatus a_tag (AVal t, AVal tag) {
         return a_error("invalid tag operation : expected table : got %s",
             a_typename(t));
     }
-    AVal k = a_strz("tag");
-    a_tab_set(A_TAB_OF(t), k, tag);
-    a_dec(k);
+    a_cpy(&A_TAB_OF(t)->tag, tag);
     return A_OK;
 }
 

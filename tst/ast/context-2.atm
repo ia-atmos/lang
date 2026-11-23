@@ -1,0 +1,7 @@
+;; #4 (the author, 2026-11-22): context X {...}, X gives the pair
+context eng.on(X) {
+    await :X
+}
+context (p) {
+    await :Y
+}

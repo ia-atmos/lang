@@ -1,0 +1,7 @@
+;; #1: a solo with no stage above it is an error
+spawn {
+    solo :key {
+        await :key
+    }
+}
+emit :key

@@ -1,0 +1,7 @@
+;; an iterator over a pinned table does not escape its block, as a closure
+val f = func () {
+    pin t = [1,2]
+    iter.values(t)
+}
+val it = f()
+print(it())

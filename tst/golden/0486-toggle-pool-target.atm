@@ -8,11 +8,11 @@
         spawn @ts T(1)
         spawn @ts T(2)
         emit(:X)
-        toggle ts(false)
+        mute ts(true)
         print("---")
         emit(:X)
         emit(:X)
         print("---")
-        toggle ts(true)                         ;; emit(0, ts): awakes all
+        mute ts(false)                         ;; emit(0, ts): awakes all
         emit(:X)
     

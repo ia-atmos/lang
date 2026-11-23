@@ -1,0 +1,8 @@
+;; #5: spawn inside enter or leave is an error
+task T () { await false }
+spawn {
+    context (\{ spawn T() }, \{ nil }) {
+        await false
+    }
+}
+print "never"
