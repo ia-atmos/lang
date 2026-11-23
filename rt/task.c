@@ -59,7 +59,10 @@ static int     trail_bdepth (ATask* t, int i);
 static ATrailX* trail_x (ATrail* tr);
 static AStatus emit_top   (ANode* n, AVal evt);
 static AStatus emit_node  (ANode* n, uint32_t time, AVal evt);
-static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt);
+static AStatus emit_node0  (ANode* n, uint32_t time, AVal evt);
+static AStatus emit_node1  (ANode* n, uint32_t time, AVal evt);
+static AStatus emit_trail0 (ATask* t, ATrail* tr, uint32_t time, AVal evt);
+static AStatus emit_trail1 (ATask* t, ATrail* tr, uint32_t time, AVal evt);
 
 // The running trail was affected by what it just did: it was aborted,
 // or a child exited. It is told only once: from then on it unwinds,
@@ -840,6 +843,10 @@ static ATrailX* trail_x (ATrail* tr) {
     return tr->x;
 }
 
+// The solos registered in a stage, in all stages: with none, an emit
+// pays nothing for stage and solo.
+static int NSOLO = 0;
+
 // A solo that ends leaves the stack of its stage; a stage that ends
 // leaves its solos without one (they end with it, in its block).
 static void grab_off (ATrail* tr, ATrailX* x) {
@@ -849,6 +856,7 @@ static void grab_off (ATrail* tr, ATrailX* x) {
             if (u->gs[i] == tr) {
                 memmove(&u->gs[i], &u->gs[i+1], (u->gn-i-1) * sizeof(ATrail*));
                 u->gn--;
+                NSOLO--;
                 break;
             }
         }
@@ -858,6 +866,7 @@ static void grab_off (ATrail* tr, ATrailX* x) {
                 x->gs[i]->x->gup = NULL;
             }
         }
+        NSOLO -= x->gn;
     }
     for (int i=0; i<x->ngfilt; i++) {
         patt_free(x->gfilt[i]);
@@ -1579,13 +1588,18 @@ typedef struct ACap {
 } ACap;
 static ACap CAP = { 0, NULL, NULL, 0, 0 };
 
-// Whether the emit at `time` is captured, outside the grab.
-static int cap_out (uint32_t time) {
+// Whether the emit at `time` is captured, outside the solo.
+static inline int cap_out (uint32_t time) {
     return CAP.g!=NULL && CAP.time==time && !CAP.in;
 }
 
-// Whether the emit at `time` skips a child (a trail or a node).
-static int cap_skip (uint32_t time, void* p) {
+// Whether the emit at `time` skips a child (a trail or a node). With no
+// capture going on, it costs one load and one test.
+static int cap_skip_ (uint32_t time, void* p);
+static inline int cap_skip (uint32_t time, void* p) {
+    return CAP.g!=NULL && cap_skip_(time, p);
+}
+static int cap_skip_ (uint32_t time, void* p) {
     if (!cap_out(time)) {
         return 0;
     }
@@ -1643,17 +1657,25 @@ static int toggle_evt (AVal tog, AVal evt, int* on) {
     return 1;
 }
 
+// The traversal of an emit is compiled twice, with C (capture) a
+// constant: 0 when no solo is registered, so that it pays nothing for
+// stage and solo, and 1 otherwise. An emit picks one when it starts.
+#define A_INLINE static inline __attribute__((always_inline))
+#define EMIT_TRAIL(C) ((C) ? emit_trail1 : emit_trail0)
+#define EMIT_NODE(C)  ((C) ? emit_node1  : emit_node0)
+
 // The children of a trail, in the order they started.
-static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+A_INLINE AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt,
+                            const int C) {
     AStatus st = A_OK;
     if (tr->nkids == 0) {
         // only nested trails, which keep their places
         const ATrailD* ds = t->desc->trails;
         for (int j=ds[tr->idx].kid; j>=0 && st==A_OK; j=ds[j].next) {
-            if (cap_skip(time, &t->trs[j])) {
+            if (C && cap_skip(time, &t->trs[j])) {
                 continue;
             }
-            st = emit_trail(t, &t->trs[j], time, evt);
+            st = EMIT_TRAIL(C)(t, &t->trs[j], time, evt);
             if (t->trs == NULL) {
                 break;
             }
@@ -1667,11 +1689,11 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     ANode*  n = NULL;
     int kind;
     while (st==A_OK && (kind = kit_next(&it,&c,&n))!=0) {
-        if (cap_skip(time, (kind == 1) ? (void*)c : (void*)n)) {
+        if (C && cap_skip(time, (kind == 1) ? (void*)c : (void*)n)) {
             continue;
         }
-        st = (kind == 1) ? emit_trail(t, c, time, evt)
-                         : emit_node(n, time, evt);
+        st = (kind == 1) ? EMIT_TRAIL(C)(t, c, time, evt)
+                         : EMIT_NODE(C)(n, time, evt);
     }
     node_trav(&t->node, -1);
     return st;
@@ -1679,8 +1701,27 @@ static AStatus emit_kids (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
 
 // Traverses the subtree of a trail: its children in order, then the
 // trail itself at its await.
-static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+
+// A solo and a stage change how the emit goes on below them (C only).
+A_INLINE AStatus emit_trail_g (ATask* t, ATrail* tr, uint32_t time, AVal evt,
+                               const int C) {
+    if (tr->status==TR_OFF || tr->doomed) {
+        return A_OK;
+    }
     AStatus st = A_OK;
+    ACap save;
+    if (C) {
+        save = CAP;
+        if (cap_out(time) && tr==CAP.g) {
+            CAP.in = 1;
+        } else if (tr->x!=NULL && tr->x->gkind==A_GRABBABLE && tr->x->gn>0 &&
+                   !cap_out(time)) {
+            st = cap_find(tr, evt, time);
+            if (st != A_OK) {
+                goto out;
+            }
+        }
+    }
     int pass = 1;
     if (tr->toggled) {
         st = filt_pass(tr->x->filt, tr->x->nfilt, evt, &pass);
@@ -1688,9 +1729,9 @@ static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
 
     if (st==A_OK && pass) {
         if (tr->nkids>0 || t->desc->trails[tr->idx].kid>=0) {
-            st = emit_kids(t, tr, time, evt);
+            st = emit_kids(t, tr, time, evt, C);
             if (t->trs == NULL) {
-                return st;
+                goto out;
             }
         }
         if (st != A_OK) {
@@ -1710,7 +1751,7 @@ static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
                 st = A_OK;
             }
         } else if (tr->status==TR_SUSPENDED && tr->time<time && !tr->waiting &&
-                   !cap_out(time)) {
+                   !(C && cap_out(time))) {
             int done = 0;
             if (tr->root.kind == PK_HEAP) {
                 // predicates run in the context of the awaiting trail
@@ -1752,40 +1793,25 @@ static AStatus emit_trail_ (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
     {
         if (on && tr->toggled) {
             tr->toggled = 0;
-            st = emit_trail(t, tr, ++TIME, a_int(0));
+            st = EMIT_TRAIL(C)(t, tr, ++TIME, a_int(0));
         } else if (!on && !tr->toggled) {
             tr->toggled = 1;
             st = filt_start(tr->x->filt, tr->x->nfilt);
         }
     }
-    return st;
-}
 
-// A solo and a stage change how the emit goes on below them.
-static AStatus emit_trail (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
-    if (tr->status==TR_OFF || tr->doomed) {
-        return A_OK;
+out:
+    if (C) {
+        if (CAP.path != save.path) {
+            free(CAP.path);
+        }
+        CAP = save;
     }
-    ACap save = CAP;
-    AStatus st = A_OK;
-    if (cap_out(time) && tr==CAP.g) {
-        CAP.in = 1;
-    } else if (tr->x!=NULL && tr->x->gkind==A_GRABBABLE && tr->x->gn>0 &&
-               !cap_out(time)) {
-        st = cap_find(tr, evt, time);
-    }
-    if (st == A_OK) {
-        st = emit_trail_(t, tr, time, evt);
-    }
-    if (CAP.path != save.path) {
-        free(CAP.path);
-    }
-    CAP = save;
     return st;
 }
 
 // Traverses the subtree of a node.
-static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
+A_INLINE AStatus emit_node_g (ANode* n, uint32_t time, AVal evt, const int C) {
     if (n->dead || n->doomed) {
         return A_OK;
     }
@@ -1801,16 +1827,16 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
         if (n->hdr.type == A_XTASK) {
             ATask* t = (ATask*) n;
             if (t->trs != NULL) {
-                st = emit_trail(t, &t->trs[0], time, evt);
+                st = EMIT_TRAIL(C)(t, &t->trs[0], time, evt);
             }
         } else {
             node_trav(n, 1);
             int cnt = n->ndns;
             for (int i=0; i<cnt && st==A_OK; i++) {
-                if (cap_skip(time, n->dns[i])) {
+                if (C && cap_skip(time, n->dns[i])) {
                     continue;
                 }
-                st = emit_node(n->dns[i], time, evt);
+                st = EMIT_NODE(C)(n->dns[i], time, evt);
             }
             node_trav(n, -1);
         }
@@ -1818,6 +1844,24 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
 
     a_dec(me);
     return st;
+}
+
+static AStatus emit_trail0 (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+    return emit_trail_g(t, tr, time, evt, 0);
+}
+static AStatus emit_trail1 (ATask* t, ATrail* tr, uint32_t time, AVal evt) {
+    return emit_trail_g(t, tr, time, evt, 1);
+}
+static AStatus emit_node0 (ANode* n, uint32_t time, AVal evt) {
+    return emit_node_g(n, time, evt, 0);
+}
+static AStatus emit_node1 (ANode* n, uint32_t time, AVal evt) {
+    return emit_node_g(n, time, evt, 1);
+}
+
+// An emit starts the traversal with capture only if a solo exists.
+static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
+    return EMIT_NODE(NSOLO != 0)(n, time, evt);
 }
 
 AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
@@ -1935,6 +1979,7 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
     ATrailX* u = up->x;
     u->gs = realloc(u->gs, (u->gn+1) * sizeof(ATrail*));
     u->gs[u->gn++] = me;
+    NSOLO++;
     return A_OK;
 }
 
