@@ -10,10 +10,9 @@ the rule are `#1`..`#8`.
 
 ## Paused (2026-11-23)
 
-The author pauses new steps until next week. Waiting meanwhile: the
-rewrite of the ports (#26 merged 2026-11-23),
-(#23, #24). Next decision: #21 (1), a default `stage`, once the ports are
-rewritten.
+The author pauses new steps until next week. #26 is merged (2026-11-23).
+Waiting meanwhile: the rewrite of the ports (#23, #24). Next decision:
+#21 (1), a default `stage`, once the ports are rewritten.
 
 ## Index
 
