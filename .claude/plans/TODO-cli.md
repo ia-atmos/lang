@@ -5,7 +5,7 @@ configured, built, installed, and told which environment to use. The
 material is `261120-cli.md`. The implementation goes to the branch
 `cli`; this file and the plans go straight to `main`.
 
-Last update: 2026-11-21.
+Last update: 2026-11-23.
 
 ## Index of items
 
@@ -67,3 +67,11 @@ becomes an item only if the author takes it up.
 - `atmos-lang`, 2026-11-21: a fourth build variable, `ATMOS_PIN=unchecked|off`
   (`atmos-pin#3`), on `main` since `34c381b`, with its libraries in the
   `CFGS` of the `Makefile` and its `-D` in `src/main.c`.
+- `atmos-lang`, 2026-11-23: the author opened `atmos-cc` on the time of
+  a build with includes (material `261123-cc.md`, `5d1b6a7`): separate
+  compilation, a `--verbose`, and C flags as `--cc-xxx`. On
+  `sdl-pingus`, Atmos to C takes 0.42 s and the C compiler 5.9 / 20.7 /
+  34.8 s at `-O0`/`-O1`/`-O2`. Split proposed to `atmos-cc` the same
+  day, to confirm with the author: there `--verbose`, `--cc-`/`--ld-`,
+  a cache of builds, separate compilation; here the parser, the names
+  of the existing options, `--help`/`--version`, install, environments.
