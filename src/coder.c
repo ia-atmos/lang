@@ -2568,19 +2568,19 @@ static Patt** mute_filt (Patt** fs, int nf) {
 }
 
 // mute [<P>] t(b)
-static void gen_toggle (Unit* u, Expr* e) {
+static void gen_mute (Unit* u, Expr* e) {
     List args = { 0, NULL };
-    flatten(&args, &e->u.toggle.args);
+    flatten(&args, &e->u.mute.args);
     if (args.n != 1) {
         err(e->tk, "invalid mute : expected single argument");
     }
-    Opnd t  = gen_expr(u, e->u.toggle.t);
+    Opnd t  = gen_expr(u, e->u.mute.t);
     Opnd on = gen_expr(u, args.v[0]);
     int n;
-    Patt** fs = mute_filt(e->u.toggle.fs, e->u.toggle.nf);
-    Opnd* os = gen_filters(u, fs, e->u.toggle.nf, &n);
+    Patt** fs = mute_filt(e->u.mute.fs, e->u.mute.nf);
+    Opnd* os = gen_filters(u, fs, e->u.mute.nf, &n);
     out(u, "    a_lin = %d;", lin_of(e->tk));
-    out(u, "    st = a_toggle(%s, %s, fs, %d);", t.c, on.c, e->u.toggle.nf);
+    out(u, "    st = a_mute(%s, %s, fs, %d);", t.c, on.c, e->u.mute.nf);
     out(u, "}");
     out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
     for (int i=0; i<n; i++) {
@@ -2592,18 +2592,18 @@ static void gen_toggle (Unit* u, Expr* e) {
 
 // mute [P] on :T {...}: the block runs as a transparent task that the
 // events `:T [true]` and `:T [false]` mute and unmute.
-static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
+static void gen_mute_on (Unit* u, Expr* e, Dst d) {
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
     int id = gen_trail(u);
     gen_trail_end(u, id);
-    gen_spawn_tra(u, id, e->u.toggle_on.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.mute_on.blk, PAR_NONE, 0, r.c, D_NONE);
 
     int n;
-    Patt** fs = mute_filt(e->u.toggle_on.fs, e->u.toggle_on.nf);
-    Opnd* os = gen_filters(u, fs, e->u.toggle_on.nf, &n);
-    out(u, "    a_trail_toggle(t, %d, atm_K[%d], fs, %d);",
-        id, konst(e->tk.str+1,e->tk.len-1), e->u.toggle_on.nf);
+    Patt** fs = mute_filt(e->u.mute_on.fs, e->u.mute_on.nf);
+    Opnd* os = gen_filters(u, fs, e->u.mute_on.nf, &n);
+    out(u, "    a_trail_mute(t, %d, atm_K[%d], fs, %d);",
+        id, konst(e->tk.str+1,e->tk.len-1), e->u.mute_on.nf);
     out(u, "}");
     for (int i=0; i<n; i++) {
         opnd_rel(u, os[i]);
@@ -2617,23 +2617,23 @@ static void gen_toggle_on (Unit* u, Expr* e, Dst d) {
 
 // stage [P] {...}  |  solo [P] {...}: the block runs as a transparent
 // task, registered before it starts. No pattern: every event.
-static void gen_grab (Unit* u, Expr* e, Dst d) {
+static void gen_solo (Unit* u, Expr* e, Dst d) {
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
     int id = gen_trail(u);
     gen_trail_end(u, id);
 
     int n;
-    Opnd* os = gen_filters(u, e->u.grab.fs, e->u.grab.nf, &n);
+    Opnd* os = gen_filters(u, e->u.solo.fs, e->u.solo.nf, &n);
     out(u, "    a_lin = %d;", lin_of(e->tk));
-    out(u, "    st = a_trail_grab(t, %d, %d, fs, %d);",
-        id, e->u.grab.kind, e->u.grab.nf);
+    out(u, "    st = a_trail_solo(t, %d, %d, fs, %d);",
+        id, e->u.solo.kind, e->u.solo.nf);
     out(u, "}");
     out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
     for (int i=0; i<n; i++) {
         opnd_rel(u, os[i]);
     }
-    gen_spawn_tra(u, id, e->u.grab.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.solo.blk, PAR_NONE, 0, r.c, D_NONE);
 
     out(u, "st = a_await_trails(tr, %d, 1);", id);
     gen_suspend(u, dst_none());
@@ -2847,18 +2847,18 @@ static void gen (Unit* u, Expr* e, Dst d) {
         case E_PAR:
             gen_par(u, e, d);
             break;
-        case E_TOGGLE:
-            gen_toggle(u, e);
+        case E_MUTE:
+            gen_mute(u, e);
             store_void(u, d);
             break;
         case E_CONTEXT:
             gen_context(u, e, d);
             break;
-        case E_TOGGLE_ON:
-            gen_toggle_on(u, e, d);
+        case E_MUTE_ON:
+            gen_mute_on(u, e, d);
             break;
-        case E_GRAB:
-            gen_grab(u, e, d);
+        case E_SOLO:
+            gen_solo(u, e, d);
             break;
         case E_NAT:
             gen_nat(u, e, d);
