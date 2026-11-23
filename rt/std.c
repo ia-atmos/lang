@@ -16,6 +16,7 @@ AVal atm_g_assert;
 AVal atm_g_next;
 AVal atm_g_iter;
 AVal atm_g_clause;
+AVal atm_g_super;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -1290,6 +1291,87 @@ static AStatus clause_call (AFunc* self, int argc, AVal* argv) {
     return A_FUNC_OF(f)->fn(A_FUNC_OF(f), argc, argv);
 }
 
+// Whether the tag `p` of a clause is as or more general than the tag
+// `t` of another, for the same parameter: no tag, the same tag, or a
+// dot prefix of it.
+static int clause_above (AVal p, AVal t) {
+    if (p.type == A_NIL) {
+        return 1;
+    }
+    if (a_eq(p, t)) {
+        return 1;
+    }
+    if (p.type!=A_STR || t.type!=A_STR) {
+        return 0;
+    }
+    AStr* a = A_STR_OF(p);
+    AStr* b = A_STR_OF(t);
+    return b->len > a->len && b->s[a->len]=='.' && !memcmp(a->s, b->s, a->len);
+}
+
+// $super(f, n, tag1, ..., tagN, args...): calls, with `args`, the most
+// specific clause of `f` that applies to them among the parents of the
+// clause of tags `tag1..tagN`: those whose every tag is as or more
+// general, and that differ in some.
+static AStatus std_super (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal f = arg(argc, argv, 0);
+    int  n = (int) arg(argc, argv, 1).u.i;
+    AVal* own = &argv[2];
+    int   na  = argc - 2 - n;
+    AVal* args = &argv[2+n];
+    if (!clause_is(f)) {
+        return a_error("invalid super : expected a function with clauses");
+    }
+    AFunc* g = A_FUNC_OF(f);
+    AStr* tags[CLAUSE_PARS];
+    for (int j=0; j<CLAUSE_PARS; j++) {
+        tags[j] = (j < na) ? clause_argtag(args[j]) : NULL;
+    }
+    int best = -1;
+    int bests[CLAUSE_PARS];
+    for (int i=1; i<g->ncap; ) {
+        int m = (int) g->caps[i+1].u.i;
+        // a parent of the running clause?
+        int above = 1;
+        int diff  = 0;
+        for (int j=0; above && (j<m || j<n); j++) {
+            AVal p = (j < m) ? g->caps[i+2+j] : a_nil();
+            AVal t = (j < n) ? own[j]         : a_nil();
+            above = clause_above(p, t);
+            diff  = diff || !a_eq(p, t);
+        }
+        if (above && diff) {
+            int cur[CLAUSE_PARS];
+            int ok  = 1;
+            int cmp = (best == -1);
+            for (int j=0; ok && j<CLAUSE_PARS; j++) {
+                AVal a = (j < na) ? args[j] : a_nil();
+                cur[j] = (j < m) ? clause_score(g->caps[i+2+j], a, tags[j]) : 1;
+                ok = (cur[j] > 0);
+                if (cmp == 0) {
+                    cmp = cur[j] - bests[j];
+                }
+            }
+            if (ok && cmp>0) {
+                best = i;
+                memcpy(bests, cur, sizeof(cur));
+            }
+        }
+        i += 2 + m;
+    }
+    if (best == -1) {
+        return a_error("invalid super : no parent clause of '%s'",
+            A_STR_OF(g->caps[0])->s);
+    }
+    AVal h = g->caps[best];
+    if (h.type != A_FUNC) {
+        return a_error("invalid super : expected function : got %s",
+            a_typename(h));
+    }
+    return A_FUNC_OF(h)->fn(A_FUNC_OF(h), na, args);
+}
+
 // $clause(cur, name, f, tag1, ..., tagN): the function `cur` (nil, a
 // function with clauses, or a plain function, which becomes the default
 // clause) with one more clause `f`, of N parameters.
@@ -1363,6 +1445,7 @@ static AStatus std_clause (AFunc* self, int argc, AVal* argv) {
 
 void atm_std_init (void) {
     atm_g_clause   = a_func(std_clause, 0);
+    atm_g_super    = a_func(std_super, 0);
     CLAUSE_KTAG    = a_strz("tag");
     atm_g_print    = a_func(std_print, 0);
     atm_g_type     = a_func(std_type, 0);
@@ -1441,6 +1524,7 @@ void atm_std_init (void) {
     a_own(atm_g_next);
     a_own(atm_g_iter);
     a_own(atm_g_clause);
+    a_own(atm_g_super);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -1459,6 +1543,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_next);
     a_clr(&atm_g_iter);
     a_clr(&atm_g_clause);
+    a_clr(&atm_g_super);
     a_clr(&CLAUSE_KTAG);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {

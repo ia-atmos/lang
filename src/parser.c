@@ -315,6 +315,87 @@ static int clauses_has (const char* name) {
     return 0;
 }
 
+// The clause whose body is being parsed, for `super(...)` in it.
+typedef struct Clause {
+    Tk    tk;           // position of the declaration
+    char* name;         // `f` or `m.f`
+    int   ntags;
+    Tk*   tags;         // `str` is NULL for no tag
+    Expr* proto;        // its parameters
+    int   task;
+} Clause;
+static Clause* CLAUSE = NULL;
+
+static Expr* mk (ETag tag, Tk tk);
+static Tk tk_id (Tk tk, const char* str);
+
+// The expression of a name with clauses, `f` or `m.f`, built anew.
+static Expr* clause_name (Tk tk, const char* name) {
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s", name);
+    char* save = NULL;
+    char* id = strtok_r(buf, ".", &save);
+    Expr* e = mk(E_ACC, tk_id(tk, strdup(id)));
+    while ((id = strtok_r(NULL, ".", &save)) != NULL) {
+        Expr* idx = mk(E_INDEX, tk);
+        idx->u.index.t    = e;
+        idx->u.index.kind = IDX_EXPR;
+        Tk k = tk;
+        k.tag = TK_STR;
+        k.str = strdup(id);
+        k.len = strlen(id);
+        idx->u.index.idx  = mk(E_STR, k);
+        e = idx;
+    }
+    return e;
+}
+
+// super(...), in the body of a clause:
+//  super(a, b)  -->  $super(f, n, tag1, ..., tagN, a, b)
+//  super()      -->  $super(f, n, tag1, ..., tagN, x, y, ...)   (its parameters)
+static Expr* parser_super (Tk tk) {
+    Clause* c = CLAUSE;
+    if (c->task) {
+        err(tk, "invalid super : unexpected task");
+    }
+    if (!check_str("(") || TK0.sep!=TK1.sep) {
+        err(TK1, "expected '('");
+    }
+    accept_str_err("(");
+    List args = parser_list(")");
+    accept_str_err(")");
+    Expr* call = mk(E_CALL, tk);
+    call->u.call.f = mk(E_ACC, tk_id(tk, "$super"));
+    list_add(&call->u.call.es, clause_name(c->tk, c->name));
+    char* n = malloc(16);
+    snprintf(n, 16, "%d", c->ntags);
+    Tk num = tk;
+    num.tag = TK_NUM;
+    num.str = n;
+    num.len = strlen(n);
+    list_add(&call->u.call.es, mk(E_NUM, num));
+    for (int i=0; i<c->ntags; i++) {
+        if (c->tags[i].str == NULL) {
+            list_add(&call->u.call.es, mk(E_NIL, tk_id(tk, "nil")));
+        } else {
+            list_add(&call->u.call.es, mk(E_TAG, c->tags[i]));
+        }
+    }
+    if (args.n == 0) {
+        for (int i=0; i<c->proto->u.proto.n; i++) {
+            list_add(&call->u.call.es, mk(E_ACC, c->proto->u.proto.pars[i]));
+        }
+        if (c->proto->u.proto.dots) {
+            list_add(&call->u.call.es, mk(E_DOTS, tk_id(tk, "...")));
+        }
+    } else {
+        for (int i=0; i<args.n; i++) {
+            list_add(&call->u.call.es, args.v[i]);
+        }
+    }
+    return call;
+}
+
 // Only a named prototype (`func f`, `func m.f`) takes clauses.
 static void pars_no_tags (Tk tk) {
     if (HASTAG) {
@@ -528,7 +609,15 @@ static Expr* parser_proto (void) {
     PTAGS  = NULL;
     NPTAGS = 0;
     HASTAG = 0;
+    Clause cl = { tk, name, ntags, tags, p, task };
+    Clause* up = CLAUSE;
+    int is = has || clauses_has(name);
+    if (is) {
+        cl.name = strdup(name);
+        CLAUSE = &cl;
+    }
     p->u.proto.blk = proto_body();
+    CLAUSE = up;
 
     Expr* set = mk(E_SET, tk);
     list_add(&set->u.set.dsts, dst);
@@ -538,7 +627,7 @@ static Expr* parser_proto (void) {
     // A clause: a parameter has a tag, or the name already has clauses
     // (then it is their default):
     //  func f (x :T, y) {...}  -->  set f = $clause(f, "f", func (x,y) {...}, :T, nil)
-    if (has || clauses_has(name)) {
+    if (is) {
         if (!clauses_has(name)) {
             CLAUSES = realloc(CLAUSES, (NCLAUSES+1) * sizeof(char*));
             CLAUSES[NCLAUSES++] = strdup(name);
@@ -1242,6 +1331,11 @@ static Expr* parser_1_prim (void) {
     } else if (check_tag(TK_KEY) && in(EXITS,TK1.str)) {
         next();
         return parser_exit(TK0);
+
+    // super(...), in the body of a clause
+    } else if (CLAUSE!=NULL && check_tag(TK_ID) && !strcmp(TK1.str,"super")) {
+        next();
+        return parser_super(TK0);
 
     // id: x, __v
     } else if (accept_tag(TK_ID)) {
