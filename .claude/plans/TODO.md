@@ -159,6 +159,7 @@ may be changed.
 | `atmos-slices` | Created on 2026-11-22, asked by the author in `atmos-lang` (its `#116`, direction `#116c`): slices of vectors with no copy. Material `261122-slices.md`; list `TODO-slices.md`; branch `slices`; session_011eECoensrrB23ggBu4daLd |
 | `atmos-threads` | Created on 2026-11-22, asked by the author in `atmos-lang`: threads (none today; `thread` is only a reserved word; the reference has `thread { ... }`). Material `261122-threads.md`; list `TODO-threads.md`; branch `threads`; session_011eECohRAjCia6Hb5cAcrz2 |
 | `atmos-cc` | Created on 2026-11-23, asked by the author in `atmos-lang`: the time of a build with includes (separate compilation, `--verbose`, `--cc-` flags). Material `261123-cc.md` (Pingus: Atmos to C 0.42 s, cc 5.9 / 20.7 / 34.8 s at -O0/-O1/-O2); list `TODO-cc.md`; branch `cc`; session_011eECoibvvH58hfgFezzYvM |
+| `atmos-ppp` | Created on 2026-11-23, asked by the author in `atmos-lang`: whether the tip markers `@#` and `@+` are still relevant, and `+=` on vectors. Material `261123-ppp.md` (ports: 359 `set t@+ = v`, 7 `t@#`, 74 `vector.insert`, 0 `++=`); list `TODO-ppp.md`; branch `ppp`; session_011eECogRQbTZU7Bn4bZysFK |
 | `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Reads all its documents with `X.loadx` (its 39 tests load, reported 2026-11-20) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
@@ -197,6 +198,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
 | `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
 | `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
