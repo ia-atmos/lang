@@ -11,7 +11,7 @@ the rule are `#1`..`#8`.
 ## Paused (2026-11-23)
 
 The author pauses new steps until next week. Waiting meanwhile: the
-merge of `grab` eb028ad by `atmos-lang` (#26), the rewrite of the ports
+rewrite of the ports (#26 merged 2026-11-23),
 (#23, #24). Next decision: #21 (1), a default `stage`, once the ports are
 rewritten.
 
@@ -37,7 +37,7 @@ rewritten.
 | #16 | A grabbable as a value (`grab @g P {...}`), the lexical alternative to #1 | noted, not proposed |
 | #18 | Ports measured: the keyword `grab` breaks one parameter in env-sdl (`sdl.atm:1110`), copied in Pingus, used by sdl-tux | decided by the author 2026-11-22: rename the parameter. Already done by the ports: env-sdl `sdl.display` now takes `grabbed` (sdl.atm:1280), and Pingus no longer copies `sdl.atm` (it uses `../env-sdl`); its `OPTIONS.grab` is a field, still valid. env-sdl passes the Atmos stage with the `grab` compiler (stops only at the missing SDL headers here). Nothing to change |
 | #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
-| #26 | Cleanup: internal names follow mute, stage and solo (E_MUTE, E_SOLO, a_mute, a_trail_solo, A_STAGE, muted...), branch `grab` eb028ad; `261118-grab-cases.md` rewritten to the new syntax | done; branch waits for `atmos-lang` to merge (no change of behavior) |
+| #26 | Cleanup: internal names follow mute, stage and solo (E_MUTE, E_SOLO, a_mute, a_trail_solo, A_STAGE, muted...), branch `grab` eb028ad; `261118-grab-cases.md` rewritten to the new syntax | done; merged into main by `atmos-lang` (no port calls the old names) |
 | #25 | Performance regression of f416c03 in programs with no solo (doom variant +10%): fixed by a43cc01 (merged 7c85a14), the traversal compiled twice with the capture as a constant. doom on 7c85a14: main 259.8 M (259.4 before), variant 714.4 M (708.9 before), +0.8% left | closed by `atmos-lang` |
 | #24 | Uses of `toggle` in the ports (`atmos-lang`, 2026-11-22): 27 lines in 5 repos (env-sdl 2, env-pico 3, sdl-pingus 3, env-ray 16, sdl-snxkx 2) plus 10 emits that drive a `toggle on :T` and flip their boolean. Forms: 10 `toggle t(false)`, 7 `toggle t(false) with :draw` (`mute <!:draw> t(true)`), 10 `toggle t(true)`, 4 `toggle on :T` (2 with `with :draw`). Tags as `:Shop.on [false]` read backwards under `mute`: flip the boolean or rename the tag (`:Shop.mute [true]`) | reported; the rewrite of the ports is theirs, after the merge |
 | #23 | Collisions of the names of #22 (`atmos-lang`, 2197 files of the ports, each word alone): `mute` 2 files, one local `pin mute` in lessmilk princess_quest/menu.atm:49 (2 lines); `solo` none; `stage` 4 files, one local `val stage` in doom fi.atm:301 (4 lines). No field named so anywhere | reported; uses of `toggle` per port still to be listed |
