@@ -16,15 +16,17 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 | #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; measured by `atmos-lang` on 2026-11-20 (2197 files of 15 clones: no port changes; `atmos-lang#99`); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
+| #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | planned by the author (2026-11-23), after the merge of #7; on hold |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
 
-- **#7**: approve the merge of the clauses (with `super`, #8) into main,
-  or say what to change. Recommended: merge, with the manual written
-  first ("Prototypes", "Calls"); a port that uses them can follow.
-  Before the merge: the suite over the current main, and the
-  measurement on the ports by `atmos-lang` again.
+- **#7**: on hold by the author (2026-11-23): "vamos aguardar os
+  creditos da semana que vem. a ideia é fazer o merge e atualizar os
+  projetos que podem usar OO. mas agora iremos aguardar". When he
+  resumes: the manual ("Prototypes", "Calls"), main into `oo`, the
+  suite, the measurement by `atmos-lang`, the merge, then the ports
+  that can use clauses (#10).
 
 To confirm or undo when he reads:
 
@@ -64,3 +66,5 @@ To confirm or undo when he reads:
   one or more tagged parameters, chosen by specificity, with no
   grouping and no order. Not yet an approval to merge.
 - #8, 2026-11-23: "Super": the parent clause is called by `super(...)`.
+- #7, 2026-11-23: merge the clauses and update the ports that can use
+  them, but wait until next week ("agora iremos aguardar").
