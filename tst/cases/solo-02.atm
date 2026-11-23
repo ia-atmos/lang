@@ -1,0 +1,21 @@
+;; #2: patterns in both; an event is captured if it matches the
+;; stage's and the solo's: `<!:draw>` lets :draw pass, as
+;; `mute <!:draw>`, and the stage only lends :key and :draw
+spawn {
+    stage <:key || :draw> {
+        par {
+            loop e on true {
+                print("behind", e)
+            }
+        } with {
+            solo <!:draw> {
+                loop e on true {
+                    print("modal", e)
+                }
+            }
+        }
+    }
+}
+emit :key       ;; captured
+emit :draw      ;; the solo lets it pass
+emit :tick      ;; the stage does not lend it

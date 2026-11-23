@@ -1,0 +1,24 @@
+;; #5: a solo that captures the clock stops the timers outside it
+;; (the pause of a game); they go on from where they were
+spawn {
+    stage {
+        par {
+            await 100ms
+            print("game timer")
+        } with {
+            await :pause
+            solo <!:draw> {
+                await :key
+            }
+            print("resumed")
+        }
+    }
+}
+emit @:global (50ms)
+emit :pause
+emit @:global (500ms)       ;; captured: the game timer does not run
+print("---")
+emit :key
+emit @:global (40ms)
+print("---")
+emit @:global (10ms)

@@ -1,0 +1,19 @@
+;; #5: a solo that lets the clock pass: the timers outside it go on
+spawn {
+    stage {
+        par {
+            await 100ms
+            print("clock outside")
+        } with {
+            await :open
+            solo <until ((it != :draw) && (type(it) != :number))> {
+                await :close
+            }
+            print("closed")
+        }
+    }
+}
+emit :open
+emit @:global (150ms)       ;; not captured: the timer outside runs
+print("---")
+emit :close

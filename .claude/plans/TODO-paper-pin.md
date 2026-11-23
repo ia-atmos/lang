@@ -20,7 +20,7 @@ written; each such item now has its number below.
 | #5 | Section 9: reports of the ports | Partly: 12 pass (atmos-lang#81); SNKRX migrating |
 | #6 | Cost of the migration under the current rules | Open |
 | #7 | Rules not declared stable | Closed: stable 2026-11-19, but #7b |
-| #8 | Experiment: CLBG in Atmos | Blocked: no Lua here; build denied |
+| #8 | Experiment: CLBG in Atmos | Blocked: no Lua here; the flag now exists (`ATMOS_PIN`) |
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Waiting: approval of the outline |
 | #11 | Draft of Sections 3, 4, 8, 9 (`papers/pin-draft.md`) | By the session, to be confirmed |
@@ -35,8 +35,9 @@ written; each such item now has its number below.
   tests is from the first rules. Names may now hold unpinned values,
   owned places may be reassigned, and more decisions followed
   (2026-11-17), so a new count is needed for Section 9.
-- **#7b The flag that removes the checks** (part of #7). The author:
-  "not yet". #8 needs it.
+- **#7b The flag that removes the checks** (part of #7). Exists on `main`
+  since 2026-11-21: `ATMOS_PIN=unchecked` and `ATMOS_PIN=off`
+  (atmos-pin#3). First use: Doom, 2.8% (Section 9). Closed.
 
 ## Planned
 
@@ -58,6 +59,11 @@ written; each such item now has its number below.
 - **#11 Draft text.** `papers/pin-draft.md`: Sections 3, 4, 8, and the
   measured costs of 9, written on the stable rules while the outline (#10)
   waits. Reversible: it is a separate file; the outline is unchanged.
+- **#14 Cycle collection removed** (atmos-pin#18, branch `pin` at
+  `3cd5169`, author's choice "não checar"). The old rule is restored in the
+  outline and the draft: a cyclic structure must be pinned; an unpinned
+  cycle leaks under counting. The trial deletion and its cost are removed
+  from Sections 4, 8 and 9. To check: the commit reaches `main`.
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in
@@ -74,6 +80,13 @@ written; each such item now has its number below.
   atmos-pin. Per-port numbers are not in `ISSUES.md`.
 
 ## Closed
+
+- **#13 Reference counting and the semantics.** Decided by the author on
+  2026-11-21 (atmos-pin#29): deterministic reference counting is part of
+  the semantics; a value no longer referred to is finalized at once. The
+  block wording of rule 4 was withdrawn; the outline and the draft follow
+  the manual (branch `pin` at `443736c`). Also there: the warning for an
+  unpinned recursive closure (atmos-pin#19) and `set :out pub` (#23).
 
 - **#3 SNKRX in Section 9** (was B1). The guessed bullet is replaced,
   2026-11-19, by its real cases from `atmos-pin`: a map body as a task in

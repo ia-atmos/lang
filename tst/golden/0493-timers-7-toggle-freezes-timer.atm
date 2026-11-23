@@ -3,9 +3,9 @@
             print(:ok)
         }
         emit @:global 5ms               ;; 5ms of 10ms
-        toggle t(false)
+        mute t(true)
         emit @:global 20ms              ;; frozen: no time passes for t
-        toggle t(true)
+        mute t(false)
         print("-")
         emit @:global 5ms               ;; 10ms: expires
     

@@ -48,6 +48,7 @@ static const char* BUILTINS[][2] = {
     { "os",       "atm_g_os"       },
     { "io",       "atm_g_io"       },
     { "next",     "atm_g_next"     },
+    { "iter",     "atm_g_iter"     },
     { NULL, NULL }
 };
 
@@ -281,6 +282,16 @@ static void hoist (Expr* e) {
         case E_TOGGLE_ON:
             hoist(e->u.toggle_on.blk);
             break;
+        case E_GRAB:
+            hoist(e->u.grab.blk);
+            break;
+        case E_CONTEXT:
+            hoist(e->u.context.enter);
+            if (e->u.context.leave != NULL) {
+                hoist(e->u.context.leave);
+            }
+            hoist(e->u.context.blk);
+            break;
         case E_PAR:
             hoist_list(&e->u.par.blks);
             break;
@@ -506,6 +517,8 @@ static int awaits (Expr* e) {
         case E_AWAIT:
         case E_PAR:
         case E_TOGGLE_ON:
+        case E_GRAB:
+        case E_CONTEXT:
             return 1;
         case E_INDEX:
             return awaits(e->u.index.t) || awaits(e->u.index.idx);
@@ -874,6 +887,22 @@ static void res (Expr* e) {
                 } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
                     err(dst->tk, "invalid set : expected mutable variable");
                 }
+                // set g = func () { g }: the function holds the box of
+                // `g`, which holds the function, a cycle that no pin owns
+                if (dst->tag==E_ACC && dst->var->kind==V_VAR &&
+                    e->u.set.src->tag==E_PROTO && e->u.set.src->proto!=NULL)
+                {
+                    Proto* p = e->u.set.src->proto;
+                    for (int j=0; j<p->ncaps; j++) {
+                        if (p->caps[j] == dst->var) {
+                            warn(dst->tk, "unpinned cycle : the function "
+                                "refers to '%s', which holds it (expected "
+                                "'func %s' or 'pin var %s')", dst->tk.str,
+                                dst->tk.str, dst->tk.str);
+                            break;
+                        }
+                    }
+                }
                 // `task T () {...}` defines `T`, if nothing else sets it
                 if (dst->tag == E_ACC) {
                     if (e->u.set.proto && dst->var->def==NULL) {
@@ -1007,12 +1036,32 @@ static void res (Expr* e) {
             }
             break;
 
+        case E_CONTEXT:
+            if (e->u.context.patt != NULL) {
+                res_patt(e->u.context.patt);
+            }
+            res(e->u.context.enter);
+            if (e->u.context.leave != NULL) {
+                res(e->u.context.leave);
+            }
+            chk_await(e->tk, "context");
+            res_block(e->u.context.blk, 1);
+            break;
+
         case E_TOGGLE_ON:
-            chk_await(e->tk, "toggle");
+            chk_await(e->tk, "mute");
             for (int i=0; i<e->u.toggle_on.nf; i++) {
                 res_patt(e->u.toggle_on.fs[i]);
             }
             res_block(e->u.toggle_on.blk, 1);
+            break;
+
+        case E_GRAB:
+            chk_await(e->tk, (e->u.grab.kind == 1) ? "stage" : "solo");
+            for (int i=0; i<e->u.grab.nf; i++) {
+                res_patt(e->u.grab.fs[i]);
+            }
+            res_block(e->u.grab.blk, 1);
             break;
 
         case E_PROTO: {

@@ -1,0 +1,1 @@
+(context (func (it) { (call f) }) (func (old) { (call g old) }) { (await :X) })

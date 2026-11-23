@@ -2,6 +2,6 @@
             nil
         }
         pin t = spawn T()
-        toggle t (false)
+        mute t (true)
         print 'ok'
     

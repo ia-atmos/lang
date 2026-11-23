@@ -775,7 +775,7 @@ static Expr* parser_loop (void) {
 // AWAIT PATTERNS
 ///////////////////////////////////////////////////////////////////////////////
 
-// await / watching / loop on / toggle with take one of three tiers:
+// await / watching / loop on / mute / stage / solo take one of three tiers:
 //   bare    : await P      one primary (a call spawns) + optional
 //                          until (c) / while (c)
 //   value   : await(E)     a plain value expression (a call is a
@@ -816,6 +816,9 @@ static int accept_angle (const char* one) {
     return 0;
 }
 
+// The pattern of `mute <P> t(b)` is followed by its target.
+static int ANGLE_TARGET = 0;
+
 // Closes a pattern. If an operand follows in the same line, the `>`
 // was meant as the operator of a predicate: `<:X until a > b>`.
 static void accept_angle_close (void) {
@@ -828,7 +831,8 @@ static void accept_angle_close (void) {
                check_str("(") || check_str("[");
     // the same for half of a `>>` that closes the outermost pattern
     int half = (ok==2 && ANGLE==0);
-    if (half || (TK0.sep==TK1.sep && opnd)) {
+    int target = (ANGLE==0 && ANGLE_TARGET);
+    if (half || (TK0.sep==TK1.sep && opnd && !target)) {
         err(tk, "pattern error : use parentheses to disambiguate");
     }
 }
@@ -1020,16 +1024,6 @@ static Patt* parser_await_blk (int blk) {
     return p;
 }
 
-// Filters of a toggle: patterns separated by commas.
-static int parser_filters (Patt*** fs) {
-    int n = 0;
-    *fs = NULL;
-    do {
-        *fs = realloc(*fs, (n+1) * sizeof(Patt*));
-        (*fs)[n++] = parser_await();
-    } while (accept_str(","));
-    return n;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // 1_PRIM
@@ -1316,27 +1310,90 @@ static Expr* parser_1_prim (void) {
         e->u.await.p = parser_await();
         return e;
 
-    // toggle t(b) with P  |  toggle on :T with P {...}
-    } else if (accept_str("toggle")) {
+    // stage [P] {...}  |  solo [P] {...}
+    } else if (check_str("stage") || check_str("solo")) {
+        int kind = check_str("stage") ? 1 : 2;
+        accept_str(kind == 1 ? "stage" : "solo");
+        Expr* e = mk(E_GRAB, TK0);
+        e->u.grab.kind = kind;
+        if (!check_str("{")) {
+            e->u.grab.fs    = xalloc(sizeof(Patt*));
+            e->u.grab.fs[0] = parser_await();
+            e->u.grab.nf    = 1;
+        }
+        e->u.grab.blk = parser_block();
+        return e;
+
+    // context [<P>] (enter, leave) {...}  |  context [<P>] X {...}
+    // The pattern is between `<` `>`, as in `mute <P> t(b)`: an
+    // expression follows.
+    } else if (accept_str("context")) {
+        Expr* e = mk(E_CONTEXT, TK0);
+        e->u.context.patt = NULL;
+        if (check_str("<") || check_str("<<")) {
+            ANGLE_TARGET = 1;
+            e->u.context.patt = parser_await();
+            ANGLE_TARGET = 0;
+        }
+        if (accept_str("(")) {
+            e->u.context.enter = parser_6_pip(NULL);
+            if (accept_str(",")) {
+                e->u.context.leave = parser_6_pip(NULL);
+            } else {
+                e->u.context.leave = NULL;  // (X): the pair
+            }
+            accept_str_err(")");
+        } else {
+            e->u.context.enter = parser_6_pip(NULL);
+            e->u.context.leave = NULL;      // X: the pair
+        }
+        e->u.context.blk = parser_block();
+        return e;
+
+    // mute [<P>] t(b)  |  mute [P] on :T {...}
+    // The pattern names the events silenced (none: all of them). It is
+    // bare only before `on`: `mute t(b)` would read as the spawn `t(b)`.
+    } else if (accept_str("mute")) {
         Tk tk = TK0;
+        Patt* p = NULL;
+        int angle = 0;
+        if (!check_str("on")) {
+            angle = check_str("<") || check_str("<<");
+            ANGLE_TARGET = 1;
+            p = parser_await();
+            ANGLE_TARGET = 0;
+        }
         if (accept_str("on")) {
             accept_tag_err(TK_TAG);
             Expr* e = mk(E_TOGGLE_ON, TK0);
-            if (accept_str("with")) {
-                e->u.toggle_on.nf = parser_filters(&e->u.toggle_on.fs);
+            if (p != NULL) {
+                e->u.toggle_on.fs    = xalloc(sizeof(Patt*));
+                e->u.toggle_on.fs[0] = p;
+                e->u.toggle_on.nf    = 1;
             }
             e->u.toggle_on.blk = parser_block();
             return e;
         }
         Expr* e = mk(E_TOGGLE, tk);
+        if (!angle && p != NULL) {
+            // mute t(b): read as a pattern, it is the call
+            if (p->kind != PT_SPAWN) {
+                err(tk, "expected call syntax");
+            }
+            e->u.toggle.t    = p->e;
+            e->u.toggle.args = p->args;
+            return parser_7_out(e);
+        }
         Expr* call = parser_6_pip(NULL);
         if (call->tag != E_CALL) {
             err(tk, "expected call syntax");
         }
         e->u.toggle.t    = call->u.call.f;
         e->u.toggle.args = call->u.call.es;
-        if (accept_str("with")) {
-            e->u.toggle.nf = parser_filters(&e->u.toggle.fs);
+        if (p != NULL) {
+            e->u.toggle.fs    = xalloc(sizeof(Patt*));
+            e->u.toggle.fs[0] = p;
+            e->u.toggle.nf    = 1;
         }
         return parser_7_out(e);
 
@@ -1427,7 +1484,7 @@ static Expr* parser_idx (Expr* e) {
 
 static Expr* parser_2_suf (Expr* pre) {
     int no = check_str("emit") || check_str("spawn") ||
-             check_str("toggle") || check_str("thread");
+             check_str("mute") || check_str("thread");
     Expr* e = pre ? pre : parser_1_prim();
     if (pre==NULL && is_exit(e)) {
         // it has taken the whole expression

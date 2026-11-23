@@ -11,38 +11,32 @@ session, never reused; from another session, `session#N`.
 
 | # | Item | Kind | State |
 |---|---|---|---|
-| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | by the session, to be confirmed (2026-11-20): around each resume, lazy; on the branch `context` |
-| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | by the session, to be confirmed: no filter |
-| #3 | `leave` receives what `enter` returned | decision | by the session, to be confirmed: yes |
-| #4 | Syntax | decision | by the session, to be confirmed: `context (enter, leave) {...}`, two functions (`\{...}`, `\(old) {...}`); `context` becomes a keyword |
-| #5 | Errors: `emit`, `spawn`, `abort` inside `enter`/`leave` | decision | by the session, to be confirmed: `emit` and `spawn` there are errors (`abort` not checked); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer |
-| #6 | SNKRX and env-ray not readable by this session | remark | open: cloning `ia-atmos/snxkx` and `ia-atmos/raylib` refused again (2026-11-20) |
-| #7 | The three comments of issue 21 not readable | remark | open |
+| #1 | When enter and leave run: around each resume (lazy) or once per emit | decision | decided by the author (2026-11-22): B, around each resume, lazy (as on the branch `context`) |
+| #2 | Filter: bracket every reaction inside, or only some events (`with :draw`) | decision | decided by the author (2026-11-22): no filter; a filter stays as #19 |
+| #3 | `leave` receives what `enter` returned (decided 2026-11-22) | decision | decided by the author (2026-11-22): yes |
+| #4 | Syntax | decision | decided by the author (2026-11-22): D, `context (enter, leave) {...}` or `context X {...}` with X giving `[enter, leave]`; `context` is a keyword; done on the branch `context` 14d9304 |
+| #5 | Errors inside `enter`/`leave` | decision | decided by the author (2026-11-22): `emit`, `spawn`, `abort`, `toggle` there (also from a function they call) are errors, checked at runtime (one test per operation); an error in `enter`/`leave` is raised at the await of the trail resumed, or in the resumer; done on the branch `context` 052e823; `toggle` renamed `mute` on main since (the check now says `mute`, context-18) |
+| #6 | SNKRX and env-ray not readable by this session | remark | settled (2026-11-22): public, read through the git proxy (`ia-atmos/env-ray` cloned; the earlier refusals were of this session's permission classifier, not of GitHub). env-ray: 5 sites; 2 split the pair across tasks (`classics/platformer.atm` 172/190: `begin_mode2d` in one task, `end_mode2d` in another; `games/retro_maze_3d/main.atm` 455/493: `begin_texture_mode`/`end_texture_mode` in two tasks): real cases of `context`; 3 keep it in one task (`wave_collector`, `raylife`, `repair`). SNKRX done by `sdl-snxkx` (#17) |
+| #7 | The three comments of issue 21 | remark | settled (2026-11-22): read from the public page. (1) the implicit form in a `func T ()` (not taken: wrap the body in `context`); (2) an expansion into `par :any` with loops of enter/leave around `await(true)`, i.e. once per reaction (semantics A; the author took B, #1); (3) `context { :init :enter :body :leave }` (`:init` is code before the `context`; `old` is what `enter` returns, #3). The body's example sets a fixed color in leave (`\(_) {...}` works). None contradicts #1 to #5 |
 | #8 | The canvas of the stars: `STARS` (author) or `BACK` (material) | remark | settled (checked by `atmos-lang` in `src/shared.atm`): both exist; the stars draw on `STARS` (line 71), the background on `BACK` (line 22): the author is right |
-| #9 | Implement `context` on the branch `context` | work | done (2026-11-20), branch `context` b0a9489 (main 61979ce merged in, the conflict in `KEYS` with `args` resolved by hand), suite with ASAN passes (1007, rt, env); measured by `atmos-lang` (2026-11-20): 2152 `.atm` of 15 clones (snxkx, raylib included) give identical C and diagnostics (no port uses `context` as a name); sdl-pingus suite 1m51 vs 1m53 on main; 300,000 emits 0.21-0.24 s vs 0.19-0.29 s: the hooks cost nothing measurable; SNKRX not timed (migrating). Waits for the author's approval to merge. Before the merge: bring in main again (fix of `atm_emit_to` coming); `pool` (695afa1) and `grab` (4aed336) touch the same functions: the second and third to merge rebase by hand |
+| #9 | Implement `context` on the branch `context` | work | done and merged into `main` (b71fbe4, 2026-11-22, the author's "merge"); suite with ASAN 1030, rt, env. Ports measured by `atmos-lang` on 46703cd, before `context X` and the checks of `abort`/`toggle` |
 | #10 | Tell `atmos-grab` (and `pool`) what the prototype does at the resume of a trail in `rt/task.c` | work | done 2026-11-20; `atmos-grab#14`: branch `grab` (4aed336) does not touch `trail_resume`/`emit_top`, wraps `emit_trail` (body kept), and also touches `trail_off` and `ATrailX`: conflicts are textual only, whoever merges second rebases. `atmos-blocks` (branch `blocks` 77b2ff3): `trail_wake` resumes the parent of a block through `trail_resume` outside an emit: the switch applies and goes back eagerly (correct, not lazy) |
-| #11 | Non-drawing events (the author's question): with the lazy resume, a key costs nothing unless a task inside awakes on it | answer | reported, not acknowledged |
-| #12 | `lua-atmos` has no `context`; `atmos-lang/atmos` has only a plan, once per emit | remark | reported, not acknowledged |
-| #13 | No real case awaits between set and restore: `context` fixes no bug today, it saves writing and makes the stars one switch per pool | remark | reported, not acknowledged |
-| #14 | The case of `env-pico` for #1 and #3 | input | reported, not acknowledged |
-| #16 | Optimize: aborting a pool inside a context switches once per task (context-03 at the end); the walk up the tree on each resume could be a pointer cached at spawn | work | known, not done |
-| #15 | `pin` merged into `main` (8361f88, `set :out place = value`) and declared STABLE (`atmos-pin#9`, `TODO-pin.md` "Stable"): design #3 on top of it as fixed; a change to a rule of pin goes to `atmos-pin` first | work | when #3 comes |
+| #11 | Non-drawing events (the author's question): with the lazy resume, a key costs nothing unless a task inside awakes on it | answer | acknowledged by the author (2026-11-22), closed |
+| #12 | `lua-atmos` has no `context`; `atmos-lang/atmos` has only a plan, once per emit | remark | acknowledged by the author (2026-11-22), closed |
+| #13 | No real case awaits between set and restore: `context` fixes no bug today, it saves writing and makes the stars one switch per pool | remark | acknowledged by the author (2026-11-22), closed |
+| #14 | The case of `env-pico` for #1 and #3 | input | acknowledged by the author (2026-11-22), closed |
+| #16 | Optimize: aborting a pool inside a context switches once per task (context-03 at the end); the walk up the tree on each resume could be a pointer cached at spawn | work | known, not done; seen by env-pico (2026-11-22, `tst/ctx-layer.atm`): 64 switches over 20 frames = 40 (one pair per frame) + 2 (start) + 22 (`:quit` aborts a pool of 10 inside the context: 11 pairs); reproduced on main |
+| #17 | Rewrite the real cases with `context` on branches `exp-context` of `sdl-snxkx` (the stars) and `env-pico` (the current layer), building from the branch `context`; they report lines before and after, tests, cost and misfits | work | asked by `atmos-lang` (2026-11-21, `#112a`, the author's approval relayed, not checked here); this session keeps `context` near `main`. `env-pico` reported (2026-11-21, on 44cde44): 72 tests unchanged, pictures identical, switches per frame 4.0 vs 4.02 (one task per layer) and 22.0 vs 4.02 (pool of 10 into one layer), frame time unchanged (33.59 vs 33.58 ms); no real pico program needs it (synthetic case). Misfits: (a) a body that sets the layer and awaits gets the context's layer back: now one paragraph in the manual (branch `context`); (b) a task cannot set a layer for others with `context` (by design); (c) see #18. `sdl-snxkx` reported (2026-11-21, branch `exp-context` 88da713, on `context` 46703cd, not to merge): the stars (pool around a `context` on `STARS`) and the background (`BACK`); 40 of 40 tests identical; canvas switches per frame 24.72 -> 4.86 (stress, 1500 frames); stress logic 2.973 s -> 2.855 s (within the spread; a switch only sets an index); lines `src/shared.atm` 115 -> 117, `eng/eng.atm` 199 -> 213 (new `eng.on(c)`, `eng.target_get()`). Misfits: (1) `enter` must return what `leave` needs, so the engine needed a getter of the current canvas (#3); (2) two expressions take two lines per use, see #18; (3) only these two sites switch canvases from tasks; 2026-11-22, the author ("Sim"): asked `sdl-snxkx` to bring the rewrite into its main and `env-pico` to make `pico.ctx.layer` official; waiting for both; env-pico done (main 5d96e3f2, on lang 666dcd6): `pico.ctx.layer(l)` official, documented in doc/api.md, test tst/ctx-layer.atm, suite 73/73; sdl-snxkx done (2026-11-22, main of `ia-atmos/sdl-snkrx`, on lang 666dcd6): `context eng.on(BACK)` and `context eng.on(STARS)` around the pool, 41 tests identical, 24.72 -> 4.89 canvas switches per frame, nothing that did not fit. Closed |
+| #18 | The lambdas of `context` are long for the common case and cannot be wrapped in a helper (env-pico #17c, sdl-snxkx #17(2)) | remark | settled by #4 (2026-11-22): `context eng.on(X) {...}` |
+| #19 | A filter of events for `context` | decision | decided by the author (2026-11-22, "Sim"): `context <P> (enter, leave) {...}` / `context <P> X {...}`; applied only while an emit that matches P is traversed, never outside an emit; done on the branch `context` 1d48c2a (suite with ASAN 1076, rt, env; cases context-19 to 22, ast context-3, context-err-2); merged into `main` 152cba6 (2026-11-22, the author's "Sim"); the three details of the runtime confirmed by the author (2026-11-22, "sim"): one match per emit per context, the zero tick of `mute` is the event `0`, an error in the pattern counts as no match |
+| #20 | Rewrite the two env-ray sites that split a begin/end pair across tasks with `context`, on a branch `exp-context` | work | reported by `env-ray` (2026-11-22, branch `exp-context` d4f30e3 pushed to `ia-atmos/env-ray` for reading, on lang b71fbe4 before `toggle` -> `mute`, not to merge): binding `ray.ctx.mode2d`, `ray.ctx.texture_mode` (+11 in ray.atm); platformer 37 -> 47 lines (Play), retro_maze_3d same length; tests identical; cost: noise in whole frames, retro_maze_3d logic +6% (~10 us/frame); enters per frame 1 -> ~3.5 (platformer), ~2 (retro_maze_3d). Misfits: (1) the block is inline: Play needed `spawn { context ... { ... ; emit :taken } }` + `await :taken`; (2) a pool drawing in the mode moves inside; (3) enter/leave run on every event that wakes a task inside (:frame, keys, watching), outside BeginDrawing: harmless here, 2-3.5x the calls, and a mode with side effects could not be limited to :draw: demand for #19; (4) a clear right after begin became the first task inside (no hook after enter); 2026-11-22, the author ("ok"): asked env-ray to redo it with `context <:draw>` on current main, re-measure (1 enter per frame expected), and if tests stay identical bring it into its main; waiting; env-ray (2026-11-22, local branch ctx2 fa9e30d, lang d5323ce) stopped at the measure: platformer exactly 1 enter per frame (734/734, 900/900), tests identical; retro_maze_3d fails at frame 300: `await(s)` gives nil inside `context <:draw>` (bug of #19: the match of the filter cleared the payload being delivered, also of plain events); fixed on the branch `context` 67be195 (cases context-23, 24, suite 1078), merged into `main` by `atmos-lang` as 656e7eb under the standing rule (`TODO.md`: a defect fix that changes no rule goes to main through atmos-lang after the suite and the measurement): ports' C unchanged, sdl-pingus passes; env-ray to measure again; misfits 1, 2, 4 unchanged; DONE (2026-11-22): adopted on env-ray main (ba6770e platformer, ba8a8b6 retro_maze_3d, on lang 656e7eb) with `context <:draw>`: suite 57/57, 5 runs identical, exactly 1 enter per frame (was 2583, 3659, 9854, 3006 per run); retro_maze_3d logic +6% (~9 us/frame), whole frames unchanged; misfits 1, 2, 4 remain (not of the language: an inline block, pools declared inside, no hook after enter). Closed |
+| #15 | `pin` merged into `main` (8361f88, `set :out place = value`) and declared STABLE (`atmos-pin#9`, `TODO-pin.md` "Stable"): design #3 on top of it as fixed; a change to a rule of pin goes to `atmos-pin` first | work | done: #3 needed no change of pin; closed (2026-11-22) |
 
 ## Waiting for the author (one at a time, in this order)
 
-- **#1 When enter and leave run** (asked 2026-11-18): around each
-  resume of a task inside, lazy (recommended), or once around the block
-  per emit. See `261118-context-semantics.md`, sections 3 to 6.
-- #2 Filter: bracket every reaction inside, or only those to some
-  events (`context ... with :draw`)? Recommended: no filter (the lazy
-  switch already costs nothing when nothing inside awakes).
-- #3 Can `leave` receive what `enter` returned (the pico idiom
-  `val old = pico.set.layer(l)` ... `pico.set.layer(old)`)?
-  Recommended: yes.
-- #4 Syntax: the issue's `=> {}` / `<= {}`, the `atmos-lang/atmos`
-  plan's `:init :enter :body :leave`, or `context (enter, leave) {...}`
-  with functions as expressions.
-- #5 Errors: `emit`, `spawn`, `abort` inside `enter`/`leave`.
+(nothing)
+
+(#1 to #5 decided; the branch `context` merged into `main` b71fbe4 on 2026-11-22, approved by the author: "merge")
 
 ## Known, not done
 
@@ -90,7 +84,7 @@ session, never reused; from another session, `session#N`.
   current layer whose block ended. Its counts match section 2 of
   `261118-context-semantics.md`.
 
-## Settled by the session, to be confirmed (2026-11-20)
+## Settled by the session (2026-11-20), all decided by the author (2026-11-22)
 
 Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 #1 to #5 are implemented with the recommendations on the branch
@@ -99,11 +93,11 @@ Under the rule "Work with no input" (`TODO.md`, 2026-11-20, `#95`),
 
 | # | Taken | Tests |
 |---|---|---|
-| #1 | around each resume, lazy | context-01 to 05 |
-| #2 | no filter | context-06 |
+| #1 | around each resume, lazy (decided 2026-11-22) | context-01 to 05 |
+| #2 | no filter (decided 2026-11-22) | context-06 |
 | #3 | `leave` receives what `enter` returned | context-07 |
-| #4 | `context (enter, leave) {...}` | ast context-1, context-err-1 |
-| #5 | `emit`, `spawn` in `enter`/`leave` are errors; errors raised in the trail resumed or the resumer | context-08 to 10 |
+| #4 | D (decided 2026-11-22): `context (enter, leave) {...}` or `context X {...}` | ast context-1, context-2, context-err-1; cases context-13 to 16 |
+| #5 | `emit`, `spawn`, `abort`, `toggle` in `enter`/`leave` are errors (decided 2026-11-22) | context-08 to 10, 17, 18 |
 
 Measured (cases context-11, context-12): 50 stars, 100 canvas switches per
 frame today, 2 with a context around the pool, 0 for `:update` and `:key`;
@@ -112,4 +106,17 @@ it awaits.
 
 ## Decided
 
-(nothing yet)
+- #1 (2026-11-22, the author, "B"): `enter` and `leave` run around each
+  resume of code that lives in the block, lazily; see
+  `261118-context-semantics.md`, sections 3 to 6 and 8.
+- #2 (2026-11-22, the author, "sem filtro, mas deixar como TODO"): no
+  filter of events; a filter is #19, known, not done.
+- #3 (2026-11-22, the author, "sim"): `leave` receives what `enter`
+  returned.
+- #4 (2026-11-22, the author, "D"): `context (enter, leave) {...}` or
+  `context X {...}`, X giving the pair `[enter, leave]`; `enter` and
+  `leave` that are not functions are an error.
+- #5 (2026-11-22, the author, "ok"): `emit`, `spawn`, `abort` and
+  `toggle` inside `enter`/`leave`, also indirectly, are errors at runtime;
+  the reason: they run other code in the middle of a switch (a nested
+  switch, or the context freed while its `enter` runs).

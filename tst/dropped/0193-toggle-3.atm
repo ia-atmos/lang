@@ -6,7 +6,7 @@
         pin t = xtask(T)
 
         print :A
-        toggle t (false)
+        mute t (true)
         emit :X
 
         print :B
@@ -14,6 +14,6 @@
         emit :X
 
         print :C
-        toggle t (true)
+        mute t (false)
         emit :X
     

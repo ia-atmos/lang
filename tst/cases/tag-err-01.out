@@ -1,0 +1,3 @@
+==> ERROR:
+ v  tag-err-01.atm:2 (throw)
+==> invalid tag : expected string : got number

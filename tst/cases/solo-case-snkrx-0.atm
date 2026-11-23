@@ -1,0 +1,26 @@
+;; SNKRX today (src/options.atm): the options are a modal spawned inside
+;; the shop, so they cannot mute it; the game time is slowed to 0, but
+;; the input is not: a card of the shop answers the click behind the modal
+task Card () {
+    loop on :mouse.dn {
+        print("card bought")
+    }
+}
+task Options () {
+    loop e on <:mouse.dn || :key.dn> {
+        print("options", e)
+        until e ?? :key.dn
+    }
+}
+task Shop () {
+    spawn Card()
+    loop {
+        await :key.dn
+        await Options()
+    }
+}
+spawn Shop()
+emit :mouse.dn
+emit :key.dn                ;; opens the options
+emit :mouse.dn              ;; the card is bought behind the modal
+emit :key.dn                ;; closes them

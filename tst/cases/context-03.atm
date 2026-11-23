@@ -1,0 +1,16 @@
+;; #1: a pool inside the context: one switch for the whole pool
+task Star (i) {
+    loop on :draw { print i }
+}
+spawn {
+    context (\{ print "+A" }, \{ print "-A" }) {
+        pin ts = tasks()
+        loop i in 3 {
+            spawn @ts Star(i)
+        }
+        await false
+    }
+}
+print "draw"
+emit :draw
+print "end"

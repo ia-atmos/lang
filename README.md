@@ -178,6 +178,11 @@ The plan, with the settled decisions and the milestones, is in
 make test
 ```
 
+Before a merge that touches `rt/` or the `Makefile`, `make test-cfgs`
+builds the runtime in every configuration of the options, from clean
+and with `-Werror`, in `build/cfgs`: a warning in any of them would
+reach the output of a program built with it. `atmos-lang` runs it.
+
 - `tst/rt/`: unit tests of the runtime, in C.
 - `tst/lex/`, `tst/ast/`: lexer and parser golden cases.
 - `tst/golden/`: the cases of the reference implementation that this
@@ -263,8 +268,8 @@ From the [original implementation][atmos-lua], which compiles to Lua:
       one, which only a block at the name or outside may adopt.
     - A pinned value is freed when its block ends, cycles included,
       along with the unnamed unpinned values that were stored in it.
-      Without a pin, reference counting applies, and a cycle that only
-      the names of a block reach is broken when the block ends.
+      Without a pin, reference counting applies, and an unpinned cycle
+      leaks: a cyclic structure must be pinned.
     - It cannot escape its block: storing it in an outer variable, in
       a table of an outer block, in a `throw`, emitting it outwards, or
       returning it raises `invalid escape : table pinned at prog.atm:10`.

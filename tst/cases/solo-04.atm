@@ -1,0 +1,35 @@
+;; #4: a stack: the most recent solo whose patterns match wins; its end
+;; gives the events back to the previous one (options over the shop)
+spawn {
+    stage {
+        par {
+            loop e on :key { print("shop", e@0) }
+        } with {
+            await :tutorial
+            solo <!:draw> {
+                par {
+                    loop e on :key { print("tutorial", e@0) }
+                } with {
+                    loop e on :draw { print("tutorial draw") }
+                } with {
+                    await :options
+                    solo :key {
+                        loop e on :key {
+                            print("options", e@0)
+                            until e@0 == :esc
+                        }
+                    }
+                    await(false)
+                }
+            }
+        }
+    }
+}
+emit :key [1]
+emit :tutorial
+emit :key [2]
+emit :options
+emit :key [3]
+emit :draw          ;; options only solo :key: the tutorial has it
+emit :key [:esc]
+emit :key [4]

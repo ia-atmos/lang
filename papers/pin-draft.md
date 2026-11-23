@@ -67,7 +67,7 @@ event that holds a pinned value reaches only targets attached inside that
 value's block. The one exception is `set :out place = value`: a place of an
 outer block refers to a value of the current block with no check and no
 adoption, and is reset to `nil` when the block of the `set` ends, if it still
-refers to that value.
+refers to that value. The place may be a `pub`, whole or a field.
 
 **Rule 4, end.** When a block ends, the values it pinned are finalized in
 reverse order, interleaved with `defer`: tasks and pools are aborted, tables
@@ -92,7 +92,13 @@ value declares, through its binding, which values it holds.
 ## 8. Implementation
 
 Atmos compiles to C. The runtime counts references and has no tracing
-collector. Each object header carries its reference count, a state byte, the
+collector. The checks compare block depths and never read a count, and
+finalization at the end of a block is driven by the block. Only the end of a
+value that nobody owns reads a count, and there the counts are part of the
+semantics: a value that is no longer referred to is finalized at once, at a
+deterministic point, so a dropped task is aborted, and a dropped native
+closed, at the moment it is dropped. A tracing collector would also collect
+the cycles that counting leaks, but would lose that moment. Each object header carries its reference count, a state byte, the
 depth of its block, the source line of the pin that gave it that depth, and
 the ceiling with its line. The state distinguishes unpinned values, unpinned
 values with a floor, values pinned by a declaration, values pinned by a
@@ -111,22 +117,16 @@ Retired values are kept on a list that holds one reference each. A retired
 value is released as soon as that is its only reference, and whatever
 remains, a cycle, is finalized at the end of the block.
 
-Cycles among unpinned values are broken at the end of the block of the names
-that reach them, by a local trial deletion. The candidates are the unpinned
-values reachable from the block's names whose ceiling is at that block or
-absent. References among the candidates and from the names are subtracted. A
-candidate with references left is alive, with everything it reaches; what
-counting alone would free is left to counting; and only the edges among what
-remains, values in a cycle or reachable only through one, are cut. The pass
-runs only if, since the block began, a reference was written into a table, a
-box, or a `pub`. Soundness rests on the counts, not on the ceiling: the
-escape information that block depths provide only selects the candidates.
-The same trial deletion runs on a value with no name when the last reference
-to it from outside goes: a temporary, a result that is dropped, an entry of a
-value that is freed, or the parameter of a task that ends. For a parameter of
-a task, the search gives up on a value that reaches more than 256 others,
-which is then left to the counts. No measurable cost was reported for this
-step (`.claude/plans/TODO-pin.md`, item 7).
+Counting alone does not reclaim cycles. A pinned cycle is broken at the end
+of its block, since the pin cuts what it finalizes. An unpinned cycle is not
+collected: its counts never reach zero, and it leaks. A cyclic structure
+must therefore be pinned, by its block or by a pinned value that holds it; a
+function that builds one returns it unpinned, and the caller pins it. A
+recursive closure through a variable is such a cycle, and is declared with
+`func` or `pin var`; the compiler warns when a variable is assigned a
+function that refers to it. This is a choice: a local trial deletion was
+implemented and then removed (atmos-pin#18, `3cd5169`), and a tracing
+collector would make the restriction unnecessary.
 
 An `emit` that carries a pinned value compares two depths, where the target
 is attached and where the value is pinned, and does not walk the tree of
@@ -142,17 +142,29 @@ None was measured for this paper.
 - **The ceiling check.** 2,000,000 `pin`s of two small tables took 0.95 s,
   against 0.75 s without the check; the same loop with `val` took 0.75 s
   (`.claude/plans/261115-pin.md`).
-- **The local trial deletion.** No cost on binary-trees, nor when only
-  numbers are written. +30 to 40% (about 150 ns per iteration) on a loop that
-  does nothing but write a new table into a named one. The suite and a
-  6000-frame demo of sdl-pingus, and the echo benchmark of the libuv
-  environment, were unchanged (report of `atmos-pin`, 2026-11-18).
 - **`set :out` and the mark of finalized data.** No cost: 20 million table
   reads took 0.70 s before and 0.68 s after, and binary-trees and the write
   loop were unchanged (`.claude/plans/TODO-pin.md`).
 - **The ports.** On the final rules, 12 ports pass their suites unchanged
   (`atmos-lang#81`, merge `64005fd` into `main`).
 
-The cost of the checks as a whole, the program with checks against the same
-program without them, is not measured: it needs the flag that removes the
-checks, which the author has not approved yet (#7b, `atmos-pin#3`).
+- **The checks as a whole, on a real program.** Doom, demo1, counted in
+  instructions on `main` at `34c381b`: with no rendering, 263.7 M with the
+  checks against 256.3 M with `ATMOS_PIN=off` (the same generated C, linked
+  against the runtime without the checks; its 16 tests give identical
+  results under both). The checks cost 7.4 M instructions, 2.8% of the run,
+  and about 13% of what the Atmos program adds to the engine written in C
+  (207.9 M). With rendering: 4828.2 M against 4819.1 M, 0.2% (report of
+  `atmos-lang`, 2026-11-21; doom `doc/bench.md`).
+
+- **Code size, on a microcontroller.** env-esp32, board build (ESP32), the
+  program with its runtime: `init` takes 140,631 bytes with the checks and
+  136,037 without (`ATM_PIN_OFF`, 3.3% less); `ultrat` takes 215,219 and
+  198,269 bytes (7.9% less). With `ATMOS_PIN=unchecked` (checks removed,
+  semantics kept): 139,246 and 204,550 bytes. Static DRAM changes by 40 bytes
+  in both. Its 6 host tests give the same output in the three modes; heap and
+  speed on the board are not measured (report of `atmos-lang`, 2026-11-21,
+  `libmain.a`, `lang` at `34c381b`).
+
+`ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
+`ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).

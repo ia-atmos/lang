@@ -1,0 +1,17 @@
+pin T = task (v) {
+    loop {
+        await(true)
+        print(v)
+    }
+}
+pin ts = tasks()
+spawn @ts T(1)
+spawn @ts T(2)
+emit(:X)
+mute ts(true)
+print("---")
+emit(:X)
+emit(:X)
+print("---")
+mute ts(false)
+emit(:X)

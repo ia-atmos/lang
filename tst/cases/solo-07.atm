@@ -1,0 +1,25 @@
+;; #7: an emit that does not traverse the stage is not captured:
+;; one aimed at a task below it, outside the solo
+task T () {
+    par {
+        loop on :key {
+            print("T key")
+        }
+    } with {
+        loop on :ping {
+            print("T ping")
+        }
+    }
+}
+spawn {
+    stage {
+        pin t = spawn T()
+        solo <:key || :ping> {
+            loop on :key {
+                print("modal")
+                emit @t :ping       ;; from the task t down: not captured
+            }
+        }
+    }
+}
+emit :key                           ;; through the stage: captured
