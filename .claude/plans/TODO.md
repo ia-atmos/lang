@@ -290,3 +290,12 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47); 34, 41, and 62 (done with the new rules of `pin` on 2026-11-15: a nested constructor is pinned with the outer one; the message of an escape says the type and the line of the pin; an unpinned task that is dropped is aborted at once); 18, 19, and 24 (on 2026-11-15 the author deleted every branch but `main`: `trails`, the two `ccr-*`, and `claude/paper-pin`, none with work missing from `main`; the README of Pingus already pointed its plan to `main`; a session cannot delete a branch, the push is refused with 403);
 5 (no `task main`: decided by the author on 2026-11-17, in the session `atmos-envs`; the file stays the main task); 23 (the session `sdl-pingus` removed its workarounds in the two migrations of `pin`, 2026-11-17 and 18);
 51 (became 55); 11 (mouse in `lib/sdl.atm`: the library left this repository on 2026-11-16, by the author's decision, with Rocks; both live in `ia-atmos/env-sdl`).
+
+## Next week (the author, 2026-11-23)
+
+> Vamos continuar novos passos após créditos da próxima semana. Iremos
+> acordar todos esperando créditos. Também iremos perguntar quais
+> projetos ainda tem código C embarcado. Não agora. Aguarde.
+
+When the credits of next week come: wake every session, and ask each
+project which C code it still embeds. Until then, only what arrives.
