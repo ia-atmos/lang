@@ -44,9 +44,9 @@ written; each such item now has its number below.
 - **#8 Experiment: CLBG in Atmos** (was C1). Re-implement the 7
   programs of Câmara (2024; github.com/alochaus/dyn-lex-benchmark):
   binary-trees, fannkuch-redux, fasta, fibonacci, mandelbrot, n-body,
-  spectral-norm. Measure Atmos against Lua 5.4 and against Atmos with
-  the checks disabled (a compile flag, #7b, which keeps end-of-block
-  finalization). Compile once and time only the run: the earlier study
+  spectral-norm. Variants (author, 2026-11-23): C, Lua 5.4, LuaJIT
+  (context only), and Atmos with `ATMOS_PIN=off`, `unchecked` and the
+  default; time and peak RSS. Compile once and time only the run: the earlier study
   included recompilation in every run, so its numbers are not cited.
 - **#9 Related work: dyn-lex** (was C2). Read its manual
   (doc/manual.md) and runtime (src/main/kotlin/C.kt) for the
@@ -72,7 +72,10 @@ written; each such item now has its number below.
 - **#8 blocked.** No Lua 5.4 interpreter here (only the library). Building
   Lua 5.4.6 from lua.org in the scratchpad was denied by the permission
   classifier, so neither Lua nor the C references of the benchmark were
-  built. Needed: a Lua 5.4 interpreter in the environment.
+  built. Needed: a Lua 5.4 interpreter in the environment. Checked
+  2026-11-23: `lua5.4` and `luajit` are in Ubuntu universe, which the
+  sources list, but the package lists were never fetched; gcc and make are
+  here. Postponed by the author to next week's credits.
 - **#6 not done.** The ports are in other repositories, not in this
   session; the count from their history needs their sessions.
 - **#5 partly.** 12 ports pass their suites on the final rules

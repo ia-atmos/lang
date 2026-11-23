@@ -335,8 +335,20 @@ case studies from six ports of libraries and games to Atmos.
 - Planned experiment: the Computer Language Benchmark Game (CLBG)
     - the 7 programs of Câmara (2024): binary-trees, fannkuch-redux, fasta,
       fibonacci, mandelbrot, n-body, spectral-norm
-    - Atmos against Lua 5.4, and against Atmos with the checks disabled
-      (a compile flag: removes only the checks, keeps end-of-block finalization)
+    - five variants, and one reference with a JIT:
+        - C: the floor (the C versions in `alochaus/dyn-lex-benchmark`)
+        - Lua 5.4: the same language model, interpreted, with a tracing GC
+        - LuaJIT: the ceiling of a dynamic language; its speed comes from the
+          JIT, not from memory, so it is context only; Lua 5.1 dialect, and any
+          adaptation of the programs is reported
+        - Atmos `ATMOS_PIN=off`: counting only, `pin` only for tasks and pools
+        - Atmos `ATMOS_PIN=unchecked`: the same semantics, no checks
+        - Atmos with `pin` (default): the whole mechanism
+    - the figure of the pin is Atmos with against Atmos without; C, Lua and
+      LuaJIT only place it, since they differ in much more than memory
+    - measure time and peak memory (RSS): counting, tracing, and pins differ
+      in memory more than in time
+    - only binary-trees allocates much; Doom stays the main measure of cost
     - methodology fix: compile once, time only the run (the earlier study
       included recompilation in every run)
     - questions: overhead of the checks; where it concentrates (binary-trees)
