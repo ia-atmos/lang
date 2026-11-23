@@ -103,3 +103,11 @@ Value : ... | ID
   the same `number` function, so it follows the options. Before another
   change to the file: bring `main` into the branch. The case under
   `NAME.env` is done (#22).
+
+## Closed (2026-11-23)
+
+The session `atmos-loadx` ends here, at the author's request: no item
+is open, and the remote branch `loadx` no longer exists. Left as an
+option, not done: a limit on the depth of a chain of includes (each
+file is included once, so it only matters with thousands of distinct
+files). A later question on `X.loadx` goes to `atmos-lang`.
