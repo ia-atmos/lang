@@ -75,7 +75,7 @@ written; each such item now has its number below.
   built. Needed: a Lua 5.4 interpreter in the environment. Checked
   2026-11-23: `lua5.4` and `luajit` are in Ubuntu universe, which the
   sources list, but the package lists were never fetched; gcc and make are
-  here. Postponed by the author to next week's credits.
+  here. The author proposed waiting for next week's credits.
 - **#6 not done.** The ports are in other repositories, not in this
   session; the count from their history needs their sessions.
 - **#5 partly.** 12 ports pass their suites on the final rules
