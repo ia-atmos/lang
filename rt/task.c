@@ -826,14 +826,14 @@ static void node_trav (ANode* n, int inc) {
 }
 
 // Releases the mute state of a node.
-static void node_untoggle (ANode* n) {
+static void node_unmute (ANode* n) {
     for (int i=0; i<n->nfilt; i++) {
         patt_free(n->filt[i]);
     }
     free(n->filt);
     n->filt  = NULL;
     n->nfilt = 0;
-    n->toggled = 0;
+    n->muted = 0;
 }
 
 static ATrailX* trail_x (ATrail* tr) {
@@ -849,8 +849,8 @@ static int NSOLO = 0;
 
 // A solo that ends leaves the stack of its stage; a stage that ends
 // leaves its solos without one (they end with it, in its block).
-static void grab_off (ATrail* tr, ATrailX* x) {
-    if (x->gkind == A_GRAB && x->gup != NULL && x->gup->x != NULL) {
+static void solo_off (ATrail* tr, ATrailX* x) {
+    if (x->gkind == A_SOLO && x->gup != NULL && x->gup->x != NULL) {
         ATrailX* u = x->gup->x;
         for (int i=0; i<u->gn; i++) {
             if (u->gs[i] == tr) {
@@ -860,7 +860,7 @@ static void grab_off (ATrail* tr, ATrailX* x) {
                 break;
             }
         }
-    } else if (x->gkind == A_GRABBABLE) {
+    } else if (x->gkind == A_STAGE) {
         for (int i=0; i<x->gn; i++) {
             if (x->gs[i]->x != NULL) {
                 x->gs[i]->x->gup = NULL;
@@ -1125,8 +1125,8 @@ static void trail_off (ATrail* tr) {
             patt_free(x->filt[i]);
         }
         free(x->filt);
-        grab_off(tr, x);
-        a_dec(x->tog);
+        solo_off(tr, x);
+        a_dec(x->mtag);
         a_pay_drop(&x->wpay);
         a_pay_drop(&x->ppay);
         for (int i=0; i<x->wn; i++) {
@@ -1140,7 +1140,7 @@ static void trail_off (ATrail* tr) {
     tr->aborted = 0;
     tr->waiting = 0;
     tr->doomed  = 0;
-    tr->toggled = 0;
+    tr->muted = 0;
 }
 
 // Releases the frame of a task that terminated.
@@ -1161,7 +1161,7 @@ static void frame_free (ATask* t) {
 }
 
 void a_node_free (ANode* n) {
-    node_untoggle(n);
+    node_unmute(n);
     if (n->hdr.type == A_XTASK) {
         ATask* t = (ATask*) n;
         frame_free(t);
@@ -1272,7 +1272,7 @@ static int kit_next (KIt* it, ATrail** tr, ANode** n) {
 
 // Termination of a transparent block: it has no identity and is not
 // an event. Only what awaits it by structure goes on: its parent, if
-// it awaits the trails of a `par :all` or of a `toggle` and this was
+// it awaits the trails of a `par :all` or of a `mute on` and this was
 // the last one. The parent is resumed directly, with no emit.
 static AStatus trail_wake (ATask* t, int idx) {
     int up = t->desc->trails[idx].up;
@@ -1545,7 +1545,7 @@ AStatus a_abort (AVal v) {
 // EMIT
 ///////////////////////////////////////////////////////////////////////////////
 
-// Starts the filters of a node or trail that was toggled off.
+// Starts the filters of a node or trail that was muted off.
 static AStatus filt_start (APatt** fs, int n) {
     AStatus st = A_OK;
     for (int i=0; i<n && st==A_OK; i++) {
@@ -1556,7 +1556,7 @@ static AStatus filt_start (APatt** fs, int n) {
     return st;
 }
 
-// What is toggled off only reacts to events that match a filter,
+// What is muted off only reacts to events that match a filter,
 // which then starts again.
 static AStatus filt_pass (APatt** fs, int n, AVal evt, int* pass) {
     AStatus st = A_OK;
@@ -1614,7 +1614,7 @@ static int cap_skip_ (uint32_t time, void* p) {
 // The emit reaches a stage: the most recent of its solos whose
 // patterns match the event, if the stage's match too, captures it.
 // A stage or solo with no pattern takes every event.
-static AStatus grab_pass (ATrailX* x, AVal evt, int* pass) {
+static AStatus solo_pass (ATrailX* x, AVal evt, int* pass) {
     if (x->ngfilt == 0) {
         *pass = 1;
         return A_OK;
@@ -1625,11 +1625,11 @@ static AStatus grab_pass (ATrailX* x, AVal evt, int* pass) {
 static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
     ATrailX* x = tr->x;
     int pass = 0;
-    AStatus st = grab_pass(x, evt, &pass);
+    AStatus st = solo_pass(x, evt, &pass);
     for (int k=x->gn-1; st==A_OK && pass && k>=0; k--) {
         ATrailX* g = x->gs[k]->x;
         int p = 0;
-        st = grab_pass(g, evt, &p);
+        st = solo_pass(g, evt, &p);
         if (st==A_OK && p) {
             CAP.time = time;
             CAP.g    = x->gs[k];
@@ -1644,13 +1644,13 @@ static AStatus cap_find (ATrail* tr, AVal evt, uint32_t time) {
 }
 
 // The event is `:T [b]` for the tag of a `mute on`: `b` mutes.
-static int toggle_evt (AVal tog, AVal evt, int* on) {
-    if (tog.type==A_NIL || evt.type!=A_TAB) {
+static int mute_evt (AVal mtag, AVal evt, int* on) {
+    if (mtag.type==A_NIL || evt.type!=A_TAB) {
         return 0;
     }
     AVal tag = A_TAB_OF(evt)->tag;
     AVal b = a_tab_get(A_TAB_OF(evt), a_int(0));
-    if (b.type!=A_BOOL || !a_gte(tog, tag)) {
+    if (b.type!=A_BOOL || !a_gte(mtag, tag)) {
         return 0;
     }
     *on = !b.u.b;
@@ -1714,7 +1714,7 @@ A_INLINE AStatus emit_trail_g (ATask* t, ATrail* tr, uint32_t time, AVal evt,
         save = CAP;
         if (cap_out(time) && tr==CAP.g) {
             CAP.in = 1;
-        } else if (tr->x!=NULL && tr->x->gkind==A_GRABBABLE && tr->x->gn>0 &&
+        } else if (tr->x!=NULL && tr->x->gkind==A_STAGE && tr->x->gn>0 &&
                    !cap_out(time)) {
             st = cap_find(tr, evt, time);
             if (st != A_OK) {
@@ -1723,7 +1723,7 @@ A_INLINE AStatus emit_trail_g (ATask* t, ATrail* tr, uint32_t time, AVal evt,
         }
     }
     int pass = 1;
-    if (tr->toggled) {
+    if (tr->muted) {
         st = filt_pass(tr->x->filt, tr->x->nfilt, evt, &pass);
     }
 
@@ -1785,17 +1785,17 @@ A_INLINE AStatus emit_trail_g (ATask* t, ATrail* tr, uint32_t time, AVal evt,
     }
 
     // `mute on`, after the trail has seen the event: a trail
-    // toggled on receives a zero tick, which awakes `await(true)` and
+    // muted on receives a zero tick, which awakes `await(true)` and
     // lets its timers report again
     int on;
     if (st==A_OK && t->trs!=NULL && tr->x!=NULL && tr->status!=TR_OFF &&
-        toggle_evt(tr->x->tog,evt,&on))
+        mute_evt(tr->x->mtag,evt,&on))
     {
-        if (on && tr->toggled) {
-            tr->toggled = 0;
+        if (on && tr->muted) {
+            tr->muted = 0;
             st = EMIT_TRAIL(C)(t, tr, ++TIME, a_int(0));
-        } else if (!on && !tr->toggled) {
-            tr->toggled = 1;
+        } else if (!on && !tr->muted) {
+            tr->muted = 1;
             st = filt_start(tr->x->filt, tr->x->nfilt);
         }
     }
@@ -1820,7 +1820,7 @@ A_INLINE AStatus emit_node_g (ANode* n, uint32_t time, AVal evt, const int C) {
 
     AStatus st = A_OK;
     int pass = 1;
-    if (n->toggled) {
+    if (n->muted) {
         st = filt_pass(n->filt, n->nfilt, evt, &pass);
     }
     if (st==A_OK && pass) {
@@ -1864,7 +1864,7 @@ static AStatus emit_node (ANode* n, uint32_t time, AVal evt) {
     return EMIT_NODE(NSOLO != 0)(n, time, evt);
 }
 
-AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
+AStatus a_mute (AVal t, AVal mute, APatt** fs, int n) {
     AStatus st = ctx_chk("mute");
     ANode* x = (ANode*) t.u.o;
     // `mute t(true)` silences, `mute t(false)` gives the events back
@@ -1877,9 +1877,9 @@ AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
         st = a_error("invalid mute : expected bool argument");
     } else if (on.u.b && n>0) {
         st = a_error("invalid mute : unexpected pattern");
-    } else if (on.u.b && !x->toggled) {
+    } else if (on.u.b && !x->muted) {
         st = a_error("invalid mute : expected muted task");
-    } else if (!on.u.b && x->toggled) {
+    } else if (!on.u.b && x->muted) {
         st = a_error("invalid mute : expected unmuted task");
     }
     if (st != A_OK) {
@@ -1891,7 +1891,7 @@ AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
 
     if (on.u.b) {
         // a zero tick awakes `await(true)` and lets the timers report
-        node_untoggle(x);
+        node_unmute(x);
         uint32_t otime = EVT_TIME;
         AVal     oval  = EVT_VAL;
         EVT_TIME = ++TIME;
@@ -1905,11 +1905,11 @@ AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n) {
     x->filt = malloc((n > 0 ? n : 1) * sizeof(APatt*));
     memcpy(x->filt, fs, n * sizeof(APatt*));
     x->nfilt = n;
-    x->toggled = 1;
+    x->muted = 1;
     return filt_start(x->filt, x->nfilt);
 }
 
-void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
+void a_trail_mute (ATask* t, int i, AVal tag, APatt** fs, int n) {
     ATrail* tr = &t->trs[i];
     if (tr->status == TR_OFF) {
         // the block has already terminated
@@ -1919,7 +1919,7 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
         return;
     }
     ATrailX* x = trail_x(tr);
-    a_cpy(&x->tog, tag);
+    a_cpy(&x->mtag, tag);
     x->filt = malloc((n > 0 ? n : 1) * sizeof(APatt*));
     memcpy(x->filt, fs, n * sizeof(APatt*));
     x->nfilt = n;
@@ -1927,7 +1927,7 @@ void a_trail_toggle (ATask* t, int i, AVal tag, APatt** fs, int n) {
 
 // `stage P {...}` and `solo P {...}`, before the block starts. A solo
 // takes the nearest stage above it, in the tree of tasks.
-AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
+AStatus a_trail_solo (ATask* t, int i, int kind, APatt** fs, int n) {
     ATrail* me = &t->trs[i];
     ATrailX* x = trail_x(me);
     x->gkind  = kind;
@@ -1935,7 +1935,7 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
     memcpy(x->gfilt, fs, n * sizeof(APatt*));
     x->ngfilt = n;
     AStatus st = filt_start(x->gfilt, x->ngfilt);
-    if (st!=A_OK || kind==A_GRABBABLE) {
+    if (st!=A_OK || kind==A_STAGE) {
         return st;
     }
     int cap = 0;
@@ -1944,7 +1944,7 @@ AStatus a_trail_grab (ATask* t, int i, int kind, APatt** fs, int n) {
     ATrail* up = NULL;
     while (up == NULL) {
         ATrail* tr = &t->trs[i];
-        if (tr!=me && tr->x!=NULL && tr->x->gkind==A_GRABBABLE) {
+        if (tr!=me && tr->x!=NULL && tr->x->gkind==A_STAGE) {
             up = tr;
             break;
         }

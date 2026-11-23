@@ -279,11 +279,11 @@ static void hoist (Expr* e) {
         case E_SPAWN_BLK:
             hoist(e->u.sblk.blk);
             break;
-        case E_TOGGLE_ON:
-            hoist(e->u.toggle_on.blk);
+        case E_MUTE_ON:
+            hoist(e->u.mute_on.blk);
             break;
-        case E_GRAB:
-            hoist(e->u.grab.blk);
+        case E_SOLO:
+            hoist(e->u.solo.blk);
             break;
         case E_CONTEXT:
             hoist(e->u.context.enter);
@@ -516,8 +516,8 @@ static int awaits (Expr* e) {
     switch (e->tag) {
         case E_AWAIT:
         case E_PAR:
-        case E_TOGGLE_ON:
-        case E_GRAB:
+        case E_MUTE_ON:
+        case E_SOLO:
         case E_CONTEXT:
             return 1;
         case E_INDEX:
@@ -573,8 +573,8 @@ static int awaits (Expr* e) {
             return awaits(e->u.tasks.n);
         case E_EMIT:
             return awaits(e->u.emit.to) || awaits(e->u.emit.e);
-        case E_TOGGLE:
-            return awaits(e->u.toggle.t) || awaits_list(&e->u.toggle.args);
+        case E_MUTE:
+            return awaits(e->u.mute.t) || awaits_list(&e->u.mute.args);
         default:
             return 0;
     }
@@ -1028,11 +1028,11 @@ static void res (Expr* e) {
             }
             break;
 
-        case E_TOGGLE:
-            res(e->u.toggle.t);
-            res_list(&e->u.toggle.args);
-            for (int i=0; i<e->u.toggle.nf; i++) {
-                res_patt(e->u.toggle.fs[i]);
+        case E_MUTE:
+            res(e->u.mute.t);
+            res_list(&e->u.mute.args);
+            for (int i=0; i<e->u.mute.nf; i++) {
+                res_patt(e->u.mute.fs[i]);
             }
             break;
 
@@ -1048,20 +1048,20 @@ static void res (Expr* e) {
             res_block(e->u.context.blk, 1);
             break;
 
-        case E_TOGGLE_ON:
+        case E_MUTE_ON:
             chk_await(e->tk, "mute");
-            for (int i=0; i<e->u.toggle_on.nf; i++) {
-                res_patt(e->u.toggle_on.fs[i]);
+            for (int i=0; i<e->u.mute_on.nf; i++) {
+                res_patt(e->u.mute_on.fs[i]);
             }
-            res_block(e->u.toggle_on.blk, 1);
+            res_block(e->u.mute_on.blk, 1);
             break;
 
-        case E_GRAB:
-            chk_await(e->tk, (e->u.grab.kind == 1) ? "stage" : "solo");
-            for (int i=0; i<e->u.grab.nf; i++) {
-                res_patt(e->u.grab.fs[i]);
+        case E_SOLO:
+            chk_await(e->tk, (e->u.solo.kind == 1) ? "stage" : "solo");
+            for (int i=0; i<e->u.solo.nf; i++) {
+                res_patt(e->u.solo.fs[i]);
             }
-            res_block(e->u.grab.blk, 1);
+            res_block(e->u.solo.blk, 1);
             break;
 
         case E_PROTO: {
