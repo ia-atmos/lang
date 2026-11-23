@@ -94,3 +94,10 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 - A loop of 300,000 `par :all` of two blocks plus a `spawn {}`, with 30
   idle tasks: 0.043 to 0.045 s against 0.36 to 0.45 s on main.
 - After the merge, `pool`, `grab` and `context` rebase over `trail_end`.
+
+## Last check before the merge (by `atmos-lang`, 2026-11-23)
+
+- `8801b76` against main `ae8ca73`: suite green with ASAN, 48
+  configurations; C and diagnostics of the 2197 port files identical;
+  sdl-pingus and the bomber test block pass; 300,000 `par :all` of two
+  branches: 0.118 s on main, 0.059 s on `blocks`.
