@@ -20,10 +20,11 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 
 ## Waiting for the author
 
-- **#7**: approve the merge of the clauses into main, or say what to
-  change. Recommended: not to merge yet; first #8 (the parent clause)
-  and a port that uses them (`sdl-tux`, if it takes #5 in this form).
-  The branch is ready and measured meanwhile.
+- **#7**: approve the merge of the clauses (with `super`, #8) into main,
+  or say what to change. Recommended: merge, with the manual written
+  first ("Prototypes", "Calls"); a port that uses them can follow.
+  Before the merge: the suite over the current main, and the
+  measurement on the ports by `atmos-lang` again.
 
 To confirm or undo when he reads:
 
@@ -45,8 +46,8 @@ To confirm or undo when he reads:
 
 ## Known and not done
 
-- The branch `oo` has the prototype of #7 (parser, runtime, 8 test
-  cases), over main of 2026-11-20. Not done: the parent clause (#8),
+- The branch `oo` has the prototype of #7 and #8 (parser, runtime, 10
+  test cases), over main of 2026-11-23. Not done: `super` in tasks,
   local and anonymous clauses, a cache, the manual.
 - The originals (C++, Lua) were not read: what is said of them comes
   from the `Class::method` comments of the ports and from memory.
