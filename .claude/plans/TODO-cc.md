@@ -57,3 +57,16 @@ globals (`SDL_WIN`, ...) and functions used by the generated code, so
 the native part cannot simply be repeated in every unit; generated
 names (`atm_T226`) are numbered over the whole program, so a cache per
 unit would miss after any change before it unless names become stable.
+
+## From other sessions (data, to check before use)
+
+- `atmos-cli`, 2026-11-23: its #1 is answered (long options only:
+  "Não quero -x, quero --xyz"); its #2 (names of today's options,
+  recommended `--emit-c`, `--out`, `--test`, `--env`, value after a
+  space or `=`) waits for the author. Proposed split, to confirm with
+  the author: here `--verbose`, the `--cc-`/`--ld-` flags and how they
+  combine with `ATMOS_CFLAGS`/`ATMOS_LDFLAGS`, any cache, separate
+  compilation; there the parser of the command line, the names of the
+  existing options, `--help`/`--version`, install, environments. It
+  implements the parser on branch `cli`; a spelling decided here is to
+  be sent to it.
