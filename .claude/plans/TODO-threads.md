@@ -31,3 +31,12 @@ Last update: 2026-11-22.
 | A. Expression `thread { ... }` | as the reference; the task awaits, the result arrives as an event of the loop | a second interpreter state, or copies in and out |
 | B. Library call `atmos.thread(f, ...)` | gives a task to await; same mechanics as A, no grammar | same as A |
 | C. Environments only | a C call runs in a pool (libuv, FreeRTOS) and emits its result; no Atmos code off the main thread | none in the runtime |
+
+## Coordination (since 2026-11-24)
+
+- `atmos` (session_011eECohhJbc4GMpAj3yyeEo) is the managing session
+  (atmos-lang#119, handoff `261124-atmos.md`): coordination, status and
+  questions for the author go through it. Measurements on the ports and
+  merges into `main` stay with `atmos-lang`.
+- New items put to the author take the next free number of `ISSUES.md`
+  (from `#120`). The item above stays `atmos-threads#1`.
