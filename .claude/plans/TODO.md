@@ -303,3 +303,25 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 
 When the credits of next week come: wake every session, and ask each
 project which C code it still embeds. Until then, only what arrives.
+
+## Tomorrow (the author, 2026-11-24)
+
+> Todo tomorrow:
+> - env-js with sdl support
+> - Can we run rocks there?
+> - what about dom? Want to revive old plans
+
+What exists, as found on 2026-11-24 (nothing done yet):
+- `lua-atmos/env-js` and `atmos-lang/web`: the browser environment of
+  the reference (Atmos in Lua, active in Mar/2026), which runs a program
+  passed in the URL; `web` is an editor with a "Run" button
+  (`261117-envs.md`, the table of environments; `261117-envs-atmos.md`
+  read `env-js` against our API).
+- Rocks: `ia-atmos/env-sdl` `exs/rocks/` (with images, sounds, a font,
+  and a pause test) and `ia-atmos/env-pico` `exs/rocks/`.
+- The compiler emits C; a browser build would go through Emscripten
+  (SDL2 has an Emscripten port). This container has `node` but no
+  `emcc`.
+- The "old plans" of the DOM: to find (in `lua-atmos/env-js`,
+  `atmos-lang/web`, or the author's older repositories) before
+  proposing.
