@@ -14,6 +14,11 @@ The author pauses new steps until next week. #26 is merged (2026-11-23).
 Waiting meanwhile: the rewrite of the ports (#23, #24). Next decision:
 #21 (1), a default `stage`, once the ports are rewritten.
 
+Coordination (2026-11-24, atmos-lang#119): status and questions for the
+author go to `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
+the ports and merges into `main` stay with `atmos-lang`. New items put to
+the author follow `ISSUES.md` (#120 on).
+
 ## Index
 
 | # | Item | State |
