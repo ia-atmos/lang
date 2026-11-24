@@ -5,7 +5,7 @@ configured, built, installed, and told which environment to use. The
 material is `261120-cli.md`. The implementation goes to the branch
 `cli`; this file and the plans go straight to `main`.
 
-Last update: 2026-11-23.
+Last update: 2026-11-24.
 
 ## Index of items
 
@@ -75,3 +75,11 @@ becomes an item only if the author takes it up.
   day, to confirm with the author: there `--verbose`, `--cc-`/`--ld-`,
   a cache of builds, separate compilation; here the parser, the names
   of the existing options, `--help`/`--version`, install, environments.
+- `atmos`, 2026-11-24: a new managing session, `atmos`
+  (session_011eECohhJbc4GMpAj3yyeEo), takes coordination, status and
+  the questions to the author (`atmos-lang#119`, "Ok" by the author,
+  `261124-atmos.md`); `atmos-lang` keeps the measurements on the ports
+  and the merges into `main`. The pause of the author of 2026-11-23
+  holds ("Aguarde", until next week's credits): this session starts no
+  new work (the branch `cli` waits) and only answers him and records
+  what arrives. Items here stay `atmos-cli#N`.
