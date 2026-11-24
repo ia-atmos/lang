@@ -4,6 +4,8 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
 `261118-context-semantics.md`. The issue itself is `atmos-lang#39`
 (grab and context).
 
+Since 2026-11-24 (`261124-atmos.md`, the split of `atmos-lang#119`, "Ok" of the author): coordination, status and questions for the author go to the session `atmos`; measurements on the ports and merges into `main` stay with `atmos-lang`. New items put to the author continue `ISSUES.md` (`#120` on). Paused until next week's credits: no new work, only what arrives.
+
 Items are `#N` (standing rule of 2026-11-18, `TODO.md`): unique in this
 session, never reused; from another session, `session#N`.
 
