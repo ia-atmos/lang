@@ -8,6 +8,14 @@ Implementation goes on the branch `float`; plans go to `main`.
 
 Last update: 2026-11-19.
 
+## Routing (from 2026-11-24)
+
+Coordination, status and questions for the author go to the session
+`atmos` (session_011eECohhJbc4GMpAj3yyeEo, atmos-lang#119); measurements
+on the ports and merges into `main` stay with `atmos-lang`. New items
+put to the author continue the sequence of `ISSUES.md` (`#120` on).
+A pause until next week's credits: no new work, only what arrives.
+
 ## Index of items
 
 | Item | Title | State |
