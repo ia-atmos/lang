@@ -4,7 +4,7 @@ The time of a build with `include`: separate compilation, a
 `--verbose`, C flags on the command line. Material: `261123-cc.md`.
 Prototypes go to the branch `cc` (cut from `origin/main` at `5d1b6a7`).
 
-Last update: 2026-11-23.
+Last update: 2026-11-24.
 
 ## Index of items
 
@@ -70,3 +70,10 @@ unit would miss after any change before it unless names become stable.
   existing options, `--help`/`--version`, install, environments. It
   implements the parser on branch `cli`; a spelling decided here is to
   be sent to it.
+- `atmos`, 2026-11-24: a new managing session (`atmos-lang#119`,
+  handoff `261124-atmos.md`). Coordination, status and questions go to
+  `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on the ports
+  and merges stay with `atmos-lang`. New items put to the author
+  continue the sequence of `ISSUES.md` (`#120` on); `#1` here was asked
+  before and keeps its number. A pause holds until next week's credits:
+  no new work, only what arrives.
