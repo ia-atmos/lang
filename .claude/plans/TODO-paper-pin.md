@@ -9,6 +9,13 @@ of the author, 2026-11-18). From another session: `session#N`. The
 letters A1, B1, C1... used before that date stay valid for what was
 written; each such item now has its number below.
 
+Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
+`.claude/plans/261124-atmos.md`): coordination, status and questions for
+the author go to `atmos`; measurements on the ports and merges into `main`
+stay with `atmos-lang`. New items put to the author continue the sequence
+of `ISSUES.md` (#120 on); #1 to #14 here keep their numbers. Paused until
+next week's credits: only what arrives.
+
 ## Index
 
 | # | Item | State |
