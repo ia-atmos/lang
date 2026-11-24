@@ -10,7 +10,9 @@ do not change: an item is `#N` (see `ISSUES.md` for every number and its
 state, and "Standing rules" for the convention). Numbers that are
 missing here were settled or moved.
 
-Last update: 2026-11-17.
+Last update: 2026-11-24. Owned by the session `atmos` since 2026-11-24
+(`#119`, handoff `261124-atmos.md`); section A below predates the moves
+recorded in `ISSUES.md`, which is the reference for what is open.
 
 ## A. Decisions waiting for an answer
 

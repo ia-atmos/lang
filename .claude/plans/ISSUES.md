@@ -1,9 +1,14 @@
-# Items of the session `atmos-lang`
+# Items put to the author
 
-Every item of this session, by its number. A number is never reused nor
+Kept by the session `atmos` since 2026-11-24 (before, by `atmos-lang`,
+which numbered `#1` to `#119`). One sequence for the author: `atmos`
+continues from `#120`; when `atmos-lang` asks him something directly, it
+takes the next free number here too.
+
+Every item, by its number. A number is never reused nor
 changed: an item that closes, or that moves to another session, keeps
 it. Inside this session an item is `#N`; from another session it is
-`atmos-lang#N`. The convention is `#71`, and is in `TODO.md`, "Standing
+`atmos#N` (or `atmos-lang#N` for `#1` to `#119`). The convention is `#71`, and is in `TODO.md`, "Standing
 rules". The details of the open ones are in `TODO.md`.
 
 States: **open** (waits for the author here), **work** (known, not
