@@ -4,7 +4,14 @@ Slices of vectors with no copy (a view), on the branch `slices` of this
 repository, cut from `origin/main` at `afe7c43`. Material:
 `261122-slices.md`. Items are `#N`, in order, never reused.
 
-Last update: 2026-11-22.
+Last update: 2026-11-24.
+
+Coordination, status and questions for the author go to `atmos`
+(session_011eECohhJbc4GMpAj3yyeEo, since 2026-11-24, `atmos-lang#119`);
+measurements on the ports and merges into `main` stay with `atmos-lang`
+(session_011eECogKVQ7ZzmWCoMST2wK). The author paused new work until
+next week's credits (2026-11-23): this session waits for his answer to
+#1.
 
 ## Index of the items
 
