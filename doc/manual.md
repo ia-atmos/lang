@@ -1102,9 +1102,10 @@ print(p ?? :table)      ;; --> true
 print(p ?? :Pos)        ;; --> true
 ```
 
-Atmos has no classes or methods.
-To choose a function by the type of a value, keep the functions in a table
-indexed by tags, and index it with the tag of the value.
+To choose a function by the type of a value, declare it in
+[clauses](#clauses), one per tag.
+Alternatively, keep the functions in a table indexed by tags, and index it
+with the tag of the value.
 The same holds for [tasks](#tasks):
 
 ```
@@ -2157,7 +2158,8 @@ Atmos supports declarations for [functions](#function) and [tasks](#tasks):
 Proto : [Mod] (`func´|`task`) ID `(´ Pars `)´ Block
       | (`func´|`task`) ID {`.´ ID} `(´ Pars `)´ Block
 Mod   : `val´ | `var´ | `pin´ [`val´ | `var´]
-Pars  : [[Mod] ID {`,´ [Mod] ID}] [`,´ `...´]
+Pars  : [Par {`,´ Par}] [`,´ `...´]
+Par   : [Mod] ID [TAG]
 ```
 
 The optional modifier makes the declaration local to its block, with the
@@ -2247,6 +2249,74 @@ func o.inc (self) {
 o.inc(o)
 print(o.v)          ;; --> 2
 ```
+
+#### Clauses
+
+A named prototype with a [tag](#literals) after one or more parameters is a
+*clause*: it adds a case to the name, instead of replacing its value.
+A call chooses the clause by the tags of its arguments:
+
+```
+func area (s :Shape)        { 0 }
+func area (s :Shape.Circle) { 3 * s.r * s.r }
+func area (s :Shape.Rect)   { s.w * s.h }
+
+print(area(:Shape.Circle [r=1]))    ;; --> 3
+print(area(:Shape.Rect [w=2,h=3]))  ;; --> 6
+print(area(:Shape.Line []))         ;; --> 0 (the clause of :Shape)
+```
+
+A clause applies to a call when each of its tagged parameters matches its
+argument as `arg ?? :T` (see [User Types](#user-types)): a tagged table by its
+tag, a tag by itself, and any value by the name of its type (`:number`,
+`:table`).
+A parameter with no tag accepts any value.
+
+Among the clauses that apply, the most specific is chosen, comparing the
+parameters from the left: a longer tag, then a shorter one, then the name of a
+type, then no tag.
+Clauses have no order and no grouping: they may be declared anywhere, in any
+file, as long as before the call that needs them.
+
+```
+func hit (a :Ship,   b :Rock)   { "ship-rock" }
+func hit (a :Entity, b :Entity) { "entities" }
+func hit (a, b)                 { "other" }
+```
+
+A declaration with no tags, of a name that already has clauses, is their
+default clause.
+A plain function that gets a clause becomes the default clause.
+The value of the name is still a function (`type(area)` is `'function'`), and a
+new clause makes a new function, assigned to the name.
+
+Inside a clause, `super(...)` calls its parent clause: among the clauses whose
+every tag is as or more general (the same tag, a dot prefix of it, or no tag),
+the most specific that applies.
+With no arguments, `super()` passes the parameters of the clause:
+
+```
+func area (s :Shape.Rect.Sq) { super() + 1 }    ;; area (s :Shape.Rect) + 1
+```
+
+Outside a clause, `super` is an ordinary name.
+
+[Tasks](#tasks) may also have clauses: `spawn T(...)`, `spawn @p T(...)` and
+`await T(...)` choose the task by the arguments.
+`super` is not supported in a task clause.
+
+Clauses are only for named prototypes: a tag in a parameter of `val func f`,
+of a lambda, or of an anonymous `func` is rejected.
+
+Errors:
+
+- `invalid call : no clause of 'area' for (Shape.Line, number)`:
+    no clause applies to the arguments.
+- `invalid clause : 'area' already has it`:
+    two clauses with the same tags.
+- `invalid super : no parent clause of 'area'`.
+- `invalid parameter : unexpected tag`:
+    a tag in a parameter of a local or anonymous function.
 
 #### Return
 
@@ -2555,6 +2625,8 @@ Atom : STR | TAG | `[´ | `\` | CLK | NAT    ;; constructor
 
 A call expects an expression of type [func](#function) and an optional list of
 expressions as arguments enclosed by parenthesis.
+A function declared in [clauses](#clauses) chooses the clause by the tags of
+the arguments.
 
 Like in [Lua calls][lua-call], if there is a single argument that is an atom,
 then the parenthesis are optional.

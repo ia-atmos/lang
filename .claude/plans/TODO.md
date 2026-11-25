@@ -202,7 +202,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
-| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, `atmos#1`) |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, unarchived on 2026-11-25, `atmos#1`) |
 | `env-web` | session_011eECoffhJTecG6BZSq3GQi | environment: the browser |
 | `atmos` | session_011eECohhJbc4GMpAj3yyeEo | the manager of all sessions |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
@@ -307,8 +307,9 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 > acordar todos esperando créditos. Também iremos perguntar quais
 > projetos ainda tem código C embarcado. Não agora. Aguarde.
 
-When the credits of next week come: wake every session, and ask each
-project which C code it still embeds. Until then, only what arrives.
+The pause is over (2026-11-25, `atmos#7`): the sessions were awakened
+(`atmos#4`) and told to resume. Still to ask, when he says: which C code
+each project still embeds.
 
 ## Tomorrow (the author, 2026-11-24)
 

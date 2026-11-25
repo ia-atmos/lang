@@ -1,0 +1,36 @@
+func area (s :Shape)          { 0 }
+func area (s :Shape.Rect)     { s.w * s.h }
+func area (s :Shape.Rect.Sq)  { super() + 1 }
+print(area(:Shape.Rect.Sq [w=2, h=2]))
+
+;; explicit arguments: the choice stays among the parents
+func name (x :A)   { "A" }
+func name (x :A.B) { "B<" ++ super(:A.B.C []) ++ ">" }
+print(name(:A.B []))
+
+;; multimethods: the parent chosen from the left
+func hit (a :Ship, b :Rock) { "ship-rock / " ++ super() }
+func hit (a :Ship, b)       { "ship-any / " ++ super() }
+func hit (a,       b :Rock) { "any-rock" }
+func hit (a, b)             { "any" }
+print(hit(:Ship [], :Rock []))
+print(hit(:Ship [], 1))
+
+;; variadic, and a field
+val m = []
+func m.f (x :A, ...)   { [x.tag, ...] }
+func m.f (x :A.B, ...) { super() }
+print(#m.f(:A.B [], 1, 2, 3))
+
+;; a closure in the clause
+func g (x :A)   { 10 }
+func g (x :A.B) { val k = \{ super() } ; k() + 1 }
+print(g(:A.B []))
+
+;; a name `super` outside of a clause is ordinary
+val super = 5
+print(super)
+
+;; no parent
+func lone (x :Z) { super() }
+print(catch true { lone(:Z []) })

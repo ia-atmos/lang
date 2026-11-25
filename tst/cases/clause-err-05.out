@@ -1,0 +1,4 @@
+==> ERROR:
+ |  clause-err-05.atm:3 (call)
+ v  clause-err-05.atm:3 (throw)
+==> invalid call : no clause of 'f' for (B, number)
