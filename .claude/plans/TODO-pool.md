@@ -15,7 +15,7 @@ prefix; those born here are `atmos-pool#N`.
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
 | `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
-| `atmos-lang#60` | Where the exception of `emit @t` goes | The author leans to the emitter (2026-11-23: "quem emite é que deve receber o erro. nao é assim com métodos?"); the session agrees and withdrew the merge; waiting for his confirmation to revert it from `pool` and document it |
+| `atmos-lang#60` | Where the exception of `emit @t` goes | Reverted on `pool` (7cd9858) by the session (rule #95), to be confirmed (`atmos#2`): to who emits, as on main; the manual "Emit" says it and the cases emit-to-exc-* show it |
 | `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Manual and cases checked; a case added on the branch; still not acknowledged |
 | `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
 | `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
