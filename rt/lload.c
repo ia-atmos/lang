@@ -444,6 +444,9 @@ static AStatus table (Load* l, AVal t) {
         if (st == A_OK) {
             st = value(l, &v);
         }
+        if (st==A_OK && key && a_is_ktag(k) && v.type!=A_STR && v.type!=A_NIL) {
+            st = fail(l, "invalid tag : expected string");
+        }
         if (st == A_OK) {
             a_tab_set(A_TAB_OF(t), key ? k : a_int(n), v);
             n += !key;
@@ -505,10 +508,7 @@ static AStatus value (Load* l, AVal* dst) {
         }
         l->s = p + 1;
         AVal t = a_tab();
-        AVal k = a_strz("tag");
-        a_tab_set(A_TAB_OF(t), k, tg);
-        a_dec(k);
-        a_dec(tg);
+        A_TAB_OF(t)->tag = tg;
         AStatus st = table(l, t);
         if (st == A_OK) {
             a_set(dst, t);
@@ -946,8 +946,7 @@ static AStatus dump (Dump* d, AVal v) {
     d->path[d->depth++] = t;
 
     // :X [...]
-    AVal ktag = a_strz("tag");
-    AVal tag = a_tab_get(t, ktag);
+    AVal tag = t->tag;
     int tagged = is_tag(tag);
     if (tagged) {
         dstr(d, ":");
@@ -961,10 +960,13 @@ static AStatus dump (Dump* d, AVal v) {
     int64_t  nxt = 0;
     int first = 1;
     AVal k, x;
+    if (!tagged && tag.type!=A_NIL) {
+        // a tag that is not written as `:X` is written as a field
+        dstr(d, "tag=");
+        st = dump(d, tag);
+        first = 0;
+    }
     while (st==A_OK && a_tab_next(t, &pos, &k, &x)) {
-        if (tagged && k.type==A_STR && k.u.o==ktag.u.o) {
-            continue;
-        }
         if (!first) {
             dstr(d, ", ");
         }
@@ -984,7 +986,6 @@ static AStatus dump (Dump* d, AVal v) {
             st = dump(d, x);
         }
     }
-    a_dec(ktag);
     dstr(d, "]");
     d->depth--;
     return st;

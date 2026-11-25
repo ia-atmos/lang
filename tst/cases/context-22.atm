@@ -1,0 +1,20 @@
+;; #19 (the author, 2026-11-22): a pool in a context <:draw>: one enter per
+;; :draw for the whole pool, none for the time
+var n = 0
+task Star () {
+    watching 1h {
+        loop on :draw { }
+    }
+}
+spawn {
+    context <:draw> (\{ set n = n + 1 }, \(_) { nil }) {
+        pin ts = tasks()
+        loop i in 10 { spawn @ts Star() }
+        await false
+    }
+}
+loop i in 5 {
+    emit @:global (16ms)
+    emit :draw
+}
+print("enters", n)

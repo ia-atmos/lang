@@ -154,9 +154,9 @@ typedef enum {
     // await P
     E_AWAIT,
     // mute <P> t(b)  mute P on :T {...}
-    E_TOGGLE, E_TOGGLE_ON,
+    E_MUTE, E_MUTE_ON,
     // stage P {...}  solo P {...}
-    E_GRAB,
+    E_SOLO,
     // context (enter, leave) {...}  |  context X {...} (leave NULL: enter is the pair)
     E_CONTEXT,
     // par {...} with {...}
@@ -277,12 +277,12 @@ struct Expr {
         // to: target, or NULL
         struct { Expr* to; Expr* e; }                   emit;
         struct { Patt* p; }                             await;
-        struct { Expr* t; List args; int nf; Patt** fs; } toggle;
+        struct { Expr* t; List args; int nf; Patt** fs; } mute;
         // tk is the tag
-        struct { int nf; Patt** fs; Expr* blk; }        toggle_on;
+        struct { int nf; Patt** fs; Expr* blk; }        mute_on;
         // kind: 1 stage, 2 solo
-        struct { int kind; int nf; Patt** fs; Expr* blk; } grab;
-        struct { Expr* enter; Expr* leave; Expr* blk; } context;
+        struct { int kind; int nf; Patt** fs; Expr* blk; } solo;
+        struct { Patt* patt; Expr* enter; Expr* leave; Expr* blk; } context;
         struct { ParMode mode; List blks; }             par;
         struct { Expr* cnd; Expr* blk; }                xcatch;
         // inl: lambda of an if/ifs/match, expanded in place

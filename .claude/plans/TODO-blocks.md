@@ -8,7 +8,7 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 | Item | Title | State |
 |---|---|---|
 | `#1` | Should the end of a transparent block be an event that programs see? | decided 2026-11-21: `#1a`, no, it ends in silence |
-| `#2` | Implementation on branch `blocks` (`77b2ff3`, `bc32a05`, `d2825ef`) | measured by `atmos-lang` 2026-11-21 (`atmos-lang#109`): nothing changes on the ports, about 8 times faster; main (`009d99b`, with `pin`) merged into `blocks` as `8ed593f`, checked again by `atmos-lang`; waiting for the author's approval |
+| `#2` | Merge of the branch `blocks` into `main` | approved 2026-11-23 (`#2a`); merged as `95946fe` (fast-forward) |
 | `#3` | A `par :all` under a block toggled off: today and now, see below | remark, no decision asked |
 
 ## Facts found by the session (2026-11-20)
@@ -94,3 +94,10 @@ Material: `261120-blocks.md`. Implementation: branch `blocks`.
 - A loop of 300,000 `par :all` of two blocks plus a `spawn {}`, with 30
   idle tasks: 0.043 to 0.045 s against 0.36 to 0.45 s on main.
 - After the merge, `pool`, `grab` and `context` rebase over `trail_end`.
+
+## Last check before the merge (by `atmos-lang`, 2026-11-23)
+
+- `8801b76` against main `ae8ca73`: suite green with ASAN, 48
+  configurations; C and diagnostics of the 2197 port files identical;
+  sdl-pingus and the bomber test block pass; 300,000 `par :all` of two
+  branches: 0.118 s on main, 0.059 s on `blocks`.

@@ -297,8 +297,8 @@ static AStatus std_all (AFunc* self, int argc, AVal* argv) {
 
 // iter.filter(xs, f): a new vector with the members `v` of `xs` for
 // which `f(v, k)` is truthy, in the order of the walk.
-// iter.map(xs, f): a new vector with `f(v, k)` of each member, but
-// those that give nil.
+// iter.map(xs, f): a new vector with `f(v, k)` of each member; a nil
+// is an error, since a vector has no nil (atmos-iter#22b).
 typedef struct {
     AVal    t;
     int64_t n;
@@ -317,10 +317,11 @@ static int map_each (AVal v, AVal k, AVal r, void* ud, AStatus* st) {
     (void) v;
     (void) k;
     Vec* x = ud;
-    // a vector has no nil: a nil result is left out
-    if (r.type != A_NIL) {
-        *st = a_setindex(x->t, a_int(x->n++), r);
+    if (r.type == A_NIL) {
+        *st = a_error("invalid result to 'map' : unexpected nil");
+        return 1;
     }
+    *st = a_setindex(x->t, a_int(x->n++), r);
     return 0;
 }
 
@@ -821,8 +822,7 @@ static AStatus xtostring (Buf* b, AVal v) {
     // collects the entries, except the tag
     ATab* t = A_TAB_OF(v);
     AEnt* es = malloc((t->an + t->en + 1) * sizeof(AEnt));
-    AVal tag = a_nil();
-    AVal ktag = a_strz("tag");
+    AVal tag = t->tag;
     int n = 0;
     uint32_t pos = 0;
     AVal k, x;
@@ -833,15 +833,10 @@ static AStatus xtostring (Buf* b, AVal v) {
                 a_typename(k));
             break;
         }
-        if (a_eq(k, ktag)) {
-            tag = x;
-        } else {
-            es[n].k = k;
-            es[n].v = x;
-            n++;
-        }
+        es[n].k = k;
+        es[n].v = x;
+        n++;
     }
-    a_dec(ktag);
 
     if (st == A_OK) {
         qsort(es, n, sizeof(AEnt), kcmp);
@@ -912,6 +907,7 @@ AStatus a_xcopy (AVal* dst, AVal v) {
         a_dec(c);
     }
     if (st == A_OK) {
+        a_cpy(&A_TAB_OF(ret)->tag, A_TAB_OF(v)->tag);
         a_set(dst, ret);
     } else {
         a_dec(ret);

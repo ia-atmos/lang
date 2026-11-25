@@ -1,0 +1,4 @@
+==> ERROR:
+ |  iter-err-06.atm:2 (call)
+ v  iter-err-06.atm:2 (throw)
+==> invalid result to 'map' : unexpected nil

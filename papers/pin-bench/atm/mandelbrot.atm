@@ -1,0 +1,45 @@
+;; mandelbrot (CLBG); prints a checksum of the bytes instead of the image
+val n = tonumber(...) || 200
+var sum = 0
+var bits = 0
+var nb = 0
+val delta = 2.0 / n
+loop y in n {
+    val ci = y*delta - 1.0
+    loop x in n {
+        val cr = x*delta - 1.5
+        var zr = 0.0
+        var zi = 0.0
+        var zr2 = 0.0
+        var zi2 = 0.0
+        var bit = 1
+        loop in 50 {
+            set zi = 2.0*zr*zi + ci
+            set zr = zr2 - zi2 + cr
+            set zi2 = zi*zi
+            set zr2 = zr*zr
+            if zi2 + zr2 > 4.0 {
+                set bit = 0
+                break
+            }
+        }
+        set bits = bits*2 + bit
+        set nb = nb + 1
+        if nb == 8 {
+            set sum = sum + bits
+            set bits = 0
+            set nb = 0
+        }
+    }
+    if nb > 0 {
+        loop {
+            while nb < 8
+            set bits = bits*2
+            set nb = nb + 1
+        }
+        set sum = sum + bits
+        set bits = 0
+        set nb = 0
+    }
+}
+print(string.format("P4 %d %d checksum %d", n, n, sum))

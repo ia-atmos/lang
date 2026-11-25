@@ -15,6 +15,15 @@ nada aqui"), said in this session: it overrides "Work with no input"
 of the ports are only recorded below. The reminder of 2026-11-24 (#1,
 #2) stays scheduled, since he asked for it.
 
+**Sessions to talk to** (since 2026-11-24, `atmos-lang#119`, approved
+by the author; `.claude/plans/261124-atmos.md`): coordination, status,
+and questions for the author go to `atmos`
+(session_011eECohhJbc4GMpAj3yyeEo); measurements on the ports and
+merges into `main` stay with `atmos-lang`
+(session_011eECogKVQ7ZzmWCoMST2wK). The shared sequence of
+`ISSUES.md` (`#120` on) is of those two sessions; the items of this
+session stay `paper-games#N`.
+
 ## Index of items (`#N`)
 
 Rule of the author, 2026-11-18 (`.claude/plans/TODO.md`, "Standing

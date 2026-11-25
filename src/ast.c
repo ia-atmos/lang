@@ -278,28 +278,33 @@ void ast_dump (Expr* e) {
             dump_patt(e->u.await.p);
             printf(")");
             break;
-        case E_TOGGLE:
+        case E_MUTE:
             printf("(mute ");
-            for (int i=0; i<e->u.toggle.nf; i++) {
-                dump_patt(e->u.toggle.fs[i]);
+            for (int i=0; i<e->u.mute.nf; i++) {
+                dump_patt(e->u.mute.fs[i]);
                 printf(" ");
             }
-            ast_dump(e->u.toggle.t);
-            dump_list(&e->u.toggle.args);
+            ast_dump(e->u.mute.t);
+            dump_list(&e->u.mute.args);
             printf(")");
             break;
-        case E_GRAB:
-            printf("(%s", (e->u.grab.kind == 1) ? "stage" : "solo");
-            for (int i=0; i<e->u.grab.nf; i++) {
+        case E_SOLO:
+            printf("(%s", (e->u.solo.kind == 1) ? "stage" : "solo");
+            for (int i=0; i<e->u.solo.nf; i++) {
                 printf(" ");
-                dump_patt(e->u.grab.fs[i]);
+                dump_patt(e->u.solo.fs[i]);
             }
             printf(" ");
-            ast_dump(e->u.grab.blk);
+            ast_dump(e->u.solo.blk);
             printf(")");
             break;
         case E_CONTEXT:
             printf("(context ");
+            if (e->u.context.patt != NULL) {
+                printf("<");
+                dump_patt(e->u.context.patt);
+                printf("> ");
+            }
             ast_dump(e->u.context.enter);
             printf(" ");
             if (e->u.context.leave != NULL) {
@@ -309,15 +314,15 @@ void ast_dump (Expr* e) {
             ast_dump(e->u.context.blk);
             printf(")");
             break;
-        case E_TOGGLE_ON:
+        case E_MUTE_ON:
             printf("(mute");
-            for (int i=0; i<e->u.toggle_on.nf; i++) {
+            for (int i=0; i<e->u.mute_on.nf; i++) {
                 printf(" ");
-                dump_patt(e->u.toggle_on.fs[i]);
+                dump_patt(e->u.mute_on.fs[i]);
             }
             printf(" on %s", e->tk.str);
             printf(" ");
-            ast_dump(e->u.toggle_on.blk);
+            ast_dump(e->u.mute_on.blk);
             printf(")");
             break;
         case E_PAR:

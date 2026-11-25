@@ -1,10 +1,9 @@
         spawn {
-            spawn {
+            pin t = spawn {
                 await(true)
                 10
             }
-            (func (it) { print(it.ret) }) (await(true))
+            (func (it) { print(it) }) (await(t))
         }
         emit(:)
         print(:ok)
-    

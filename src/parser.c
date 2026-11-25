@@ -1314,19 +1314,27 @@ static Expr* parser_1_prim (void) {
     } else if (check_str("stage") || check_str("solo")) {
         int kind = check_str("stage") ? 1 : 2;
         accept_str(kind == 1 ? "stage" : "solo");
-        Expr* e = mk(E_GRAB, TK0);
-        e->u.grab.kind = kind;
+        Expr* e = mk(E_SOLO, TK0);
+        e->u.solo.kind = kind;
         if (!check_str("{")) {
-            e->u.grab.fs    = xalloc(sizeof(Patt*));
-            e->u.grab.fs[0] = parser_await();
-            e->u.grab.nf    = 1;
+            e->u.solo.fs    = xalloc(sizeof(Patt*));
+            e->u.solo.fs[0] = parser_await();
+            e->u.solo.nf    = 1;
         }
-        e->u.grab.blk = parser_block();
+        e->u.solo.blk = parser_block();
         return e;
 
-    // context (enter, leave) {...}  |  context X {...}
+    // context [<P>] (enter, leave) {...}  |  context [<P>] X {...}
+    // The pattern is between `<` `>`, as in `mute <P> t(b)`: an
+    // expression follows.
     } else if (accept_str("context")) {
         Expr* e = mk(E_CONTEXT, TK0);
+        e->u.context.patt = NULL;
+        if (check_str("<") || check_str("<<")) {
+            ANGLE_TARGET = 1;
+            e->u.context.patt = parser_await();
+            ANGLE_TARGET = 0;
+        }
         if (accept_str("(")) {
             e->u.context.enter = parser_6_pip(NULL);
             if (accept_str(",")) {
@@ -1357,35 +1365,35 @@ static Expr* parser_1_prim (void) {
         }
         if (accept_str("on")) {
             accept_tag_err(TK_TAG);
-            Expr* e = mk(E_TOGGLE_ON, TK0);
+            Expr* e = mk(E_MUTE_ON, TK0);
             if (p != NULL) {
-                e->u.toggle_on.fs    = xalloc(sizeof(Patt*));
-                e->u.toggle_on.fs[0] = p;
-                e->u.toggle_on.nf    = 1;
+                e->u.mute_on.fs    = xalloc(sizeof(Patt*));
+                e->u.mute_on.fs[0] = p;
+                e->u.mute_on.nf    = 1;
             }
-            e->u.toggle_on.blk = parser_block();
+            e->u.mute_on.blk = parser_block();
             return e;
         }
-        Expr* e = mk(E_TOGGLE, tk);
+        Expr* e = mk(E_MUTE, tk);
         if (!angle && p != NULL) {
             // mute t(b): read as a pattern, it is the call
             if (p->kind != PT_SPAWN) {
                 err(tk, "expected call syntax");
             }
-            e->u.toggle.t    = p->e;
-            e->u.toggle.args = p->args;
+            e->u.mute.t    = p->e;
+            e->u.mute.args = p->args;
             return parser_7_out(e);
         }
         Expr* call = parser_6_pip(NULL);
         if (call->tag != E_CALL) {
             err(tk, "expected call syntax");
         }
-        e->u.toggle.t    = call->u.call.f;
-        e->u.toggle.args = call->u.call.es;
+        e->u.mute.t    = call->u.call.f;
+        e->u.mute.args = call->u.call.es;
         if (p != NULL) {
-            e->u.toggle.fs    = xalloc(sizeof(Patt*));
-            e->u.toggle.fs[0] = p;
-            e->u.toggle.nf    = 1;
+            e->u.mute.fs    = xalloc(sizeof(Patt*));
+            e->u.mute.fs[0] = p;
+            e->u.mute.nf    = 1;
         }
         return parser_7_out(e);
 
