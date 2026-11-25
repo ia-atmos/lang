@@ -1,5 +1,6 @@
-;; The task that emits is not held by who holds the target: it goes on
-;; after the emit, and the holder handles the exception.
+;; The exception of the reaction to `emit @t` goes to who emits, as the
+;; exception of a call: the emitter stops at the emit (T(3) is never
+;; reached), and the exception goes up from the emitter.
 task T (v) {
     await :X
     if v == 2 {

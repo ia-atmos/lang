@@ -3448,6 +3448,15 @@ The optional target between brackets determines the scope of the broadcast:
 - `t: task`: the given task
 - `n: number`: `n`th level up in the task hierarchy (`0` = current task)
 
+An [exception](#exceptions) that a task raises in reaction to an event goes
+up the hierarchy of tasks, but only inside the target of the `emit`: a
+`catch` there handles it.
+If it leaves the target, it is raised at the `emit`, in the task that
+emits, as the exception of a call.
+So, with `emit @t (e)`, an exception of `t` goes to who emits, not to who
+holds `t`; with `emit @:global (e)`, it goes to who holds the task that
+raised it, since every task is inside the target.
+
 An event that is a [pinned value](#pin), or that holds one, can only reach
 tasks that live inside the block of the value.
 Otherwise, a task could keep the event after the block reclaims it.

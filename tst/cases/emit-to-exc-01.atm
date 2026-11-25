@@ -1,6 +1,6 @@
 ;; An emit to one task whose reaction throws: the exception goes to who
-;; holds the task, as in a broadcast of the same event, and not to who
-;; emits.
+;; emits, as the exception of a call; in a broadcast of the same event
+;; it goes to who holds the task.
 task T () {
     await :X
     throw :boom
