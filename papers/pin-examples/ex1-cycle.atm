@@ -1,0 +1,9 @@
+;; Example 1: a cycle reclaimed at the end of its block
+do {
+    pin a = [10]
+    pin b = [20]
+    set a.other = b         ;; a <-> b
+    set b.other = a
+    print(a.other@0)        ;; --> 20
+}                           ;; a and b are reclaimed here
+print(:after)

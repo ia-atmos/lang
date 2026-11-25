@@ -1,0 +1,20 @@
+;; Example 3: a task and its data aborted together
+task Blinker (name) {
+    pin log = [name]                ;; data that the task owns
+    defer {
+        print("finalized", log@0, #log)
+    }
+    loop on :tick {
+        set log@+ = :blink
+    }
+}
+spawn {
+    watching :stop {
+        pin b = spawn Blinker("led")
+        await :never
+    }                               ;; :stop aborts the block, the task, and its data
+    print(:stopped)
+}
+emit :tick
+emit :tick
+emit :stop
