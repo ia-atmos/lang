@@ -4,7 +4,7 @@ The time of a build with `include`: separate compilation, a
 `--verbose`, C flags on the command line. Material: `261123-cc.md`.
 Prototypes go to the branch `cc` (cut from `origin/main` at `5d1b6a7`).
 
-Last update: 2026-11-24.
+Last update: 2026-11-25.
 
 ## Index of items
 
@@ -73,7 +73,8 @@ unit would miss after any change before it unless names become stable.
 - `atmos`, 2026-11-24: a new managing session (`atmos-lang#119`,
   handoff `261124-atmos.md`). Coordination, status and questions go to
   `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on the ports
-  and merges stay with `atmos-lang`. New items put to the author
-  continue the sequence of `ISSUES.md` (`#120` on); `#1` here was asked
-  before and keeps its number. A pause holds until next week's credits:
+  and merges stay with `atmos-lang`. Corrected by `atmos` on
+  2026-11-25 (confirmed by the author): item numbers stay local to each
+  session (rule #71), seen from outside as `atmos-cc#N`; only `atmos`
+  and `atmos-lang` share the sequence of `ISSUES.md`. A pause holds until next week's credits:
   no new work, only what arrives.
