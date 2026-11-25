@@ -16,7 +16,7 @@ on the ports and merges into `main` stay with `atmos-lang`. New items
 put to the author keep this session's own sequence (`#22` on), seen
 from outside as `atmos-float#N` (corrected by `atmos` on 2026-11-25,
 confirmed by the author there; the standing rule `#71`).
-A pause until next week's credits: no new work, only what arrives.
+The pause of 2026-11-23 ended on 2026-11-25 (`atmos`, at the author's request).
 
 ## Index of items
 
