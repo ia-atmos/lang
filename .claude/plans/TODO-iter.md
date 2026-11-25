@@ -10,8 +10,9 @@ The branch of this session is `iter`.
 - 2026-11-24: coordination, status and questions for the author go to
   the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo, handoff
   `261124-atmos.md`, `atmos-lang#119`); measurements on the ports and
-  merges into `main` stay with `atmos-lang`. Paused by the author until
-  the credits of next week: no new work, only what arrives.
+  merges into `main` stay with `atmos-lang`. The pause of 2026-11-23 ended on
+  2026-11-25 (his words, relayed by `atmos`). Nothing approved is left
+  to do here; `#10` to `#13` wait for him.
 
 ## Index
 
