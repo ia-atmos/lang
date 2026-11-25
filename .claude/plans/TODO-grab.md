@@ -17,7 +17,8 @@ The author pauses new steps until next week. #26 is merged (2026-11-23).
 Coordination (2026-11-24, atmos-lang#119): status and questions for the
 author go to `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
 the ports and merges into `main` stay with `atmos-lang`. New items put to
-the author follow `ISSUES.md` (#120 on).
+the author keep this file's own `#N` sequence (local, seen from outside as
+`atmos-grab#N`; corrected by `atmos` on 2026-11-25, the author's rule #71).
 
 ## Index
 
