@@ -19,7 +19,7 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #4 | The badguys of SuperTux as the test of inheritance of behavior | done 2026-11-20 by reading the port of `sdl-tux` (`261118-oo-inherit.md`): #1 stands |
 | #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed by `atmos-lang` to `sdl-tux` on 2026-11-20; it is of `sdl-tux` to take or not |
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
-| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | on `oo` at `9991ed1` (2026-11-25): main merged in, the manual written, suite passing; measurement asked of `atmos-lang`; **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
+| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | on `oo` at `9991ed1` (2026-11-25): main merged in, the manual written, suite passing; measured by `atmos-lang` on 2026-11-25 (2197 files: same diagnostics, generated C the same once globals are renumbered; no port changes); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
 | #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | planned by the author (2026-11-23), after the merge of #7; on hold |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
@@ -28,8 +28,8 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 
 - **#7**: the pause ended on 2026-11-25 (the author in `atmos`: "a
   semana já passou e todos estão desbloqueados"). Done: main into `oo`,
-  the manual, the suite. Waiting: the measurement by `atmos-lang`, then
-  his approval of the merge; then the ports (#10).
+  the manual, the suite. Measured by `atmos-lang`: no port changes.
+  Waiting: his approval of the merge; then the ports (#10).
 
 To confirm or undo when he reads:
 
