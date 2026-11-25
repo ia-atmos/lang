@@ -1,0 +1,10 @@
+;; Example 4: a constructor builds with `val` and gives the value away; the caller pins
+func point (x, y) {
+    val p = [x=x, y=y]
+    set p.norm = math.sqrt(x*x + y*y)
+    p                               ;; unpinned: it leaves the function
+}
+do {
+    pin q = point(3, 4)             ;; the caller owns it
+    print(q.norm)                   ;; --> 5.0
+}                                   ;; q is reclaimed here

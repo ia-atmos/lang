@@ -1,0 +1,15 @@
+# Items of the session `atmos`
+
+The sequence of the managing session: `#N` here, `atmos#N` from outside
+(the rule `#71` of `TODO.md`: numbers are local to each session). The
+first five were first written as `#120` to `#124` of `ISSUES.md`.
+
+| # | Was | Item | State |
+|---|---|------|-------|
+| 1 | `#120` | `atmos-ppp` found archived (2026-11-23 17:36, a minute after its creation; not by `atmos-lang`'s record) with `atmos-ppp#1` open (should `+=` append to vectors; it recommends keeping `@+` as the only append) | open: the author's; recommended: unarchive it when the work resumes next week |
+| 2 | `#121` | `#60` (where the exception of `emit @t` goes): the author leaned to the emitter on 2026-11-23 in `atmos-pool` ("a minha intuicao diz que quem emite é que deve receber o erro. nao é assim com métodos?", checked in its transcript); `atmos-pool` withdrew its recommendation. To confirm: the emitter gets it (as on main, like a method call), broadcast stays with the holder; then `pool` reverts `#60` and documents it | open: the author's, in `atmos-pool`; recommended: confirm |
+| 3 | `#122` | Index line for `env-web#1` (it keeps that name; calling it `#122` was a mistake of `atmos`, corrected 2026-11-25): may `env-web` install emsdk and run `make` in a local clone of `lang`, to build Rocks of `env-sdl` with Emscripten and test it headless (the auto mode refused both, as asked by a session) | done 2026-11-25: the author answered "1" in `env-web` (00:23 UTC, checked in its transcript); Rocks of `env-sdl` runs in headless Chromium through Emscripten, no change to `sdl.atm` or the game (env-web 434562e); not checked: audio, the test mode under node |
+| 4 | `#123` | The 33 active sessions awakened at the author's request ("acorde todas as sessoes", 2026-11-25, in `atmos`): each asked for its branch, its open items and what blocks it; no new work. Not awakened: the archived `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `atmos-ppp` (`#120`) | done 2026-11-25 (all 33 delivered); the answers to be gathered. Open, the author's: whether to ask now which C each project still embeds (his plan of 2026-11-23 said "Não agora") |
+| 5 | `#124` | `atmos` told the sessions that new questions take a number of `ISSUES.md`; the author: "os numeros devem ser locais a cada sessao, certo?" | done 2026-11-25: the 32 sessions told that numbers stay local (`#71`); only `atmos` and `atmos-lang` share this sequence |
+| 6 | | The sequence of `atmos` is its own, apart from `atmos-lang` (the author: "Aqui tb deve ser diferente do lang") | done 2026-11-25: this file; `ISSUES.md` back to `atmos-lang`, which continues from `#125` |
+| 7 | The pause of 2026-11-23 lifted by the author ("Avise às sessões relevantes que a semana já passou e todos estão desbloqueados"): 29 sessions told to resume what is approved or under `atmos-lang#95`. Not told, each held by his direct word for another reason: `atmos-envs` ("Preciso revisar todas as perguntas aqui. Não faça nada ainda"), `paper-games`, `paper-snapshots`, `paper-media` ("por enquanto nao vamos fazer nada aqui") | done 2026-11-25; open, the author's: do these four resume too? |

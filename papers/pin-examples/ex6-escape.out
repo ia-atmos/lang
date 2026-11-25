@@ -1,0 +1,3 @@
+==> ERROR:
+ v  ex6-escape.atm:5 (throw)
+==> invalid escape : table pinned at ex6-escape.atm:4

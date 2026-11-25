@@ -796,8 +796,8 @@ typedef struct ANode {
     // its block is being left, but waits before aborting it: emits
     // skip the subtree meanwhile
     uint8_t doomed;
-    // toggled off: emits skip the subtree, unless a filter matches
-    uint8_t toggled;
+    // muted off: emits skip the subtree, unless a filter matches
+    uint8_t muted;
     struct APatt** filt;
     int    nfilt;
     // trail of the parent task that spawned the node
@@ -830,10 +830,10 @@ typedef struct ATrailX {
     APay     ppay;
     // `mute on`: tag of the events that mute the trail, and the
     // filters that pass while it is muted
-    AVal     tog;
+    AVal     mtag;
     struct APatt** filt;
     int      nfilt;
-    // `stage` (A_GRABBABLE) or `solo` (A_GRAB): its pattern (none: all)
+    // `stage` (A_STAGE) or `solo` (A_SOLO): its pattern (none: all)
     uint8_t  gkind;
     struct APatt** gfilt;
     int      ngfilt;
@@ -859,8 +859,8 @@ typedef struct ATrailX {
     uint8_t  cpass;
 } ATrailX;
 
-#define A_GRABBABLE 1
-#define A_GRAB      2
+#define A_STAGE 1
+#define A_SOLO      2
 
 // Pattern of an await: a single leaf, or a tree. The value is what
 // the leaf compares to: a tag, a table, a task, a pool, a duration.
@@ -910,8 +910,8 @@ typedef struct ATrail {
     // its block is being left, but waits before aborting it: emits
     // skip the trail meanwhile
     uint8_t  doomed;
-    // toggled off: emits skip the trail, unless a filter matches
-    uint8_t  toggled;
+    // muted off: emits skip the trail, unless a filter matches
+    uint8_t  muted;
     // an exit of a child is pending
     uint8_t  pend;
 } ATrail;
@@ -993,7 +993,7 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h);
 // spawn {...}, a branch of a par: starts trail `i` of the task, a
 // transparent block.
 AStatus a_trail_spawn (struct ATask* t, int i);
-AStatus a_trail_grab  (struct ATask* t, int i, int kind, struct APatt** fs, int n);
+AStatus a_trail_solo  (struct ATask* t, int i, int kind, struct APatt** fs, int n);
 
 // End of the block that started trail `i`, if it is still active: it
 // is aborted. As `a_pin_end`, the trail `me` that executes the block
@@ -1003,7 +1003,7 @@ void a_trail_doom (struct ATask* t, int i);
 
 // mute P on :T {...}: events `:T [true]` and `:T [false]` mute and
 // unmute trail `i` from now on. Takes over the filters (`!P`).
-void a_trail_toggle (struct ATask* t, int i, AVal tag, APatt** fs, int n);
+void a_trail_mute (struct ATask* t, int i, AVal tag, APatt** fs, int n);
 // `context (enter, leave) {...}`: makes trail `i` a context, before it
 // starts.
 AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
@@ -1033,7 +1033,7 @@ struct ATask* a_tasks_iter (struct ATasks* ts, int64_t* pos);
 AVal a_tasks_tab (AVal ts);
 
 // mute <P> t(b): `b` mutes; the `n` filters (`!P`) are taken over.
-AStatus a_toggle (AVal t, AVal mute, APatt** fs, int n);
+AStatus a_mute (AVal t, AVal mute, APatt** fs, int n);
 
 // abort(t)
 AStatus a_abort (AVal v);
