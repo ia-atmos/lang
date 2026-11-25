@@ -11,6 +11,7 @@
 // 1_prim
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "atmc.h"
@@ -292,6 +293,120 @@ typedef struct { Tk id; const char* kw; int mut; } Par;
 static Par* PARS  = NULL;
 static int  NPARS = 0;
 
+// Tags of the parameters, from the last call to `parser_pars`, one per
+// parameter (`str` is NULL for a parameter with no tag): `func f (x :T)`
+// is a clause of `f`, chosen by the tags of the arguments. See
+// `parser_proto`.
+static Tk*  PTAGS  = NULL;
+static int  NPTAGS = 0;
+static int  HASTAG = 0;
+
+// Names with clauses so far (`f`, `m.f`), in the order of the program:
+// a later declaration of one of them with no tag is its default clause.
+static char** CLAUSES  = NULL;
+static int    NCLAUSES = 0;
+
+static int clauses_has (const char* name) {
+    for (int i=0; i<NCLAUSES; i++) {
+        if (!strcmp(CLAUSES[i], name)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// The clause whose body is being parsed, for `super(...)` in it.
+typedef struct Clause {
+    Tk    tk;           // position of the declaration
+    char* name;         // `f` or `m.f`
+    int   ntags;
+    Tk*   tags;         // `str` is NULL for no tag
+    Expr* proto;        // its parameters
+    int   task;
+} Clause;
+static Clause* CLAUSE = NULL;
+
+static Expr* mk (ETag tag, Tk tk);
+static Tk tk_id (Tk tk, const char* str);
+
+// The expression of a name with clauses, `f` or `m.f`, built anew.
+static Expr* clause_name (Tk tk, const char* name) {
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s", name);
+    char* save = NULL;
+    char* id = strtok_r(buf, ".", &save);
+    Expr* e = mk(E_ACC, tk_id(tk, strdup(id)));
+    while ((id = strtok_r(NULL, ".", &save)) != NULL) {
+        Expr* idx = mk(E_INDEX, tk);
+        idx->u.index.t    = e;
+        idx->u.index.kind = IDX_EXPR;
+        Tk k = tk;
+        k.tag = TK_STR;
+        k.str = strdup(id);
+        k.len = strlen(id);
+        idx->u.index.idx  = mk(E_STR, k);
+        e = idx;
+    }
+    return e;
+}
+
+// super(...), in the body of a clause:
+//  super(a, b)  -->  $super(f, n, tag1, ..., tagN, a, b)
+//  super()      -->  $super(f, n, tag1, ..., tagN, x, y, ...)   (its parameters)
+static Expr* parser_super (Tk tk) {
+    Clause* c = CLAUSE;
+    if (c->task) {
+        err(tk, "invalid super : unexpected task");
+    }
+    if (!check_str("(") || TK0.sep!=TK1.sep) {
+        err(TK1, "expected '('");
+    }
+    accept_str_err("(");
+    List args = parser_list(")");
+    accept_str_err(")");
+    Expr* call = mk(E_CALL, tk);
+    call->u.call.f = mk(E_ACC, tk_id(tk, "$super"));
+    list_add(&call->u.call.es, clause_name(c->tk, c->name));
+    char* n = malloc(16);
+    snprintf(n, 16, "%d", c->ntags);
+    Tk num = tk;
+    num.tag = TK_NUM;
+    num.str = n;
+    num.len = strlen(n);
+    list_add(&call->u.call.es, mk(E_NUM, num));
+    for (int i=0; i<c->ntags; i++) {
+        if (c->tags[i].str == NULL) {
+            list_add(&call->u.call.es, mk(E_NIL, tk_id(tk, "nil")));
+        } else {
+            list_add(&call->u.call.es, mk(E_TAG, c->tags[i]));
+        }
+    }
+    if (args.n == 0) {
+        for (int i=0; i<c->proto->u.proto.n; i++) {
+            list_add(&call->u.call.es, mk(E_ACC, c->proto->u.proto.pars[i]));
+        }
+        if (c->proto->u.proto.dots) {
+            list_add(&call->u.call.es, mk(E_DOTS, tk_id(tk, "...")));
+        }
+    } else {
+        for (int i=0; i<args.n; i++) {
+            list_add(&call->u.call.es, args.v[i]);
+        }
+    }
+    return call;
+}
+
+// Only a named prototype (`func f`, `func m.f`) takes clauses.
+static void pars_no_tags (Tk tk) {
+    if (HASTAG) {
+        err(tk, "invalid parameter : unexpected tag");
+    }
+    free(PTAGS);
+    PTAGS  = NULL;
+    NPTAGS = 0;
+    HASTAG = 0;
+}
+
 // Parameters, after '(': ids separated by commas, optional `...`. A
 // parameter is a declaration initialized by its argument, with the same
 // modifiers: `val x` (or just `x`), `var x`, `pin x` (or `pin val x`),
@@ -299,6 +414,9 @@ static int  NPARS = 0;
 static void parser_pars (Expr* p) {
     PARS  = NULL;
     NPARS = 0;
+    PTAGS  = NULL;
+    NPTAGS = 0;
+    HASTAG = 0;
     while (!check_str(")")) {
         if (accept_str("...")) {
             p->u.proto.dots = 1;
@@ -319,16 +437,26 @@ static void parser_pars (Expr* p) {
             accept_str("val");
         }
         accept_tag_err(TK_ID);
+        Tk id = TK0;
+        // x :T
+        Tk tag = id;
+        tag.str = NULL;
+        if (accept_tag(TK_TAG)) {
+            tag = TK0;
+            HASTAG = 1;
+        }
+        PTAGS = realloc(PTAGS, (NPTAGS+1) * sizeof(Tk));
+        PTAGS[NPTAGS++] = tag;
         if (kw != NULL) {
             PARS = realloc(PARS, (NPARS+1) * sizeof(Par));
-            PARS[NPARS].id  = TK0;
+            PARS[NPARS].id  = id;
             PARS[NPARS].kw  = kw;
             PARS[NPARS].mut = mut;
             NPARS++;
         }
         int n = p->u.proto.n;
         p->u.proto.pars = realloc(p->u.proto.pars, (n+1) * sizeof(Tk));
-        p->u.proto.pars[n] = TK0;
+        p->u.proto.pars[n] = id;
         p->u.proto.n++;
         if (!accept_str(",")) {
             break;
@@ -410,6 +538,7 @@ static Expr* parser_lambda (void) {
 
     if (accept_str("(")) {
         parser_pars(p);
+        pars_no_tags(p->tk);
     } else if (accept_tag(TK_ID)) {
         proto_par(p, TK0, 0);
     } else {
@@ -443,29 +572,81 @@ static Expr* parser_proto (void) {
 
     if (accept_str("(")) {
         parser_pars(p);
+        pars_no_tags(tk);
         p->u.proto.blk = proto_body();
         return p;
     }
 
+    // the destination, and a second copy of it for a clause, which
+    // reads the current value: `set f = $clause(f, ...)`
     accept_tag_err(TK_ID);
     Expr* dst = mk(E_ACC, TK0);
+    Expr* cur = mk(E_ACC, TK0);
+    char name[256];
+    snprintf(name, sizeof(name), "%s", TK0.str);
     while (accept_str(".")) {
-        Expr* idx = mk(E_INDEX, TK0);
+        Tk dot = TK0;
         accept_field_err();
-        idx->u.index.t    = dst;
-        idx->u.index.kind = IDX_EXPR;
-        idx->u.index.idx  = mk(E_STR, TK0);
-        dst = idx;
+        Expr* i1 = mk(E_INDEX, dot);
+        i1->u.index.t    = dst;
+        i1->u.index.kind = IDX_EXPR;
+        i1->u.index.idx  = mk(E_STR, TK0);
+        dst = i1;
+        Expr* i2 = mk(E_INDEX, dot);
+        i2->u.index.t    = cur;
+        i2->u.index.kind = IDX_EXPR;
+        i2->u.index.idx  = mk(E_STR, TK0);
+        cur = i2;
+        size_t len = strlen(name);
+        snprintf(name+len, sizeof(name)-len, ".%s", TK0.str);
     }
 
     accept_str_err("(");
     parser_pars(p);
+    Tk* tags = PTAGS;
+    int ntags = NPTAGS;
+    int has   = HASTAG;
+    PTAGS  = NULL;
+    NPTAGS = 0;
+    HASTAG = 0;
+    Clause cl = { tk, name, ntags, tags, p, task };
+    Clause* up = CLAUSE;
+    int is = has || clauses_has(name);
+    if (is) {
+        cl.name = strdup(name);
+        CLAUSE = &cl;
+    }
     p->u.proto.blk = proto_body();
+    CLAUSE = up;
 
     Expr* set = mk(E_SET, tk);
     list_add(&set->u.set.dsts, dst);
     set->u.set.src   = p;
     set->u.set.proto = 1;
+
+    // A clause: a parameter has a tag, or the name already has clauses
+    // (then it is their default):
+    //  func f (x :T, y) {...}  -->  set f = $clause(f, "f", func (x,y) {...}, :T, nil)
+    if (is) {
+        if (!clauses_has(name)) {
+            CLAUSES = realloc(CLAUSES, (NCLAUSES+1) * sizeof(char*));
+            CLAUSES[NCLAUSES++] = strdup(name);
+        }
+        Expr* call = mk(E_CALL, tk);
+        call->u.call.f = mk(E_ACC, tk_id(tk, "$clause"));
+        list_add(&call->u.call.es, cur);
+        list_add(&call->u.call.es, mk(E_STR, tk_id(tk, strdup(name))));
+        list_add(&call->u.call.es, p);
+        for (int i=0; i<ntags; i++) {
+            if (tags[i].str == NULL) {
+                list_add(&call->u.call.es, mk(E_NIL, tk_id(tk, "nil")));
+            } else {
+                list_add(&call->u.call.es, mk(E_TAG, tags[i]));
+            }
+        }
+        set->u.set.src = call;
+    }
+    free(tags);
     return set;
 }
 
@@ -589,6 +770,7 @@ static Expr* parser_dcl (void) {
         dcl->u.dcl.ids[0] = TK0;
         accept_str_err("(");
         parser_pars(p);
+        pars_no_tags(dcl->u.dcl.ids[0]);
         p->u.proto.blk = proto_body();
         dcl->u.dcl.set = p;
         dcl->u.dcl.rec = 1;
@@ -1149,6 +1331,11 @@ static Expr* parser_1_prim (void) {
     } else if (check_tag(TK_KEY) && in(EXITS,TK1.str)) {
         next();
         return parser_exit(TK0);
+
+    // super(...), in the body of a clause
+    } else if (CLAUSE!=NULL && check_tag(TK_ID) && !strcmp(TK1.str,"super")) {
+        next();
+        return parser_super(TK0);
 
     // id: x, __v
     } else if (accept_tag(TK_ID)) {

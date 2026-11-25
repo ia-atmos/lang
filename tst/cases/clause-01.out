@@ -1,0 +1,13 @@
+3
+6
+0
+function
+ship-rock
+ship-bullet
+entities
+ship-any
+any-rock
+default
+num	str	tab	tag a.b	tab
+A	B
+false	invalid call : no clause of 'area' for (number)

@@ -8,9 +8,9 @@ Items are `#N` (standing rule of 2026-11-18, `TODO.md`): unique here,
 never reused nor changed. The questions asked as "questão 1..8" before
 the rule are `#1`..`#8`.
 
-## Paused (2026-11-23)
+## Resumed (2026-11-25)
 
-The author pauses new steps until next week. #26 is merged (2026-11-23).
+The pause of 2026-11-23 is over (`atmos`, at the author's request). #26 is merged (2026-11-23).
 #23 and #24 are closed (the ports rewrote on 2026-11-22). Next decision:
 #21 (1), a default `stage`.
 

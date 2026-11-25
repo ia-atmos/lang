@@ -5,16 +5,40 @@ configured, built, installed, and told which environment to use. The
 material is `261120-cli.md`. The implementation goes to the branch
 `cli`; this file and the plans go straight to `main`.
 
-Last update: 2026-11-24.
+Last update: 2026-11-25.
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
-| #2 | The names of the long options | Asked 2026-11-21; recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #2 | The names of the long options | Asked 2026-11-21. Done on branch `cli` with the recommendation, by the session, to be confirmed (rule `#95`, after the pause ended 2026-11-25); recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
 | #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
-| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2): the ports call them |
+| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2). On branch `cli`, by the session, to be confirmed: kept as aliases, so that no port changes |
+
+## Branch `cli`
+
+By the session, to be confirmed by the author (`#2`, `#3`); not merged.
+
+- `--emit-c`, `--out`, `--test`, `--env`, with the value after `=` or
+  as the next argument; `-c`, `-o`, `-t`, `-e` as aliases.
+- `--help` and `--version` on the standard output, status 0 (the
+  version is `git describe` of the checkout); `--` ends the options.
+- Errors say what is wrong before the usage: `unknown option '--xyz'`,
+  `missing the value of '--out'`, `missing the input after '--'`.
+- `tst/cli/run.sh` (`make test-cli`, in `make test`); manual
+  ("Execution", tests) and README.
+- Measured by `atmos-lang` (2026-11-25, `b65535b` against `1175264`):
+  suite with ASAN and 48 configurations pass; `atmos -c` over 2197
+  `.atm` files gives the same diagnostics and C as `main`;
+  `sdl-pingus` (`run.sh` suite, `-t tst/bomber-test.atm`) and `env-sdl`
+  (`make`, `tst/run.sh`) pass. `env-pico` and `env-uv` fail the same
+  way on `main` (dependencies missing in the container); `env-ray`,
+  `doom`, `env-esp32` not run. From a copy with no `.git`,
+  `--version` prints `atmos unknown` (an install from a tarball would
+  pass `VERSION=` to `make`).
+- Not changed: `--emit-c` with `--out` still ignores `--out`; a lone
+  `-` is still an unknown option (no standard input).
 
 ## Observed on 2026-11-20 (`main` at `5123f9a`)
 
