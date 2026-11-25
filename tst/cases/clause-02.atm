@@ -1,0 +1,42 @@
+;; tasks as clauses
+task Act (p :walker) {
+    await :step
+    print("walk", p.x)
+    :faller [x=p.x]
+}
+task Act (p :faller) {
+    await :step
+    print("fall", p.x)
+    :done
+}
+spawn {
+    var p = :walker [x=10]
+    loop {
+        val nxt = await Act(p)
+        until nxt == :done
+        set p = nxt
+    }
+    print("done")
+}
+emit :step
+emit :step
+
+;; spawn with pool, and a plain function that becomes the default
+func name (x) { "any" }
+func name (x :Dog) { "dog" }
+print(name(1), name(:Dog []))
+
+;; recursion through the name
+func len (l :Nil)  { 0 }
+func len (l :Cons) { 1 + len(l.tl) }
+print(len(:Cons [tl=:Cons [tl=:Nil []]]))
+
+;; closures: a clause captures a local
+func mk (k) {
+    val t = []
+    func t.get (x :A) { k }
+    func t.get (x :B) { k * 2 }
+    t
+}
+pin o = mk(21)
+print(o.get(:A []), o.get(:B []))

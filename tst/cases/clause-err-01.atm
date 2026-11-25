@@ -1,0 +1,2 @@
+func f (x :A) { 1 }
+func f (x :A) { 2 }

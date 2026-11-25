@@ -49,6 +49,10 @@ static const char* BUILTINS[][2] = {
     { "io",       "atm_g_io"       },
     { "next",     "atm_g_next"     },
     { "iter",     "atm_g_iter"     },
+    // of the compiler: a clause of a function (`func f (x :T)`), and
+    // the call of its parent clause (`super(...)`)
+    { "$clause",  "atm_g_clause"   },
+    { "$super",   "atm_g_super"    },
     { NULL, NULL }
 };
 

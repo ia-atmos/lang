@@ -1,0 +1,12 @@
+task Act (p :walker) { await :step }
+func g (x :A) { 1 }
+pin t = spawn {
+    print(catch true { await Act(:flyer []) })
+    print(catch true { await g(:A []) })
+    print(catch true { spawn Act(10) })
+    pin ts = tasks()
+    spawn @ts Act(:walker [])
+    print(#ts)
+    await :never
+}
+print("ok")

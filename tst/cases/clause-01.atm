@@ -1,0 +1,38 @@
+func area (s :Shape)        { 0 }
+func area (s :Shape.Circle) { 3 * s.r * s.r }
+func area (s :Shape.Rect)   { s.w * s.h }
+
+print(area(:Shape.Circle [r=1]))
+print(area(:Shape.Rect [w=2, h=3]))
+print(area(:Shape.Line []))
+print(type(area))
+
+;; multimethods
+func hit (a :Ship,   b :Rock)   { "ship-rock" }
+func hit (a :Ship,   b :Bullet) { "ship-bullet" }
+func hit (a :Entity, b :Entity) { "entities" }
+func hit (a, b)                 { "default" }
+func hit (a :Ship,   b)         { "ship-any" }
+func hit (a,         b :Rock)   { "any-rock" }
+print(hit(:Ship [], :Rock []))
+print(hit(:Ship [], :Bullet []))
+print(hit(:Entity.Ufo [], :Entity.Ufo []))
+print(hit(:Ship [], 10))
+print(hit(10, :Rock.Big []))
+print(hit(1, 2))
+
+;; types and plain tags
+func show (x :number) { "num" }
+func show (x :string) { "str" }
+func show (x :table)  { "tab" }
+func show (x :a.b)    { "tag a.b" }
+print(show(1), show("x"), show([]), show(:a.b.c), show(:P [1]))
+
+;; fields
+val m = []
+func m.f (x :A) { "A" }
+func m.f (x :B) { "B" }
+print(m.f(:A []), m.f(:B []))
+
+;; errors
+print(catch true { area(10) })
