@@ -307,8 +307,9 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 > acordar todos esperando créditos. Também iremos perguntar quais
 > projetos ainda tem código C embarcado. Não agora. Aguarde.
 
-When the credits of next week come: wake every session, and ask each
-project which C code it still embeds. Until then, only what arrives.
+The pause is over (2026-11-25, `atmos#7`): the sessions were awakened
+(`atmos#4`) and told to resume. Still to ask, when he says: which C code
+each project still embeds.
 
 ## Tomorrow (the author, 2026-11-24)
 
