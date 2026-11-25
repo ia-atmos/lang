@@ -23,6 +23,16 @@ Options given: (a) nil at that index (a hole), (b) remove it and shift
 the others, (c) leave the dead value there. Recommended (b); the rule is
 `atmos-pin`'s.
 
+#5 (asked 2026-11-25): at the end of the value, undo the `set :out`
+(today: nil) or keep the dead value in the place? Recommended: undo.
+Checked on `ppp`: there is no `:dead` type; a task that ended keeps
+`type` `xtask` and `atmos.status(t)` gives `dead`; a finalized table
+keeps `type` `table`, `==` works, and any index, length or iteration
+raises `invalid access : finalized table pinned at ...`, with no way to
+test it before use. Keeping it would break the stable rule "a place
+never refers to a finalized value" and every `if place` test in the
+ports that use `set :out` (count to be asked of `atmos-lang`).
+
 ## Notes
 
 - The golden tests `0058`-`0063` (`ppp-1` to `ppp-6`) are written with
