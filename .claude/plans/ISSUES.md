@@ -3,7 +3,9 @@
 Kept by the session `atmos` since 2026-11-24 (before, by `atmos-lang`,
 which numbered `#1` to `#119`). One sequence for the author: `atmos`
 continues from `#120`; when `atmos-lang` asks him something directly, it
-takes the next free number here too.
+takes the next free number here too. Every other session keeps its own
+local sequence (`session#N`, the rule `#71`); a line here that points to
+such an item does not rename it.
 
 Every item, by its number. A number is never reused nor
 changed: an item that closes, or that moves to another session, keeps
@@ -138,5 +140,6 @@ started, no decision needed), **moved** (another session handles it),
 | 119 | A new session `atmos` that manages all the others; `atmos-lang` keeps the implementation | decided 2026-11-24 (his answer: "Ok"); session `atmos` created, handoff `261124-atmos.md`; from `#120` this index is kept by `atmos` |
 | 120 | `atmos-ppp` found archived (2026-11-23 17:36, a minute after its creation; not by `atmos-lang`'s record) with `atmos-ppp#1` open (should `+=` append to vectors; it recommends keeping `@+` as the only append) | open: the author's; recommended: unarchive it when the work resumes next week |
 | 121 | `#60` (where the exception of `emit @t` goes): the author leaned to the emitter on 2026-11-23 in `atmos-pool` ("a minha intuicao diz que quem emite é que deve receber o erro. nao é assim com métodos?", checked in its transcript); `atmos-pool` withdrew its recommendation. To confirm: the emitter gets it (as on main, like a method call), broadcast stays with the holder; then `pool` reverts `#60` and documents it | open: the author's, in `atmos-pool`; recommended: confirm |
-| 122 | `env-web#1`: may `env-web` install emsdk and run `make` in a local clone of `lang`, to build Rocks of `env-sdl` with Emscripten and test it headless (the auto mode refused both, as asked by a session) | open: the author's, in `env-web`; recommended: yes, after the pause |
+| 122 | Index line for `env-web#1` (it keeps that name; calling it `#122` was a mistake of `atmos`, corrected 2026-11-25): may `env-web` install emsdk and run `make` in a local clone of `lang`, to build Rocks of `env-sdl` with Emscripten and test it headless (the auto mode refused both, as asked by a session) | open: the author's, in `env-web`; recommended: yes, after the pause |
 | 123 | The 33 active sessions awakened at the author's request ("acorde todas as sessoes", 2026-11-25, in `atmos`): each asked for its branch, its open items and what blocks it; no new work. Not awakened: the archived `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `atmos-ppp` (`#120`) | done 2026-11-25 (all 33 delivered); the answers to be gathered. Open, the author's: whether to ask now which C each project still embeds (his plan of 2026-11-23 said "Não agora") |
+| 124 | `atmos` told the sessions that new questions take a number of `ISSUES.md`; the author: "os numeros devem ser locais a cada sessao, certo?" | done 2026-11-25: the 32 sessions told that numbers stay local (`#71`); only `atmos` and `atmos-lang` share this sequence |
