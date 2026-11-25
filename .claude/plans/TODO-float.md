@@ -13,7 +13,9 @@ Last update: 2026-11-19.
 Coordination, status and questions for the author go to the session
 `atmos` (session_011eECohhJbc4GMpAj3yyeEo, atmos-lang#119); measurements
 on the ports and merges into `main` stay with `atmos-lang`. New items
-put to the author continue the sequence of `ISSUES.md` (`#120` on).
+put to the author keep this session's own sequence (`#22` on), seen
+from outside as `atmos-float#N` (corrected by `atmos` on 2026-11-25,
+confirmed by the author there; the standing rule `#71`).
 A pause until next week's credits: no new work, only what arrives.
 
 ## Index of items
