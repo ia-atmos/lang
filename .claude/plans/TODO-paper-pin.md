@@ -12,8 +12,9 @@ written; each such item now has its number below.
 Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
 `.claude/plans/261124-atmos.md`): coordination, status and questions for
 the author go to `atmos`; measurements on the ports and merges into `main`
-stay with `atmos-lang`. New items put to the author continue the sequence
-of `ISSUES.md` (#120 on); #1 to #14 here keep their numbers. Paused until
+stay with `atmos-lang`. Item numbers stay local to this session (rule
+#71, corrected by `atmos` on 2026-11-25): the next is #15, seen from
+outside as paper-pin#15. Paused until
 next week's credits: only what arrives.
 
 ## Index
