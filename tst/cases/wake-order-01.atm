@@ -1,0 +1,30 @@
+;; The order of awaking in one emit: the tasks of a block in the order
+;; they were attached; the tasks of a pool at the position of the pool,
+;; in the order they were spawned; nested tasks before the body of their
+;; task; a task spawned, or that awaits again, in reaction to the event
+;; does not awake again in the same emit.
+task T (id) {
+    spawn {
+        await :X
+        print(id, :nested)
+    }
+    await :X
+    print(id, :body)
+}
+spawn T(:a)
+pin ts = tasks()
+spawn T(:b)
+spawn @ts T(:p1)
+spawn T(:c)
+spawn @ts T(:p2)
+spawn {
+    await :X
+    print(:spawner)
+    spawn @ts T(:late)
+    spawn T(:late2)
+    await :X
+    print(:again)
+}
+emit :X
+print("---")
+emit :X

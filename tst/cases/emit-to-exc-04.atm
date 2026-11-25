@@ -1,0 +1,35 @@
+;; The target of an emit ends normally, its end awakes who awaits it,
+;; and that one throws: the exception goes up from there, as in a
+;; broadcast of the same event.
+task T () {
+    await :X
+}
+task Emitter (t, how) {
+    await :go
+    val e = catch :boom {
+        if how == :to {
+            emit @t :X
+        } else {
+            emit @:global :X
+        }
+        :none
+    }
+    print(how, :emitter, e)
+}
+task Holder (how) {
+    pin t = spawn T()
+    spawn Emitter(t, how)
+    val e = catch :boom {
+        spawn {
+            await(t)
+            throw :boom
+        }
+        await :never
+    }
+    print(how, :holder, e)
+}
+loop _, how in [:to, :global] {
+    pin h = spawn Holder(how)
+    emit :go
+    print(how, :done)
+}
