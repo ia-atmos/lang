@@ -26,7 +26,9 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 
 ## Waiting for the author
 
-- **#10**: waiting for `sdl-tux` to answer who rewrites `badguy.atm`.
+- **#10**: `sdl-tux` put it to the author as its #24 (a: `atmos-oo` on a
+  branch `oo` of sdl-tux, after it adds the fish; b: `sdl-tux` in its #22).
+  Both recommend a. Waiting for his answer there.
 
 To confirm or undo when he reads:
 
