@@ -1,0 +1,5 @@
+false	invalid call : no clause of 'Act' for (flyer)
+false	invalid spawn : expected task prototype
+false	invalid call : no clause of 'Act' for (number)
+1
+ok

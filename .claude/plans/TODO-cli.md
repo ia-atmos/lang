@@ -5,16 +5,42 @@ configured, built, installed, and told which environment to use. The
 material is `261120-cli.md`. The implementation goes to the branch
 `cli`; this file and the plans go straight to `main`.
 
-Last update: 2026-11-23.
+Last update: 2026-11-25.
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
-| #2 | The names of the long options | Asked 2026-11-21; recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #2 | The names of the long options | Deferred by the author (2026-11-25): "defer decision. we need to settle separate compilation" (`atmos-cc`). Branch `cli` keeps `--emit-c`, `--out`, `--test`, `--env` meanwhile |
 | #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
-| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2): the ports call them |
+| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Decided by the author (2026-11-25): "remove all short aliases". Done on `cli` (`d0d9a99`) |
+| #5 | The order of the migration of the ports to the long options | Asked 2026-11-25 |
+
+## Branch `cli`
+
+Names by the session, deferred by the author (`#2`); no short forms,
+decided by him (`#3`). Not merged.
+
+- `--emit-c`, `--out`, `--test`, `--env`, with the value after `=` or
+  as the next argument; `-c`, `-o`, `-t`, `-e` are unknown options.
+- `--help` and `--version` on the standard output, status 0 (the
+  version is `git describe` of the checkout); `--` ends the options.
+- Errors say what is wrong before the usage: `unknown option '--xyz'`,
+  `missing the value of '--out'`, `missing the input after '--'`.
+- `tst/cli/run.sh` (`make test-cli`, in `make test`); manual
+  ("Execution", tests) and README.
+- Measured by `atmos-lang` (2026-11-25, `b65535b` against `1175264`):
+  suite with ASAN and 48 configurations pass; `atmos -c` over 2197
+  `.atm` files gives the same diagnostics and C as `main`;
+  `sdl-pingus` (`run.sh` suite, `-t tst/bomber-test.atm`) and `env-sdl`
+  (`make`, `tst/run.sh`) pass. `env-pico` and `env-uv` fail the same
+  way on `main` (dependencies missing in the container); `env-ray`,
+  `doom`, `env-esp32` not run. From a copy with no `.git`,
+  `--version` prints `atmos unknown` (an install from a tarball would
+  pass `VERSION=` to `make`).
+- Not changed: `--emit-c` with `--out` still ignores `--out`; a lone
+  `-` is still an unknown option (no standard input).
 
 ## Observed on 2026-11-20 (`main` at `5123f9a`)
 
@@ -75,3 +101,35 @@ becomes an item only if the author takes it up.
   day, to confirm with the author: there `--verbose`, `--cc-`/`--ld-`,
   a cache of builds, separate compilation; here the parser, the names
   of the existing options, `--help`/`--version`, install, environments.
+- `atmos`, 2026-11-24: a new managing session, `atmos`
+  (session_011eECohhJbc4GMpAj3yyeEo), takes coordination, status and
+  the questions to the author (`atmos-lang#119`, "Ok" by the author,
+  `261124-atmos.md`); `atmos-lang` keeps the measurements on the ports
+  and the merges into `main`. The pause of the author of 2026-11-23
+  holds ("Aguarde", until next week's credits): this session starts no
+  new work (the branch `cli` waits) and only answers him and records
+  what arrives. Items here stay `atmos-cli#N`.
+
+## The ports that call a short option (2026-11-25, `#5`)
+
+Clones of the 15 repositories of `ia-atmos` besides `lang`, updated on
+2026-11-25. Each line must move to the long form when the short ones go.
+
+| Repository | Where | Option |
+|---|---|---|
+| `sdl-pingus` | `tst/run.sh` (47, 49, 108, 111), `tst/demos.sh` 12; comments in `tst/*-test.atm`, `tools/logic.atm`; `README.md` 69, `doc/bench.md` 8 | `-o`, `-t` |
+| `sdl-snkrx` | `run.sh` 5 (comment), `tools/bench/perf.py` 38 | `-o` |
+| `sdl-tux` | `tux.sh` 18, `tst/play.sh` 13 | `-o` |
+| `env-sdl` | `tst/minus-t.atm` (`;; flags: -t`); `doc/inventory/pingus.md` 53 | `-t`, `-o` |
+| `env-pico` | `tst/run.sh` 34; `doc/api.md` 815 | `-t` |
+| `env-iup` | `doc/api.md` 202 | `-t` |
+| `env-uv` | `tst/run.sh` 26, `tst/pair/run.sh` 28 | `-o` |
+| `env-ray` | `tools/atmos.sh` 12 | `-o` |
+| `env-esp32` | `esp32/main/CMakeLists.txt` 63 | `-c` |
+| `doom` | `Makefile` 63, 79 | `-c` |
+| `pico-frescogo` | `tst/jogo.sh` 8, `tst/fluxo.sh` 23, `tst/telas.sh` 27 | `-o` |
+| `pico-1oom` | `tst/game_new.sh` 24, `tst/state.sh` 25, `tst/save.sh` 18, 19 | `-o` |
+| `ray-lessmilk` | `tools/atmos.sh` 15, `tools/play.sh` 43 (a pinned copy of the compiler, `ext/ceu-atmos`) | `-o` |
+
+None found in `sdl-flare`, `pico-slides`. In `lang` itself:
+`tst/golden/0030-test-2.flags` and `tst/env/run.sh`, moved on `cli`.

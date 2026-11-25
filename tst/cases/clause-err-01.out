@@ -1,0 +1,4 @@
+==> ERROR:
+ |  clause-err-01.atm:2 (call)
+ v  clause-err-01.atm:2 (throw)
+==> invalid clause : 'f' already has it

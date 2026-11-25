@@ -2,6 +2,11 @@
 
 Session `atmos-oo`. Material: `261118-oo.md`. Cases: `261118-oo-cases.md`.
 
+Coordination (2026-11-24): status and questions for the author go to
+the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
+the ports and merges into main stay with `atmos-lang`
+(`.claude/plans/261124-atmos.md`).
+
 ## Index of items
 
 Items are `#N` (standing rule in `TODO.md`); from other sessions,
@@ -14,19 +19,16 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #4 | The badguys of SuperTux as the test of inheritance of behavior | done 2026-11-20 by reading the port of `sdl-tux` (`261118-oo-inherit.md`): #1 stands |
 | #5 | Suggestion to `sdl-tux`: split `badguy.atm` by class as records of closures (form B of `261118-oo-inherit.md`) | open: passed by `atmos-lang` to `sdl-tux` on 2026-11-20; it is of `sdl-tux` to take or not |
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
-| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | implemented on the branch `oo` after his "ok va em frente" (2026-11-20); suite passing; measured by `atmos-lang` on 2026-11-20 (2197 files of 15 clones: no port changes; `atmos-lang#99`); **the merge into main waits for his approval** (`261118-oo-clauses.md`) |
+| #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | on `oo` at `9991ed1` (2026-11-25): main merged in, the manual written, suite passing; measured by `atmos-lang` on 2026-11-25 (2197 files: same diagnostics, generated C the same once globals are renumbered; no port changes); done: merged into main by `atmos-lang` as `9c6458f` (2026-11-25, "#7 sim") (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
-| #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | planned by the author (2026-11-23), after the merge of #7; on hold |
+| #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | in course (2026-11-25): `badguy.atm` is of `sdl-tux` (its #22); asked whether it takes it or `atmos-oo` does it on a branch `oo` of sdl-tux (recommended) |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
 
-- **#7**: on hold by the author (2026-11-23): "vamos aguardar os
-  creditos da semana que vem. a ideia é fazer o merge e atualizar os
-  projetos que podem usar OO. mas agora iremos aguardar". When he
-  resumes: the manual ("Prototypes", "Calls"), main into `oo`, the
-  suite, the measurement by `atmos-lang`, the merge, then the ports
-  that can use clauses (#10).
+- **#10**: `sdl-tux` put it to the author as its #24 (a: `atmos-oo` on a
+  branch `oo` of sdl-tux, after it adds the fish; b: `sdl-tux` in its #22).
+  Both recommend a. Waiting for his answer there.
 
 To confirm or undo when he reads:
 
@@ -49,8 +51,8 @@ To confirm or undo when he reads:
 ## Known and not done
 
 - The branch `oo` has the prototype of #7 and #8 (parser, runtime, 10
-  test cases), over main of 2026-11-23. Not done: `super` in tasks,
-  local and anonymous clauses, a cache, the manual.
+  test cases, the manual), over main of 2026-11-25. Not done: `super`
+  in tasks, local and anonymous clauses, a cache.
 - The originals (C++, Lua) were not read: what is said of them comes
   from the `Class::method` comments of the ports and from memory.
 
@@ -66,5 +68,6 @@ To confirm or undo when he reads:
   one or more tagged parameters, chosen by specificity, with no
   grouping and no order. Not yet an approval to merge.
 - #8, 2026-11-23: "Super": the parent clause is called by `super(...)`.
+- #7, 2026-11-25: "#7 sim", the merge of clauses and `super` into main.
 - #7, 2026-11-23: merge the clauses and update the ports that can use
   them, but wait until next week ("agora iremos aguardar").

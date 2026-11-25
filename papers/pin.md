@@ -6,8 +6,8 @@ Name of the mechanism: **structured memory**. Its construct is the
 > Status: outline. The rules in Section 4 were declared stable by the
 > author on 2026-11-19, as implemented in `main` at `8361f88` and described
 > in `doc/manual.md` ("Lexical Memory Management", "Pin", "Set"). The
-> collection of unpinned cycles was later removed (atmos-pin#18, branch
-> `pin` at `3cd5169`): a cyclic structure must be pinned. History:
+> collection of unpinned cycles was later removed (atmos-pin#18, on `main`
+> at `f999c52`): a cyclic structure must be pinned. History:
 > `.claude/plans/261115-pin.md`, `.claude/plans/TODO-pin.md`.
 
 ## Abstract
@@ -251,7 +251,7 @@ case studies from six ports of libraries and games to Atmos.
 - Cycles: a pinned cycle is broken at the end of its block, by the pin; an
   unpinned cycle is not collected and leaks (no cycle detection, by the
   author's choice: atmos-pin#18; a local trial deletion was implemented and
-  removed, `3cd5169`)
+  removed, `f999c52` on `main`)
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,
@@ -332,26 +332,19 @@ case studies from six ports of libraries and games to Atmos.
     - time: the store check, the transfer of unpinned results
     - space: bits per value
     - comparison with a GC and with plain RC
-- Planned experiment: the Computer Language Benchmark Game (CLBG)
-    - the 7 programs of Câmara (2024): binary-trees, fannkuch-redux, fasta,
-      fibonacci, mandelbrot, n-body, spectral-norm
-    - five variants, and one reference with a JIT:
-        - C: the floor (the C versions in `alochaus/dyn-lex-benchmark`)
-        - Lua 5.4: the same language model, interpreted, with a tracing GC
-        - LuaJIT: the ceiling of a dynamic language; its speed comes from the
-          JIT, not from memory, so it is context only; Lua 5.1 dialect, and any
-          adaptation of the programs is reported
-        - Atmos `ATMOS_PIN=off`: counting only, `pin` only for tasks and pools
-        - Atmos `ATMOS_PIN=unchecked`: the same semantics, no checks
-        - Atmos with `pin` (default): the whole mechanism
-    - the figure of the pin is Atmos with against Atmos without; C, Lua and
-      LuaJIT only place it, since they differ in much more than memory
-    - measure time and peak memory (RSS): counting, tracing, and pins differ
-      in memory more than in time
-    - only binary-trees allocates much; Doom stays the main measure of cost
-    - methodology fix: compile once, time only the run (the earlier study
-      included recompilation in every run)
-    - questions: overhead of the checks; where it concentrates (binary-trees)
+- Experiment: the Computer Language Benchmark Game (CLBG), done 2026-11-25
+  (`papers/pin-bench/`, `summary.md`)
+    - the 7 programs of Câmara (2024), written anew with the same algorithm
+      and output in C, Lua (5.4 and LuaJIT unchanged), and Atmos; compiled
+      once, only the run timed, median of 5
+    - Atmos with `pin` against `ATMOS_PIN=off`: +19% to +32%; `unchecked`
+      as fast as `off` (except n-body): the cost is in the checks
+    - fib allocates nothing and pays 31%: the inline tests of type at names,
+      stores, returns and block ends (callgrind: +15% instructions)
+    - Atmos is 1.2 to 5 times slower than Lua 5.4, with or without checks:
+      the compiler and runtime, not `pin`
+    - peak memory equal in the three builds of Atmos; binary-trees 53 MB,
+      Lua 5.4 57 MB, LuaJIT 78 MB, C 10 MB
 - Two ends of expressiveness
     - CLBG: algorithms translated from Lua with no change (dyn-lex, 2024)
     - the ports: games with tasks, registries, module state; about 240 rewrites
@@ -422,7 +415,8 @@ case studies from six ports of libraries and games to Atmos.
 ## 12. Future Work
 
 - Static detection of escapes, for a subset of the checks
-- Elision of the dynamic check where the block is known
+- Elision of the dynamic check where the block is known, and of the tests
+  of type where the type is known (fib pays 31% for them, Section 9)
 - Formal semantics and a proof of no dangling references
 - A tracing collector beside reference counting, for unpinned cycles only,
   keeping the counts as the semantics of everything else

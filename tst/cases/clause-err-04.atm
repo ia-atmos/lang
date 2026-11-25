@@ -1,0 +1,2 @@
+var f = 10
+func f (x :A) { 1 }

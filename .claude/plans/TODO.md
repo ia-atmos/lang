@@ -10,7 +10,9 @@ do not change: an item is `#N` (see `ISSUES.md` for every number and its
 state, and "Standing rules" for the convention). Numbers that are
 missing here were settled or moved.
 
-Last update: 2026-11-17.
+Last update: 2026-11-24. Owned by the session `atmos` since 2026-11-24
+(`#119`, handoff `261124-atmos.md`); section A below predates the moves
+recorded in `ISSUES.md`, which is the reference for what is open.
 
 ## A. Decisions waiting for an answer
 
@@ -159,6 +161,9 @@ may be changed.
 | `atmos-slices` | Created on 2026-11-22, asked by the author in `atmos-lang` (its `#116`, direction `#116c`): slices of vectors with no copy. Material `261122-slices.md`; list `TODO-slices.md`; branch `slices`; session_011eECoensrrB23ggBu4daLd |
 | `atmos-threads` | Created on 2026-11-22, asked by the author in `atmos-lang`: threads (none today; `thread` is only a reserved word; the reference has `thread { ... }`). Material `261122-threads.md`; list `TODO-threads.md`; branch `threads`; session_011eECohRAjCia6Hb5cAcrz2 |
 | `atmos-cc` | Created on 2026-11-23, asked by the author in `atmos-lang`: the time of a build with includes (separate compilation, `--verbose`, `--cc-` flags). Material `261123-cc.md` (Pingus: Atmos to C 0.42 s, cc 5.9 / 20.7 / 34.8 s at -O0/-O1/-O2); list `TODO-cc.md`; branch `cc`; session_011eECoibvvH58hfgFezzYvM |
+| `atmos-ppp` | Created on 2026-11-23, asked by the author in `atmos-lang`: whether the tip markers `@#` and `@+` are still relevant, and `+=` on vectors. Material `261123-ppp.md` (ports: 359 `set t@+ = v`, 7 `t@#`, 74 `vector.insert`, 0 `++=`); list `TODO-ppp.md`; branch `ppp`; session_011eECogRQbTZU7Bn4bZysFK |
+| `env-web` | Created on 2026-11-24, asked by the author in `atmos-lang` (its `#118`: `env-web` rather than `env-js`): Atmos in the browser, SDL and Rocks through Emscripten, the DOM. Repository `ia-atmos/env-web`; material `261124-env-web.md` here; session_011eECoffhJTecG6BZSq3GQi |
+| `atmos` | Created on 2026-11-24, asked by the author in `atmos-lang` (its `#119`, "Ok"): the manager of all sessions, his main point of contact; owns this `TODO.md` and `ISSUES.md` from now on; `atmos-lang` keeps the implementation, the measurements and the merges. Handoff `261124-atmos.md`; session_011eECohhJbc4GMpAj3yyeEo |
 | `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Reads all its documents with `X.loadx` (its 39 tests load, reported 2026-11-20) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
@@ -197,6 +202,9 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, unarchived on 2026-11-25, `atmos#1`) |
+| `env-web` | session_011eECoffhJTecG6BZSq3GQi | environment: the browser |
+| `atmos` | session_011eECohhJbc4GMpAj3yyeEo | the manager of all sessions |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
 | `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
 | `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
@@ -299,5 +307,28 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 > acordar todos esperando créditos. Também iremos perguntar quais
 > projetos ainda tem código C embarcado. Não agora. Aguarde.
 
-When the credits of next week come: wake every session, and ask each
-project which C code it still embeds. Until then, only what arrives.
+The pause is over (2026-11-25, `atmos#7`): the sessions were awakened
+(`atmos#4`) and told to resume. Still to ask, when he says: which C code
+each project still embeds.
+
+## Tomorrow (the author, 2026-11-24)
+
+> Todo tomorrow:
+> - env-js with sdl support
+> - Can we run rocks there?
+> - what about dom? Want to revive old plans
+
+What exists, as found on 2026-11-24 (nothing done yet):
+- `lua-atmos/env-js` and `atmos-lang/web`: the browser environment of
+  the reference (Atmos in Lua, active in Mar/2026), which runs a program
+  passed in the URL; `web` is an editor with a "Run" button
+  (`261117-envs.md`, the table of environments; `261117-envs-atmos.md`
+  read `env-js` against our API).
+- Rocks: `ia-atmos/env-sdl` `exs/rocks/` (with images, sounds, a font,
+  and a pause test) and `ia-atmos/env-pico` `exs/rocks/`.
+- The compiler emits C; a browser build would go through Emscripten
+  (SDL2 has an Emscripten port). This container has `node` but no
+  `emcc`.
+- Moved to the session `env-web` (2026-11-24). The "old plans" of the DOM: to find (in `lua-atmos/env-js`,
+  `atmos-lang/web`, or the author's older repositories) before
+  proposing.

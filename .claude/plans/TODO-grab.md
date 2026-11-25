@@ -8,11 +8,17 @@ Items are `#N` (standing rule of 2026-11-18, `TODO.md`): unique here,
 never reused nor changed. The questions asked as "questão 1..8" before
 the rule are `#1`..`#8`.
 
-## Paused (2026-11-23)
+## Resumed (2026-11-25)
 
-The author pauses new steps until next week. #26 is merged (2026-11-23).
-Waiting meanwhile: the rewrite of the ports (#23, #24). Next decision:
-#21 (1), a default `stage`, once the ports are rewritten.
+The pause of 2026-11-23 is over (`atmos`, at the author's request). #26 is merged (2026-11-23).
+#23 and #24 are closed (the ports rewrote on 2026-11-22). Next decision:
+#21 (1), a default `stage`.
+
+Coordination (2026-11-24, atmos-lang#119): status and questions for the
+author go to `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
+the ports and merges into `main` stay with `atmos-lang`. New items put to
+the author keep this file's own `#N` sequence (local, seen from outside as
+`atmos-grab#N`; corrected by `atmos` on 2026-11-25, the author's rule #71).
 
 ## Index
 
@@ -38,8 +44,8 @@ Waiting meanwhile: the rewrite of the ports (#23, #24). Next decision:
 | #17 | The blocks register before they start: an emit the block makes in its first run is already captured | by the session, to be confirmed |
 | #26 | Cleanup: internal names follow mute, stage and solo (E_MUTE, E_SOLO, a_mute, a_trail_solo, A_STAGE, muted...), branch `grab` eb028ad; `261118-grab-cases.md` rewritten to the new syntax | done; merged into main by `atmos-lang` (no port calls the old names) |
 | #25 | Performance regression of f416c03 in programs with no solo (doom variant +10%): fixed by a43cc01 (merged 7c85a14), the traversal compiled twice with the capture as a constant. doom on 7c85a14: main 259.8 M (259.4 before), variant 714.4 M (708.9 before), +0.8% left | closed by `atmos-lang` |
-| #24 | Uses of `toggle` in the ports (`atmos-lang`, 2026-11-22): 27 lines in 5 repos (env-sdl 2, env-pico 3, sdl-pingus 3, env-ray 16, sdl-snxkx 2) plus 10 emits that drive a `toggle on :T` and flip their boolean. Forms: 10 `toggle t(false)`, 7 `toggle t(false) with :draw` (`mute <!:draw> t(true)`), 10 `toggle t(true)`, 4 `toggle on :T` (2 with `with :draw`). Tags as `:Shop.on [false]` read backwards under `mute`: flip the boolean or rename the tag (`:Shop.mute [true]`) | reported; the rewrite of the ports is theirs, after the merge |
-| #23 | Collisions of the names of #22 (`atmos-lang`, 2197 files of the ports, each word alone): `mute` 2 files, one local `pin mute` in lessmilk princess_quest/menu.atm:49 (2 lines); `solo` none; `stage` 4 files, one local `val stage` in doom fi.atm:301 (4 lines). No field named so anywhere | reported; uses of `toggle` per port still to be listed |
+| #24 | Uses of `toggle` in the ports (`atmos-lang`, 2026-11-22): 27 lines in 5 repos (env-sdl 2, env-pico 3, sdl-pingus 3, env-ray 16, sdl-snxkx 2) plus 10 emits that drive a `toggle on :T` and flip their boolean. Forms: 10 `toggle t(false)`, 7 `toggle t(false) with :draw` (`mute <!:draw> t(true)`), 10 `toggle t(true)`, 4 `toggle on :T` (2 with `with :draw`). Tags as `:Shop.on [false]` read backwards under `mute`: flip the boolean or rename the tag (`:Shop.mute [true]`) | closed: the 7 ports rewrote on 2026-11-22 (ISSUES.md #115: doom 9182b14, env-sdl, env-pico 1e68b0c6, ray-lessmilk c9284df, sdl-snxkx 2b41ab0, sdl-pingus 4aed063, env-ray 4c713f2), checked by `atmos-lang` |
+| #23 | Collisions of the names of #22 (`atmos-lang`, 2197 files of the ports, each word alone): `mute` 2 files, one local `pin mute` in lessmilk princess_quest/menu.atm:49 (2 lines); `solo` none; `stage` 4 files, one local `val stage` in doom fi.atm:301 (4 lines). No field named so anywhere | closed: the locals renamed by the ports on 2026-11-22 (ISSUES.md #115) |
 | #22 | Syntax, by the author 2026-11-22: no `with`; one pattern right after the keyword names the events affected (none = all): `mute [<P>] t(b)`, `mute [P] on :T {B}`, `stage [P] {B}`, `solo [P] {B}`; bare pattern allowed in the block forms (as `await`), `<>` required in the task form (a bare call would read as a spawn). `mute` silences with `true` (inverse of `toggle`) | decided (form); `toggle` replaced at once (the author, 2026-11-22). Implemented on `grab` 644a014: 1046 pass with ASAN, test-rt and test-env pass; names `mute`/`solo`/`stage` wait on the measurement of collisions in the ports; every port that uses `toggle` must be rewritten (boolean inverted, `with P` becomes `<!P>`) |
 | #21 | sdl-snxkx `exp-grab` (1167084, the shop behind Options): fits; the click at 42 buys nothing; 41/41, the 40 old outputs identical. Did not fit: (1) tests that spawn screens without `main.atm` need their own `grabbable` (asks a default one, or a grab with none to be a no-op); (2) a `grabbable` is a block, so a task pinned above it cannot escape into it (pin moved inside, lent with `set :out`); printers must stay outside; (3) the input must come back before the 0.25 s tween ends: Options split in two tasks; (4) the shop's tutorial stays `toggle` (it freezes the shop's time); (5) five patterns repeated: a name for a set of patterns | reported; (1) weighs against #1 (the error); (4) and the clock of #20 b both ask #5 again |
 | #20 | env-iup `exp-grab` (local 3f0eadf, 7GUIs circles, +9 −6): fits; 15/15 plain and ASAN; a click on Undo during the dialog is denied with grab, acts without. Did not fit: (a) the look of a disabled dialog stays IUP's; (b) "all but the canvas and the time" is not obvious; (c) `grabbable` must be placed ahead around the reactions; (d) the patterns name what is denied, which reads backwards | reported; (b) answered: `grab <until ((it != :draw) && (type(it) != :number))>` lets the clock pass (checked on grab-05); time passing a grab by default is the author's (#5) |
