@@ -38,5 +38,7 @@ Last update: 2026-11-22.
   (atmos-lang#119, handoff `261124-atmos.md`): coordination, status and
   questions for the author go through it. Measurements on the ports and
   merges into `main` stay with `atmos-lang`.
-- New items put to the author take the next free number of `ISSUES.md`
-  (from `#120`). The item above stays `atmos-threads#1`.
+- Item numbers stay local to this session (standing rule #71, confirmed
+  by the author 2026-11-24): `#1`, `#2`, ... here, seen from outside as
+  `atmos-threads#N`. Only `atmos` and `atmos-lang` share the sequence of
+  `ISSUES.md`.
