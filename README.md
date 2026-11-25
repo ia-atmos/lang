@@ -101,11 +101,12 @@ The `make` builds the compiler `./atmos` and the runtime libraries in
 The compiler translates a program to C, builds it, and runs it:
 
 ```
-./atmos hello.atm [args]    # compiles, builds, and runs
-./atmos -c hello.atm        # emits C only, to the standard output
-./atmos -o hello hello.atm  # builds only
-./atmos -t hello.atm        # enables test blocks
-./atmos -e env.atm game.atm # includes an environment first
+./atmos hello.atm [args]          # compiles, builds, and runs
+./atmos --emit-c hello.atm        # emits C only, to the standard output
+./atmos --out=hello hello.atm     # builds only
+./atmos --test hello.atm          # enables test blocks
+./atmos --env=env.atm game.atm    # includes an environment first
+./atmos --help                    # the options (-c, -o, -t, -e are aliases)
 ```
 
 Environment variables:

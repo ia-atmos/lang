@@ -478,16 +478,25 @@ The arguments are passed to the [program main chunk](#chunks).
 The compiler accepts the following options:
 
 ```
-$ atmos
+$ atmos --help
 
-Usage: atmos [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...
+Usage: atmos [<options>] [--] <input> [<args>] ...
 
 Options:
-   -c          Emit C only (to the standard output).
-   -o <out>    Build only.
-   -t          Enable test blocks.
-   -e <env>    Include the file of an environment first.
+   --emit-c        Emit C only (to the standard output).
+   --out=<out>     Build only, into <out>.
+   --test          Enable test blocks.
+   --env=<env>     Include the file of an environment first.
+   --lex, --ast    Print the tokens, or the tree, of the input.
+   --help          Print this message.
+   --version       Print the version.
+
+A value may also follow its option as the next argument.
+The short forms -c, -o, -t, -e are aliases.
 ```
+
+Options come before the input, and everything after the input goes to the
+program; `--` ends the options, so that an input may start with `-`.
 
 The compiler translates the program to a single C file, and then calls the C
 compiler to build it and link it with the Atmos runtime.
@@ -575,7 +584,7 @@ Its `quit` closes the library.
 ### Tests of a program with an environment
 
 A program that runs in an environment is tested with [`test`](#test) blocks,
-with the flag `-t`, in the same process as the environment.
+with the flag `--test`, in the same process as the environment.
 The program keeps its logic in a task, such as a game, which the main chunk
 spawns, and which a `test` block spawns as well, with parameters in place of
 options of the command line or variables of the system.
@@ -597,7 +606,7 @@ test {
 spawn game(1)
 ```
 
-An environment knows that it runs under `-t` by a `test` block of its own
+An environment knows that it runs under `--test` by a `test` block of its own
 file, which sets a global of its C, so that it opens no window, plays no
 audio, and draws off screen:
 
@@ -657,7 +666,7 @@ It includes the file before every program, as if the program started with the
 `include`, and passes the flags to the C compiler.
 A program that has the `include` still works, since a file is only included
 once, and so does the plain compiler with the `include`, or with the option
-`-e` and the flags in `ATMOS_CFLAGS` and `ATMOS_LDFLAGS`.
+`--env` and the flags in `ATMOS_CFLAGS` and `ATMOS_LDFLAGS`.
 The paths given to `make env` must be absolute, and the flags must have no
 quotes.
 The C code of an environment may depend on the numeric options of the build
@@ -1665,7 +1674,7 @@ do {
 ### Test
 
 A `test` block behaves like a normal block, but is only included in the program
-when [executing](#execution) it with the flag `-t`:
+when [executing](#execution) it with the flag `--test`:
 
 ```
 Test : `test´ Block
