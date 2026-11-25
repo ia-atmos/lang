@@ -1,0 +1,5 @@
+;; fib, naive recursion
+func fib (n) {
+    if n < 2 { 1 } else { fib(n-1) + fib(n-2) }
+}
+print(fib(tonumber(...) || 30))

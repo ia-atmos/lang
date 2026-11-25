@@ -5,6 +5,15 @@ Iterators, loops and functions over iterables. Material:
 2026-11-18): those born here are `atmos-iter#N` from other sessions.
 The branch of this session is `iter`.
 
+## Contacts
+
+- 2026-11-24: coordination, status and questions for the author go to
+  the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo, handoff
+  `261124-atmos.md`, `atmos-lang#119`); measurements on the ports and
+  merges into `main` stay with `atmos-lang`. The pause of 2026-11-23 ended on
+  2026-11-25 (his words, relayed by `atmos`). Nothing approved is left
+  to do here; `#10` to `#13` wait for him.
+
 ## Index
 
 | Item | Title | State |
@@ -16,7 +25,7 @@ The branch of this session is `iter`.
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Decided 2026-11-22: `#6b` (his answer "b"); on the branch `iter`; measurement asked of `atmos-lang` |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
-| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | It reads `await :tick until iter.find(ts, f)` on the branch (`find-01`); told to `atmos-pool` on 2026-11-22 |
+| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Closed: `await :tick until iter.find(ts, f)` is on `main` since `7c64f69` (`find-01`); `atmos-pool` told |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |

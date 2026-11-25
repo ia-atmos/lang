@@ -2,6 +2,11 @@
 
 Session `atmos-oo`. Material: `261118-oo.md`. Cases: `261118-oo-cases.md`.
 
+Coordination (2026-11-24): status and questions for the author go to
+the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
+the ports and merges into main stay with `atmos-lang`
+(`.claude/plans/261124-atmos.md`).
+
 ## Index of items
 
 Items are `#N` (standing rule in `TODO.md`); from other sessions,

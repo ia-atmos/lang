@@ -9,6 +9,14 @@ of the author, 2026-11-18). From another session: `session#N`. The
 letters A1, B1, C1... used before that date stay valid for what was
 written; each such item now has its number below.
 
+Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
+`.claude/plans/261124-atmos.md`): coordination, status and questions for
+the author go to `atmos`; measurements on the ports and merges into `main`
+stay with `atmos-lang`. Item numbers stay local to this session (rule
+#71, corrected by `atmos` on 2026-11-25): the next is #15, seen from
+outside as paper-pin#15. Paused until
+next week's credits: only what arrives.
+
 ## Index
 
 | # | Item | State |
@@ -20,10 +28,10 @@ written; each such item now has its number below.
 | #5 | Section 9: reports of the ports | Partly: 12 pass (atmos-lang#81); SNKRX migrating |
 | #6 | Cost of the migration under the current rules | Open |
 | #7 | Rules not declared stable | Closed: stable 2026-11-19, but #7b |
-| #8 | Experiment: CLBG in Atmos | Blocked: no Lua here; the flag now exists (`ATMOS_PIN`) |
+| #8 | Experiment: CLBG in Atmos | Done 2026-11-25 (`papers/pin-bench/`) |
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
-| #10 | Fill the sections with text | Waiting: approval of the outline |
-| #11 | Draft of Sections 3, 4, 8, 9 (`papers/pin-draft.md`) | By the session, to be confirmed |
+| #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
+| #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open
@@ -63,7 +71,8 @@ written; each such item now has its number below.
   `3cd5169`, author's choice "não checar"). The old rule is restored in the
   outline and the draft: a cyclic structure must be pinned; an unpinned
   cycle leaks under counting. The trial deletion and its cost are removed
-  from Sections 4, 8 and 9. To check: the commit reaches `main`.
+  from Sections 4, 8 and 9. On `main` since 2026-11-21 (`f999c52`); #19,
+  #23 and #29 since 2026-11-22 (`0b5b8ad`).
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in

@@ -1,0 +1,63 @@
+;; fasta (CLBG), simple version, as the C one
+val IM = 139968
+val IA = 3877
+val IC = 29573
+var last = 42
+func rnd (max) {
+    set last = (last*IA + IC) % IM
+    max*last/IM
+}
+val ALU = "GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG" ++
+ "GAGGCCGAGGCGGGCGGATCACCTGAGGTCAGGAGTTCGAGA" ++
+ "CCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACTAAAAAT" ++
+ "ACAAAAATTAGCCGGGCGTGGTGGCGCGCGCCTGTAATCCCA" ++
+ "GCTACTCGGGAGGCTGAGGCAGGAGAATCGCTTGAACCCGGG" ++
+ "AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC" ++
+ "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"
+pin IUB = [["a",0.27],["c",0.12],["g",0.12],["t",0.27],["B",0.02],["D",0.02],["H",0.02],["K",0.02],["M",0.02],["N",0.02],["R",0.02],["S",0.02],["V",0.02],["W",0.02],["Y",0.02]]
+pin HS = [["a",0.3029549426680],["c",0.1979883004921],["g",0.1975473066391],["t",0.3015094502008]]
+func repeat (s, var n) {
+    val len = #s
+    var k = 0
+    loop {
+        while n > 0
+        val m = math.min(n, 60)
+        val line = []
+        loop in m {
+            set line@+ = string.sub(s, k, k)
+            set k = (k+1) % len
+        }
+        io.write(vector.join(line), "\n")
+        set n = n - m
+    }
+}
+func random (t, var n) {
+    var acc = 0.0
+    loop i in #t {
+        set acc = acc + t@i@1
+        set t@i@1 = acc
+    }
+    loop {
+        while n > 0
+        val m = math.min(n, 60)
+        val line = []
+        loop in m {
+            val r = rnd(1.0)
+            var j = 0
+            loop {
+                while t@j@1 < r
+                set j = j + 1
+            }
+            set line@+ = t@j@0
+        }
+        io.write(vector.join(line), "\n")
+        set n = n - m
+    }
+}
+val n = tonumber(...) || 1000
+io.write(">ONE Homo sapiens alu\n")
+repeat(ALU, 2*n)
+io.write(">TWO IUB ambiguity codes\n")
+random(IUB, 3*n)
+io.write(">THREE Homo sapiens frequency\n")
+random(HS, 5*n)
