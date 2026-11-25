@@ -28,6 +28,15 @@ By the session, to be confirmed by the author (`#2`, `#3`); not merged.
   `missing the value of '--out'`, `missing the input after '--'`.
 - `tst/cli/run.sh` (`make test-cli`, in `make test`); manual
   ("Execution", tests) and README.
+- Measured by `atmos-lang` (2026-11-25, `b65535b` against `1175264`):
+  suite with ASAN and 48 configurations pass; `atmos -c` over 2197
+  `.atm` files gives the same diagnostics and C as `main`;
+  `sdl-pingus` (`run.sh` suite, `-t tst/bomber-test.atm`) and `env-sdl`
+  (`make`, `tst/run.sh`) pass. `env-pico` and `env-uv` fail the same
+  way on `main` (dependencies missing in the container); `env-ray`,
+  `doom`, `env-esp32` not run. From a copy with no `.git`,
+  `--version` prints `atmos unknown` (an install from a tarball would
+  pass `VERSION=` to `make`).
 - Not changed: `--emit-c` with `--out` still ignores `--out`; a lone
   `-` is still an unknown option (no standard input).
 
