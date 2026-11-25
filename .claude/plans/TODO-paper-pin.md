@@ -28,10 +28,10 @@ next week's credits: only what arrives.
 | #5 | Section 9: reports of the ports | Partly: 12 pass (atmos-lang#81); SNKRX migrating |
 | #6 | Cost of the migration under the current rules | Open |
 | #7 | Rules not declared stable | Closed: stable 2026-11-19, but #7b |
-| #8 | Experiment: CLBG in Atmos | Blocked: no Lua here; the flag now exists (`ATMOS_PIN`) |
+| #8 | Experiment: CLBG in Atmos | Done 2026-11-25 (`papers/pin-bench/`) |
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
-| #10 | Fill the sections with text | Waiting: approval of the outline |
-| #11 | Draft of Sections 3, 4, 8, 9 (`papers/pin-draft.md`) | By the session, to be confirmed |
+| #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
+| #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open

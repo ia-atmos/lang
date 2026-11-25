@@ -256,6 +256,120 @@ finalizer. Structured concurrency is therefore necessary for structured
 memory, and structured memory completes it: the same blocks that own tasks
 own what the tasks use.
 
+## 7. Examples
+
+Each example is a complete program, run on `main` with its output as shown
+(`papers/pin-examples/`); none leaks under the address sanitizer.
+
+**A cycle, reclaimed at the end of its block.** Counting alone would never
+free `a` and `b`; their block does.
+
+```
+do {
+    pin a = [10]
+    pin b = [20]
+    set a.other = b         ;; a <-> b
+    set b.other = a
+    print(a.other@0)        ;; --> 20
+}                           ;; a and b are reclaimed here
+```
+
+**A native resource.** A file is a native value; its block closes it, and
+so flushes it, when the block ends.
+
+```
+do {
+    pin f = io.open("/tmp/pin-ex2.txt", "w")
+    io.write(f, "hello\n")
+}                           ;; the file is closed here
+print(io.read(io.open("/tmp/pin-ex2.txt"), :all))   ;; --> hello
+```
+
+**A task and its data, aborted together.** The task owns its log; when
+`:stop` aborts the block of `watching`, the task is aborted, its `defer`
+runs, and the log is finalized with it.
+
+```
+task Blinker (name) {
+    pin log = [name]
+    defer {
+        print("finalized", log@0, #log)
+    }
+    loop on :tick {
+        set log@+ = :blink
+    }
+}
+spawn {
+    watching :stop {
+        pin b = spawn Blinker("led")
+        await :never
+    }
+    print(:stopped)
+}
+emit :tick
+emit :tick
+emit :stop                  ;; --> finalized  led  3
+                            ;; --> stopped
+```
+
+**A constructor.** A function builds a value with `val` and gives it away,
+unpinned, as its result; the caller decides who owns it.
+
+```
+func point (x, y) {
+    val p = [x=x, y=y]
+    set p.norm = math.sqrt(x*x + y*y)
+    p
+}
+do {
+    pin q = point(3, 4)
+    print(q.norm)           ;; --> 5.0
+}                           ;; q is reclaimed here
+```
+
+**A pool of tasks, pinned outside a loop.** The tasks live in the pool, not
+in the body of the loop, and end with the block of the pool.
+
+```
+task Conn (id) {
+    defer {
+        print("closed", id)
+    }
+    await :never
+}
+do {
+    pin conns = tasks()
+    loop i in 3 {
+        spawn @conns Conn(i)
+    }
+    print("open", #conns)   ;; --> open  3
+}                           ;; --> closed 0, closed 1, closed 2
+```
+
+**An escape, caught.** Storing a pinned value in a place of an outer block
+is the error that the check prevents.
+
+```
+var keep = nil
+do {
+    pin t = [1, 2, 3]
+    set keep = t            ;; ERROR: invalid escape : table pinned at ex6-escape.atm:4
+}
+```
+
+**An explicit outward reference.** `set :out` lets an outer place refer to
+an inner value; the place is reset when the value ends.
+
+```
+var cur = nil
+do {
+    pin dlg = [title="Save"]
+    set :out cur = dlg
+    print(cur.title)        ;; --> Save
+}
+print(cur)                  ;; --> nil
+```
+
 ## 8. Implementation
 
 Atmos compiles to C. The runtime counts references and has no tracing
@@ -303,8 +417,8 @@ a constructor that is itself given away, and in a `return`, `break`,
 
 ## 9. Costs Measured
 
-All figures below were reported by the sessions that implemented the rules.
-None was measured for this paper.
+The figures below were reported by the sessions that implemented the rules,
+except those of the CLBG, which were measured for this paper.
 
 - **The ceiling check.** 2,000,000 `pin`s of two small tables took 0.95 s,
   against 0.75 s without the check; the same loop with `val` took 0.75 s
@@ -332,6 +446,44 @@ None was measured for this paper.
   in both. Its 6 host tests give the same output in the three modes; heap and
   speed on the board are not measured (report of `atmos-lang`, 2026-11-21,
   `libmain.a`, `lang` at `34c381b`).
+
+**The checks on the CLBG (measured for this paper).** Seven programs of the
+Computer Language Benchmarks Game, the ones of Câmara (2024), written with
+the same algorithm and the same output in C, in Lua, and in Atmos
+(`papers/pin-bench/`). Lua runs unchanged on Lua 5.4.6 and on LuaJIT 2.1.
+Atmos is built three times from the same generated C: with
+`ATMOS_PIN=off`, with `ATMOS_PIN=unchecked`, and with the whole mechanism.
+Each program is compiled once and only the run is timed; median of 5 runs,
+in seconds, on one x86-64 machine with 4 cores (gcc 13.3, `-O2`).
+
+| program | size | C | Lua 5.4 | LuaJIT | Atmos off | unchecked | Atmos | Atmos / off |
+|---|---|---|---|---|---|---|---|---|
+| binary-trees | 16 | 0.21 | 2.39 | 0.83 | 2.45 | 2.53 | 2.95 | 1.20 |
+| fannkuch-redux | 9 | 0.02 | 0.23 | 0.05 | 0.84 | 0.89 | 1.07 | 1.27 |
+| fasta | 1,000,000 | 0.14 | 1.20 | 0.48 | 1.93 | 1.92 | 2.33 | 1.21 |
+| fib | 35 | 0.02 | 0.64 | 0.08 | 1.06 | 1.05 | 1.38 | 1.31 |
+| mandelbrot | 1000 | 0.07 | 0.69 | 0.07 | 2.64 | 2.65 | 3.50 | 1.32 |
+| n-body | 500,000 | 0.03 | 0.98 | 0.12 | 2.82 | 3.20 | 3.59 | 1.27 |
+| spectral-norm | 500 | 0.01 | 0.39 | 0.02 | 0.73 | 0.71 | 0.87 | 1.19 |
+
+Three readings. First, the mechanism costs 19% to 32% of the run on these
+programs, and almost all of it is in the checks, not in the semantics:
+`unchecked`, which keeps end-of-block finalization and deep pins, runs as
+fast as `off` (within the spread of the runs, which is up to 12%), except
+on n-body. Second, the cost does not come from allocation: fib allocates no
+table and pays 31%. The generated C is the same in the three builds; the
+difference is in the inline functions of the runtime, which test the type
+of each value that is named, stored, or returned, and walk the names of a
+block when it ends, even when they hold only numbers (15% more instructions
+on fib, by callgrind). Elision of these tests where the type is known at
+compile time is the obvious remedy (Section 12). Third, Atmos is slower than
+Lua 5.4 by 1.2 to 5 times on these programs, with or without the checks;
+that gap belongs to the compiler and the runtime, not to `pin`, and C and
+LuaJIT only place the figures. Peak memory is the same in the three builds
+of Atmos (binary-trees: 50 to 53 MB, against 57 MB on Lua 5.4 and 78 MB on
+LuaJIT; the others about 2 MB). These programs are small kernels with
+little allocation except binary-trees; on a real program, Doom, the checks
+cost 2.8% (above).
 
 `ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
 `ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).
