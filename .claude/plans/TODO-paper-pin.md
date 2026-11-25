@@ -13,9 +13,9 @@ Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
 `.claude/plans/261124-atmos.md`): coordination, status and questions for
 the author go to `atmos`; measurements on the ports and merges into `main`
 stay with `atmos-lang`. Item numbers stay local to this session (rule
-#71, corrected by `atmos` on 2026-11-25): the next is #15, seen from
-outside as paper-pin#15. Paused until
-next week's credits: only what arrives.
+#71, corrected by `atmos` on 2026-11-25): the next is #16, seen from
+outside as paper-pin#16. Resumed on
+2026-11-25 (author: "desbloqueado, vá em frente").
 
 ## Index
 
@@ -32,9 +32,18 @@ next week's credits: only what arrives.
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
+| #15 | Rerun the CLBG after atmos-pin#32 reaches main | Waiting for the merge |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open
+
+- **#15 Rerun the CLBG after atmos-pin#32** (to do, no decision needed).
+  atmos-pin reduced the cost of the checks (branch `pin` `c63c084`: the end
+  of a block unnames only its variables; no test for a value that is never
+  an object). Its numbers against `off`: binary-trees +8%, fannkuch +5%,
+  fasta +4%, fib +10%, mandelbrot +3%, n-body +16%, spectral-norm +1%
+  (were +16% to +31%). When it reaches `main`, rerun `papers/pin-bench`
+  and update Section 9 and the remark on elision in Section 12.
 
 - **#5 Reports of the ports** (was B3). Five are in (sdl-tux, doom,
   and the environments of SDL, libuv, and IUP), from `261115-pin.md`.

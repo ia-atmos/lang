@@ -1,0 +1,4 @@
+==> ERROR:
+ |  clause-err-04.atm:2 (call)
+ v  clause-err-04.atm:2 (throw)
+==> invalid clause : 'f' is not a function : got number
