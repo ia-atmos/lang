@@ -4,6 +4,8 @@ Session `atmos-context`. Material: `261118-context.md`. Design:
 `261118-context-semantics.md`. The issue itself is `atmos-lang#39`
 (grab and context).
 
+Since 2026-11-24 (`261124-atmos.md`, the split of `atmos-lang#119`, "Ok" of the author): coordination, status and questions for the author go to the session `atmos`; measurements on the ports and merges into `main` stay with `atmos-lang`. Item numbers stay local to this session (rule #71, confirmed by the author 2026-11-24 in `atmos`): `#N` here, `atmos-context#N` from outside. The pause of 2026-11-23 ended on 2026-11-25 (relayed by `atmos` at the author's request); nothing approved is pending here (#16 waits for a port to feel the cost).
+
 Items are `#N` (standing rule of 2026-11-18, `TODO.md`): unique in this
 session, never reused; from another session, `session#N`.
 

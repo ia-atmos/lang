@@ -15,13 +15,18 @@ prefix; those born here are `atmos-pool#N`.
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
 | `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
-| `atmos-lang#60` | Where the exception of `emit @t` goes | To the holder, on the branch `pool`, by the session, to be confirmed |
+| `atmos-lang#60` | Where the exception of `emit @t` goes | The author leans to the emitter (2026-11-23: "quem emite é que deve receber o erro. nao é assim com métodos?"); the session agrees and withdrew the merge; waiting for his confirmation to revert it from `pool` and document it |
 | `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Manual and cases checked; a case added on the branch; still not acknowledged |
 | `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
 | `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
 | `atmos-pool#4` | Where libraries written in Atmos live (`lib/` on the branch is a guess) | Question, not yet put to him |
 
 ## A. Waiting for the author (one at a time)
+
+Since 2026-11-24 the managing session is `atmos`
+(session_011eECohhJbc4GMpAj3yyeEo): status and questions go there too
+(checked in `atmos-lang`'s transcript: the author's "Ok" to `#119`).
+Items new to him continue `ISSUES.md` from `#120`.
 
 All of it is prepared on the branch `pool` (`261120-pool-work.md`); his
 answer to each is a merge or a revert.
