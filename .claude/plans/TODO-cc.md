@@ -119,3 +119,9 @@ code and all). Same container, 4 cores, gcc 13.3, compile and link:
   only by the Pingus runs above.
 - Not measured yet: `doom`, `sdl-flare`, `sdl-snkrx`; the speed of the
   program built with LTO.
+- `env-sdl`, 2026-11-25: fixed the kinds at the source (`ia-atmos/env-sdl`
+  main `fdab1ee`): `SDL_KIND_IMG/FNT/SND` are now `static const char X[]`.
+  Its 27 tests pass with `-O2 -flto` and ASAN; `bomber-test` with LTO and
+  ASAN passes over the new `sdl.atm`. The change to `a_nat_is` on `cc` is
+  no longer needed by env-sdl; it still protects other environments
+  (and `rt/lio.c`, `FILE_KIND`).
