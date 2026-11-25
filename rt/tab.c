@@ -302,7 +302,26 @@ static int is_pub (AVal t, AVal k) {
     return t.type==A_XTASK && k.type==A_STR && !strcmp(A_STR_OF(k)->s,"pub");
 }
 
+// The position in the base of key `k` of view `v`, or -1 if `k` is not
+// one of its positions now.
+static int64_t view_pos (AVal v, AVal k) {
+    k = norm(k);
+    if (k.type!=A_INT || k.u.i<0 || k.u.i>=a_view_len(v)) {
+        return -1;
+    }
+    return A_VIEW_OFF(v) + k.u.i;
+}
+
 AStatus a_index (AVal* dst, AVal t, AVal k) {
+    if (t.type == A_VIEW) {
+        AVal b = A_VIEW_BASE(t);
+        if (a_is_fin(b)) {
+            return a_err_fin(b);
+        }
+        int64_t i = view_pos(t, k);
+        a_cpy(dst, (i < 0) ? a_nil() : A_TAB_OF(b)->arr[i]);
+        return A_OK;
+    }
     if (is_pub(t, k)) {
         a_cpy(dst, A_TASK_OF(t)->pub);
         return A_OK;
@@ -331,6 +350,18 @@ AStatus a_index (AVal* dst, AVal t, AVal k) {
 AStatus a_setindex (AVal t, AVal k, AVal v) {
     if (is_pub(t, k)) {
         return a_pub_set(A_TASK_OF(t), v);
+    }
+    if (t.type == A_VIEW) {
+        // a write through a view is a write to its base
+        AVal b = A_VIEW_BASE(t);
+        if (a_is_fin(b)) {
+            return a_err_fin(b);
+        }
+        int64_t i = view_pos(t, k);
+        if (i < 0) {
+            return a_error("invalid index : out of view");
+        }
+        return a_setindex(b, a_int(i), v);
     }
     if (t.type != A_TAB) {
         return a_error("invalid index : expected table : got %s",
@@ -412,6 +443,12 @@ AStatus a_len (AVal* dst, AVal v) {
         case A_TASKS:
             a_set(dst, a_int(a_tasks_len(A_TASKS_OF(v))));
             return A_OK;
+        case A_VIEW:
+            if (a_is_fin(A_VIEW_BASE(v))) {
+                return a_err_fin(A_VIEW_BASE(v));
+            }
+            a_set(dst, a_int(a_view_len(v)));
+            return A_OK;
         default:
             return a_error("invalid operation '#' : unexpected %s",
                 a_typename(v));
@@ -430,6 +467,9 @@ static AStatus check (AVal t) {
 }
 
 AStatus a_index_last (AVal* dst, AVal t) {
+    if (t.type == A_VIEW) {
+        return a_index(dst, t, a_int(a_view_len(t) - 1));
+    }
     if (check(t) != A_OK) {
         return A_ERROR;
     }
@@ -437,6 +477,9 @@ AStatus a_index_last (AVal* dst, AVal t) {
 }
 
 AStatus a_setindex_last (AVal t, AVal v) {
+    if (t.type == A_VIEW) {
+        return a_setindex(t, a_int(a_view_len(t) - 1), v);
+    }
     if (check(t) != A_OK) {
         return A_ERROR;
     }
@@ -444,6 +487,9 @@ AStatus a_setindex_last (AVal t, AVal v) {
 }
 
 AStatus a_setindex_next (AVal t, AVal v) {
+    if (t.type == A_VIEW) {
+        return a_error("invalid append : unexpected view");
+    }
     if (check(t) != A_OK) {
         return A_ERROR;
     }

@@ -1,0 +1,20 @@
+;; a view reads and writes its base, with no copy
+pin t = [10, 20, 30, 40, 50]
+val v = vector.view(t, 1, 3)
+print(type(v), #v)              ;; view 3
+print(v@0, v@2, v@#, v@3)       ;; 20 40 40 nil
+set v@1 = 33
+print(t@2)                      ;; 33
+set t@1 = 22
+print(v@0)                      ;; 22
+loop i, x in v {
+    print(i, x)
+}
+print(vector.join(v, ","))      ;; 22,33,40
+print(vector.join(v ++ [1], ","))
+print(#vector.view(t, -2), vector.view(t, -2)@0)   ;; 2 40
+print(#vector.view(t, 3, 1))    ;; 0
+val w = vector.view(v, 1)       ;; a view of a view
+print(#w, w@0, w@1)             ;; 2 33 40
+print(iter.sum(v), iter.max(v)) ;; 95 40 2
+print(v ?? :view, v ?? :table)  ;; true false

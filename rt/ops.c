@@ -122,15 +122,24 @@ static AStatus cat_str (AVal* dst, AVal a, AVal b) {
 }
 
 AStatus a_cat (AVal* dst, AVal a, AVal b) {
-    // a pool concatenates as the vector of its tasks
-    if (a.type==A_TASKS || b.type==A_TASKS) {
-        AVal x = (a.type == A_TASKS) ? a_tasks_tab(a) : a;
-        AVal y = (b.type == A_TASKS) ? a_tasks_tab(b) : b;
+    // a pool concatenates as the vector of its tasks, a view as the
+    // vector of its elements
+    if (a.type==A_TASKS || b.type==A_TASKS || a.type==A_VIEW || b.type==A_VIEW) {
+        int ta = (a.type==A_TASKS || a.type==A_VIEW);
+        int tb = (b.type==A_TASKS || b.type==A_VIEW);
+        if ((a.type==A_VIEW && a_is_fin(A_VIEW_BASE(a))) ||
+            (b.type==A_VIEW && a_is_fin(A_VIEW_BASE(b))))
+        {
+            return a_err_fin(a.type==A_VIEW && a_is_fin(A_VIEW_BASE(a)) ?
+                A_VIEW_BASE(a) : A_VIEW_BASE(b));
+        }
+        AVal x = !ta ? a : (a.type==A_TASKS) ? a_tasks_tab(a) : a_view_tab(a);
+        AVal y = !tb ? b : (b.type==A_TASKS) ? a_tasks_tab(b) : a_view_tab(b);
         AStatus st = a_cat(dst, x, y);
-        if (a.type == A_TASKS) {
+        if (ta) {
             a_dec(x);
         }
-        if (b.type == A_TASKS) {
+        if (tb) {
             a_dec(y);
         }
         return st;
@@ -191,6 +200,27 @@ AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
                 a_clr(v);
             }
             *pos = a_int(i);
+            return A_OK;
+        }
+        case A_VIEW: {
+            // the positions of the view, as a vector's
+            AVal b = A_VIEW_BASE(it);
+            if (a_is_fin(b)) {
+                return a_err_fin(b);
+            }
+            // a hole is skipped, as in a table
+            int64_t n = a_view_len(it);
+            while (p<n && A_TAB_OF(b)->arr[A_VIEW_OFF(it)+p].type==A_NIL) {
+                p++;
+            }
+            if (p < n) {
+                a_set(k, a_int(p));
+                a_cpy(v, A_TAB_OF(b)->arr[A_VIEW_OFF(it) + p]);
+            } else {
+                a_clr(k);
+                a_clr(v);
+            }
+            *pos = a_int(p + 1);
             return A_OK;
         }
         case A_TASKS: {

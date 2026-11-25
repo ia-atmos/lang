@@ -187,13 +187,60 @@ static AStatus vec_sort (AFunc* self, int argc, AVal* argv) {
     return st;
 }
 
+// vector.view(t, i, j): a view of positions `i` to `j` of the vector
+// or view `t`, both included, with no copy. They default to the first
+// and last, and a negative position counts from the end. The view
+// reads and writes the elements of the base table; it keeps its
+// positions in the base while the base changes, and its length is
+// what the base still has of them.
+static AStatus vec_view (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal t = arg(argc, argv, 0);
+    int64_t n, i, j;
+    if (t.type == A_VIEW) {
+        if (a_is_fin(A_VIEW_BASE(t))) {
+            return a_err_fin(A_VIEW_BASE(t));
+        }
+        n = a_view_len(t);
+    } else if (arg_vec(argc, argv, "view", &n) != A_OK) {
+        return A_ERROR;
+    }
+    if (arg_int(argc,argv,1,"view",1,0,&i)!=A_OK ||
+        arg_int(argc,argv,2,"view",1,-1,&j)!=A_OK)
+    {
+        return A_ERROR;
+    }
+    i = (i < 0) ? i + n : i;
+    j = (j < 0) ? j + n : j;
+    if (i < 0) {
+        i = 0;
+    }
+    if (j >= n) {
+        j = n - 1;
+    }
+    int64_t len = (i > j) ? 0 : j - i + 1;
+    if (t.type == A_VIEW) {
+        // a view of a view is a view of the same base
+        a_push(a_view(A_VIEW_BASE(t), A_VIEW_OFF(t) + i, len));
+    } else {
+        a_push(a_view(t, i, len));
+    }
+    return A_OK;
+}
+
 // vector.join(t, sep): the strings and numbers of `t` in one string,
-// separated by `sep`.
+// separated by `sep`. `t` may be a view.
 static AStatus vec_join (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    int64_t n;
     AStr* sep = NULL;
-    if (arg_vec(argc, argv, "join", &n) != A_OK) {
+    AVal  t   = arg(argc, argv, 0);
+    int64_t n;
+    if (t.type == A_VIEW) {
+        if (a_is_fin(A_VIEW_BASE(t))) {
+            return a_err_fin(A_VIEW_BASE(t));
+        }
+        n = a_view_len(t);
+    } else if (arg_vec(argc, argv, "join", &n) != A_OK) {
         return A_ERROR;
     }
     if (arg(argc,argv,1).type!=A_NIL &&
@@ -203,7 +250,9 @@ static AStatus vec_join (AFunc* self, int argc, AVal* argv) {
     }
     Buf b = { NULL, 0, 0 };
     for (int64_t i=0; i<n; i++) {
-        AVal x = a_tab_get(A_TAB_OF(argv[0]), a_int(i));
+        AVal x = (t.type == A_VIEW) ?
+            A_TAB_OF(A_VIEW_BASE(t))->arr[A_VIEW_OFF(t) + i] :
+            a_tab_get(A_TAB_OF(t), a_int(i));
         if (x.type!=A_STR && !a_isnum(x)) {
             free(b.s);
             return a_error("invalid argument to 'join' : "
@@ -227,6 +276,7 @@ void atm_lib_vector_init (void) {
     field(atm_g_vector, "clear",  vec_clear);
     field(atm_g_vector, "sort",   vec_sort);
     field(atm_g_vector, "join",   vec_join);
+    field(atm_g_vector, "view",   vec_view);
 }
 
 void atm_lib_vector_quit (void) {

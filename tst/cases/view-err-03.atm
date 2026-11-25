@@ -1,0 +1,6 @@
+;; a view of a pinned vector does not leave its block
+val f = func () {
+    pin t = [1, 2, 3]
+    vector.view(t)
+}
+val v = f()

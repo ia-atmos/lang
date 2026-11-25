@@ -2584,6 +2584,7 @@ static void pin_deep (AVal v, int d, int how) {
             break;
         }
         case A_FUNC:
+        case A_VIEW:
         case A_TASK: {
             o->pinned = how;
             o->depth  = d;
@@ -2982,7 +2983,7 @@ static int     ADOPT_CEXT  = 0;
 static int adopt_rec (AVal v, int d, int top);
 
 static int adopt_data (AObj* o) {
-    return o->type==A_TAB || o->type==A_FUNC || o->type==A_TASK;
+    return o->type==A_TAB || o->type==A_FUNC || o->type==A_VIEW || o->type==A_TASK;
 }
 
 // The values that `v` refers to, for `f`.
@@ -2998,6 +2999,7 @@ static void adopt_kids (AVal v, void (*f)(AVal)) {
             break;
         }
         case A_FUNC:
+        case A_VIEW:
         case A_TASK: {
             AFunc* fn = A_FUNC_OF(v);
             for (int i=0; i<fn->ncap; i++) {
@@ -3147,6 +3149,7 @@ static int adopt_rec (AVal v, int d, int top) {
             return 1;
         }
         case A_FUNC:
+        case A_VIEW:
         case A_TASK: {
             AFunc* f = A_FUNC_OF(v);
             for (int i=0; i<f->ncap; i++) {
@@ -3411,7 +3414,7 @@ static int xfer_mark (AVal v, int d) {
             m = (mk > m) ? mk : m;
             m = (mx > m) ? mx : m;
         }
-    } else if (v.type==A_FUNC || v.type==A_TASK) {
+    } else if (v.type==A_FUNC || v.type==A_VIEW || v.type==A_TASK) {
         AFunc* f = A_FUNC_OF(v);
         for (int i=0; i<f->ncap; i++) {
             int mc = xfer_mark(f->caps[i], d);
@@ -3472,7 +3475,7 @@ static void xfer_set (AVal v, int ok, int m, int d) {
             xfer_set(k, ok, m, d);
             xfer_set(x, ok, m, d);
         }
-    } else if (v.type==A_FUNC || v.type==A_TASK) {
+    } else if (v.type==A_FUNC || v.type==A_VIEW || v.type==A_TASK) {
         AFunc* f = A_FUNC_OF(v);
         for (int i=0; i<f->ncap; i++) {
             xfer_set(f->caps[i], ok, m, d);
@@ -3747,7 +3750,7 @@ static void ret_children (AVal v, int d, const void* key) {
             RET_KID(k);
             RET_KID(x);
         }
-    } else if (v.type==A_FUNC || v.type==A_TASK) {
+    } else if (v.type==A_FUNC || v.type==A_VIEW || v.type==A_TASK) {
         AFunc* f = A_FUNC_OF(v);
         for (int i=0; i<f->ncap; i++) {
             RET_KID(f->caps[i]);
@@ -3989,6 +3992,7 @@ static void clr_deep (AVal v, uint32_t d) {
             break;
         }
         case A_FUNC:
+        case A_VIEW:
         case A_TASK: {
             AFunc* f = A_FUNC_OF(v);
             for (int i=0; i<f->ncap; i++) {

@@ -387,6 +387,7 @@ void a_free (AObj* o) {
             a_node_free((ANode*) o);
             break;
         case A_TASK:
+        case A_VIEW:
         case A_FUNC: {
             AFunc* f = (AFunc*) o;
             for (int i=0; i<f->ncap; i++) {
@@ -429,6 +430,38 @@ AVal a_func (AFn fn, int ncap) {
     f->ncap = ncap;
     a_nils(f->caps, ncap);
     return a_obj(&f->hdr);
+}
+
+AVal a_view (AVal base, int64_t off, int64_t len) {
+    AVal v = a_func(NULL, 3);
+    v.type = A_VIEW;
+    v.u.o->type = A_VIEW;
+    a_inc(base);
+    A_FUNC_OF(v)->caps[0] = base;
+    A_FUNC_OF(v)->caps[1] = a_int(off);
+    A_FUNC_OF(v)->caps[2] = a_int(len);
+    // its floor is the block of its base, as a closure's
+    a_func_scope(v);
+    return v;
+}
+
+int64_t a_view_len (AVal v) {
+    int64_t an = (int64_t) A_TAB_OF(A_VIEW_BASE(v))->an;
+    int64_t n  = an - A_VIEW_OFF(v);
+    if (n < 0) {
+        return 0;
+    }
+    return (n < A_VIEW_CAP(v)) ? n : A_VIEW_CAP(v);
+}
+
+AVal a_view_tab (AVal v) {
+    AVal t = a_tab();
+    ATab* b = A_TAB_OF(A_VIEW_BASE(v));
+    int64_t n = a_view_len(v);
+    for (int64_t i=0; i<n; i++) {
+        a_tab_set(A_TAB_OF(t), a_int(i), b->arr[A_VIEW_OFF(v) + i]);
+    }
+    return t;
 }
 
 AVal a_task (const AProto* p, int ncap) {
@@ -581,6 +614,7 @@ const char* a_typename (AVal v) {
         case A_XTASK: return "xtask";
         case A_TASKS: return "tasks";
         case A_NAT:   return "native";
+        case A_VIEW:  return "view";
         case A_BOX:   return "box";
     }
     return "?";

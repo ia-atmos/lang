@@ -164,7 +164,7 @@ static AStatus cur_init (const char* name, int argc, AVal* argv, int nrest,
         c->lim = argv[1];
         *next  = 2;
     }
-    if (c->xs.type!=A_TAB && c->xs.type!=A_TASKS && c->xs.type!=A_FUNC && !a_isnum(c->xs)) {
+    if (c->xs.type!=A_TAB && c->xs.type!=A_VIEW && c->xs.type!=A_TASKS && c->xs.type!=A_FUNC && !a_isnum(c->xs)) {
         return a_error("invalid argument to '%s' : expected table, tasks, number or function : got %s",
             name, a_typename(c->xs));
     }
@@ -504,7 +504,7 @@ static AStatus std_zip (AFunc* self, int argc, AVal* argv) {
     AVal it = a_func(zip_next, 10);
     for (int i=0; i<2; i++) {
         AVal xs = arg(argc, argv, i);
-        if (xs.type!=A_TAB && xs.type!=A_TASKS && xs.type!=A_FUNC && !a_isnum(xs)) {
+        if (xs.type!=A_TAB && xs.type!=A_VIEW && xs.type!=A_TASKS && xs.type!=A_FUNC && !a_isnum(xs)) {
             a_dec(it);
             return a_error("invalid argument to 'zip' : expected table, tasks, number or function : got %s",
                 a_typename(xs));
@@ -556,7 +556,7 @@ static AStatus values_next (AFunc* self, int argc, AVal* argv) {
 
 static AStatus iter_of (const char* name, AFn fn, int argc, AVal* argv) {
     AVal xs = arg(argc, argv, 0);
-    if (xs.type!=A_TAB && xs.type!=A_TASKS) {
+    if (xs.type!=A_TAB && xs.type!=A_VIEW && xs.type!=A_TASKS) {
         return a_error("invalid argument to '%s' : expected table or tasks : got %s",
             name, a_typename(xs));
     }

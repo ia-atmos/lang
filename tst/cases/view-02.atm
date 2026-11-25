@@ -1,0 +1,12 @@
+;; the length of a view follows what its base still has
+pin t = [1, 2, 3, 4]
+val v = vector.view(t, 2)
+print(#v)                       ;; 2
+vector.remove(t)
+print(#v, v@0, v@1)             ;; 1 3 nil
+set t@+ = 9
+set t@+ = 8
+print(#v, v@0, v@1)             ;; 2 3 9
+vector.clear(t)
+print(#v)                       ;; 0
+loop x in v { print(x) }

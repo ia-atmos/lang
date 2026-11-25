@@ -40,7 +40,7 @@
 // and doubles.
 typedef enum {
     A_NIL, A_BOOL, A_INT, A_NUM,
-    A_STR, A_TAB, A_FUNC, A_TASK, A_XTASK, A_TASKS, A_NAT,
+    A_STR, A_TAB, A_FUNC, A_TASK, A_XTASK, A_TASKS, A_NAT, A_VIEW,
     A_BOX
 } AType;
 
@@ -641,6 +641,27 @@ AVal a_func (AFn fn, int ncap);
 // A closure is born with its floor at the deepest block among its
 // captures. Called once they are set.
 void a_func_scope (AVal f);
+
+// A view is a piece of a vector with no copy: its base table, the
+// first position in the base, and the number of positions. It has the
+// layout of a function with three captures (`caps[0]` the base,
+// `caps[1]` and `caps[2]` integers), so that the rules of memory treat
+// it as a closure over its base: it holds the base by a count, and it
+// does not leave the block of a pinned base.
+#define A_VIEW_BASE(v) (A_FUNC_OF(v)->caps[0])
+#define A_VIEW_OFF(v)  (A_FUNC_OF(v)->caps[1].u.i)
+#define A_VIEW_CAP(v)  (A_FUNC_OF(v)->caps[2].u.i)
+
+// New view of `base` (a table, owned by the caller elsewhere), from
+// position `off`, with `len` positions (owned).
+AVal a_view (AVal base, int64_t off, int64_t len);
+
+// The length of a view now: its positions that the base still has.
+int64_t a_view_len (AVal v);
+
+// A new table with the elements of a view now (owned): the copy that
+// `++` and the functions that take a vector read.
+AVal a_view_tab (AVal v);
 
 // A captured mutable variable lives in a box, shared by the function
 // that declares it and by the closures that capture it.

@@ -1,0 +1,4 @@
+==> ERROR:
+ |  view-err-03.atm:6 (call)
+ v  view-err-03.atm:4 (throw)
+==> invalid escape : table pinned at view-err-03.atm:3

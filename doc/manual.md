@@ -957,15 +957,18 @@ Atmos supports and mimics the semantics of the standard [Lua types][lua-types]:
 Atmos also provides three new types related to tasks:
     `task`, `xtask`, and `tasks`.
 
-Finally, the type `native` represents resources of [C](#native), such as
+The type `native` represents resources of [C](#native), such as
 files.
+
+Finally, the type `view` is a piece of a vector with no copy, made by
+[`vector.view`](#vector).
 
 Atmos differentiates between *value* and *reference* types:
 
 - Value types are built from the [basic literals](#literals):
     `nil`, `boolean`, `number`, and `string`.
 - Reference types are built from constructors:
-    `function`, `table`, `task`, `xtask`, `tasks`, and `native`.
+    `function`, `table`, `task`, `xtask`, `tasks`, `native`, and `view`.
 
 A `number` is either an `integer` with 64 bits or a `float` with double
 precision, as in Lua.
@@ -3969,7 +3972,26 @@ A vector is a [table](#table) with the keys `0` to `#t-1`.
 - `vector.sort(t [, f])`: sorts `t` in place; `f(a,b)` tells if `a` comes
   before `b`, and defaults to `a < b`; the sort is stable
 - `vector.join(t [, sep])`: a string with the strings and numbers in `t`,
-  separated by `sep`
+  separated by `sep`; `t` may be a view
+- `vector.view(t [, i [, j]])`: a view of the positions `i` to `j` of `t`,
+  both included, with no copy; they default to the first and last, and a
+  negative position counts from the end, as in [`string.sub`](#string);
+  `t` may be a view, and the new view refers to the same base
+
+A view refers into its base vector: `v@k` is `t@(i+k)`, and `set v@k = x`
+writes `t@(i+k)`, so that a change of one shows in the other.
+A view keeps its positions in the base while the base changes, and its
+length `#v` is what the base still has of them: a view of `t` from `2` sees
+one element after `vector.remove(t)` of a vector of four, and none after
+`vector.clear(t)`.
+A view takes `#`, indexing with `@` (also `@#`), `set v@k` within its
+length, [`loop`](#loop), the functions of [`iter`](#iter), `++` (which
+copies), and `vector.join`.
+It has no keys other than its positions, and it does not grow:
+`set v@+` and a `set` beyond its length are errors, and the other functions
+of `vector` take a table.
+A view holds its base as a [closure](#pin) holds what it captures: by its
+count, and, when the base is pinned, it does not leave the block of the pin.
 
 Examples:
 
@@ -3983,6 +4005,11 @@ vector.join(t, "-")                 ;; 0-1-2
 pin cs = []
 val c = vector.insert(cs, [x=1])    ;; `cs` owns the table, `c` refers to it
 vector.clear(cs)                    ;; []
+
+pin bs = [10, 20, 30, 40]
+val v = vector.view(bs, 1, 2)       ;; 20, 30
+set v@0 = 21                        ;; bs is [10, 21, 30, 40]
+loop k, x in v { print(k, x) }      ;; 0 21, 1 30
 ```
 
 ## Input and Output

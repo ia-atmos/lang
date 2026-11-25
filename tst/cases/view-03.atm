@@ -1,0 +1,15 @@
+;; a view holds its base by a count
+val f = func () {
+    val t = [1, 2, 3]
+    vector.view(t, 1)
+}
+val v = f()
+print(#v, v@0, v@1)             ;; 2 2 3
+pin vs = []
+do {
+    pin t = [7, 8, 9]
+    set vs@+ = vector.view(vs)  ;; a view of the outer vector, held by it: a cycle that its pin reclaims
+    val x = vector.view(t)
+    print(x@2)                  ;; 9
+}
+print(#vs)                      ;; 1
