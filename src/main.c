@@ -9,8 +9,7 @@
 //   atmos --help, atmos --version
 //
 // The value of an option follows it, after `=` or as the next argument.
-// `--` ends the options. The short forms `-c`, `-o`, `-t`, `-e` are kept
-// as aliases.
+// `--` ends the options. There are no short forms.
 //
 // A compiler dedicated to an environment (`make env`, as `atmos-pico`)
 // is this same program built with the file of the environment, and the
@@ -228,7 +227,6 @@ static void usage (FILE* out) {
         "   --version       Print the version.\n"
         "\n"
         "A value may also follow its option as the next argument.\n"
-        "The short forms -c, -o, -t, -e are aliases.\n"
     );
     if (ATMOS_ENV != NULL) {
         fprintf(out, "\nEnvironment: %s\n", (const char*)ATMOS_ENV);
@@ -241,11 +239,11 @@ static void fail_usage (const char* msg, const char* arg) {
     exit(1);
 }
 
-// Matches `argv[*i]` with an option that takes a value: the long form
-// `--name=v`, `--name v`, or the short form `-s v`. Returns the value,
-// or NULL if the argument is not this option.
+// Matches `argv[*i]` with an option that takes a value, `--name=v` or
+// `--name v`. Returns the value, or NULL if the argument is not this
+// option.
 static const char* opt_val (int argc, char** argv, int* i,
-                            const char* name, const char* shrt) {
+                            const char* name) {
     const char* a = argv[*i];
     size_t n = strlen(name);
     if (!strncmp(a, name, n) && a[n]=='=') {
@@ -254,7 +252,7 @@ static const char* opt_val (int argc, char** argv, int* i,
         }
         return &a[n+1];
     }
-    if (!strcmp(a,name) || (shrt!=NULL && !strcmp(a,shrt))) {
+    if (!strcmp(a, name)) {
         if (*i+1 >= argc) {
             fail_usage("missing the value of", a);
         }
@@ -289,13 +287,13 @@ int main (int argc, char** argv) {
             lex = 1;
         } else if (!strcmp(a, "--ast")) {
             ast = 1;
-        } else if (!strcmp(a, "--emit-c") || !strcmp(a, "-c")) {
+        } else if (!strcmp(a, "--emit-c")) {
             only = 1;
-        } else if (!strcmp(a, "--test") || !strcmp(a, "-t")) {
+        } else if (!strcmp(a, "--test")) {
             OPT_TEST = 1;
-        } else if ((v = opt_val(argc, argv, &i, "--out", "-o")) != NULL) {
+        } else if ((v = opt_val(argc, argv, &i, "--out")) != NULL) {
             exe = v;
-        } else if ((v = opt_val(argc, argv, &i, "--env", "-e")) != NULL) {
+        } else if ((v = opt_val(argc, argv, &i, "--env")) != NULL) {
             OPT_ENV = v;
         } else if (a[0] == '-') {
             fail_usage("unknown option", a);

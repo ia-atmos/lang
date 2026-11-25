@@ -20,8 +20,8 @@ out=$(mktemp)
     # the plain compiler does not have it
     $A prog.atm ; echo "exit $?"
     # the option, with no flags and with them
-    $A -e env.atm prog.atm 2>&1 | grep -c "flags of the environment are missing"
-    ATMOS_CFLAGS='-O1 -DENVT_BASE=10' $A -e env.atm prog.atm
+    $A --env=env.atm prog.atm 2>&1 | grep -c "flags of the environment are missing"
+    ATMOS_CFLAGS='-O1 -DENVT_BASE=10' $A --env=env.atm prog.atm
     # with the address sanitizer
     ATMOS_ASAN=1 $T prog.atm
     # an environment refuses with #error a numeric option it does not

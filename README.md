@@ -106,7 +106,7 @@ The compiler translates a program to C, builds it, and runs it:
 ./atmos --out=hello hello.atm     # builds only
 ./atmos --test hello.atm          # enables test blocks
 ./atmos --env=env.atm game.atm    # includes an environment first
-./atmos --help                    # the options (-c, -o, -t, -e are aliases)
+./atmos --help                    # the options
 ```
 
 Environment variables:

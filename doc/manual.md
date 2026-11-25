@@ -492,7 +492,6 @@ Options:
    --version       Print the version.
 
 A value may also follow its option as the next argument.
-The short forms -c, -o, -t, -e are aliases.
 ```
 
 Options come before the input, and everything after the input goes to the

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Tests of the command line: each option, in its long and short forms,
-# and the errors of a wrong one. Each check runs the compiler and
+# Tests of the command line: each option, and the errors of a wrong
+# one (the short forms -c, -o, -t, -e are gone). Each check runs the compiler and
 # compares the output (stdout and stderr) and the status.
 
 cd "$(dirname "$0")"
@@ -65,24 +65,22 @@ check 0 "args${TAB}-t"              -- $P -t
 
 # tests
 check 0 $'args\ntest'               --test $P
-check 0 $'args\ntest'               -t $P
 
 # environment
 check 0 $'env\nargs'                --env=$E $P
 check 0 $'env\nargs'                --env $E $P
-check 0 $'env\nargs'                -e $E $P
 check 1 "atmos : cannot read the environment '$TMP/none.atm'" --env=$TMP/none.atm $P
 
 # build only
-for o in "--out=$TMP/x1" "--out $TMP/x2" "-o $TMP/x3"; do
+for o in "--out=$TMP/x1" "--out $TMP/x2"; do
     check 0 "" $o $P
 done
-for x in x1 x2 x3; do
+for x in x1 x2; do
     out=$("$TMP/$x" z) ; [ "$out" == "args${TAB}z" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: $x"; }
 done
 
 # C only
-for c in --emit-c -c; do
+for c in --emit-c; do
     out=$($ATMOS $c $P | grep -c 'AStatus atm_main')
     [ "$out" == "1" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: atmos $c"; }
 done
@@ -97,9 +95,13 @@ ATMOS_FLOAT=bad $ATMOS --help >/dev/null 2>&1 && pass=$((pass+1)) || { fail=$((f
 check1 1 "Usage: atmos [<options>] [--] <input> [<args>] ..."
 check1 1 "atmos : unknown option '--xyz'"           --xyz $P
 check1 1 "atmos : unknown option '-x'"              -x $P
+for o in -c -t; do
+    check1 1 "atmos : unknown option '$o'"          $o $P
+done
+check1 1 "atmos : unknown option '-o'"              -o $TMP/x $P
+check1 1 "atmos : unknown option '-e'"              -e $E $P
 check1 1 "atmos : missing the value of '--out'"     --out
 check1 1 "atmos : missing the value of '--out'"     --out= $P
-check1 1 "atmos : missing the value of '-o'"        -o
 check1 1 "atmos : missing the value of '--env'"     --env
 check1 1 "atmos : missing the input after '--'"     --
 
