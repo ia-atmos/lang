@@ -1,7 +1,10 @@
 # grab: the real cases, before and after
 
-Session `atmos-grab`, 2026-11-18. The code "after" is a sketch of the
-design under discussion (not decided): see `TODO-grab.md`.
+Session `atmos-grab`, 2026-11-18. Updated 2026-11-23 to the syntax
+merged into `main` (#22): `toggle` became `mute`, `grabbable` became
+`stage` and `grab` became `solo`, each with one pattern after the
+keyword (none: every event). The comment of the issue (§0) and the
+prior art (§7) keep their own words.
 
 ## 0. The issue and its comment (atmos-lang/atmos#22)
 
@@ -37,16 +40,18 @@ outside it never notices), below by the `grab` block (what receives).
 ## 1. Sketch used below
 
 ```
-grabbable P { B }   ;; B may be captured, for events that match P
-grab Q { B }        ;; an event that matches P and Q, traversing the
-                    ;; nearest grabbable, reaches only this block
+stage [P] { B }     ;; B may be captured, for events that match P
+solo [Q] { B }      ;; an event that matches P and Q, traversing the
+                    ;; nearest stage, reaches only this block
+mute [<P>] t(b)     ;; t does not get P (b=true)
+mute [P] on :T {B}  ;; B does not get P while :T [true]
 ```
 
 - `P`, `Q`: await patterns, so `<!:draw>` ("all but :draw") comes for
-  free and replaces `toggle ... with :draw`.
-- The nearest `grabbable` is found in the tree of tasks, not in the
+  free and replaces `toggle ... with :draw` (now `mute <!:draw> ...`).
+- The nearest `stage` is found in the tree of tasks, not in the
   text: `Options` is a task spawned deep inside the arena and finds the
-  `grabbable` of `main.atm`.
+  `stage` of `main.atm`.
 
 ## 2. SNKRX: the options over the arena and the shop
 
@@ -88,7 +93,7 @@ After:
 ;; main.atm: the screens may be captured; Input, WindowKeys and the
 ;; transitions are outside, and still see every key
 par {
-    grabbable true {
+    stage {
         loop { ... }                    ;; the screens, unchanged
     }
 } with {
@@ -98,7 +103,7 @@ par {
 ;; src/options.atm: only the options see the input while open
 task Options (kind) {
     ...
-    grab <:key.dn || :key.up || :mouse.dn || :mouse.up || :mouse.mv> {
+    solo <:key.dn || :key.up || :mouse.dn || :mouse.up || :mouse.mv> {
         loop {
             val e = await <:Button.click || :key.dn>
             ...
@@ -119,7 +124,7 @@ sibling branch emits.
 task Shop (run) {
     eng.cursor(true)
     par {
-        toggle on :Shop.on with :draw {
+        toggle on :Shop.on with :draw {   ;; now: mute <!:draw> on :Shop.on {
             await ShopMain(run, task)
         }
     } with {
@@ -150,7 +155,7 @@ task Shop (run) {
     } with {
         loop {
             await :Tutorial.open
-            val how = grab <!:draw> {
+            val how = solo <!:draw> {
                 par :any {
                     await Tutorial()
                 } with {
@@ -165,7 +170,7 @@ task Shop (run) {
 }
 ```
 
-Open: `grab` as an expression (the value of its block, as `do`).
+Open: `solo` as an expression (the value of its block, as `do`).
 
 ## 4. env-iup: 7GUIs circle drawer (`exs/7guis/circles.atm`)
 
@@ -185,13 +190,13 @@ task adjust (c) {
 }
 ```
 
-After (with `grabbable true` around the main `watching`):
+After (with `stage true` around the main `watching`):
 
 ```
 task adjust (c) {
     ...
     iup.show(adj)
-    grab <!:action [h=cnv]> {           ;; the canvas is still drawn
+    solo <!:action [h=cnv]> {           ;; the canvas is still drawn
         watching :close [h=adj] {
             loop on :value [h=sld] { ... }
         }
@@ -205,19 +210,19 @@ case but the clearest statement of the need. The branch that awaits
 the dialog is deaf by sequence alone; its siblings (undo, redo) are
 not, and only IUP's `ACTIVE` silences them. Without that resource of
 the toolkit, the program would wrap the siblings in a `toggle on`
-driven from inside one of them, which breaks the structure. A `grab`
+driven from inside one of them, which breaks the structure. A `solo`
 says "while I await this, my siblings do not react", from the branch
 that awaits, with no cooperation from the others. The canvas must
-still be redrawn, so the grab needs a filter (`<!:action [h=cnv]>`),
-which supports #2. Written at the branch, the grab is lexically inside
+still be redrawn, so the solo needs a filter (`<!:action [h=cnv]>`),
+which supports #2. Written at the branch, the solo is lexically inside
 the `par`:
 
 ```
-grabbable true {
+stage {
     par {
         loop e on :button [h=cnv] {
             ...
-            grab <!:action [h=cnv]> {
+            solo <!:action [h=cnv]> {
                 await adjust(c)
             }
         }
@@ -243,17 +248,17 @@ pin play = spawn Play()
 spawn {
     loop {
         await :key.dn [key='P']
-        toggle play(false) with :draw
+        toggle play(false) with :draw    ;; now: mute <!:draw> play(true)
         set phase = :pause
         watching :key.dn [key='P'] { ... "GAME PAUSED" ... }
-        toggle play(true)
+        toggle play(true)                ;; now: mute play(false)
         set phase = :play
     }
 }
 await(play)
 ```
 
-After (with `grabbable true` around the `loop` of `Classic`):
+After (with `stage true` around the `loop` of `Classic`):
 
 ```
 spawn Play()            ;; or kept in a pin, for `await(play)`
@@ -261,7 +266,7 @@ spawn {
     loop {
         await :key.dn [key='P']
         set phase = :pause
-        grab <!:draw> {
+        solo <!:draw> {
             watching :key.dn [key='P'] { ... "GAME PAUSED" ... }
         }
         set phase = :play
@@ -270,10 +275,10 @@ spawn {
 ```
 
 Neutral case: the pause is already outside the game, so `toggle`
-works; `grab` only drops the reference. It also asks what happens to
+works; `solo` only drops the reference. It also asks what happens to
 the timers of the game: `<!:draw>` captures the clock, so the game
 time stops, as with `toggle`; on release the game needs the zero tick
-that `toggle t(true)` sends today (`rt/task.c`, `a_toggle`). Same for
+that `toggle t(true)` sends today (`rt/task.c`, `a_mute`, since #22). Same for
 env-sdl and env-pico (`exs/rocks/main.atm`).
 
 ## 6. Pingus (`main.atm`)
@@ -284,13 +289,13 @@ Today: the options are a sibling of the screens, which a `toggle on
 After:
 
 ```
-grabbable true {
+stage {
     par :any {
         ...the screens, without the toggle block...
     } with {
         loop {
             await <:go.options || :key.dn [key="F5"]>
-            grab true {
+            solo {
                 await Options()
             }
         }
@@ -299,8 +304,8 @@ grabbable true {
 ```
 
 Open: `Overlay` (cursor, frames) would be captured too; it needs
-`grab <!:draw>`, or to live outside the `grabbable`. The pause of the
-clock in `game/game.atm:249` stays a `toggle` (time, not input).
+`solo <!:draw>`, or to live outside the `stage`. The pause of the
+clock in `game/game.atm:249` stays a `mute` (time, not input).
 
 ## 7. Prior art
 
@@ -311,7 +316,7 @@ clock in `game/game.atm:249` stays a `toggle` (time, not input).
 | GTK `gtk_grab_add` | the widget and its descendants | a stack: the last added wins, removing it restores the previous | the application (window group) |
 | IUP `IupPopup` | the modal dialog | nested modals stack | the application |
 
-Closest to the sketch: GTK (descendants, stack). The `grabbable` bound
+Closest to the sketch: GTK (descendants, stack). The `stage` bound
 has no direct analogue; the nearest is the window group of GTK.
 `lua-atmos` and `atmos-lang/atmos` have no grab (checked: no `grab` in
 `src/`, only `toggle`).

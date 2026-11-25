@@ -1332,6 +1332,10 @@ A transparent task has no own identity and is owned by its enclosing
 non-transparent task.
 In addition, it delegates [pub](#pub) and [emit](#emit) operations to its
 owner.
+Since it has no identity, its termination is not an event: unlike a task, it
+does not awake an `await` of any kind (not even `await(true)` or
+`await :xtask`).
+Only what awaits it by structure goes on, such as the enclosing `par`.
 Note that other compound constructs of Atmos, including
 [par and watching](#parallel), also rely on transparent tasks internally.
 
@@ -2871,7 +2875,8 @@ supported:
     ranges over vector indexes and values, and then over the other keys and
     values of a table, in the order they were inserted; the key `tag` of a
     [tagged table](#hierarchical-tags) is not visited; the body must not add
-    or remove keys of the table, which leaves the rest of the walk undefined
+    or remove keys of the table, which leaves the rest of the walk undefined,
+    but may assign the keys it already has (`set t@i = v * 2`)
 - `:tasks`:
     ranges over the indexes and tasks of a task pool, in the order they were
     spawned; the body may abort tasks of the pool, which are then not
@@ -3914,7 +3919,8 @@ Functions:
 - `iter.filter(xs, f)`: a new [vector](#vector) with the members `v` of `xs`
   for which `f(v, k)` is truthy, in the order of the walk
 - `iter.map(xs, f)`: a new vector with `f(v, k)` of each member, in the order
-  of the walk; a result `nil` is left out
+  of the walk; a result `nil` raises an error, since a vector has no `nil`
+  (to leave members out, `iter.filter` comes first)
 - `iter.any(xs, f)`, `iter.all(xs, f)`: whether `f(v, k)` is truthy for some
   member, or for every member (`true` if there is none)
 - `iter.fold(xs, acc, f)`: `acc`, set to `f(acc, v, k)` at each member

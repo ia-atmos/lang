@@ -83,3 +83,4 @@ bare pattern. No pattern is today's `context`, every event (#2).
   match is done once per emit per context (`ctime`), the zero tick of
   `mute t(false)` is the event `0`; an error in the pattern counts as
   no match.
+- 2026-11-22, the author ("sim"): the three details above are confirmed.

@@ -1,0 +1,8 @@
+;; Example 7: an outer place that refers to an inner value, explicitly
+var cur = nil
+do {
+    pin dlg = [title="Save"]
+    set :out cur = dlg              ;; allowed, and reset when dlg ends
+    print(cur.title)                ;; --> Save
+}
+print(cur)                          ;; --> nil

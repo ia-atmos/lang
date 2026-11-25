@@ -5,6 +5,14 @@ Iterators, loops and functions over iterables. Material:
 2026-11-18): those born here are `atmos-iter#N` from other sessions.
 The branch of this session is `iter`.
 
+## Contacts
+
+- 2026-11-24: coordination, status and questions for the author go to
+  the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo, handoff
+  `261124-atmos.md`, `atmos-lang#119`); measurements on the ports and
+  merges into `main` stay with `atmos-lang`. Paused by the author until
+  the credits of next week: no new work, only what arrives.
+
 ## Index
 
 | Item | Title | State |
@@ -16,7 +24,7 @@ The branch of this session is `iter`.
 | `#5` | Eager (a new vector) or lazy (an iterator), under the rules of `pin` | Decided 2026-11-22: `#5a` (his answer "A"), as on the branch |
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Decided 2026-11-22: `#6b` (his answer "b"); on the branch `iter`; measurement asked of `atmos-lang` |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
-| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | It reads `await :tick until iter.find(ts, f)` on the branch (`find-01`); told to `atmos-pool` on 2026-11-22 |
+| `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Closed: `await :tick until iter.find(ts, f)` is on `main` since `7c64f69` (`find-01`); `atmos-pool` told |
 | `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
 | `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
 | `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
@@ -28,6 +36,8 @@ The branch of this session is `iter`.
 | `#18` | What else goes into `iter`: `sorted`, and the rule between `iter` (any iterable, not changed) and `vector` (changes a vector) | Decided 2026-11-22: no `sorted` (his words "sem sorted. com zip"): `iter` gains nothing from `vector` |
 | `#19` | `iter.zip` and `iter.enumerate` | Decided 2026-11-22: `iter.zip`, no `enumerate`; on the branch `iter` |
 | `#20` | `loop in 10 {...}`, a loop with no variable (his question, 2026-11-22) | It works today (the grammar is `ID*`); the ports write `loop _ in` 83 times in Pingus and SNKRX, `loop in` 0; an example added to the manual on the branch `iter`. Decided 2026-11-22 (his "sim para ambos"): the ports write `loop in n` instead of `loop _ in n`; `atmos-lang` tells them |
+| `#21` | Reading of `#7`: assigning an existing key while walking a table is allowed, adding or removing is not | Decided 2026-11-22: `#21a`; stated in the manual, case `loop-set-01` |
+| `#22` | `iter.map` with a result `nil`: left out (on `main`), an error, or positions kept | Decided 2026-11-22: `#22b`, an error (`invalid result to 'map' : unexpected nil`); case `iter-err-06` |
 | `#9` | The cost of a call per element, measured on `doom` and `snxkx` | Measured on 2026-11-22: about 10 ns more per element than a loop by hand; no port calls `iter` yet |
 
 ## A. Waiting for the author (one at a time)
@@ -186,6 +196,9 @@ On the branch `iter`, reversible by not merging:
   no longer a key; the skip of `#14a` in `a_next` removed on `iter`
   (`526031c`, a fast-forward of `main`), `make test` with
   `ATMOS_ASAN=1` passes; merged by `atmos-lang` into `main` as `63ddd69` (cases 500, golden 443 with ASAN, 48 configurations).
+
+- 2026-11-22: `#21a` and `#22b` merged into `main`. No port calls
+  `iter` yet (measured earlier), so nothing in them changes.
 
 ## Measured
 

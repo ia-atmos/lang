@@ -10,7 +10,9 @@ do not change: an item is `#N` (see `ISSUES.md` for every number and its
 state, and "Standing rules" for the convention). Numbers that are
 missing here were settled or moved.
 
-Last update: 2026-11-17.
+Last update: 2026-11-24. Owned by the session `atmos` since 2026-11-24
+(`#119`, handoff `261124-atmos.md`); section A below predates the moves
+recorded in `ISSUES.md`, which is the reference for what is open.
 
 ## A. Decisions waiting for an answer
 
@@ -151,12 +153,17 @@ may be changed.
 | `flare` | Three items of its plan to confirm, and a permission to install packages (not checked again since 2026-11-11) |
 | `atmos-oo` | Created on 2026-11-18, after the method call (`::`) was removed (`b4424ff`): whether and how to declare and dispatch functions of the same name by tag. Material `261118-oo.md`; list `TODO-oo.md`; branch `oo` |
 | `atmos-float` | Created on 2026-11-19, after `ATMOS_REAL=float` (`4565af1`, `atmos-lang#3`): the numeric types of a build, and whether integers and reals should be configurable for other systems. Material `261119-float.md`; list `TODO-float.md`; branch `float`; session_011eECog5kQDX9i1eN1gKzDJ |
-| `atmos-loadx` | Created on 2026-11-19, asked by the author through `pico-slides`: a loader of data that accepts names. Done on `main` (2026-11-20): `X.loadx([dir,] s)` with `TITLE = [...]` definitions, a name used as a value (a copy), `include "file"`; no spread; `X.load` unchanged; manual "Load with Names"; all 23 items closed. Material `261119-loadx.md`; list `TODO-loadx.md`; branch `loadx`; session_011eECoiJyx2tmrJg6HgoknZ |
+| `atmos-loadx` | Created on 2026-11-19, asked by the author through `pico-slides`: a loader of data that accepts names. Done on `main` (2026-11-20): `X.loadx([dir,] s)` with `TITLE = [...]` definitions, a name used as a value (a copy), `include "file"`; no spread; `X.load` unchanged; manual "Load with Names"; all 23 items closed. Material `261119-loadx.md`; list `TODO-loadx.md`; branch `loadx`; session_011eECoiJyx2tmrJg6HgoknZ. Done and archived on 2026-11-23 (the author asked); left as an option only: a limit on the depth of a chain of includes |
 | `atmos-cli` | Created on 2026-11-20, asked by the author: the command line of the language (options, configuration, environments, install, cache, tests). Material `261120-cli.md`; list `TODO-cli.md`; branch `cli`; session_011eECoijhygAGqD1jDZ3pWZ |
-| `atmos-blocks` | Created on 2026-11-20, for `atmos-lang#6`: whether a transparent block emits an event when it ends, and the wait of a `par` that rides on it. Material `261120-blocks.md`; list `TODO-blocks.md`; branch `blocks`; session_011eECoipBcPZnUN2BbGAyuB |
+| `atmos-blocks` | Created on 2026-11-20, for `atmos-lang#6`: whether a transparent block emits an event when it ends, and the wait of a `par` that rides on it. Material `261120-blocks.md`; list `TODO-blocks.md`; branch `blocks`; session_011eECoipBcPZnUN2BbGAyuB. Done and archived on 2026-11-23 (the author asked): `blocks` merged as 95946fe |
 | `atmos-iter` | Created on 2026-11-20, asked by the author after `find`/`filter` of `atmos-pool`: iterators, loops and functions over iterables, to organize that part of the language. Material `261120-iter.md`; list `TODO-iter.md`; branch `iter`; session_011eECofmVokL6pRNJNTDjhd |
-| `atmos-tag` | Created on 2026-11-22, asked by the author through `atmos-iter` (its `#17`): whether the tag of a table should have a more primitive form, out of the keys. Material `261122-tag.md`; list `TODO-tag.md`; branch `tag-rebased` (the remote `tag` is stale, cut from an old main); session_011eECogjajEpy59YjN42Max |
+| `atmos-tag` | Created on 2026-11-22, asked by the author through `atmos-iter` (its `#17`): whether the tag of a table should have a more primitive form, out of the keys. Material `261122-tag.md`; list `TODO-tag.md`; branch `tag-rebased` (the remote `tag` is stale, cut from an old main); session_011eECogjajEpy59YjN42Max. Done and archived on 2026-11-22 (the author asked): #1 to #5 merged as 98e4787 |
 | `atmos-slices` | Created on 2026-11-22, asked by the author in `atmos-lang` (its `#116`, direction `#116c`): slices of vectors with no copy. Material `261122-slices.md`; list `TODO-slices.md`; branch `slices`; session_011eECoensrrB23ggBu4daLd |
+| `atmos-threads` | Created on 2026-11-22, asked by the author in `atmos-lang`: threads (none today; `thread` is only a reserved word; the reference has `thread { ... }`). Material `261122-threads.md`; list `TODO-threads.md`; branch `threads`; session_011eECohRAjCia6Hb5cAcrz2 |
+| `atmos-cc` | Created on 2026-11-23, asked by the author in `atmos-lang`: the time of a build with includes (separate compilation, `--verbose`, `--cc-` flags). Material `261123-cc.md` (Pingus: Atmos to C 0.42 s, cc 5.9 / 20.7 / 34.8 s at -O0/-O1/-O2); list `TODO-cc.md`; branch `cc`; session_011eECoibvvH58hfgFezzYvM |
+| `atmos-ppp` | Created on 2026-11-23, asked by the author in `atmos-lang`: whether the tip markers `@#` and `@+` are still relevant, and `+=` on vectors. Material `261123-ppp.md` (ports: 359 `set t@+ = v`, 7 `t@#`, 74 `vector.insert`, 0 `++=`); list `TODO-ppp.md`; branch `ppp`; session_011eECogRQbTZU7Bn4bZysFK |
+| `env-web` | Created on 2026-11-24, asked by the author in `atmos-lang` (its `#118`: `env-web` rather than `env-js`): Atmos in the browser, SDL and Rocks through Emscripten, the DOM. Repository `ia-atmos/env-web`; material `261124-env-web.md` here; session_011eECoffhJTecG6BZSq3GQi |
+| `atmos` | Created on 2026-11-24, asked by the author in `atmos-lang` (its `#119`, "Ok"): the manager of all sessions, his main point of contact; owns this `TODO.md` and `ISSUES.md` from now on; `atmos-lang` keeps the implementation, the measurements and the merges. Handoff `261124-atmos.md`; session_011eECohhJbc4GMpAj3yyeEo |
 | `pico-slides` | Not created here (seen on 2026-11-19): presentations as one tagged table over pico, repository `ia-atmos/pico-slides`; session_011eECogEdSaHMwZpk7NGmgk. Reads all its documents with `X.loadx` (its 39 tests load, reported 2026-11-20) |
 | `atmos-grab`, `atmos-context` | Created on 2026-11-18, one per issue of `atmos-lang/atmos` (22 and 21): item 39 moved there. Material `261118-grab.md` and `261118-context.md` (the real cases of the ports); lists `TODO-grab.md` and `TODO-context.md` |
 | `atmos-pin` | Since 2026-11-18 everything about `pin` is there, by the author's decision: item 40 and the pin choices of section C moved (`261118-pin-handoff.md`). It implements on the branch `pin`; this session only measures on the ports, migrates the tests, and tells the ports |
@@ -193,6 +200,11 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
 | `atmos-tag` | session_011eECogjajEpy59YjN42Max | the tag of a table |
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
+| `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
+| `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, `atmos#1`) |
+| `env-web` | session_011eECoffhJTecG6BZSq3GQi | environment: the browser |
+| `atmos` | session_011eECohhJbc4GMpAj3yyeEo | the manager of all sessions |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
 | `sdl-snxkx` | session_011eECohRKf757Ydp2i9w7Ng | port: SNKRX |
 | `sdl-flare` | session_011eECoegYsZr7nSPxcugGtt | port: Flare |
@@ -288,3 +300,34 @@ dedicated error for `continue`); 36 (the check of spawns, done on
 2026-11-14; it found 5 live defects in three ports); the names of the repositories (first part of 47); 34, 41, and 62 (done with the new rules of `pin` on 2026-11-15: a nested constructor is pinned with the outer one; the message of an escape says the type and the line of the pin; an unpinned task that is dropped is aborted at once); 18, 19, and 24 (on 2026-11-15 the author deleted every branch but `main`: `trails`, the two `ccr-*`, and `claude/paper-pin`, none with work missing from `main`; the README of Pingus already pointed its plan to `main`; a session cannot delete a branch, the push is refused with 403);
 5 (no `task main`: decided by the author on 2026-11-17, in the session `atmos-envs`; the file stays the main task); 23 (the session `sdl-pingus` removed its workarounds in the two migrations of `pin`, 2026-11-17 and 18);
 51 (became 55); 11 (mouse in `lib/sdl.atm`: the library left this repository on 2026-11-16, by the author's decision, with Rocks; both live in `ia-atmos/env-sdl`).
+
+## Next week (the author, 2026-11-23)
+
+> Vamos continuar novos passos após créditos da próxima semana. Iremos
+> acordar todos esperando créditos. Também iremos perguntar quais
+> projetos ainda tem código C embarcado. Não agora. Aguarde.
+
+When the credits of next week come: wake every session, and ask each
+project which C code it still embeds. Until then, only what arrives.
+
+## Tomorrow (the author, 2026-11-24)
+
+> Todo tomorrow:
+> - env-js with sdl support
+> - Can we run rocks there?
+> - what about dom? Want to revive old plans
+
+What exists, as found on 2026-11-24 (nothing done yet):
+- `lua-atmos/env-js` and `atmos-lang/web`: the browser environment of
+  the reference (Atmos in Lua, active in Mar/2026), which runs a program
+  passed in the URL; `web` is an editor with a "Run" button
+  (`261117-envs.md`, the table of environments; `261117-envs-atmos.md`
+  read `env-js` against our API).
+- Rocks: `ia-atmos/env-sdl` `exs/rocks/` (with images, sounds, a font,
+  and a pause test) and `ia-atmos/env-pico` `exs/rocks/`.
+- The compiler emits C; a browser build would go through Emscripten
+  (SDL2 has an Emscripten port). This container has `node` but no
+  `emcc`.
+- Moved to the session `env-web` (2026-11-24). The "old plans" of the DOM: to find (in `lua-atmos/env-js`,
+  `atmos-lang/web`, or the author's older repositories) before
+  proposing.
