@@ -4,13 +4,13 @@ The time of a build with `include`: separate compilation, a
 `--verbose`, C flags on the command line. Material: `261123-cc.md`.
 Prototypes go to the branch `cc` (cut from `origin/main` at `5d1b6a7`).
 
-Last update: 2026-11-25.
+Last update: 2026-11-25 (LTO).
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
-| #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel |
+| #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -78,3 +78,44 @@ unit would miss after any change before it unless names become stable.
   session (rule #71), seen from outside as `atmos-cc#N`; only `atmos`
   and `atmos-lang` share the sequence of `ISSUES.md`. A pause holds until next week's credits:
   no new work, only what arrives.
+
+## LTO: the split done by the C compiler (2026-11-25, by the session, to be confirmed)
+
+`gcc -flto=auto` on one file: the front end runs once (3.0 s on the
+Pingus C), then gcc splits the functions into partitions and optimizes
+them in parallel, with no change to the generated C (statics, native
+code and all). Same container, 4 cores, gcc 13.3, compile and link:
+
+| Pingus C, compile + link | `-O1` | `-O2` |
+|---|---|---|
+| whole file | 20.6 s | 29.5 s |
+| `-flto=4` | 7.6 s | 11.0 s |
+| `-flto=4 --param lto-partitions=8` | 6.9 s | |
+| `atmos -o`, through the compiler of the branch | | 11.5 s (30.3 s with `-fno-lto`) |
+
+| `sdl-pingus/tst/run.sh` (40 tests) | Time | Result |
+|---|---|---|
+| `main` | 121 s | all pass |
+| branch `cc` | 68 s | all pass |
+| branch `cc`, `ASAN=1` | 121 s | all pass |
+
+- clang accepts `-flto=auto` but gains nothing on one file (20.5 s to
+  19.2 s at `-O1`): its parallel form (thin LTO) works per file.
+- A small program pays about 40 ms more (63 ms to 100 ms), hence the
+  threshold: LTO only for a generated C over 256 KB.
+- On the branch: `src/main.c` adds `-flto=auto` before `ATMOS_CFLAGS`
+  for a C over 256 KB, so `-fno-lto` there turns it off. No new option
+  or variable.
+- Found with it: `env-sdl` tells its boxes by the address of a string
+  literal (`static const char* SDL_KIND_IMG = "sdl.image"`; also
+  `rt/lio.c`, `FILE_KIND`). C does not promise one address per literal:
+  under `-flto` with `-fsanitize=address`, each partition had its own
+  copy, `sdl.size` returned 0 and `bomber-test` threw "division by
+  zero". On the branch, `a_nat_is` (`rt/atmos.h`) compares the address
+  and then the text. A fix in `env-sdl` (a `char[]` has one address)
+  would also do; to tell `atmos-env-sdl` if the author takes this.
+- `make test` (with and without `ATMOS_ASAN=1`) and `make test-cfgs`
+  pass; no test of `lang` reaches 256 KB, so the LTO path is covered
+  only by the Pingus runs above.
+- Not measured yet: `doom`, `sdl-flare`, `sdl-snkrx`; the speed of the
+  program built with LTO.

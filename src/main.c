@@ -155,8 +155,16 @@ static void opts_num (void) {
     }
 }
 
+// A generated C larger than this (in bytes) is compiled with the link
+// time optimization of the C compiler in parallel (`-flto=auto`): gcc
+// then splits the one file in partitions compiled at the same time
+// (sdl-pingus, 3 MB, -O1: 20.6 s to 7.6 s on 4 cores). Below it, the
+// overhead of LTO (about 40 ms) is not worth it. The flag comes before
+// ATMOS_CFLAGS, so that `-fno-lto` there turns it off.
+#define LTO_MIN (256*1024)
+
 // Builds the C source into an executable. Returns 0 on success.
-static int build (const char* c, const char* exe) {
+static int build (const char* c, size_t clen, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
     // the runtime of the configuration
@@ -189,8 +197,9 @@ static int build (const char* c, const char* exe) {
     // the flags of the environment of a dedicated compiler, then those
     // of the user
     char* cmd = xfmt(
-        "%s %s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
+        "%s %s %s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
         env("ATMOS_CC", "cc"),
+        (clen > LTO_MIN) ? "-flto=auto" : "",
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
         asan ? "-fsanitize=address -fno-omit-frame-pointer -g" : "",
@@ -302,7 +311,7 @@ int main (int argc, char** argv) {
     fputs(c, f);
     fclose(f);
 
-    int ret = build(cfile, xfile);
+    int ret = build(cfile, strlen(c), xfile);
     if (ret != 0) {
         fprintf(stderr, ATMOS_NAME " : C compilation failed\n");
         ret = 1;
