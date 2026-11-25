@@ -1,11 +1,16 @@
 // Atmos compiler: command line.
 //
-//   atmos f.atm [args]     compiles, builds, and runs
-//   atmos -c f.atm         emits C only (to stdout)
-//   atmos -o out f.atm     builds only
-//   atmos -t f.atm         enables `test` blocks
-//   atmos -e env.atm f.atm includes the file of an environment before
-//                          the program
+//   atmos f.atm [args]              compiles, builds, and runs
+//   atmos --emit-c f.atm            emits C only (to stdout)
+//   atmos --out=out f.atm           builds only
+//   atmos --test f.atm              enables `test` blocks
+//   atmos --env=env.atm f.atm       includes the file of an environment
+//                                   before the program
+//   atmos --help, atmos --version
+//
+// The value of an option follows it, after `=` or as the next argument.
+// `--` ends the options. The short forms `-c`, `-o`, `-t`, `-e` are kept
+// as aliases.
 //
 // A compiler dedicated to an environment (`make env`, as `atmos-pico`)
 // is this same program built with the file of the environment, and the
@@ -42,6 +47,9 @@
 #endif
 #ifndef ATMOS_ENV_CFLAGS
 #define ATMOS_ENV_CFLAGS ""
+#endif
+#ifndef ATMOS_VERSION
+#define ATMOS_VERSION "unknown"
 #endif
 #ifndef ATMOS_ENV_LDFLAGS
 #define ATMOS_ENV_LDFLAGS ""
@@ -206,20 +214,53 @@ static int build (const char* c, const char* exe) {
     return system(cmd);
 }
 
-static void usage (void) {
-    fprintf(stderr,
-        "Usage: " ATMOS_NAME " [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...\n"
+static void usage (FILE* out) {
+    fprintf(out,
+        "Usage: " ATMOS_NAME " [<options>] [--] <input> [<args>] ...\n"
         "\n"
         "Options:\n"
-        "   -c          Emit C only (to the standard output).\n"
-        "   -o <out>    Build only.\n"
-        "   -t          Enable test blocks.\n"
-        "   -e <env>    Include the file of an environment first.\n"
+        "   --emit-c        Emit C only (to the standard output).\n"
+        "   --out=<out>     Build only, into <out>.\n"
+        "   --test          Enable test blocks.\n"
+        "   --env=<env>     Include the file of an environment first.\n"
+        "   --lex, --ast    Print the tokens, or the tree, of the input.\n"
+        "   --help          Print this message.\n"
+        "   --version       Print the version.\n"
+        "\n"
+        "A value may also follow its option as the next argument.\n"
+        "The short forms -c, -o, -t, -e are aliases.\n"
     );
     if (ATMOS_ENV != NULL) {
-        fprintf(stderr, "\nEnvironment: %s\n", (const char*)ATMOS_ENV);
+        fprintf(out, "\nEnvironment: %s\n", (const char*)ATMOS_ENV);
     }
+}
+
+static void fail_usage (const char* msg, const char* arg) {
+    fprintf(stderr, ATMOS_NAME " : %s '%s'\n\n", msg, arg);
+    usage(stderr);
     exit(1);
+}
+
+// Matches `argv[*i]` with an option that takes a value: the long form
+// `--name=v`, `--name v`, or the short form `-s v`. Returns the value,
+// or NULL if the argument is not this option.
+static const char* opt_val (int argc, char** argv, int* i,
+                            const char* name, const char* shrt) {
+    const char* a = argv[*i];
+    size_t n = strlen(name);
+    if (!strncmp(a, name, n) && a[n]=='=') {
+        if (a[n+1] == '\0') {
+            fail_usage("missing the value of", name);
+        }
+        return &a[n+1];
+    }
+    if (!strcmp(a,name) || (shrt!=NULL && !strcmp(a,shrt))) {
+        if (*i+1 >= argc) {
+            fail_usage("missing the value of", a);
+        }
+        return argv[++*i];
+    }
+    return NULL;
 }
 
 int main (int argc, char** argv) {
@@ -228,31 +269,45 @@ int main (int argc, char** argv) {
     int only = 0;
     const char* exe = NULL;
     const char* inp = NULL;
+    const char* v;
     OPT_ENV = ATMOS_ENV;
-    opts_num();
     int i = 1;
     for (; i<argc && inp==NULL; i++) {
-        if (!strcmp(argv[i], "--lex")) {
+        const char* a = argv[i];
+        if (!strcmp(a, "--help")) {
+            usage(stdout);
+            return 0;
+        } else if (!strcmp(a, "--version")) {
+            printf(ATMOS_NAME " " ATMOS_VERSION "\n");
+            return 0;
+        } else if (!strcmp(a, "--")) {
+            if (i+1 >= argc) {
+                fail_usage("missing the input after", a);
+            }
+            inp = argv[++i];
+        } else if (!strcmp(a, "--lex")) {
             lex = 1;
-        } else if (!strcmp(argv[i], "--ast")) {
+        } else if (!strcmp(a, "--ast")) {
             ast = 1;
-        } else if (!strcmp(argv[i], "-c")) {
+        } else if (!strcmp(a, "--emit-c") || !strcmp(a, "-c")) {
             only = 1;
-        } else if (!strcmp(argv[i], "-t")) {
+        } else if (!strcmp(a, "--test") || !strcmp(a, "-t")) {
             OPT_TEST = 1;
-        } else if (!strcmp(argv[i], "-o") && i+1<argc) {
-            exe = argv[++i];
-        } else if (!strcmp(argv[i], "-e") && i+1<argc) {
-            OPT_ENV = argv[++i];
-        } else if (argv[i][0] == '-') {
-            usage();
+        } else if ((v = opt_val(argc, argv, &i, "--out", "-o")) != NULL) {
+            exe = v;
+        } else if ((v = opt_val(argc, argv, &i, "--env", "-e")) != NULL) {
+            OPT_ENV = v;
+        } else if (a[0] == '-') {
+            fail_usage("unknown option", a);
         } else {
-            inp = argv[i];
+            inp = a;
         }
     }
     if (inp == NULL) {
-        usage();
+        usage(stderr);
+        exit(1);
     }
+    opts_num();
 
     if (OPT_ENV!=NULL && access(OPT_ENV,R_OK)!=0) {
         fprintf(stderr, ATMOS_NAME " : cannot read the environment '%s'\n",

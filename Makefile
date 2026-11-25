@@ -11,6 +11,9 @@ CC_SRC := src/aux.c src/lexer.c src/parser.c src/ast.c src/resolver.c \
           src/coder.c src/main.c
 CC_HDR := src/atmc.h
 
+# the version printed by `atmos --version`: the commit of the checkout
+VERSION := $(shell git describe --always --dirty 2>/dev/null || echo unknown)
+
 # The runtime, once per configuration of the numeric types, and once
 # more with the address sanitizer: `libatmos[-f32][-i32][-ms][-asan].a`
 # (`ATMOS_FLOAT=32`, `ATMOS_INTEGER=32`, `ATMOS_CLOCK=ms`, `ATMOS_ASAN`).
@@ -27,7 +30,7 @@ LIBS := $(sort build/libatmos.a build/libatmos-asan.a \
 all: atmos $(LIBS)
 
 atmos: $(CC_SRC) $(CC_HDR)
-	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' -Isrc $(CC_SRC) -o $@
+	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' -DATMOS_VERSION='"$(VERSION)"' -Isrc $(CC_SRC) -o $@
 
 # A compiler dedicated to an environment, such as `atmos-pico`: this
 # compiler, with the file of the environment included before every
@@ -39,7 +42,7 @@ atmos: $(CC_SRC) $(CC_HDR)
 env: $(CC_SRC) $(CC_HDR) $(LIBS)
 	@test -n "$(OUT)" -a -n "$(ENV)" || \
 	    { echo "usage: make env OUT=<executable> ENV=<file.atm> [ENV_CFLAGS=...] [ENV_LDFLAGS=...]"; exit 1; }
-	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' \
+	$(CC) $(CFLAGS) -DATMOS_HOME='"$(CURDIR)"' -DATMOS_VERSION='"$(VERSION)"' \
 	    -DATMOS_NAME='"$(notdir $(OUT))"' \
 	    -DATMOS_ENV='"$(abspath $(ENV))"' \
 	    -DATMOS_ENV_CFLAGS='"$(ENV_CFLAGS)"' \
