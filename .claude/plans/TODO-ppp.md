@@ -9,8 +9,19 @@ Since 2026-11-24 coordination goes through `atmos` (session_011eECohhJbc4GMpAj3y
 | #1 | `+=` on vectors: append in place (`set v += x` pushes `x`)? | decided by the author, 2026-11-25 (in `atmos`, checked in its transcript): "atmos-ppp#1: nao fazer como recomendacao dele". No `+=` on vectors; `set v@+ = x` stays the append |
 | #2 | Keep, change or drop `@#` / `@+` | by the session, to be confirmed (2026-11-25): keep both as they are. `@+` is the append (359 uses, #1); `@#` is the read side of it (peek, 7 uses) and `set v@# = nil` is the pop; dropping `@#` saves nothing and breaks 7 lines. No code change |
 | #3 | `++=` on vectors in place (extend, no copy, works on `pin`) | superseded by #3a (the author leans to in place). Was: no change. 0 uses; `set x OP= e` = `set x = x OP (e)` stays one rule for every operator; in place would make an alias see the change (checked: `var w=[1]; val al=w; set w ++= [2]` gives `#w=2, #al=1` today) and would also have to define in-place merge for tables with keys. No code change |
-| #3a | `++=` in place: on a table, append the vector part of `e` after `#x` and copy its keys into `x`, in place (each store checked as `set x@k = v`, so `pin` and the ceiling apply); on a string or number, rebind as today | reopened by the author 2026-11-25 ("O ++= parece fazer sentido modificar inline, o que acha?"); recommended: yes. Asked |
+| #3a | `++=` in place: on a table, the entries of `e` go into `x` itself, as `++` would put them, each stored as by `set x@k = v` (so `pin` and the ceiling apply); on a string or number, rebind as today | approved by the author 2026-11-25, with no special case for `set v ++= v` ("O caso de copiar v parece muito específico. Acho que não deve tratar especial"). Prototype on `ppp`: `a_cat_set` (rt/ops.c) reads the entries of `e` before storing, which makes `v ++= v` work with no special case; `++=` is accepted on a name that cannot be reassigned (`pin`, `val`) and is a run-time error there if the value is not a table. Tests `cset-05`, `cset-err-05`, `cset-err-06`; manual "Set" and "Concatenation". Ports: 0 uses of `++=`, nothing breaks |
 | #4 | Pop and peek as values (marker vs `vector.remove`) | by the session, to be confirmed (2026-11-25): no new form. Peek is `v@#`; pop as a value is `vector.remove(v)`; pop as a statement is `set v@# = nil` (on an empty vector it does nothing: checked). No code change |
+
+## :out and `@+` (atmos-pin#21)
+
+The author asked (2026-11-25) what happens to `set :out v@+ = o` when
+`o` ends. Today the runtime records each `set :out` place (table and key)
+with its value and writes `nil` there when the value ends; names that
+kept the value see a dead task, or a finalized table whose use is an
+error. For `v@+` the place is the index `#v` at the time of the set.
+Options given: (a) nil at that index (a hole), (b) remove it and shift
+the others, (c) leave the dead value there. Recommended (b); the rule is
+`atmos-pin`'s.
 
 ## Notes
 

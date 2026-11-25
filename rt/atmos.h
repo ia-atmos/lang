@@ -1479,6 +1479,8 @@ static inline AStatus a_le (AVal* dst, AVal a, AVal b) {
 // a ++ b: strings and numbers concatenate; tables merge, with the
 // vector part of `b` appended and its other keys favored.
 AStatus a_cat (AVal* dst, AVal a, AVal b);
+// set a ++= b, with `a` a table: in place (see `a_cat_set` in ops.c).
+AStatus a_cat_set (AVal a, AVal b);
 
 // v ?? x: the value matches the pattern.
 //  - equal values

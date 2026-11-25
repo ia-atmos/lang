@@ -888,6 +888,12 @@ static void res (Expr* e) {
                 {
                     dst->var->pset = 1;
                     dst->var->boxed = dst->var->boxed || dst->var->pcap;
+                } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR &&
+                           e->u.set.op!=NULL && !strcmp(e->u.set.op,"++"))
+                {
+                    // `set x ++= e` extends the table of `x` in place,
+                    // which needs no reassignment
+                    e->u.set.fixed = 1;
                 } else if (dst->tag==E_ACC && dst->var->kind!=V_VAR) {
                     err(dst->tk, "invalid set : expected mutable variable");
                 }

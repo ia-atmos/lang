@@ -2378,6 +2378,12 @@ with a binary [operation](#operations): `set x OP= e` is equivalent to
 `set x = x OP (e)`, but evaluates the location only once.
 The valid operators are `+` `-` `*` `/` `//` `%` `++` `&` `|` `^` `<<` `>>`
 `&&` `||`.
+The exception is `++=` on a table: `set x ++= e` puts the entries of `e` into
+the table of `x` itself, as `x ++ e` would put them in a new one, each entry
+stored as by `set x@k = v`.
+The table stays the same, so every name that refers to it sees the change,
+and `x` may be a name that cannot be reassigned, such as a `pin`.
+On a string or a number, `++=` builds a new value, as the other operators.
 
 The third format, `set :out`, makes a location of an outer block refer to a
 value of the current block until the block terminates, when the location
@@ -2397,6 +2403,7 @@ set y = 0               ;; ERROR: cannot reassign `y`
 
 set x += 1              ;; x is 21
 set y@0 *= 2            ;; y@0 is 40
+set y ++= [50, 60]      ;; y is [40, 50, 60], the same table
 
 var a, b = 1, 2
 set a, b = b, a         ;; swaps a and b
@@ -2556,6 +2563,9 @@ Examples:
 The result is an unpinned table.
 If the operands hold [pinned values](#pin), such as the tasks of a pool, the
 result is born with its floor in their block.
+
+The compound assignment `set x ++= e` extends the table of `x` in place, with
+no new table (see [Set](#set)).
 
 ## Indexing
 

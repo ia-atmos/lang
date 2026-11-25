@@ -1496,6 +1496,33 @@ static void gen_set_op (Unit* u, Expr* e) {
     }
 
     Opnd v = gen_expr(u, e->u.set.src);
+    if (!strcmp(op,"++")) {
+        // a table is extended in place; any other value is rebound
+        out(u, "if (%s.type == A_TAB) {", cur.c);
+        u->ind++;
+        out(u, "a_lin = %d;", lin_of(e->tk));
+        out_try(u, "a_cat_set(%s, %s)", cur.c, v.c);
+        opnd_rel(u, cur);
+        opnd_rel(u, v);
+        opnd_rel(u, l.k);
+        opnd_rel(u, l.t);
+        u->ind--;
+        out(u, "} else {");
+        u->ind++;
+        if (e->u.set.fixed) {
+            // a name that cannot be reassigned
+            out(u, "a_lin = %d;", lin_of(e->tk));
+            out_try(u, "a_error(\"invalid set : expected table or mutable "
+                "variable : got %%s\", a_typename(%s))", cur.c);
+            u->ind--;
+            out(u, "}");
+            return;
+        }
+        gen_assign(u, l, gen_binop(u, e->tk, op, cur, v));
+        u->ind--;
+        out(u, "}");
+        return;
+    }
     Opnd r = gen_binop(u, e->tk, op, cur, v);
     u->scalar = op_scalar(op);
     gen_assign(u, l, r);

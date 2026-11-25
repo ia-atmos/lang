@@ -1,0 +1,3 @@
+==> ERROR:
+ v  cset-err-06.atm:4 (throw)
+==> invalid escape : table pinned at cset-err-06.atm:3
