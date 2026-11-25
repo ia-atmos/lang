@@ -3448,16 +3448,6 @@ The optional target between brackets determines the scope of the broadcast:
 - `t: task`: the given task
 - `n: number`: `n`th level up in the task hierarchy (`0` = current task)
 
-An [exception](#exceptions) that a task raises in reaction to an event goes
-to the task that holds it: it is raised in the block that the task is
-attached to, and from there upwards.
-This does not depend on the target of the `emit`: with `emit @t (e)`, an
-exception of `t` goes to who holds `t`, as in a broadcast of the same event,
-and not to who emits, unless that is the one who holds `t`.
-If who holds `t` is itself in the middle of a reaction, such as an `emit` of
-its own that led to this one, then it receives the exception when it resumes:
-who emitted to `t` goes on after its `emit`.
-
 An event that is a [pinned value](#pin), or that holds one, can only reach
 tasks that live inside the block of the value.
 Otherwise, a task could keep the event after the block reclaims it.
