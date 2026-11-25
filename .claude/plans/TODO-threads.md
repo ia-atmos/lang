@@ -6,13 +6,16 @@ prototypes them on the branch `threads` of this repository (cut from
 does not merge into `main`: when the author approves a merge,
 `atmos-lang` measures the ports and merges.
 
-Last update: 2026-11-22.
+Last update: 2026-11-25.
+
+Work with no input: `261125-threads-runtime.md`, the global state a
+thread meets in `rt/` (by the session, to be confirmed).
 
 ## Index of the items (`atmos-threads#N`)
 
 | # | Title | State |
 |---|---|---|
-| #1 | What threads are for (heavy computation, blocking C calls, several cores, parity with the reference) | asked, 2026-11-22; on hold until the week of 2026-11-30 (author: "Vamos aguardar semana que vem pra comecar aqui") |
+| #1 | What threads are for (heavy computation, blocking C calls, several cores, parity with the reference) | asked, 2026-11-22; on hold until "next week" (author), unblocked by `atmos` on 2026-11-25; waits for his answer |
 
 ## Facts (2026-11-22)
 
