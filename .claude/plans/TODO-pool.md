@@ -16,7 +16,7 @@ prefix; those born here are `atmos-pool#N`.
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
 | `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
 | `atmos-lang#60` | Where the exception of `emit @t` goes | Decided: to who emits (the author, 2026-11-25, "Confirmo"); `pool` 545cc18 (manual + cases only) sent to `atmos-lang` to merge |
-| `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Manual and cases checked; a case added on the branch; still not acknowledged |
+| `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`) | Acknowledged by the author (2026-11-25, "Ok"); the case wake-order-01 goes with `pool` |
 | `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
 | `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
 | `atmos-pool#4` | Where libraries written in Atmos live (`lib/` on the branch is a guess) | Question, not yet put to him |
@@ -77,6 +77,8 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-pool#1` (2026-11-25, here): acknowledged, "Ok".
 
 - `atmos-lang#60` (2026-11-25, here): the exception of `emit @t` goes
   to who emits, as main already does; #60 reverted, the rule written in
