@@ -12,16 +12,18 @@ Last update: 2026-11-25.
 | # | Item | State |
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
-| #2 | The names of the long options | Asked 2026-11-21. Done on branch `cli` with the recommendation, by the session, to be confirmed (rule `#95`, after the pause ended 2026-11-25); recommended: `--emit-c`, `--out`, `--test`, `--env`, with `--help`, `--version`, `--lex`, `--ast`, `--`; the value after a space or `=` |
+| #2 | The names of the long options | Deferred by the author (2026-11-25): "defer decision. we need to settle separate compilation" (`atmos-cc`). Branch `cli` keeps `--emit-c`, `--out`, `--test`, `--env` meanwhile |
 | #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
-| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Not asked yet (after #2). On branch `cli`, by the session, to be confirmed: kept as aliases, so that no port changes |
+| #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Decided by the author (2026-11-25): "remove all short aliases". Done on `cli` (`d0d9a99`) |
+| #5 | The order of the migration of the ports to the long options | Asked 2026-11-25 |
 
 ## Branch `cli`
 
-By the session, to be confirmed by the author (`#2`, `#3`); not merged.
+Names by the session, deferred by the author (`#2`); no short forms,
+decided by him (`#3`). Not merged.
 
 - `--emit-c`, `--out`, `--test`, `--env`, with the value after `=` or
-  as the next argument; `-c`, `-o`, `-t`, `-e` as aliases.
+  as the next argument; `-c`, `-o`, `-t`, `-e` are unknown options.
 - `--help` and `--version` on the standard output, status 0 (the
   version is `git describe` of the checkout); `--` ends the options.
 - Errors say what is wrong before the usage: `unknown option '--xyz'`,
@@ -107,3 +109,27 @@ becomes an item only if the author takes it up.
   holds ("Aguarde", until next week's credits): this session starts no
   new work (the branch `cli` waits) and only answers him and records
   what arrives. Items here stay `atmos-cli#N`.
+
+## The ports that call a short option (2026-11-25, `#5`)
+
+Clones of the 15 repositories of `ia-atmos` besides `lang`, updated on
+2026-11-25. Each line must move to the long form when the short ones go.
+
+| Repository | Where | Option |
+|---|---|---|
+| `sdl-pingus` | `tst/run.sh` (47, 49, 108, 111), `tst/demos.sh` 12; comments in `tst/*-test.atm`, `tools/logic.atm`; `README.md` 69, `doc/bench.md` 8 | `-o`, `-t` |
+| `sdl-snkrx` | `run.sh` 5 (comment), `tools/bench/perf.py` 38 | `-o` |
+| `sdl-tux` | `tux.sh` 18, `tst/play.sh` 13 | `-o` |
+| `env-sdl` | `tst/minus-t.atm` (`;; flags: -t`); `doc/inventory/pingus.md` 53 | `-t`, `-o` |
+| `env-pico` | `tst/run.sh` 34; `doc/api.md` 815 | `-t` |
+| `env-iup` | `doc/api.md` 202 | `-t` |
+| `env-uv` | `tst/run.sh` 26, `tst/pair/run.sh` 28 | `-o` |
+| `env-ray` | `tools/atmos.sh` 12 | `-o` |
+| `env-esp32` | `esp32/main/CMakeLists.txt` 63 | `-c` |
+| `doom` | `Makefile` 63, 79 | `-c` |
+| `pico-frescogo` | `tst/jogo.sh` 8, `tst/fluxo.sh` 23, `tst/telas.sh` 27 | `-o` |
+| `pico-1oom` | `tst/game_new.sh` 24, `tst/state.sh` 25, `tst/save.sh` 18, 19 | `-o` |
+| `ray-lessmilk` | `tools/atmos.sh` 15, `tools/play.sh` 43 (a pinned copy of the compiler, `ext/ceu-atmos`) | `-o` |
+
+None found in `sdl-flare`, `pico-slides`. In `lang` itself:
+`tst/golden/0030-test-2.flags` and `tst/env/run.sh`, moved on `cli`.
