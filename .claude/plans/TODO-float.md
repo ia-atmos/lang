@@ -175,6 +175,9 @@ A pause until next week's credits: no new work, only what arrives.
 
   Static DRAM 17830 / 18998 B in the default, 17086 / 17654 B with all
   four. Heap and speed need the board.
+- 2026-11-25, `sdl-tux` through `atmos`: its main 4468d63 builds with
+  `ATMOS_FLOAT=32` on lang 95946fe, suite green. The renaming `#18` is
+  adopted by every repository that set the old names.
 
 ## The matrix of configurations (2026-11-20)
 
