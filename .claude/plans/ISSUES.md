@@ -1,16 +1,15 @@
-# Items put to the author
+# Items of the session `atmos-lang`
 
-Kept by the session `atmos` since 2026-11-24 (before, by `atmos-lang`,
-which numbered `#1` to `#119`). One sequence for the author: `atmos`
-continues from `#120`; when `atmos-lang` asks him something directly, it
-takes the next free number here too. Every other session keeps its own
-local sequence (`session#N`, the rule `#71`); a line here that points to
-such an item does not rename it.
+The sequence of `atmos-lang` (`atmos-lang#N` from outside). The session
+`atmos` has its own, in `ISSUES-atmos.md` (the author, 2026-11-25:
+"Aqui tb deve ser diferente do lang"). `#120` to `#124` were used by
+`atmos` by mistake and are now `atmos#1` to `atmos#5`: they are not
+reused here, `atmos-lang` continues from `#125`.
 
 Every item, by its number. A number is never reused nor
 changed: an item that closes, or that moves to another session, keeps
 it. Inside this session an item is `#N`; from another session it is
-`atmos#N` (or `atmos-lang#N` for `#1` to `#119`). The convention is `#71`, and is in `TODO.md`, "Standing
+`atmos-lang#N`. The convention is `#71`, and is in `TODO.md`, "Standing
 rules". The details of the open ones are in `TODO.md`.
 
 States: **open** (waits for the author here), **work** (known, not
@@ -138,8 +137,3 @@ started, no decision needed), **moved** (another session handles it),
 | 117 | `atmos-iter` merged `#21a`/`#22b` (a8f067b: `iter.map` raises on nil; a loop may assign the keys it walks) on the author's choice of options, with no explicit approval of the merge | decided 2026-11-22: it stays (his answer: "#117 sim"); measured: 48 configurations, no port C changes |
 | 118 | `env-js` or `env-web` | answered 2026-11-24: `env-web` (the author created `ia-atmos/env-web`; session `env-web`) |
 | 119 | A new session `atmos` that manages all the others; `atmos-lang` keeps the implementation | decided 2026-11-24 (his answer: "Ok"); session `atmos` created, handoff `261124-atmos.md`; from `#120` this index is kept by `atmos` |
-| 120 | `atmos-ppp` found archived (2026-11-23 17:36, a minute after its creation; not by `atmos-lang`'s record) with `atmos-ppp#1` open (should `+=` append to vectors; it recommends keeping `@+` as the only append) | open: the author's; recommended: unarchive it when the work resumes next week |
-| 121 | `#60` (where the exception of `emit @t` goes): the author leaned to the emitter on 2026-11-23 in `atmos-pool` ("a minha intuicao diz que quem emite é que deve receber o erro. nao é assim com métodos?", checked in its transcript); `atmos-pool` withdrew its recommendation. To confirm: the emitter gets it (as on main, like a method call), broadcast stays with the holder; then `pool` reverts `#60` and documents it | open: the author's, in `atmos-pool`; recommended: confirm |
-| 122 | Index line for `env-web#1` (it keeps that name; calling it `#122` was a mistake of `atmos`, corrected 2026-11-25): may `env-web` install emsdk and run `make` in a local clone of `lang`, to build Rocks of `env-sdl` with Emscripten and test it headless (the auto mode refused both, as asked by a session) | open: the author's, in `env-web`; recommended: yes, after the pause |
-| 123 | The 33 active sessions awakened at the author's request ("acorde todas as sessoes", 2026-11-25, in `atmos`): each asked for its branch, its open items and what blocks it; no new work. Not awakened: the archived `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `atmos-ppp` (`#120`) | done 2026-11-25 (all 33 delivered); the answers to be gathered. Open, the author's: whether to ask now which C each project still embeds (his plan of 2026-11-23 said "Não agora") |
-| 124 | `atmos` told the sessions that new questions take a number of `ISSUES.md`; the author: "os numeros devem ser locais a cada sessao, certo?" | done 2026-11-25: the 32 sessions told that numbers stay local (`#71`); only `atmos` and `atmos-lang` share this sequence |
