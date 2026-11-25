@@ -6,8 +6,8 @@ Name of the mechanism: **structured memory**. Its construct is the
 > Status: outline. The rules in Section 4 were declared stable by the
 > author on 2026-11-19, as implemented in `main` at `8361f88` and described
 > in `doc/manual.md` ("Lexical Memory Management", "Pin", "Set"). The
-> collection of unpinned cycles was later removed (atmos-pin#18, branch
-> `pin` at `3cd5169`): a cyclic structure must be pinned. History:
+> collection of unpinned cycles was later removed (atmos-pin#18, on `main`
+> at `f999c52`): a cyclic structure must be pinned. History:
 > `.claude/plans/261115-pin.md`, `.claude/plans/TODO-pin.md`.
 
 ## Abstract
@@ -251,7 +251,7 @@ case studies from six ports of libraries and games to Atmos.
 - Cycles: a pinned cycle is broken at the end of its block, by the pin; an
   unpinned cycle is not collected and leaks (no cycle detection, by the
   author's choice: atmos-pin#18; a local trial deletion was implemented and
-  removed, `3cd5169`)
+  removed, `f999c52` on `main`)
 - Ceiling: `a_name` at each binding, deep; `a_unname` at the end of a block;
   the check before an adoption walks the unpinned value, with marks for cycles
 - Retired values: a list that keeps one reference; released at count one,

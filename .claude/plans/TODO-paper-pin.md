@@ -70,7 +70,8 @@ next week's credits: only what arrives.
   `3cd5169`, author's choice "não checar"). The old rule is restored in the
   outline and the draft: a cyclic structure must be pinned; an unpinned
   cycle leaks under counting. The trial deletion and its cost are removed
-  from Sections 4, 8 and 9. To check: the commit reaches `main`.
+  from Sections 4, 8 and 9. On `main` since 2026-11-21 (`f999c52`); #19,
+  #23 and #29 since 2026-11-22 (`0b5b8ad`).
 - **#12 Remark on Câmara (2024).** The scripts in
   `alochaus/dyn-lex-benchmark` run `ceu ./x.ceu` once and then time only
   `./x.exe`, ten runs each. The flaw the author reported (recompilation in

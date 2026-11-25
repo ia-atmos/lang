@@ -125,7 +125,7 @@ function that builds one returns it unpinned, and the caller pins it. A
 recursive closure through a variable is such a cycle, and is declared with
 `func` or `pin var`; the compiler warns when a variable is assigned a
 function that refers to it. This is a choice: a local trial deletion was
-implemented and then removed (atmos-pin#18, `3cd5169`), and a tracing
+implemented and then removed (atmos-pin#18, `f999c52` on `main`), and a tracing
 collector would make the restriction unnecessary.
 
 An `emit` that carries a pinned value compares two depths, where the target
