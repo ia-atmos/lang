@@ -14,8 +14,8 @@ Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
 the author go to `atmos`; measurements on the ports and merges into `main`
 stay with `atmos-lang`. Item numbers stay local to this session (rule
 #71, corrected by `atmos` on 2026-11-25): the next is #15, seen from
-outside as paper-pin#15. Paused until
-next week's credits: only what arrives.
+outside as paper-pin#15. Resumed on
+2026-11-25 (author: "desbloqueado, vá em frente").
 
 ## Index
 
