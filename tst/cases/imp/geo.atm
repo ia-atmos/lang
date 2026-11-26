@@ -6,8 +6,7 @@ func area (w, h) {
     w * h
 }
 task Tick (name) {
-    loop {
-        await :tick
+    loop on :tick {
         print(name, "tick")
     }
 }

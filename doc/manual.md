@@ -1605,8 +1605,7 @@ func tick () {
     set cnt.n = cnt.n + 1
 }
 spawn {
-    loop {              ;; remains alive with the program
-        await :tick
+    loop on :tick {     ;; remains alive with the program
         tick()
     }
 }
