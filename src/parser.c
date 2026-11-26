@@ -145,8 +145,9 @@ static int check_op (const char** set) {
 // enclosed by its own delimiters.
 static int ANGLE = 0;
 
-// The variable of a `loop x on P {...}`, while its pattern is parsed,
-// and how many times the pattern has named it so far.
+// The variable of a `loop x on P {...}` or of a `val x = await P`,
+// while the pattern is parsed, and how many times the pattern has named
+// it so far.
 static const char* ON_NAME = NULL;
 static int ON_USES = 0;
 
@@ -811,7 +812,14 @@ static Expr* parser_dcl (void) {
             }
             dcl->u.dcl.set = spw;
         } else {
+            // val e = await P until c: the predicate may name the event
+            // as `e`
+            const char* name = ON_NAME;
+            if (check_str("await")) {
+                ON_NAME = dcl->u.dcl.ids[0].str;
+            }
             dcl->u.dcl.set = parser_exprs();
+            ON_NAME = name;
         }
     }
     return dcl;
@@ -1039,8 +1047,8 @@ static void accept_angle_close (void) {
 }
 
 // until/while predicate: a function, or an expression over the event
-// `it`. In the pattern of a `loop x on`, the expression may also name
-// the event as `x`.
+// `it`. In the pattern of a `loop x on` or of a `val x = await`, the
+// expression may also name the event as `x`.
 static Expr* parser_pred (void) {
     Tk tk = TK1;
     int uses = ON_USES;
