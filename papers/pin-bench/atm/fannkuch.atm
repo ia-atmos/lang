@@ -55,7 +55,7 @@ loop {
         set perm1@r = p0
         set count@r = count@r - 1
         if count@r > 0 {
-            break(false)
+            break false
         }
         set r = r + 1
     }
