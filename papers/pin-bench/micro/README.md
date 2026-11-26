@@ -85,3 +85,35 @@ Sizes as `../run.sh`.
 | mandelbrot | 1.181 | 0.868 | 0.503 |
 | nbody | 2.184 | 2.182 | 0.888 |
 | spectralnorm | 0.617 | 0.533 | 0.329 |
+
+## After the inline paths for fields and vectors (perf3)
+
+Another run, on another day's noise: compare only inside these two
+tables. `main` is 6b9e896 (with `perf2`); `perf3` is the branch merged
+right after it: `a_index` and `a_setindex` are inline for a key that
+has a place (an integer inside the array part, or a string that is the
+first of its chain in the hash part).
+
+| op | main | perf3 | lua54 |
+|---|---|---|---|
+| loop | 0.093 | 0.093 | 0.131 |
+| add | 0.127 | 0.113 | 0.165 |
+| mul3 | 0.486 | 0.577 | 0.427 |
+| cmp | 0.253 | 0.261 | 0.204 |
+| field | 0.495 | 0.248 | 0.314 |
+| setf | 0.512 | 0.210 | 0.186 |
+| vget | 0.408 | 0.227 | 0.291 |
+| vset | 0.410 | 0.129 | 0.181 |
+| call | 0.599 | 0.691 | 0.585 |
+| new | 3.295 | 3.177 | 3.631 |
+| global | 0.155 | 0.157 | 0.227 |
+
+| program | main | perf3 | lua54 |
+|---|---|---|---|
+| binarytrees | 2.226 | 2.129 | 2.876 |
+| fannkuch | 0.455 | 0.353 | 0.185 |
+| fasta | 1.472 | 1.230 | 0.957 |
+| fib | 0.870 | 0.907 | 0.576 |
+| mandelbrot | 0.978 | 0.934 | 0.607 |
+| nbody | 2.122 | 1.409 | 0.817 |
+| spectralnorm | 0.528 | 0.467 | 0.304 |
