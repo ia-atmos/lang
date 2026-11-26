@@ -219,7 +219,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
 | `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
 | `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
-| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards |
+| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards (on hold since 2026-11-26: Pedro controls the repository, `atmos#12`) |
 | `paper-pin` | session_011eECofALi31oSimzbLxYZp | paper on `pin` |
 | `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
 | `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
