@@ -490,7 +490,7 @@ C, but the C is a direct translation of a dynamically typed program: values
 are 16 bytes with a type tag, variables live in the frame of the task, in
 the heap, and each operation tests types. Compiling removes the dispatch
 loop of an interpreter, not this work, and the virtual machine of Lua 5.4
-does less of it per operation. The first run was 1.2 to 5.4 times slower
+does less of it per operation. The first run was 1.3 to 5.4 times slower
 than Lua 5.4; reading variables in place in operators, inline comparison and
 division of floats, and counted loops with no call (paper-pin#16, in
 `9ea77e1`) took mandelbrot from 5.4 to 2.3 times and fannkuch from 4.6 to

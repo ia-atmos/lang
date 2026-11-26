@@ -344,7 +344,7 @@ case studies from six ports of libraries and games to Atmos.
       30%: inline tests of type at names, stores, returns and block ends;
       atmos-pin#32 removed most of them
     - Atmos is 1.1 to 3.5 times slower than Lua 5.4, with or without checks
-      (was 1.2 to 5.4): the generated C is dynamically typed, variables live
+      (was 1.3 to 5.4): the generated C is dynamically typed, variables live
       in the heap frame of the task; paper-pin#16 removed part of the gap
     - peak memory equal in the three builds of Atmos; binary-trees 53 MB,
       Lua 5.4 57 MB, LuaJIT 75 MB, C 10 MB
