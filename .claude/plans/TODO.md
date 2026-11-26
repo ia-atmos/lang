@@ -285,6 +285,26 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
   why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
+- **General instruction for the ports** (2026-11-26, confirmed in
+  `pico-1oom`: "Confirmo, pode enviar"; `pico-1oom#29`, `atmos#16`). It
+  does not replace "Fidelity, then expressiveness"; it says what fidelity
+  means ("Fidelidade não é compatibilidade de formatos. É algo interno
+  sobre o comportamento observável somente durante a execução").
+  1. Freedom: fidelity is of the behaviour observable while the program
+     runs, not of the shape of the code nor of file formats; no line by
+     line translation.
+  2. Idioms: idiomatic Atmos (tables, lambdas, `if`/`ifs`/`match` as
+     expressions, strings and tables, the standard library); no integer
+     widths, pointer emulation or memory management of the original,
+     except where the behaviour needs them.
+  3. External files: the formats the program reads and writes for itself
+     (configuration, logs, saves) may change to native forms (`X.load`,
+     `X.dump`); the exception is the data of the original (WADs, LBX).
+  4. Bugs: do not reproduce bugs of safety or tied to the language of the
+     original; fix the original in a local copy for the checks only, and
+     record each one.
+  5. Each port answers the author in its session: how much it follows
+     1-4, what it will redo, a grade from 1 to 10.
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
   of Lessmilk): once a port is fully faithful to its original, it may
   relax the constraints of exactness in favor of expressiveness, as
