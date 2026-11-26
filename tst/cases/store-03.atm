@@ -19,6 +19,6 @@ do {
     set y.pub = a
     print(y.pub@0)
 }
-emit(:X)
+emit :X
 set x.pub = [30]
 print(x.pub@0)

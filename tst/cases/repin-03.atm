@@ -16,6 +16,6 @@ task Other () {
 pin o = spawn Other()
 do {
     pin e = spawn Enemy()
-    emit(:x)
-    emit(:go)
+    emit :x
+    emit :go
 }

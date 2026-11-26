@@ -29,7 +29,7 @@ spawn {
     pin v, t = await T()
     print(:v, #v, t.ret)
 }
-emit(:go) ; emit(:go) ; emit(:go) ; emit(:go)
+emit :go ; emit :go ; emit :go ; emit :go
 
 ;; a task that is not spawned by the await keeps its value: who awaits
 ;; it shares the value, and cannot pin it

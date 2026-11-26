@@ -12,7 +12,7 @@ task R () {
     print(ok2, err2)
 }
 pin r = spawn R()
-emit(:evt [v=[1]])
+emit :evt [v=[1]]
 
 ;; a task owns its `pub` and its final value: they end with it
 task P () {
@@ -26,7 +26,7 @@ do {
     print(:pub, p.pub.x@0)
     val ok, err = catch true { set keep = p.pub }
     print(ok, err)
-    emit(:go)
+    emit :go
     val ok2, err2 = catch true { set keep = p.ret }
     print(ok2, err2)
     print(:ret, p.ret@0)

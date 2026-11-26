@@ -12,7 +12,7 @@ spawn Ship(2)
 pin ts = tasks()
 spawn @ts Ship(3)
 print(a.pub.rect.h)
-emit(:go)
+emit :go
 
 ;; a value pinned in the body of the task cannot be published
 task Bad () {

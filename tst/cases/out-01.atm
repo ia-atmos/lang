@@ -35,9 +35,9 @@ do {                                ;; the map
     spawn @ts Enemy(1)
     spawn @ts Enemy(2)
     print(:count, count())
-    emit(:look)
+    emit :look
     print(:map, :ends)
 }
 print(:after, play.enemies, play.cfg, atual)
-emit(:later)
+emit :later
 print(:end)

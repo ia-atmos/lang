@@ -17,7 +17,7 @@ do {
     emit @y (b)
     print(catch true { emit @x (b) })
     print(catch true { emit @:task (b) })
-    print(catch true { emit(b) })
+    print(catch true { emit b })
     emit @x (a)
 }
 task U () {

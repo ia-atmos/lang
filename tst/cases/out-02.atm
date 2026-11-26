@@ -15,9 +15,9 @@ par :all {
     await(:two)
     print(:B, play.x && play.x.n)
 } with {
-    emit(:one)                  ;; A ends: the field is b's, and stays
+    emit :one                  ;; A ends: the field is b's, and stays
     print(:mid, play.x.n)
-    emit(:two)
+    emit :two
 }
 print(:x, play.x)
 
@@ -45,9 +45,9 @@ do {
     set :out play.f  = g
     set :out play.u  = u
     spawn @ts T(1)
-    emit(:look)
+    emit :look
 }
-emit(:later)
+emit :later
 
 ;; an unpinned value: only the reset
 do {

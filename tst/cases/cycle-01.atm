@@ -45,5 +45,5 @@ do {                            ;; given to a task of the same block
     pin ts = tasks()
     set a.self = a
     spawn @ts T(a)
-    emit(:go)
+    emit :go
 }

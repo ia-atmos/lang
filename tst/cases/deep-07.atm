@@ -38,4 +38,4 @@ do {
     val ok, e = catch true { pin x = v }
     print(ok, e)
 }
-emit(:go)
+emit :go

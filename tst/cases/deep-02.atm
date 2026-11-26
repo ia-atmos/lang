@@ -15,7 +15,7 @@ do {
     loop _, u in us {
         print(u.pub.task == u, u.pub.v)
     }
-    emit(:go)
+    emit :go
     print(#us)
 }
 
@@ -24,7 +24,7 @@ do {
     pin u = spawn U(3)
     spawn U(4)
     print(u.pub.task == u, u.pub.v)
-    emit(:go)
+    emit :go
     val r = await(u)
     print(r.task == u, r.n)
 }
