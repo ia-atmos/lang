@@ -6,12 +6,12 @@ spawn {
         :leave \(_) { nil }
         par {
             loop {
-                val e = await(:key)
+                val e = await :key
                 print(:key, e@0)
             }
         } with {
             loop {
-                val e = await(:draw)
+                val e = await :draw
                 print(:draw, e@0)
             }
         }

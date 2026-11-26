@@ -9,7 +9,7 @@ spawn {
         :enter { nil }
         :leave \(_) { nil }
         pin s = spawn T()
-        val v = await(s)
+        val v = await s
         print(:filtered, v)
     }
 }
@@ -18,7 +18,7 @@ spawn {
         :enter { nil }
         :leave \(_) { nil }
         pin s = spawn T()
-        val v = await(s)
+        val v = await s
         print(:plain, v)
     }
 }
