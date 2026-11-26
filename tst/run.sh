@@ -18,6 +18,8 @@ suites=${@:-lex ast cases golden}
 # programs are built with the address sanitizer (leaks included)
 export ATMOS_ASAN=1
 export ATMOS_CFLAGS=-O0
+# the objects of the modules (`import`) stay in the build
+export ATMOS_CACHE=$PWD/../build/tst/cache
 
 pass=0
 fail=0

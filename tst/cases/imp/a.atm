@@ -1,0 +1,9 @@
+import "sub/b.atm"          ;; relative to this file
+include "sub/c.atm"         ;; part of this module
+val name = "a"
+func fa (n) {
+    if n == 0 => "a" => fb(n-1)     ;; `fb` is of another module
+}
+;; an await here does not hold who imports
+await :go
+print("a", "go", name, c_name())

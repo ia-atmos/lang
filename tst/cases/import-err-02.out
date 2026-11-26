@@ -1,0 +1,1 @@
+import-err-02.atm : line 2 : near 'import' : invalid import : expected top-level statement

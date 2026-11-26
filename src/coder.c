@@ -214,8 +214,28 @@ typedef struct Const {
     int         len;
 } Const;
 
-static Const* KS = NULL;
-static int    KN = 0;
+// What the coder collects for the C unit of each module: constants,
+// declarations and definitions of functions, and what it uses of the
+// other units (their top-level variables, and the modules it starts).
+typedef struct COut {
+    Const* ks;
+    int    kn;
+    Buf    decls;
+    Buf    funcs;
+    Var**  exts;
+    int    nexts;
+    int*   mods;
+    int    nmods;
+} COut;
+
+static COut OUTS[FILES_MAX];
+// module being compiled
+static int  CUR = 0;
+
+#define KS    (OUTS[CUR].ks)
+#define KN    (OUTS[CUR].kn)
+#define DECLS (OUTS[CUR].decls)
+#define FUNCS (OUTS[CUR].funcs)
 
 static int konst (const char* s, int len) {
     for (int i=0; i<KN; i++) {
@@ -455,6 +475,14 @@ static void gen       (Unit* u, Expr* e, Dst d);
 static Opnd gen_expr  (Unit* u, Expr* e);
 static void gen_block (Unit* u, List* es, Dst d);
 
+// The C name of a top-level variable in a program with modules.
+static const char* glb_name (Var* v) {
+    if (v->nth > 0) {
+        return xfmt("atm_G_%s_%s_%d", MODS[v->mod].name, v->tk.str, v->nth);
+    }
+    return xfmt("atm_G_%s_%s", MODS[v->mod].name, v->tk.str);
+}
+
 // C expression of the raw storage of a variable: a static variable,
 // a slot of its function, or a capture of the current function.
 // For a boxed variable, this is the box.
@@ -462,7 +490,23 @@ static const char* var_raw (Unit* u, Var* v) {
     if (v->csym != NULL) {
         return v->csym;
     } else if (v->global) {
-        return xfmt("atm_G%d_%s", v->id, v->tk.str);
+        if (NMODS == 1) {
+            return xfmt("atm_G%d_%s", v->id, v->tk.str);
+        }
+        // a program with modules: a name that does not change with
+        // the other modules, declared in the units that use it
+        if (v->mod != CUR) {
+            COut* o = &OUTS[CUR];
+            int has = 0;
+            for (int i=0; i<o->nexts; i++) {
+                has = has || (o->exts[i] == v);
+            }
+            if (!has) {
+                o->exts = realloc(o->exts, (o->nexts+1) * sizeof(Var*));
+                o->exts[o->nexts++] = v;
+            }
+        }
+        return glb_name(v);
     } else if (v == u->proto->self) {
         // the function that the variable names
         return "SELF";
@@ -2035,9 +2079,8 @@ static void gen_list (Unit* u, Expr* e, Dst d) {
 // FUNCTIONS
 ///////////////////////////////////////////////////////////////////////////////
 
-// Declarations and definitions of the generated C functions.
-static Buf DECLS = { NULL, 0, 0 };
-static Buf FUNCS = { NULL, 0, 0 };
+// Declarations and definitions of the generated C functions: `DECLS`
+// and `FUNCS`, of the module being compiled.
 
 // Appends the common prologue of a function, its body, and its
 // cleanup label.
@@ -2113,7 +2156,7 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
         u.nslots++;
     }
     u.orph = 1;
-    const char* name = xfmt("atm_T%d", p->id);
+    const char* name = xfmt("atm_T%d", p->lid);
     trail_new(&u, name, -1, 0);
     // the parameters are names of the body of the task
     if (npar > 0) {
@@ -2123,7 +2166,8 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
         out(&u, "a_name_arg(L[%d], D);", pars[i]->slot);
     }
     // the value of the main chunk goes nowhere
-    gen_block(&u, body, (p == PROTO_MAIN) ? dst_none() : dst_slot("t->ret"));
+    gen_block(&u, body, (p==PROTO_MAIN || p->module) ? dst_none() :
+        dst_slot("t->ret"));
 
     const char* sig = xfmt(
         "static AStatus %s (ATask* t, ATrail* tr, AKind k)", name);
@@ -2140,7 +2184,7 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
     buf_add(c, "    return st;\n");
     buf_add(c, "}\n\n");
     // the trails, with their tree: siblings in source order
-    buf_add(c, xfmt("static const ATrailD atm_P%d_T[] = {\n", p->id));
+    buf_add(c, xfmt("static const ATrailD atm_P%d_T[] = {\n", p->lid));
     for (int i=0; i<u.ntrs; i++) {
         int kid  = -1;
         int next = -1;
@@ -2156,10 +2200,14 @@ static const char* gen_task (Proto* p, Var** pars, int npar, List* body,
             u.trs[i].up, kid, (i == 0) ? -1 : next, u.trs[i].level));
     }
     buf_add(c, "};\n");
+    // the body of a module is started by another unit
+    const char* desc = p->module ? xfmt("atm_M_%s", MODS[p->mod].name) :
+        xfmt("atm_P%d", p->lid);
     buf_add(c, xfmt(
-        "static const AProto atm_P%d = { %d, %d, %d, %d, atm_P%d_T };\n\n",
-        p->id, (u.nslots > 0) ? u.nslots : 1, npar, p->dots, u.ntrs, p->id));
-    return xfmt("atm_P%d", p->id);
+        "%sconst AProto %s = { %d, %d, %d, %d, atm_P%d_T };\n\n",
+        p->module ? "" : "static ", desc,
+        (u.nslots > 0) ? u.nslots : 1, npar, p->dots, u.ntrs, p->lid));
+    return desc;
 }
 
 // Compiles a prototype to a C function. Returns its name.
@@ -2184,7 +2232,7 @@ static const char* gen_func (Expr* e) {
     }
     gen_block(&u, &e->u.proto.blk->u.block.es, dst_multi(&u));
 
-    const char* name = xfmt("atm_F%d", e->proto->id);
+    const char* name = xfmt("atm_F%d", e->proto->lid);
     const char* sig = xfmt(
         "static AStatus %s (AFunc* self, int argc, AVal* argv)", name);
     buf_add(&DECLS, xfmt("%s;\n", sig));
@@ -2224,8 +2272,17 @@ static Opnd gen_proto (Unit* u, Expr* e) {
     return d;
 }
 
-// Native declarations, at file scope.
-static Buf PRES = { NULL, 0, 0 };
+// Native declarations, at file scope, in order. Every unit has those
+// of a `:prelude`, as a header; only the unit of its module has those
+// of a `:prelude.once`, as what a program defines once (a variable, a
+// function that is not `static`).
+typedef struct Pre {
+    int         mod;
+    int         once;
+    const char* c;
+} Pre;
+static Pre* PRES  = NULL;
+static int  NPRES = 0;
 
 // `C code`: statements, declarations, or an expression converted
 // according to its tag. `$x` is the variable `x`, as an `AVal`.
@@ -2248,10 +2305,12 @@ static void gen_nat (Unit* u, Expr* e, Dst d) {
     }
     const char* line = xfmt("#line %d %s\n", e->tk.lin, file_q(e->tk));
 
-    if (kind == NAT_PRE) {
-        buf_add(&PRES, line);
-        buf_add(&PRES, code.s);
-        buf_add(&PRES, "\n");
+    if (kind==NAT_PRE || kind==NAT_ONCE) {
+        PRES = realloc(PRES, (NPRES+1) * sizeof(Pre));
+        PRES[NPRES].mod  = CUR;
+        PRES[NPRES].once = (kind == NAT_ONCE);
+        PRES[NPRES].c    = xfmt("%s%s\n", line, code.s);
+        NPRES++;
         store_void(u, d);
         return;
     }
@@ -2428,7 +2487,7 @@ static void gen_tra (Unit* up, int id, List* body, ParMode mode, int key,
 // block, which must abort it on exit.
 static int gen_trail (Unit* u) {
     Unit* r = (u->root != NULL) ? u->root : u;
-    const char* fn = xfmt("atm_T%d_%d", u->proto->id, r->ntrs);
+    const char* fn = xfmt("atm_T%d_%d", u->proto->lid, r->ntrs);
     return trail_new(u, fn, u->trail, u->level + 1);
 }
 
@@ -2962,6 +3021,27 @@ static void gen (Unit* u, Expr* e, Dst d) {
             gen_emit(u, e);
             store_void(u, d);
             break;
+        case E_IMPORT: {
+            // the body of the module, in its unit
+            int cur = CUR;
+            CUR = e->u.import.mod;
+            const char* name = gen_task(e->proto, NULL, 0,
+                &e->u.import.blk->u.block.es, 1, lin_of(e->tk));
+            CUR = cur;
+            COut* o = &OUTS[CUR];
+            o->mods = realloc(o->mods, (o->nmods+1) * sizeof(int));
+            o->mods[o->nmods++] = e->u.import.mod;
+            // starts it, pinned to the enclosing block
+            Opnd f = opnd_tmp(u);
+            Opnd t = opnd_tmp(u);
+            out(u, "a_lin = %d;", lin_of(e->tk));
+            out(u, "a_set(&%s, a_task(&%s, 0));", f.c, name);
+            out_try(u, "a_spawn_pin(&%s, %s, a_top)", t.c, f.c);
+            opnd_rel(u, f);
+            gen_pin_end(u, t.c, 1);
+            store_void(u, d);
+            break;
+        }
         case E_SPAWN_BLK: {
             // ends with the enclosing block
             int id = gen_trail(u);
@@ -2999,33 +3079,58 @@ static void gen (Unit* u, Expr* e, Dst d) {
 // MAIN
 ///////////////////////////////////////////////////////////////////////////////
 
-char* coder_main (Expr* prog, Var** globals, int nglobals) {
-    // the main chunk is a task
-    const char* main = gen_task(PROTO_MAIN, NULL, 0, &prog->u.block.es, 1, 1);
+// The C of the unit of a module. The program (0) also has the table
+// of files, the start, and the end.
+static char* unit_c (int mod, const char* main) {
+    CUR = mod;
+    int multi = (NMODS > 1);
+    const char* name = MODS[mod].name;
+    COut* o = &OUTS[mod];
 
     Unit u;
     memset(&u, 0, sizeof(u));
     u.proto = PROTO_MAIN;
 
+    Var** globals;
+    int nglobals = resolver_globals(mod, &globals);
+
     Buf c = { NULL, 0, 0 };
     buf_add(&c, "#include \"atmos.h\"\n\n");
-    buf_add(&c, PRES.s ? PRES.s : "");
-    buf_add(&c, "\n");
-    buf_add(&c, "const char* atm_files[] = {\n");
-    for (int i=0; i<NFILES; i++) {
-        buf_add(&c, xfmt("    %s,\n", quote(FILES[i], strlen(FILES[i]))));
+    for (int i=0; i<NPRES; i++) {
+        if (!PRES[i].once || PRES[i].mod==mod) {
+            buf_add(&c, PRES[i].c);
+        }
     }
-    buf_add(&c, "};\n\n");
+    buf_add(&c, "\n");
+    if (mod == 0) {
+        buf_add(&c, "const char* atm_files[] = {\n");
+        for (int i=0; i<NFILES; i++) {
+            buf_add(&c, xfmt("    %s,\n", quote(FILES[i], strlen(FILES[i]))));
+        }
+        buf_add(&c, "};\n\n");
+    }
 
-    // top-level variables
+    // top-level variables: its own, and those it uses of other units
     for (int i=0; i<nglobals; i++) {
-        buf_add(&c, xfmt("static AVal %s;\n", var_raw(&u,globals[i])));
+        buf_add(&c, xfmt("%sAVal %s;\n", multi ? "" : "static ",
+            var_raw(&u,globals[i])));
+    }
+    for (int i=0; i<o->nexts; i++) {
+        buf_add(&c, xfmt("extern AVal %s;\n", glb_name(o->exts[i])));
+    }
+    for (int i=0; i<o->nmods; i++) {
+        buf_add(&c, xfmt("extern const AProto atm_M_%s;\n",
+            MODS[o->mods[i]].name));
     }
     buf_add(&c, "\n");
 
     // constants
     buf_add(&c, xfmt("static AVal atm_K[%d];\n\n", (KN > 0) ? KN : 1));
-    buf_add(&c, "static void atm_consts_init (void) {\n");
+    if (multi) {
+        buf_add(&c, xfmt("void atm_U_%s_init (void) {\n", name));
+    } else {
+        buf_add(&c, "static void atm_consts_init (void) {\n");
+    }
     for (int i=0; i<KN; i++) {
         buf_add(&c, xfmt("    atm_K[%d] = a_str(%s, %d);\n",
             i, quote(KS[i].s,KS[i].len), KS[i].len));
@@ -3037,19 +3142,75 @@ char* coder_main (Expr* prog, Var** globals, int nglobals) {
     buf_add(&c, "\n");
     buf_add(&c, FUNCS.s ? FUNCS.s : "");
 
+    // the end of the unit: its variables, then its constants
+    if (multi) {
+        buf_add(&c, xfmt("void atm_U_%s_free (int consts) {\n", name));
+        buf_add(&c, "    if (consts) {\n");
+        buf_add(&c, xfmt("        a_clrs(atm_K, %d);\n", KN));
+        buf_add(&c, "        return;\n");
+        buf_add(&c, "    }\n");
+        for (int i=nglobals-1; i>=0; i--) {
+            buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
+        }
+        buf_add(&c, "}\n\n");
+    }
+    if (mod != 0) {
+        return c.s;
+    }
+
+    if (multi) {
+        for (int i=1; i<NMODS; i++) {
+            buf_add(&c, xfmt("void atm_U_%s_init (void);\n", MODS[i].name));
+            buf_add(&c, xfmt("void atm_U_%s_free (int consts);\n",
+                MODS[i].name));
+        }
+        buf_add(&c, "\n");
+    }
     buf_add(&c, "AStatus atm_main (void) {\n");
-    buf_add(&c, "    atm_consts_init();\n");
+    if (multi) {
+        for (int i=0; i<NMODS; i++) {
+            buf_add(&c, xfmt("    atm_U_%s_init();\n", MODS[i].name));
+        }
+    } else {
+        buf_add(&c, "    atm_consts_init();\n");
+    }
     buf_add(&c, xfmt("    return a_main(&%s);\n", main));
     buf_add(&c, "}\n\n");
 
     buf_add(&c, "void atm_free (void) {\n");
-    for (int i=nglobals-1; i>=0; i--) {
-        buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
+    if (multi) {
+        for (int i=NMODS-1; i>=0; i--) {
+            buf_add(&c, xfmt("    atm_U_%s_free(0);\n", MODS[i].name));
+        }
+    } else {
+        for (int i=nglobals-1; i>=0; i--) {
+            buf_add(&c, xfmt("    a_clr(&%s);\n", var_raw(&u,globals[i])));
+        }
     }
     // the environments close their libraries after the variables that
     // hold their handles, and before the constants that their code uses
     buf_add(&c, "    atm_env_quit();\n");
-    buf_add(&c, xfmt("    a_clrs(atm_K, %d);\n", KN));
+    if (multi) {
+        for (int i=NMODS-1; i>=0; i--) {
+            buf_add(&c, xfmt("    atm_U_%s_free(1);\n", MODS[i].name));
+        }
+    } else {
+        buf_add(&c, xfmt("    a_clrs(atm_K, %d);\n", KN));
+    }
     buf_add(&c, "}\n");
     return c.s;
+}
+
+int coder_main (Expr* prog, CUnit** units) {
+    // the main chunk is a task
+    CUR = 0;
+    const char* main = gen_task(PROTO_MAIN, NULL, 0, &prog->u.block.es, 1, 1);
+
+    CUnit* us = xalloc(NMODS * sizeof(CUnit));
+    for (int i=0; i<NMODS; i++) {
+        us[i].name = MODS[i].name;
+        us[i].c    = unit_c(i, main);
+    }
+    *units = us;
+    return NMODS;
 }

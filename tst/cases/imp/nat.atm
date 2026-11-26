@@ -1,0 +1,12 @@
+```:prelude
+#include <string.h>
+extern int nat_cnt;
+static int nat_twice (int x) { return 2*x; }
+```
+```:prelude.once
+int nat_cnt = 10;
+```
+func nat_inc () {
+    `nat_cnt++;`
+    `:number nat_cnt`
+}

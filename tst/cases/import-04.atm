@@ -1,0 +1,3 @@
+;; an error in a module is reported at its file
+import "imp/err.atm"
+boom()

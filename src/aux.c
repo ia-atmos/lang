@@ -10,6 +10,8 @@
 const char* FILENAME = "?";
 const char* FILES[FILES_MAX];
 int NFILES   = 0;
+Mod MODS[FILES_MAX];
+int NMODS    = 0;
 int FILE_CUR = 0;
 
 void* xalloc (size_t n) {
@@ -84,6 +86,10 @@ NatKind nat_kind (const char* s, const char** code) {
     }
     // `:atmos`: already a value of the language; `:value` is its former
     // name, to be removed
+    if (n==12 && !strncmp(s+1,"prelude.once",12)) {
+        *code = s + 1 + n;
+        return NAT_ONCE;
+    }
     if (n==5 && !strncmp(s+1,"atmos",5)) {
         *code = s + 1 + n;
         return NAT_VAL;

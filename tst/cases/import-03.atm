@@ -1,0 +1,5 @@
+;; native code: a `:prelude` is seen by every unit, as a header; a
+;; `:prelude.once` is only in the unit of its file, as a C variable
+import "imp/nat.atm"
+print(nat_inc(), nat_inc())
+print(`:number nat_twice(nat_cnt)`, `:number strlen("abc")`)
