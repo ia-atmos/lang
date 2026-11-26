@@ -169,6 +169,25 @@ Each one: the case, the code in Atmos, and the same in each family
       (`-O2`, the whole runtime), 94 KB and 18 KB with gzip; 168 KB of
       WebAssembly with `-Oz`; a median of 26 ms from navigation to the
       first reaction (headless Chromium, local, no network)
+- Measures (a first definition, `paper-web#10`; the first three as in
+  the study of `env-iup`, `doc/study.md`)
+    - lines: those that are neither blank nor only a comment; the HTML
+      and the CSS of a page counted apart
+    - reactions: the callbacks a version registers (handlers, effects,
+      subscriptions); in Atmos, the `await` and `loop on` over events
+    - state: the variables that live between two reactions, and where
+      they are declared (global, a component, a block)
+    - to cancel: what a version writes so that something in course
+      stops (a flag, a `clearTimeout`, a cleanup, an `abort`, a `kill`),
+      and how far it is from what it cancels; in Atmos, the `watching`
+      that encloses it
+    - tokens: to define
+- A warning from the thesis of 7GUIs (Kiss 2014): "the toolkit in
+  general played the most crucial role", more than the paradigm. Only
+  the Timer and the dialog of the Circle Drawer are about concurrency
+  and steps; the cases with preemption and with elements created at
+  run time carry the claim, and 7GUIs shows that nothing is lost in
+  the rest.
 - Threats: the programs are small; the Atmos versions are written by
   who proposes the approach; lines are a weak measure
 
@@ -197,6 +216,18 @@ against its source in `papers/web-related.md`.
   continuations.
 - Other languages over WebAssembly and the DOM: the cost of handles
   and of closures (Go `syscall/js`, Rust `web-sys`).
+
+The nearest ones, by what the paper claims (facts and quotes in
+`papers/web-related.md`, sections 1, 7 and 9):
+
+| System | The page bound in the language | Activities created at run time | Preemption | Undoing what was started |
+|---|---|---|---|---|
+| HipHop.js | no: listeners and reads of signals, by hand or by Hop.js | from outside, between reactions; compiles again | `abort`, `every` | `kill` of an `async` |
+| Pendulum | yes: events and properties are signals | no: static elements | `trap`, `exit` | none |
+| Arrowlets | events as arrows | arrows are values | `or` cancels the loser; `cancel` from outside | cancellers of listeners only |
+| Lwt_js_events | events as promises | threads | `Lwt.pick` "tries to cancel", by an exception | handlers of the exception |
+| redux-saga | no: actions of Redux | `fork` | `race`, `takeLatest`, `cancel` | `finally` |
+| Atmos | yes: `await` of events, `web.set` | `spawn` in a pool | `watching`, `par` | `defer` |
 
 ## 8. Limits and discussion
 

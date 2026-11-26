@@ -30,13 +30,13 @@ States: **open** (waits for the author), **work** (known, not done),
 | 7 | What the API has open: the default of an event, selectors, `:focus`, the clock in a hidden tab, the end of the program; and a request to a server (`fetch`), which the type-ahead needs | wait: `env-web` answered the state of each (2026-11-26, section B): none implemented, none decided; `fetch` taken as a request |
 | 8 | The cases with preemption (type-ahead, drag and drop, wizard, animation) written in Atmos and in each family | work, after `#5` and `#7` |
 | 9 | Public versions of 7GUIs and TodoMVC in the other systems, with lines | done (2026-11-26, `web-related.md` section 8): none in HipHop.js, Solid, RxJS, htmx; lines are raw (`#10`) |
-| 10 | The measures: how lines, tokens, callbacks, state and flags are counted | work |
+| 10 | The measures: how lines, tokens, callbacks, state and flags are counted | work: a first definition in the outline (Section 6, 2026-11-26); tokens to define; nothing counted with it yet |
 | 11 | Size and start: the numbers of the plan (237 KB, 64 KB) measured again with a method, and against the others | work: `env-web` gave the method and the numbers (2026-11-26, its `261126-measures.md`, `main` 2c201a6); the others are part of `#4` |
 | 12 | Fill the sections with text | work, after `#1` to `#3` |
 | 13 | TodoMVC in the evaluation | open (recommended: no, 7GUIs and the cases are enough; to ask after `#9`) |
 | 14 | Read the papers whose text was not read: HipHop 2011 and 2018, Elm PLDI 2013, Flapjax, Arrowlets, Céu TECS 2017, Pendulum's evaluation in detail | done (2026-11-26, `web-related.md` section 9); not obtained: Edwards 2009, Myers 1991, Kambona 2013 |
 | 15 | HipHop.js has no public 7GUIs, except the Timer in its paper of SAC 2018: who writes the other versions for the comparison | open (recommended: the Timer of their paper as it is, with its suspend button, in both; we write the Circle Drawer in HipHop.js and say so in the threats; to ask after `#1`) |
-| 16 | Lwt_js_events (js_of_ocaml), redux-saga, Concur and Pendulum are nearer to us than the plan knew: they go into the comparison of preemption | work |
+| 16 | Lwt_js_events (js_of_ocaml), redux-saga, Concur and Pendulum are nearer to us than the plan knew: they go into the comparison of preemption | done in the outline (2026-11-26, the table of Section 7); the code of each case is `#8` |
 
 ## A. Decisions waiting for the author
 
