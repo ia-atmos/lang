@@ -16,7 +16,7 @@ thread meets in `rt/` (by the session, to be confirmed).
 | # | Title | State |
 |---|---|---|
 | #1 | What threads are for | decided by the author, 2026-11-26: computation. "É um bloco restrito sem a semântica de concorrência estruturada, sem pin, etc. Basicamente pra cálculo mesmo, mas com a semântica quase toda da parte não concorrente de atmos" (the middle way of `261125-threads-runtime.md`) |
-| #2 | How values of the task enter the block and the result leaves it | asked, 2026-11-26; recommended: deep copy in at the start, deep copy out at the end, the block's own heap freed when it ends |
+| #2 | How values of the task enter the block and the result leaves it | decided by the author, 2026-11-26 ("#2.1"): deep copy in at the start, deep copy out at the end, the block's own heap freed when it ends (as Lua Lanes: one `lua_State` per lane, arguments, upvalues and results copied, strings interned per state; only "deep userdata" is shared, with its own lock). Nothing to implement for now (author: "Nao vamos implementar nada agora") |
 
 ## Facts (2026-11-22)
 
