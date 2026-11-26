@@ -1436,6 +1436,10 @@ A_ARITH_FAST(a_mul, A_MUL, *)
 
 // a / b: always float
 static inline AStatus a_div (AVal* dst, AVal a, AVal b) {
+    if (a.type==A_NUM && b.type==A_NUM) {
+        a_set(dst, a_num(a.u.n / b.u.n));
+        return A_OK;
+    }
     return a_arith(A_DIV, dst, a, b);
 }
 
@@ -1474,6 +1478,11 @@ static inline AStatus a_lt (AVal* dst, AVal a, AVal b) {
         a_set(dst, a_bool(a.u.i < b.u.i));
         return A_OK;
     }
+    if (a.type==A_NUM && b.type==A_NUM) {
+        // as C: false if either is NaN
+        a_set(dst, a_bool(a.u.n < b.u.n));
+        return A_OK;
+    }
     return a_less(0, dst, a, b);
 }
 
@@ -1481,6 +1490,11 @@ static inline AStatus a_lt (AVal* dst, AVal a, AVal b) {
 static inline AStatus a_le (AVal* dst, AVal a, AVal b) {
     if (a.type==A_INT && b.type==A_INT) {
         a_set(dst, a_bool(a.u.i <= b.u.i));
+        return A_OK;
+    }
+    if (a.type==A_NUM && b.type==A_NUM) {
+        // as C: false if either is NaN
+        a_set(dst, a_bool(a.u.n <= b.u.n));
         return A_OK;
     }
     return a_less(1, dst, a, b);
@@ -1522,7 +1536,30 @@ AStatus a_in (AVal* dst, AVal v, AVal t);
 //  - nil: 0, 1, ...
 //  - function: its results, until the first is nil
 // Sets `k` to nil at the end.
-AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v);
+AStatus a_next_slow (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v);
+
+// The counted loops over integers, `loop i in n` and `loop i in (a,b)`,
+// with no call.
+static inline AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
+    if (it.type==A_INT && (lim.type==A_NIL || lim.type==A_INT)) {
+        AInt p = (pos->type == A_INT) ? pos->u.i : 0;
+        AInt x;
+        int end;
+        if (lim.type == A_NIL) {
+            // 0..n-1
+            x   = p;
+            end = (p >= it.u.i);
+        } else {
+            // a..b
+            x   = (AInt) ((AUInt)it.u.i + (AUInt)p);
+            end = (x > lim.u.i);
+        }
+        a_set(k, end ? a_nil() : a_int(x));
+        *pos = a_int((AInt) ((AUInt)p + 1));
+        return A_OK;
+    }
+    return a_next_slow(it, lim, pos, k, v);
+}
 
 // String representation, as `print` shows it (owned).
 AVal a_tostring (AVal v);

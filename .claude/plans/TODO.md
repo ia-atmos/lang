@@ -182,7 +182,7 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`).
 
 | Session | Id | Topic |
 |---|---|---|
@@ -190,14 +190,14 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `atmos-pin` | session_011eECogSDhkVfyt7qme5DLh | the rules of `pin` |
 | `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools |
 | `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
-| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` |
+| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "arquivar atmos-grab entao"; no open items, `atmos#20`) |
 | `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
 | `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
-| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build |
+| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build (archived 2026-11-26 by `atmos`, on the author's words there: "ok. Acho que pode pedir pra sessao pai atmos arquivar aqui?"; all on `main`, index `TODO-float.md`; `atmos-float#12` and `#8` carried by `atmos`, `atmos#19`) |
 | `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
 | `atmos-cli` | session_011eECoijhygAGqD1jDZ3pWZ | the command line |
 | `atmos-blocks` | session_011eECoipBcPZnUN2BbGAyuB | the end of a transparent block |
-| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
+| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "Pode arquivar atmos-iter entao"; no open items, `atmos#21`) |
 | `atmos-tag` | session_011eECogjajEpy59YjN42Max | the tag of a table |
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |

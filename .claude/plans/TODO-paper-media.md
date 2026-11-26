@@ -20,15 +20,19 @@ States: **open** (waits for the author), **work** (known, not done),
 | 2 | The authors: those of 2016 and Presotto | open |
 | 3 | The scope of the evaluation | open |
 | 4 | A document that changes while it plays (an editor) | open (recommended: future work) |
-| 5 | The vocabulary of Section 4 | wait: `pico-media`, milestone M1 |
-| 6 | The session of the project: its identifier, then the questions | wait: `pico-slides` (session_011eECogEdSaHMwZpk7NGmgk, repository `ia-atmos/pico-slides`) exists since 2026-11-19 and got the plan for Aurora; `pico-media` does not exist |
+| 5 | The vocabulary of Section 4 | wait: `pico-media` (does not exist). Decided by the author on 2026-11-26: `pico-slides` is no longer a dependency of the paper |
+| 6 | The session of the project: its identifier, then the questions | wait: `pico-media` does not exist. `pico-slides` (session_011eECogEdSaHMwZpk7NGmgk) sent its vocabulary on 2026-11-25; kept only as a possible cited example or case study of the layout half |
 | 7 | The published version of the paper of 2016 | work |
 | 8 | Related work checked against sources | work |
 | 9 | Lines of the samples of Céu-Media, for the comparison | work |
 | 10 | The sketch of Section 4 is not compiled | wait: `pico-media` |
 | 11 | Fill the sections with text | wait: `#1`, `#5` |
 | 12 | What the player does when the document is replaced (`set doc`): replay, or keep what did not change | wait: `pico-media`; related to `#4` |
-| 13 | Redo Aurora first, over Atmos and pico, with no concern for Céu-Media (asked by the author, 2026-11-19) | open: recommended yes, as the first step; he created `pico-slides` and had the plan sent to it, which reads as a yes, not said in words. The paper still needs time and media after it |
+| 13 | Redo Aurora first, over Atmos and pico, with no concern for Céu-Media (asked by the author, 2026-11-19) | closed 2026-11-26: done in another project (`ia-atmos/pico-slides`), outside the paper. It became a tool of slides, with no time nor media; the paper does not depend on it |
+
+State of the session: paused by the author since 2026-11-19 ("por
+enquanto nao vamos fazer nada aqui"). The paper has no project that
+implements it until `pico-media` exists.
 
 ## A. Decisions waiting for the author
 
