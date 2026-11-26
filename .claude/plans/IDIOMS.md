@@ -13,6 +13,8 @@ correction needs a change of the compiler, it goes to `atmos-lang`.
 Sources so far: `env-iup` (its `.claude/plans/IDIOMS.md`, items
 `env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`. The
 examples of `context` follow lang d0fe0ac.
+Since lang 9d4561a the predicate of a `loop e on` names the event by
+the variable of the loop (`until e.press`, not `it.press`).
 
 ## In a program
 
@@ -29,7 +31,7 @@ loop e on :button [h=cnv] {
 }
 
 ;; after
-loop e on :button [h=cnv] until it.press {
+loop e on :button [h=cnv] until e.press {
     <...>
 }
 ```
@@ -43,7 +45,7 @@ A refinement of the rule above. The author: "Para um until desse
 tamanho, vale a pena parenteses em volta".
 
 ```
-loop e on :button until (it.press && (it.but == :left) && it.status.double) {
+loop e on :button until (e.press && (e.but == :left) && e.status.double) {
     <...>
 }
 ```
