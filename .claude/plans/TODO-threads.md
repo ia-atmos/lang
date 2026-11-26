@@ -47,6 +47,10 @@ thread meets in `rt/` (by the session, to be confirmed).
   by the author 2026-11-24): `#1`, `#2`, ... here, seen from outside as
   `atmos-threads#N`. Only `atmos` and `atmos-lang` share the sequence of
   `ISSUES.md`.
+- Before writing Atmos, read `.claude/plans/IDIOMS.md` on main (standing
+  rule `atmos#29`, 2026-11-26). A general rule that comes out of the
+  author's review of an excerpt of this session goes to `atmos`
+  (source `atmos-threads#N`, a before and an after).
 
 ## Strings (the author's question, 2026-11-26)
 
