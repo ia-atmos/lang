@@ -4,13 +4,15 @@ The time of a build with `include`: separate compilation, a
 `--verbose`, C flags on the command line. Material: `261123-cc.md`.
 Prototypes go to the branch `cc` (cut from `origin/main` at `5d1b6a7`).
 
-Last update: 2026-11-25 (LTO).
+Last update: 2026-11-26.
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
 | #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
+| #2 | `import`: each file compiled apart (the author, 2026-11-26) | Asked 2026-11-26; recommended: the front end still reads every file, one C unit per file, the body of a file as a task of its own (section "Import") |
+| #3 | Which top-level names are local to a file (the author: "usar val para locais") | Not asked yet (after #2) |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -125,3 +127,65 @@ code and all). Same container, 4 cores, gcc 13.3, compile and link:
   ASAN passes over the new `sdl.atm`. The change to `a_nat_is` on `cc` is
   no longer needed by env-sdl; it still protects other environments
   (and `rt/lio.c`, `FILE_KIND`).
+
+## Import: each file compiled apart (2026-11-26)
+
+**Autor** (2026-11-26):
+> Acredito que queremos algo mais sofisticado. Um sistema de import que
+> compile cada modulo em separado. É possível?
+> Isso tras uma questao de design que sao os namespaces, mas estaria
+> satisfeito em assumir que nomes externos nao colidem. Poderiamos usar
+> val para locais para dimunir.
+> 1. Possivel um import extremamente simples?
+> 2. As tasks e vars e funcs e etc globais de Atmos sao possiveis de
+> compilar e acessar em separado? Como se compara com os simbolos de C?
+
+Read in the compiler (`main` at `d6b0c62`):
+
+- A top-level variable is `static AVal atm_G<id>_<name>` (`var_raw`),
+  accessed directly, never captured or boxed (`resolver.c`, capture
+  returns early for a global). A `func` or `task` is not a C symbol the
+  program calls: it is a value built when its declaration runs, kept in
+  such a variable, and called through `a_call`.
+- Strings and tags are interned at run time (`rt/str.c`), so two units
+  agree on them with no shared table; `atm_K` can be per unit.
+- What the resolver needs of a name of another file: that it exists,
+  its kind (`val`, `var`, `pin`), and, for a `spawn`, the body of the
+  task (does it await: "task aborted at end of block").
+- Names that depend on the whole program today: `atm_G<id>`,
+  `atm_T<n>`, `atm_F<n>`, `atm_K[i]`, the indexes of `atm_files`. A
+  change in one file renumbers the others.
+- The statements of an included file are part of the main task: one C
+  function per trail (`atm_T0` has 4465 lines in Pingus), one frame.
+- A `:prelude` goes to the top of the one C file: `env-sdl` keeps C
+  state there (`static SDL_Window* SDL_WIN`) and `static` functions
+  that the natives of other files call (15 files of Pingus have
+  natives).
+- Top-level statements of the files of Pingus: 98 `task`, 77 `func`,
+  33 `pin`, 11 `val`, 1 `var`, and a few that run (`spawn {...}` in
+  `engine/engine.atm` and `engine/sdl.atm`, a `loop` in
+  `game/pingu/actions.atm`).
+
+Proposed (nothing decided):
+
+- `import "x.atm"`: the compiler still reads and resolves every file
+  (0.05 s for Pingus), so there is no interface file and every check
+  stays as with `include`. Only the output changes: one C unit per
+  file, an object kept in a cache by the text of its C and the flags,
+  the changed ones compiled in parallel, then linked.
+- A top-level name becomes `AVal atm_G_<name>`, with no number: seen by
+  the other units as `extern`. Two files with the same top-level name
+  fail at link (the author accepts no namespaces).
+- The body of an imported file is a task of its own, started at the
+  `import` and kept until the program ends, so its `spawn`, `pin` and
+  `defer` live as today. Difference from `include`: an `await` at the
+  top level of the file does not hold the importer.
+- Names per file (`atm_T_<file>_<n>`), `atm_K` and `atm_files` per
+  unit, so that a change in one file leaves the C of the others equal.
+- The open cost is the native code: a `:prelude` is seen only by its
+  unit. An environment would give its C declarations to the others
+  (a part of the prelude that every importer repeats, with no state)
+  and keep its state in its own unit.
+- Expected, from the split measured on 2026-11-23 (not linked): a
+  cold build about 4 s at `-O1` on 4 cores against 21.9 s; after a
+  change in one file, only that unit. Not measured with a real import.
