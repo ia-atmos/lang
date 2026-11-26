@@ -17,9 +17,9 @@ prefix; those born here are `atmos-pool#N`.
 | `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
 | `atmos-lang#60` | Where the exception of `emit @t` goes | Done: to who emits; manual + cases merged into main (7af7971, 2026-11-25) |
 | `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`) | Acknowledged by the author (2026-11-25, "Sim", to the right description); the loop keeps skipping tasks that end, as now |
-| `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
+| `atmos-pool#2` | A spatial index (grid) as a library | Decided (2026-11-25, "Sim"): kept out for now, on the branch `pool-grid` |
 | `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
-| `atmos-pool#4` | Where libraries written in Atmos live (`lib/` on the branch is a guess) | Question, not yet put to him |
+| `atmos-pool#4` | Where libraries written in Atmos live | Deferred by the author (2026-11-25) until a second library appears |
 
 ## A. Waiting for the author (one at a time)
 
@@ -77,6 +77,9 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-pool#2`, `#4` (2026-11-25, here): the grid stays out, on
+  `pool-grid`; where Atmos libraries live waits for a second library.
 
 - `atmos-pool#1` (2026-11-25, here): acknowledged, "Sim", after the
   right description (section 3 of `261118-pool.md`), and after the
