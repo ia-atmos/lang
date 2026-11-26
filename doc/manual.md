@@ -2496,6 +2496,12 @@ In the last rule, the table `b` works as a pattern: `a` may have other fields.
 The field `tag` follows the rule of tags, so that a pattern with a tag also
 matches its subtypes.
 
+Since a tag is a string, a pattern that is a tag also matches a string with
+the same characters: `'List' ?? :List` and `'table' ?? :table` are true.
+Where the value may be an arbitrary string, a pattern that is a tagged table
+asks for a table: `v ?? :List []` is true for `:List [...]` and its subtypes,
+and false for the string `'List'` and for a table with no tag.
+
 The operator `!?` is the negation of `??`.
 
 The operator `??` is the single matching mechanism in Atmos:
@@ -2513,6 +2519,8 @@ nil ?? nil          ;; --> true
 [] ?? []            ;; --> true
 :P [x=1,y=2] ?? :P [x=1]    ;; --> true
 [x=1] ?? [x=1,y=2]  ;; --> false
+'List' ?? :List     ;; --> true (a tag is a string)
+'List' ?? :List []  ;; --> false (asks for a table tagged :List)
 ```
 
 ### Length
