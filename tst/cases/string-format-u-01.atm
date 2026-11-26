@@ -1,0 +1,6 @@
+;; string.format: %u, an integer printed with no sign
+print(string.format("%u", 0))
+print(string.format("%u", 4294967295))
+print(string.format("%08u|%-5u|", 42, 7))
+print(string.format("%u", -1))
+print(catch true { string.format("%u", 1.5) })

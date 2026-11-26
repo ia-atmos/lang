@@ -3965,7 +3965,7 @@ A negative position counts from the end: `-1` is the last byte.
 - `string.upper(s)`, `string.lower(s)`: converts the letters in `s`
 - `string.rep(s, n [, sep])`: `n` copies of `s`, separated by `sep`
 - `string.format(fmt, ...)`: formats its arguments as `printf` in C, with the
-  conversions `%d` `%i` `%x` `%X` `%o` `%c` (integers), `%f` `%e` `%g`
+  conversions `%d` `%i` `%u` `%x` `%X` `%o` `%c` (integers), `%f` `%e` `%g`
   (numbers), `%s` (any value, as `tostring`), and `%%`
 
 Examples:
