@@ -2,6 +2,7 @@
 //
 //   atmos f.atm [args]     compiles, builds, and runs
 //   atmos -c f.atm         emits C only (to stdout)
+//   atmos -c -o dir f.atm  emits C only, one file per module in `dir`
 //   atmos -o out f.atm     builds only
 //   atmos -t f.atm         enables `test` blocks
 //   atmos -e env.atm f.atm includes the file of an environment before
@@ -409,7 +410,8 @@ static void usage (void) {
         "Usage: " ATMOS_NAME " [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...\n"
         "\n"
         "Options:\n"
-        "   -c          Emit C only (to the standard output).\n"
+        "   -c          Emit C only (to the standard output, or, with -o <dir>,\n"
+        "               one file per module in the directory).\n"
         "   -o <out>    Build only.\n"
         "   -t          Enable test blocks.\n"
         "   -e <env>    Include the file of an environment first.\n"
@@ -485,11 +487,32 @@ int main (int argc, char** argv) {
     char* c = units[0].c;
 
     if (only) {
-        for (int j=0; j<nunits; j++) {
+        // the C only: to the standard output, or, with `-o <dir>`, one
+        // file per unit in the directory, whose paths are printed (what
+        // another build needs to compile them)
+        if (exe == NULL) {
             if (nunits > 1) {
-                printf("//// atmos unit : %s.c\n", units[j].name);
+                fprintf(stderr, ATMOS_NAME " : a program with modules has "
+                    "one C file per module : give a directory with -o\n");
+                return 1;
             }
-            fputs(units[j].c, stdout);
+            fputs(c, stdout);
+            return 0;
+        }
+        if (system(xfmt("mkdir -p '%s'", exe)) != 0) {
+            fprintf(stderr, ATMOS_NAME " : cannot create '%s'\n", exe);
+            return 1;
+        }
+        for (int j=0; j<nunits; j++) {
+            char* path = xfmt("%s/%s.c", exe, units[j].name);
+            FILE* f = fopen(path, "w");
+            if (f == NULL) {
+                fprintf(stderr, ATMOS_NAME " : cannot write '%s'\n", path);
+                return 1;
+            }
+            fputs(units[j].c, f);
+            fclose(f);
+            printf("%s\n", path);
         }
         return 0;
     }

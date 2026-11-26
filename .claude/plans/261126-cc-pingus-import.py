@@ -36,7 +36,7 @@ L[e+1:e+1]=['```:prelude.c']+once+['```']
 open(p,'w').write('\n'.join(L))
 
 # the tags: what was a prelude is a header
-for f in glob.glob(root+'/**/*.atm',recursive=True):
+for f in glob.glob(root+'/sdl-pingus/**/*.atm',recursive=True) + glob.glob(root+'/env-sdl/**/*.atm',recursive=True):
     if '/data/' in f: continue
     s=open(f).read(); t=re.sub(r'(?m)^```:prelude$','```:prelude.h',s)
     if s!=t: open(f,'w').write(t)

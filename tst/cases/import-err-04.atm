@@ -1,0 +1,2 @@
+;; the C of a program with modules is one file per module
+import "imp/geo.atm"

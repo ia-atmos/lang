@@ -15,7 +15,8 @@ Last update: 2026-11-26.
 | #3 | Which top-level names are local to a file (the author: "usar val para locais") | Answered 2026-11-26 ("Tudo certo"): every top-level name is seen by who imports, as with `include`; no rule for `val` |
 | #4 | Native code under `import`: the names of the two preludes | Decided 2026-11-26: `:prelude.h` (every unit) and `:prelude.c` (the unit of its file), his suggestion ("Poderia ser prelude.c e .h?"). On `cc` |
 | #4a | `:prelude` with no suffix | Decided 2026-11-26 ("Sempre"): always an error (`invalid native : expected ':prelude.h' or ':prelude.c'`). On `cc`; every environment and port must migrate before a merge |
-| #5 | `-c` with modules, where the cache lives and how it is cleaned (overlaps `atmos-cli`) | Not asked yet |
+| #5 | `-c` with modules | Decided 2026-11-26 ("Recomendado"): one C file per module in a directory. On `cc` as `-c -o <dir>` (the paths are printed); `-c` alone refuses a program with modules; with no `import`, the standard output as before. The final spelling (`--emit-c=DIR`) is of `atmos-cli` |
+| #6 | The cache: where it lives, how it is cleaned (overlaps `atmos-cli`) | Not asked yet. On `cc`: `ATMOS_CACHE`, else `$XDG_CACHE_HOME/atmos`, else `~/.cache/atmos`; never cleaned |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -287,3 +288,18 @@ only its `.atm` files.
 - Before a merge: every repository with a `:prelude` fails to compile
   until it chooses a suffix. Known here: `env-sdl` (`sdl.atm`, 2 tests),
   `sdl-pingus` (`engine/sdl.atm`). The others were not counted.
+
+## `-c` with modules (2026-11-26, decided, on `cc`)
+
+`atmos -c -o <dir> f.atm` writes `<dir>/main.c` and one
+`<dir>/<module>.c` per module, and prints their paths. Checked by hand:
+the two files of `tst/cases/import-01` compile with `cc` and the
+runtime, and run. `atmos -c f.atm` on a program with modules is an
+error (`import-err-04`). The manual ("Execution") has it, and
+`ATMOS_CACHE`.
+
+A slip of this session, fixed: the script of the Pingus experiment
+followed the link to `lang` in the copy and rewrote
+`tst/cases/native-err-04.atm` (its `:prelude` became `:prelude.h`), which
+was committed so in `c` of the previous step; the case and the script
+are corrected.

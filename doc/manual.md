@@ -483,7 +483,8 @@ $ atmos
 Usage: atmos [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...
 
 Options:
-   -c          Emit C only (to the standard output).
+   -c          Emit C only (to the standard output, or, with -o <dir>,
+               one file per module in the directory).
    -o <out>    Build only.
    -t          Enable test blocks.
    -e <env>    Include the file of an environment first.
@@ -491,7 +492,16 @@ Options:
 
 The compiler translates the program to a single C file, and then calls the C
 compiler to build it and link it with the Atmos runtime.
+A program with [modules](#import) becomes one C file per module, which are
+compiled at the same time.
+The compiled modules are kept in a cache, such that a module is only compiled
+again when its C code changes, or a file that its C code includes.
+With `-c -o <dir>`, the compiler writes the C files to the directory and prints
+their paths, for another build to compile them.
 The following environment variables affect the build:
+
+- `ATMOS_CACHE`: the directory of the cache of compiled modules (default
+  `$XDG_CACHE_HOME/atmos`, or `~/.cache/atmos`).
 
 - `ATMOS_CC`: the C compiler (default `cc`).
 - `ATMOS_CFLAGS`: the flags for the C compiler (default `-O1`).
