@@ -14,7 +14,7 @@ prefix; those born here are `atmos-pool#N`.
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Closed with no change (2026-11-26): the premise was wrong, `watching`/`par`/`spawn {}` do not shift the level (the author, tested); a clause in "Emit" and the case emit-level-01 on `pool` 39a273b, sent to `atmos-lang` to merge |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
-| `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
+| `atmos-lang#33` | Time emitted to a pool or a task | Decided `#33a` (2026-11-26): not now; `#33b` handed to the TODO of `atmos-lang` as future work |
 | `atmos-lang#60` | Where the exception of `emit @t` goes | Done: to who emits; manual + cases merged into main (7af7971, 2026-11-25) |
 | `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`) | Acknowledged by the author (2026-11-25, "Sim", to the right description); the loop keeps skipping tasks that end, as now |
 | `atmos-pool#2` | A spatial index (grid) as a library | Decided (2026-11-25, "Sim"): kept out for now, on the branch `pool-grid` |
@@ -77,6 +77,9 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#33` (2026-11-26, here), verbatim: "#33a, mas colocar a
+  opcao #33b em TODO na sessao atmos-lang". Sent to `atmos-lang`.
 
 - `atmos-lang#4` (2026-11-26, here): closed, no `#4a` nor `#4b`. The
   author: "Pq watching iria mudar o N? Tasks transparente nao mudam o
