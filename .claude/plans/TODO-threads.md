@@ -6,7 +6,7 @@ prototypes them on the branch `threads` of this repository (cut from
 does not merge into `main`: when the author approves a merge,
 `atmos-lang` measures the ports and merges.
 
-Last update: 2026-11-25.
+Last update: 2026-11-26.
 
 Work with no input: `261125-threads-runtime.md`, the global state a
 thread meets in `rt/` (by the session, to be confirmed).
@@ -15,7 +15,8 @@ thread meets in `rt/` (by the session, to be confirmed).
 
 | # | Title | State |
 |---|---|---|
-| #1 | What threads are for (heavy computation, blocking C calls, several cores, parity with the reference) | asked, 2026-11-22; on hold until "next week" (author), unblocked by `atmos` on 2026-11-25; waits for his answer |
+| #1 | What threads are for | decided by the author, 2026-11-26: computation. "É um bloco restrito sem a semântica de concorrência estruturada, sem pin, etc. Basicamente pra cálculo mesmo, mas com a semântica quase toda da parte não concorrente de atmos" (the middle way of `261125-threads-runtime.md`) |
+| #2 | How values of the task enter the block and the result leaves it | asked, 2026-11-26; recommended: deep copy in at the start, deep copy out at the end, the block's own heap freed when it ends |
 
 ## Facts (2026-11-22)
 
@@ -45,3 +46,13 @@ thread meets in `rt/` (by the session, to be confirmed).
   by the author 2026-11-24): `#1`, `#2`, ... here, seen from outside as
   `atmos-threads#N`. Only `atmos` and `atmos-lang` share the sequence of
   `ISSUES.md`.
+
+## Strings (the author's question, 2026-11-26)
+
+The text of a string is immutable, but its header is not: every push
+and pop counts it (`a_inc` / `a_dec`, not atomic), `a_str` inserts in
+the one intern table `TAB` when a string is made (concatenation,
+`tostring`), and the last release removes it. Equality is by pointer
+(`a_same`), so a string made in the block must be re-interned in the
+main table when it crosses back. So: no private copy of the text is
+needed, only no shared writes to the headers and to `TAB`.
