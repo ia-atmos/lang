@@ -10,7 +10,7 @@ prefix; those born here are `atmos-pool#N`.
 | Item | Title | State |
 |---|---|---|
 | `atmos-lang#1` | An await over a pool with a condition | Done: `await :tick until iter.find(ts, f)`, on main with the branch `iter` (7c64f69, 2026-11-22) |
-| `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
+| `atmos-lang#2` | Phases inside a tick | Decided `#2a` (2026-11-26): the convention in the manual; open, not now: the environment could emit a number of tick events per frame |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
@@ -77,6 +77,11 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#2` (2026-11-26, here): `#2a`, the convention of a task that
+  emits the phases, in the manual. The author, verbatim: "Poderia ter
+  uma alternativa de passar pro ambiente um numero de eventos de ticks.
+  Mas deixamos em aberto agora."
 
 - `atmos-pool#2`, `#4` (2026-11-25, here): the grid stays out, on
   `pool-grid`; where Atmos libraries live waits for a second library.
