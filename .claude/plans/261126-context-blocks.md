@@ -90,7 +90,7 @@ Decided one by one with the author:
   only defines, with the sections `:enter` and `:leave` (tags, not the
   contextual names of section 4).
 - Rejected by him: grouping without a block ("a indentação engana").
-- Mine, to confirm: the filter goes right after `in` / `context`.
+- The filter goes right after `in` / `context` (the author, "ok").
 
 ```
 val world = ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE)
