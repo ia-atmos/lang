@@ -2303,7 +2303,27 @@ Outside a clause, `super` is an ordinary name.
 
 [Tasks](#tasks) may also have clauses: `spawn T(...)`, `spawn @p T(...)` and
 `await T(...)` choose the task by the arguments.
-`super` is not supported in a task clause.
+In a task clause, `super(...)` is the parent task applied to the arguments,
+to be awaited or spawned: `await super()` runs the behavior of the parent
+inside the child, which may run it in parallel with its own, or abort it:
+
+```
+task Bad (b :Bad.Walker) {
+    par {
+        await super()               ;; all that a :Bad does
+    } with {
+        loop on :wall {             ;; plus its own reaction
+            print(b.name, "turns")
+        }
+    }
+}
+task Bad (b :Bad.Walker.Ice) {
+    watching :squished {
+        await super()               ;; a walker, until squished
+    }
+    <...>                           ;; then its own behavior
+}
+```
 
 Clauses are only for named prototypes: a tag in a parameter of `val func f`,
 of a lambda, or of an anonymous `func` is rejected.

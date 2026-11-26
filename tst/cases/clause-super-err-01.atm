@@ -1,1 +1,2 @@
-task T (x :A) { super() }
+task T (x :A) { await super() }
+await T(:A [])

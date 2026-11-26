@@ -1,1 +1,4 @@
-clause-super-err-01.atm : line 1 : near 'super' : invalid super : unexpected task
+==> ERROR:
+ |  clause-super-err-01.atm:1 (call)
+ v  clause-super-err-01.atm:1 (throw)
+==> invalid super : no parent clause of 'T'

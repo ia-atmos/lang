@@ -17,6 +17,7 @@ AVal atm_g_next;
 AVal atm_g_iter;
 AVal atm_g_clause;
 AVal atm_g_super;
+AVal atm_g_super_task;
 AVal atm_g_X;
 AVal atm_g_atmos;
 AVal atm_g_math;
@@ -1313,8 +1314,7 @@ static int clause_above (AVal p, AVal t) {
 // specific clause of `f` that applies to them among the parents of the
 // clause of tags `tag1..tagN`: those whose every tag is as or more
 // general, and that differ in some.
-static AStatus std_super (AFunc* self, int argc, AVal* argv) {
-    (void) self;
+static AStatus super_pick (int argc, AVal* argv, AVal* ret, int* na_, AVal** args_) {
     AVal f = arg(argc, argv, 0);
     int  n = (int) arg(argc, argv, 1).u.i;
     AVal* own = &argv[2];
@@ -1364,12 +1364,37 @@ static AStatus std_super (AFunc* self, int argc, AVal* argv) {
         return a_error("invalid super : no parent clause of '%s'",
             A_STR_OF(g->caps[0])->s);
     }
-    AVal h = g->caps[best];
+    *ret = g->caps[best];
+    *na_ = na;
+    *args_ = args;
+    return A_OK;
+}
+
+static AStatus std_super (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal h; int na; AVal* args;
+    AStatus st = super_pick(argc, argv, &h, &na, &args);
+    if (st != A_OK) {
+        return st;
+    }
     if (h.type != A_FUNC) {
         return a_error("invalid super : expected function : got %s",
             a_typename(h));
     }
     return A_FUNC_OF(h)->fn(A_FUNC_OF(h), na, args);
+}
+
+// $super_task(f, n, tags..., args...): the parent clause of a task
+// clause, as a value, for `await super()` or `spawn super()`.
+static AStatus std_super_task (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal h; int na; AVal* args;
+    AStatus st = super_pick(argc, argv, &h, &na, &args);
+    if (st != A_OK) {
+        return st;
+    }
+    a_pushc(h);
+    return A_OK;
 }
 
 // $clause(cur, name, f, tag1, ..., tagN): the function `cur` (nil, a
@@ -1446,6 +1471,7 @@ static AStatus std_clause (AFunc* self, int argc, AVal* argv) {
 void atm_std_init (void) {
     atm_g_clause   = a_func(std_clause, 0);
     atm_g_super    = a_func(std_super, 0);
+    atm_g_super_task = a_func(std_super_task, 0);
     CLAUSE_KTAG    = a_strz("tag");
     atm_g_print    = a_func(std_print, 0);
     atm_g_type     = a_func(std_type, 0);
@@ -1525,6 +1551,7 @@ void atm_std_init (void) {
     a_own(atm_g_iter);
     a_own(atm_g_clause);
     a_own(atm_g_super);
+    a_own(atm_g_super_task);
     a_own(atm_g_X);
     a_own(atm_g_math);
     a_own(atm_g_atmos);
@@ -1544,6 +1571,7 @@ void atm_std_quit (void) {
     a_clr(&atm_g_iter);
     a_clr(&atm_g_clause);
     a_clr(&atm_g_super);
+    a_clr(&atm_g_super_task);
     a_clr(&CLAUSE_KTAG);
     a_clr(&atm_g_X);
     for (int i=0; i<atm_nenvs; i++) {

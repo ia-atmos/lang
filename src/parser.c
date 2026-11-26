@@ -355,9 +355,6 @@ static Expr* clause_name (Tk tk, const char* name) {
 //  super()      -->  $super(f, n, tag1, ..., tagN, x, y, ...)   (its parameters)
 static Expr* parser_super (Tk tk) {
     Clause* c = CLAUSE;
-    if (c->task) {
-        err(tk, "invalid super : unexpected task");
-    }
     if (!check_str("(") || TK0.sep!=TK1.sep) {
         err(TK1, "expected '('");
     }
@@ -365,7 +362,7 @@ static Expr* parser_super (Tk tk) {
     List args = parser_list(")");
     accept_str_err(")");
     Expr* call = mk(E_CALL, tk);
-    call->u.call.f = mk(E_ACC, tk_id(tk, "$super"));
+    call->u.call.f = mk(E_ACC, tk_id(tk, c->task ? "$super_task" : "$super"));
     list_add(&call->u.call.es, clause_name(c->tk, c->name));
     char* n = malloc(16);
     snprintf(n, 16, "%d", c->ntags);
@@ -393,7 +390,18 @@ static Expr* parser_super (Tk tk) {
             list_add(&call->u.call.es, args.v[i]);
         }
     }
-    return call;
+    if (!c->task) {
+        return call;
+    }
+    // in a task clause: `$super_task(...)` is the parent task, called
+    // with the same arguments, for `await super()` and `spawn super()`
+    Expr* call2 = mk(E_CALL, tk);
+    call2->u.call.f = call;
+    int skip = 2 + c->ntags;
+    for (int i=skip; i<call->u.call.es.n; i++) {
+        list_add(&call2->u.call.es, call->u.call.es.v[i]);
+    }
+    return call2;
 }
 
 // Only a named prototype (`func f`, `func m.f`) takes clauses.

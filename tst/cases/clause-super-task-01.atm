@@ -1,0 +1,30 @@
+task Bad (b :Bad) {
+    loop on :update {
+        print(b.name, "moves")
+    }
+}
+task Bad (b :Bad.Walker) {
+    par {
+        await super()                       ;; everything a :Bad does
+    } with {
+        loop on :wall {
+            print(b.name, "turns")          ;; plus its own reaction
+        }
+    }
+}
+task Bad (b :Bad.Walker.Ice) {
+    watching :squished {
+        await super()                       ;; a walker, until squished
+    }
+    print(b.name, "is flat")
+    loop on :update {
+        print(b.name, "slides")
+    }
+}
+pin w = spawn Bad(:Bad.Walker [name="snowball"])
+pin i = spawn Bad(:Bad.Walker.Ice [name="iceblock"])
+emit :update
+emit :wall
+emit :squished
+emit :update
+emit :wall

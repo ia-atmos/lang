@@ -1561,6 +1561,7 @@ extern AVal atm_g_next;
 extern AVal atm_g_iter;
 extern AVal atm_g_clause;
 extern AVal atm_g_super;
+extern AVal atm_g_super_task;
 
 // A function with clauses (`func f (x :T)`): the clause that a call
 // chooses by its arguments, borrowed in `out`, or an error if none
