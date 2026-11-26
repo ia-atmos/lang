@@ -5,6 +5,14 @@ Awaits and emits over pools and tasks. Material: `261118-pool.md`
 (standing rule of 2026-11-18): those born in `atmos-lang` keep its
 prefix; those born here are `atmos-pool#N`.
 
+## State
+
+Closed on 2026-11-26: nothing open with the author. He asked to archive
+the session ("Ok peca pra arquivar entao"); asked `atmos` to do it once
+`pool` 39a273b (`atmos-lang#4`) is on main. Branches left: `pool-grid`
+(the grid, kept), `pool-find` (obsolete), `pool` (deletable after the
+merge).
+
 ## Index
 
 | Item | Title | State |
