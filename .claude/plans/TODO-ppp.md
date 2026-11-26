@@ -83,3 +83,15 @@ Alternatives in code, with no `set :out` on an index:
 - snkrx: invert: the owner emits to the button, which pulls its own
   spring (`emit @btn :Button.pull`); for `ItemCard`, the shop answers the
   card. More code; the current form is not wrong.
+
+## #7 A test of a dead value (asked by the author 2026-11-26)
+
+Today: a task that ended has `type` `xtask` and `atmos.status(t)` is
+`dead`; a finalized table or pool keeps its `type`, and any use but `==`
+raises `invalid access : finalized ...`; there is no test.
+
+| Option | Form | `??` | Breaks |
+|---|---|---|---|
+| A. a type | `type(x)` gives `dead` once it ends, so `x ?? :dead` by the type rule | yes, for free | a dead task is no longer `?? :xtask` (`await :xtask`, matches); a value changes type over time |
+| B. a function (recommended) | `atmos.status(x)` also takes tables and pools: `dead` when finalized (tasks as today) | none; `x ?? :table` stays true | nothing |
+| C. a rule of `??` | `x ?? :dead` true for a dead task or a finalized value, type kept | yes | clashes with a tag `:dead` of the user (`:dead [] ?? :dead` is already true by the tag rule) |
