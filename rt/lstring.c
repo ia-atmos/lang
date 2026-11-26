@@ -271,7 +271,7 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
             spec[k++] = *p++;
         }
         char conv = (p < end) ? *p++ : '\0';
-        if (conv=='\0' || strchr("dixXocfeEgGs",conv)==NULL) {
+        if (conv=='\0' || strchr("diuxXocfeEgGs",conv)==NULL) {
             st = a_error("invalid format : unexpected conversion '%%%c'",
                 conv ? conv : ' ');
             break;
@@ -285,7 +285,7 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
         char  small[128];
         char* out = small;
         int   len = 0;
-        if (strchr("dixXoc", conv) != NULL) {
+        if (strchr("diuxXoc", conv) != NULL) {
             int64_t i;
             if (!a_toint(v, &i)) {
                 st = a_error("invalid format : expected integer : got %s",

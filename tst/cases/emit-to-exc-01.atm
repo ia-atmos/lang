@@ -1,0 +1,32 @@
+;; An emit to one task whose reaction throws: the exception goes to who
+;; emits, as the exception of a call; in a broadcast of the same event
+;; it goes to who holds the task.
+task T () {
+    await :X
+    throw :boom
+}
+task Emitter (t, how) {
+    await :go
+    val e = catch :boom {
+        if how == :to {
+            emit @t :X
+        } else {
+            emit @:global :X
+        }
+        :none
+    }
+    print(how, :emitter, e)
+}
+task Holder (how) {
+    pin t = spawn T()
+    spawn Emitter(t, how)
+    val e = catch :boom {
+        await :never
+    }
+    print(how, :holder, e)
+}
+loop _, how in [:to, :global] {
+    pin h = spawn Holder(how)
+    emit :go
+    print(how, :done)
+}

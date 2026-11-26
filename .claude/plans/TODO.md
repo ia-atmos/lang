@@ -270,6 +270,10 @@ To message a session with `send_message` (`atmos-args` is archived).
   has. A defect fix that changes no rule of the language goes to `main`
   through `atmos-lang`, after the suite and the measurement on the
   ports.
+- **Screenshots at each big step** (2026-11-26, said in `pico-1oom`):
+  "A cada passo grande, me mostre alguns screenshots." For every
+  project with a screen: at a milestone or a feature that changes what
+  is on screen, the session shows him a few screenshots in its report.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session

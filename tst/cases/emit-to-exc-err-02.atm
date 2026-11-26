@@ -1,0 +1,20 @@
+;; The target ends normally, who awaits its end throws, and nobody
+;; handles it: the error of the program.
+task T () {
+    await :X
+}
+pin ts = tasks()
+spawn @ts T()
+spawn {
+    await :any ts
+    throw :boom
+}
+spawn {
+    await :go
+    loop _, t in ts {
+        emit @t :X
+    }
+    print(:emitter, :on)
+}
+emit :go
+print(:never)
