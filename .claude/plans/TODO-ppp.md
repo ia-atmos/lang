@@ -112,6 +112,8 @@ Recommended: 2 (consistent with fields, no breakage; the hole is #22).
 
 #6 decided by the author, 2026-11-26: "#6: fica a 2". `set :out` keeps
 writing nil in the place when the value ends, for every form of place
-(no change). `set :out v@+` stays refused (today's compile error; the
-original recommendation, not contradicted). For atmos-pin: #21 stays
-"not done" and #22 (the hole) is accepted as is.
+(no change). Corrected by the author the same day ("O @+ com :out fica
+aceito, mas deve ser implementado lá"): `set :out v@+ = o` is accepted,
+the place being the index `#v` at the time of the set, which goes back
+to nil when `o` ends (a hole if it is not the last). To be implemented
+by `atmos-pin` (its #21); #22 (the hole) accepted.
