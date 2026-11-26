@@ -274,6 +274,12 @@ To message a session with `send_message` (`atmos-args` is archived).
   "A cada passo grande, me mostre alguns screenshots." For every
   project with a screen: at a milestone or a feature that changes what
   is on screen, the session shows him a few screenshots in its report.
+- **A pair of Atmos excerpts per group of changes** (2026-11-26, said
+  in `atmos`): "Para todos os projetos, alem dos screenshots, mostrar
+  também trechos de código Atmos idiomaticos e ruins. Um par por grupo
+  de mudanças." Every project (ports and environments): in a report to
+  him, each group of changes comes with one idiomatic excerpt and one
+  bad one (awkward, verbose, a workaround), with file and line.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
