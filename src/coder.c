@@ -1804,18 +1804,21 @@ static void gen_loop (Unit* u, Expr* e, Dst d) {
     // iterator, limit of a range, cursor
     Opnd it  = opnd_c(NULL);
     Opnd lim = opnd_c(NULL);
+    Opnd stp = opnd_c(NULL);
     Opnd pos = opnd_c(NULL);
     const char* k = NULL;
     const char* v = NULL;
     if (iter) {
         it  = opnd_tmp(u);
         lim = opnd_tmp(u);
+        stp = opnd_tmp(u);
         pos = opnd_tmp(u);
         if (e->u.loop.itr != NULL) {
-            // loop i in (a,b) gives two values
+            // loop i in (a,b) gives two values; (a,b,s), three
             Dst m = dst_multi(u);
             gen(u, e->u.loop.itr, m);
-            out(u, "a_adj(%s, 2);", m.n);
+            out(u, "a_adj(%s, 3);", m.n);
+            out(u, "a_pop(&%s);", stp.c);
             out(u, "a_pop(&%s);", lim.c);
             out(u, "a_pop(&%s);", it.c);
             // `loop i` counts with no end: `loop i in nil` is not its
@@ -1831,7 +1834,7 @@ static void gen_loop (Unit* u, Expr* e, Dst d) {
     out(u, "while (1) {");
     u->ind++;
     if (iter) {
-        out_try(u, "a_next(%s, %s, &%s, &%s, &%s)", it.c, lim.c, pos.c, k, v);
+        out_try(u, "a_next(%s, %s, %s, &%s, &%s, &%s)", it.c, lim.c, stp.c, pos.c, k, v);
         out(u, "if (%s.type == A_NIL) break;", k);
         for (int i=0; i<e->u.loop.n && i<2; i++) {
             out(u, "a_name(%s, %s);", var_c(u,e->vars[i]),
