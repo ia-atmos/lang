@@ -4,7 +4,7 @@ Slices of vectors with no copy (a view), on the branch `slices` of this
 repository, cut from `origin/main` at `afe7c43`. Material:
 `261122-slices.md`. Items are `#N`, in order, never reused.
 
-Last update: 2026-11-24.
+Last update: 2026-11-26.
 
 Coordination, status and questions for the author go to `atmos`
 (session_011eECohhJbc4GMpAj3yyeEo, since 2026-11-24, `atmos-lang#119`);
@@ -18,6 +18,7 @@ next week's credits (2026-11-23): this session waits for his answer to
 | # | Title | State |
 |---|---|---|
 | #1 | What a view is to the program: its own kind of value, taken by the operations that read a vector, or a vector everywhere (same `type`, every table operation checks) | asked, 2026-11-22; recommended #1a, its own kind. Prototyped on `slices` with #1a, by the session, to be confirmed (2026-11-25, under the rule "Work with no input", `#95`, after the pause ended) |
+| #1c | The type is `table.slice` (its own representation; `v ?? :table` is true by the hierarchy of tags), and `vector.view` becomes `vector.slice` | approved by the author, 2026-11-26 ("Ok"), with a hold: "nao vamos implementar nada ainda. Me acorde na quarta que vem" (2026-12-02). Not implemented: the branch still has `view` |
 | #2 | Writes: `set v@k = x` writes the base; `set v@+` and a `set` beyond the length are errors | by the session, to be confirmed |
 | #3 | A change of the length of the base: the view keeps its positions (`off`, `cap`), and `#v` is what the base still has of them; a hole is skipped by `loop`, as in a table | by the session, to be confirmed |
 | #4 | Life: a view holds its base as a closure holds a capture (by its count; it does not leave the block of a pinned base) | by the session, to be confirmed |
@@ -42,3 +43,10 @@ next week's credits (2026-11-23): this session waits for his answer to
 - Not done: `X.dump` of a view is an error (`invalid dump : unexpected
   view`); deep equality and membership of `X` do not look into a view;
   the C API has no accessor besides the macros.
+
+## Open points, told to the author on 2026-11-26 (not asked yet)
+
+- `vector.sort` on a slice (sorts a piece in place; the length does not
+  change).
+- `set v@k = nil` as an error: today it leaves a hole in the base, and
+  at the last element of the base it shrinks the base.
