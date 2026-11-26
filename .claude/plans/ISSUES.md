@@ -138,3 +138,4 @@ started, no decision needed), **moved** (another session handles it),
 | 118 | `env-js` or `env-web` | answered 2026-11-24: `env-web` (the author created `ia-atmos/env-web`; session `env-web`) |
 | 119 | A new session `atmos` that manages all the others; `atmos-lang` keeps the implementation | decided 2026-11-24 (his answer: "Ok"); session `atmos` created, handoff `261124-atmos.md`; from `#120` this index is kept by `atmos` |
 | 125 | Where `atmos-lang` reports its measurements and merges, now that `atmos` manages | decided 2026-11-25 (his words: "Relatos aqui somente, exceto quando precisar reportar pra gerente"): to the author here, in `atmos-lang`; to `atmos` only what the manager must act on |
+| 126 | `string.format` takes `%u` (asked by `pico-1oom`, which used `%d` in about 6 places) | decided 2026-11-26 (his answer: "#126 sim"); done on main: `rt/lstring.c`, the manual, case `string-format-u-01`; `pico-1oom` told |
