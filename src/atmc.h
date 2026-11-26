@@ -291,7 +291,8 @@ struct Expr {
         struct { Patt* patt; Expr* pair; Expr* blk; int id; } context;
         // leave: 0 enter, 1 leave; ctx: the context
         struct { int leave; Expr* f; Expr* ctx; }       ctxfn;
-        struct { ParMode mode; List blks; }             par;
+        // watch: a watching, whose values start with a boolean
+        struct { ParMode mode; int watch; List blks; }  par;
         struct { Expr* cnd; Expr* blk; }                xcatch;
         // inl: lambda of an if/ifs/match, expanded in place
         struct { int task; int dots; int n; Tk* pars; Expr* blk; int inl; }

@@ -1676,13 +1676,14 @@ static Expr* parser_1_prim (void) {
         } while (accept_str("with"));
         return e;
 
-    // watching P {...} is par :any { await P } with {...}
+    // watching P {...} is par :any { false, await P } with { true, ... }
     } else if (accept_str("watching")) {
         Tk tk = TK0;
         Expr* awt = mk(E_AWAIT, tk);
         awt->u.await.p = parser_await_blk(1);
         Expr* e = mk(E_PAR, tk);
         e->u.par.mode = PAR_ANY;
+        e->u.par.watch = 1;
         list_add(&e->u.par.blks, block1(awt));
         list_add(&e->u.par.blks, parser_block());
         return e;
