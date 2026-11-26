@@ -32,8 +32,8 @@ outside as paper-pin#17. Resumed on
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
-| #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Waiting |
-| #15 | Rerun the CLBG after atmos-pin#32 reaches main | Waiting for the merge |
+| #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Done: three remedies on main `9ea77e1`; rerun 2026-11-26 |
+| #15 | Rerun the CLBG after atmos-pin#32 reaches main | Done 2026-11-26: +2% to +15% (was +19% to +33%) |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open

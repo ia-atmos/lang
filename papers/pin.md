@@ -332,19 +332,22 @@ case studies from six ports of libraries and games to Atmos.
     - time: the store check, the transfer of unpinned results
     - space: bits per value
     - comparison with a GC and with plain RC
-- Experiment: the Computer Language Benchmark Game (CLBG), done 2026-11-25
-  (`papers/pin-bench/`, `summary.md`)
+- Experiment: the Computer Language Benchmark Game (CLBG)
+  (`papers/pin-bench/`: `summary.md` on `9ea77e1`, 2026-11-26;
+  `summary-1175264.md`, the first run, 2026-11-25)
     - the 7 programs of Câmara (2024), written anew with the same algorithm
       and output in C, Lua (5.4 and LuaJIT unchanged), and Atmos; compiled
-      once, only the run timed, median of 5
-    - Atmos with `pin` against `ATMOS_PIN=off`: +19% to +32%; `unchecked`
+      once, only the run timed, best of 5 (a shared, noisy machine)
+    - Atmos with `pin` against `ATMOS_PIN=off`: +2% to +15%; `unchecked`
       as fast as `off` (except n-body): the cost is in the checks
-    - fib allocates nothing and pays 31%: the inline tests of type at names,
-      stores, returns and block ends (callgrind: +15% instructions)
-    - Atmos is 1.2 to 5 times slower than Lua 5.4, with or without checks:
-      the compiler and runtime, not `pin`
+    - the first run gave +19% to +33%, and fib, with no allocation, paid
+      30%: inline tests of type at names, stores, returns and block ends;
+      atmos-pin#32 removed most of them
+    - Atmos is 1.1 to 3.5 times slower than Lua 5.4, with or without checks
+      (was 1.2 to 5.4): the generated C is dynamically typed, variables live
+      in the heap frame of the task; paper-pin#16 removed part of the gap
     - peak memory equal in the three builds of Atmos; binary-trees 53 MB,
-      Lua 5.4 57 MB, LuaJIT 78 MB, C 10 MB
+      Lua 5.4 57 MB, LuaJIT 75 MB, C 10 MB
 - Two ends of expressiveness
     - CLBG: algorithms translated from Lua with no change (dyn-lex, 2024)
     - the ports: games with tasks, registries, module state; about 240 rewrites
@@ -415,8 +418,9 @@ case studies from six ports of libraries and games to Atmos.
 ## 12. Future Work
 
 - Static detection of escapes, for a subset of the checks
-- Elision of the dynamic check where the block is known, and of the tests
-  of type where the type is known (fib pays 31% for them, Section 9)
+- Elision of the dynamic check where the block is known, and of the
+  remaining tests of type: parameters, and variables that only hold numbers
+  (Section 9)
 - Formal semantics and a proof of no dangling references
 - A tracing collector beside reference counting, for unpinned cycles only,
   keeping the counts as the semantics of everything else

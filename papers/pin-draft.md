@@ -453,37 +453,52 @@ the same algorithm and the same output in C, in Lua, and in Atmos
 (`papers/pin-bench/`). Lua runs unchanged on Lua 5.4.6 and on LuaJIT 2.1.
 Atmos is built three times from the same generated C: with
 `ATMOS_PIN=off`, with `ATMOS_PIN=unchecked`, and with the whole mechanism.
-Each program is compiled once and only the run is timed; median of 5 runs,
-in seconds, on one x86-64 machine with 4 cores (gcc 13.3, `-O2`).
+Each program is compiled once and only the run is timed, 5 runs each, on
+one x86-64 virtual machine with 4 cores (gcc 13.3, `-O2`). The machine is
+shared and noisy (the runs of one program spread up to 32%), so the table
+gives the best of the 5 runs, in seconds; medians are in `summary.md`.
 
-| program | size | C | Lua 5.4 | LuaJIT | Atmos off | unchecked | Atmos | Atmos / off |
-|---|---|---|---|---|---|---|---|---|
-| binary-trees | 16 | 0.21 | 2.39 | 0.83 | 2.45 | 2.53 | 2.95 | 1.20 |
-| fannkuch-redux | 9 | 0.02 | 0.23 | 0.05 | 0.84 | 0.89 | 1.07 | 1.27 |
-| fasta | 1,000,000 | 0.14 | 1.20 | 0.48 | 1.93 | 1.92 | 2.33 | 1.21 |
-| fib | 35 | 0.02 | 0.64 | 0.08 | 1.06 | 1.05 | 1.38 | 1.31 |
-| mandelbrot | 1000 | 0.07 | 0.69 | 0.07 | 2.64 | 2.65 | 3.50 | 1.32 |
-| n-body | 500,000 | 0.03 | 0.98 | 0.12 | 2.82 | 3.20 | 3.59 | 1.27 |
-| spectral-norm | 500 | 0.01 | 0.39 | 0.02 | 0.73 | 0.71 | 0.87 | 1.19 |
+| program | size | C | Lua 5.4 | LuaJIT | Atmos off | unchecked | Atmos | Atmos / off | Atmos / Lua 5.4 |
+|---|---|---|---|---|---|---|---|---|---|
+| binary-trees | 16 | 0.21 | 2.96 | 1.01 | 3.02 | 2.93 | 3.13 | 1.04 | 1.06 |
+| fannkuch-redux | 9 | 0.02 | 0.25 | 0.05 | 0.74 | 0.76 | 0.76 | 1.02 | 3.04 |
+| fasta | 1,000,000 | 0.15 | 1.32 | 0.48 | 1.64 | 1.64 | 1.75 | 1.07 | 1.33 |
+| fib | 35 | 0.02 | 0.74 | 0.08 | 1.22 | 1.23 | 1.29 | 1.06 | 1.75 |
+| mandelbrot | 1000 | 0.07 | 0.69 | 0.07 | 1.42 | 1.44 | 1.56 | 1.10 | 2.27 |
+| n-body | 500,000 | 0.03 | 0.99 | 0.12 | 2.98 | 3.26 | 3.44 | 1.15 | 3.48 |
+| spectral-norm | 500 | 0.01 | 0.40 | 0.02 | 0.75 | 0.72 | 0.78 | 1.03 | 1.96 |
 
-Three readings. First, the mechanism costs 19% to 32% of the run on these
-programs, and almost all of it is in the checks, not in the semantics:
+These are the figures on `main` at `9ea77e1` (2026-11-26). A first run, two
+days earlier (`results-1175264.csv`), gave 19% to 33% for the mechanism,
+and showed where it went: fib allocates no table and paid about 30%. The
+generated C was the same in the three builds; the difference was in the
+inline functions of the runtime, which tested the type of each value that
+was named, stored, or returned, and walked every slot of a block when it
+ended, even when the slots held only numbers (15% more instructions on
+fib, by callgrind). Two changes followed (atmos-pin#32): the end of a block
+walks only its variables, and a value that can never be an object is
+assigned with no test. The mechanism now costs 2% to 15% on these
+programs. What remains is the parameters of each call (fib) and the
+variables that only hold numbers (n-body).
+
+Two more readings. The cost is in the checks, not in the semantics:
 `unchecked`, which keeps end-of-block finalization and deep pins, runs as
-fast as `off` (within the spread of the runs, which is up to 12%), except
-on n-body. Second, the cost does not come from allocation: fib allocates no
-table and pays 31%. The generated C is the same in the three builds; the
-difference is in the inline functions of the runtime, which test the type
-of each value that is named, stored, or returned, and walk the names of a
-block when it ends, even when they hold only numbers (15% more instructions
-on fib, by callgrind). Elision of these tests where the type is known at
-compile time is the obvious remedy (Section 12). Third, Atmos is slower than
-Lua 5.4 by 1.2 to 5 times on these programs, with or without the checks;
-that gap belongs to the compiler and the runtime, not to `pin`, and C and
-LuaJIT only place the figures. Peak memory is the same in the three builds
-of Atmos (binary-trees: 50 to 53 MB, against 57 MB on Lua 5.4 and 78 MB on
-LuaJIT; the others about 2 MB). These programs are small kernels with
-little allocation except binary-trees; on a real program, Doom, the checks
-cost 2.8% (above).
+fast as `off`, within the noise, except on n-body. And Atmos is slower than
+Lua 5.4 on these kernels, by 1.1 to 3.5 times, with or without the checks:
+that gap belongs to the code generator, not to `pin`. Atmos compiles to
+C, but the C is a direct translation of a dynamically typed program: values
+are 16 bytes with a type tag, variables live in the frame of the task, in
+the heap, and each operation tests types. Compiling removes the dispatch
+loop of an interpreter, not this work, and the virtual machine of Lua 5.4
+does less of it per operation. The first run was 1.2 to 5.4 times slower
+than Lua 5.4; reading variables in place in operators, inline comparison and
+division of floats, and counted loops with no call (paper-pin#16, in
+`9ea77e1`) took mandelbrot from 5.4 to 2.3 times and fannkuch from 4.6 to
+3.0. C and LuaJIT only place the figures. Peak memory is the same in the
+three builds of Atmos (binary-trees: 50 to 53 MB, against 57 MB on Lua 5.4
+and 75 MB on LuaJIT; the others about 2 MB). These programs are small
+kernels with little allocation except binary-trees; on a real program,
+Doom, the checks cost 2.8% (above, measured before these changes).
 
 `ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
 `ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).
@@ -566,7 +581,9 @@ escape. Both decide per allocation site what pins decide per value.
 ## 12. Future Work
 
 - Static detection of escapes, for a subset of the checks, and elision of
-  the dynamic check where the block of both sides is known.
+  the dynamic check where the block of both sides is known, and of the
+  tests of type that remain on parameters and on variables that only hold
+  numbers (Section 9).
 - A formal semantics, and a proof that no use outlives its block.
 - A tracing collector beside reference counting, for unpinned cycles only,
   keeping the counts as the semantics of everything else.
