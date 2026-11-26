@@ -1,0 +1,50 @@
+;; loop e on P until c {...}: the predicate may name the event under
+;; test as `e`, the variable of the loop, besides `it`
+
+spawn {
+    loop m on :X until m.n > 1 {
+        print(:a, m.n)              ;; --> a 2, a 3, a 4, a 5
+    }
+}
+
+;; `it` stays valid, and both may appear
+spawn {
+    loop m on :X until (it.n > 1) && (m.n < 3) {
+        print(:b, m.n)              ;; --> b 2
+    }
+}
+
+;; the variable of the loop hides an outer one in the predicate, as it
+;; does in the body
+val k = [n=10]
+spawn {
+    loop k on :X until k.n == 3 {
+        print(:c, k.n)              ;; --> c 3
+    }
+}
+
+;; in a group, and in a nested function, which captures it
+spawn {
+    val ns = [1, 3]
+    loop e on <:X until iter.any(ns, \{ it == e.n })> {
+        print(:d, e.n)              ;; --> d 1, d 3
+    }
+}
+
+;; an inner loop sees the variable of the outer one as any variable
+spawn {
+    loop o on :Y {
+        watching :Y {
+            loop i on :X until i.n == o.n {
+                print(:e, i.n)      ;; --> e 4
+            }
+        }
+    }
+}
+
+emit :X [n=1]
+emit :X [n=2]
+emit :X [n=3]
+emit :Y [n=4]
+emit :X [n=4]
+emit :X [n=5]

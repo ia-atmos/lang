@@ -145,6 +145,11 @@ static int check_op (const char** set) {
 // enclosed by its own delimiters.
 static int ANGLE = 0;
 
+// The variable of a `loop x on P {...}`, while its pattern is parsed,
+// and how many times the pattern has named it so far.
+static const char* ON_NAME = NULL;
+static int ON_USES = 0;
+
 static List parser_list (const char* clo) {
     List l = { 0, NULL };
     if (check_str(clo)) {
@@ -942,7 +947,12 @@ static Expr* parser_loop (void) {
         // loop e on P {...} is loop { val e = await P ; ... }
         Tk tk = TK0;
         Expr* awt = mk(E_AWAIT, tk);
+        // loop e on P until c {...}: the predicate may name the event
+        // as `e`
+        const char* name = ON_NAME;
+        ON_NAME = (loop->u.loop.n > 0) ? loop->u.loop.ids[0].str : NULL;
         awt->u.await.p = parser_await_blk(1);
+        ON_NAME = name;
         Expr* fst = awt;
         if (loop->u.loop.n > 0) {
             fst = mk(E_DCL, tk);
@@ -1029,9 +1039,11 @@ static void accept_angle_close (void) {
 }
 
 // until/while predicate: a function, or an expression over the event
-// `it`.
+// `it`. In the pattern of a `loop x on`, the expression may also name
+// the event as `x`.
 static Expr* parser_pred (void) {
     Tk tk = TK1;
+    int uses = ON_USES;
     Expr* e = parser();
     // until (c): the parentheses only delimit the predicate
     if (e->tag == E_PARENS) {
@@ -1043,6 +1055,15 @@ static Expr* parser_pred (void) {
     Expr* p = mk(E_PROTO, tk);
     proto_par(p, tk_id(tk,"it"), 0);
     p->u.proto.blk = block1(e);
+    if (ON_NAME!=NULL && ON_USES>uses) {
+        // val x = it
+        Expr* dcl = mk(E_DCL, tk_id(tk,"val"));
+        dcl->u.dcl.n   = 1;
+        dcl->u.dcl.ids = xalloc(sizeof(Tk));
+        dcl->u.dcl.ids[0] = tk_id(tk, ON_NAME);
+        dcl->u.dcl.set = mk(E_ACC, tk_id(tk,"it"));
+        list_ins(&p->u.proto.blk->u.block.es, 0, dcl);
+    }
     return p;
 }
 
@@ -1376,6 +1397,9 @@ static Expr* parser_1_prim (void) {
 
     // id: x, __v
     } else if (accept_tag(TK_ID)) {
+        if (ON_NAME!=NULL && !strcmp(TK0.str,ON_NAME)) {
+            ON_USES++;
+        }
         return mk(E_ACC, TK0);
 
     // tag: :X  :X [...]  :X (...)
