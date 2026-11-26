@@ -2592,7 +2592,8 @@ The dot notation is a syntactic sugar to index string keys: `t.x` expands to
 Finally, the tip markers `#` and `+` refer to the last (`#t-1`) and append
 (`#t`) indexes, respectively, since the first index of a vector is `0`.
 In an empty vector, there is no last element: reading `t@#` evaluates to
-`nil`, and assigning to it is an error.
+`nil`, removing it (`set t@# = nil`) has no effect, and assigning another
+value to it is an error.
 
 The same `At` rules apply to [table constructors](#table),
 [spawn pools](#tasks), and [emit targets](#emit).

@@ -1,4 +1,4 @@
-;; set t@# on an empty vector: no last element
+;; set t@# on an empty vector: no last element to assign; removing it has no effect
 pin t = []
 print(t@#, t@+)
 print(catch true { set t@# = 1 })

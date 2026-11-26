@@ -441,7 +441,11 @@ AStatus a_setindex_last (AVal t, AVal v) {
         return A_ERROR;
     }
     if (A_TAB_OF(t)->an == 0) {
-        // an empty vector has no last element (the index would be -1)
+        // an empty vector has no last element (the index would be -1):
+        // removing it (nil) has no effect, assigning to it is an error
+        if (v.type == A_NIL) {
+            return A_OK;
+        }
         return a_error("invalid index : no last element");
     }
     return a_setindex(t, a_int((int64_t)A_TAB_OF(t)->an - 1), v);
