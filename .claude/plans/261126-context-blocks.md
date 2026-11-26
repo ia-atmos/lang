@@ -53,3 +53,26 @@ clear erases what was drawn. For `retro_maze_3d` this does not happen
 Parser and coder only: the sections become the two functions and the
 block of today; the runtime does not change. Tests: the context cases
 in the lambda form move to the block form.
+
+## 4. Refined with the author (2026-11-26)
+
+- No `:init` (variables are declared in the block) and no `:body` (the
+  rest of the block is the body).
+- `enter {...}` and `leave {...}` are statements inside the block, like
+  `defer`: they see the variables declared before them; the context
+  applies from where `enter` executes (code before it runs without the
+  state).
+- `leave` receives `it`, what `enter` returned (or `leave \(x) {...}`).
+- `enter`/`leave` once per emit: unchanged; they repeat only when code
+  inside runs code outside (`emit`, `spawn` into an outer pool, `abort`,
+  `mute`).
+- Pending: `atmos-pin` on closures capturing the block's own locals.
+
+```
+context <:draw> {
+    val target = ray.load_render_texture(640, 480)
+    enter { ray.begin_texture_mode(target) ; ray.clear(GREEN1) }
+    leave { ray.end_texture_mode() }
+    loop { ... }
+}
+```
