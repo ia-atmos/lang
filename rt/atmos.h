@@ -293,10 +293,21 @@ static inline void a_dec (AVal v) {
     }
 }
 
+// Stores a value into a place, with no release, field by field: a
+// value is built by two stores (its type and its payload), and a load
+// of the whole value right after them (as a compiler does for the copy
+// of a struct) cannot be forwarded from the stores, and stalls.
+static inline void a_put (AVal* dst, AVal v) {
+    dst->type = v.type;
+    dst->u    = v.u;
+}
+
 // Stores an owned value into a slot, releasing the old one.
 static inline void a_set (AVal* dst, AVal v) {
-    AVal old = *dst;
-    *dst = v;
+    AVal old;
+    old.type = dst->type;
+    old.u    = dst->u;
+    a_put(dst, v);
     a_dec(old);
 }
 
@@ -356,7 +367,7 @@ static inline void a_push (AVal v) {
     if (a_top >= A_STK_MAX) {
         a_stk_overflow();
     }
-    a_stk[a_top++] = v;
+    a_put(&a_stk[a_top++], v);
 }
 
 // Pushes a borrowed value.
@@ -412,7 +423,7 @@ static inline void a_open (int n, int k) {
         a_stk_overflow();
     }
     for (int i=a_top-1; i>=a_top-n; i--) {
-        a_stk[i+k] = a_stk[i];
+        a_put(&a_stk[i+k], a_stk[i]);
     }
     for (int i=a_top-n; i<a_top-n+k; i++) {
         a_stk[i] = a_nil();
@@ -428,7 +439,7 @@ static inline void a_putc (int i, AVal v) {
 
 // Fills an opened position with the value of a slot, emptying it.
 static inline void a_putm (int i, AVal* src) {
-    a_stk[i] = *src;
+    a_put(&a_stk[i], *src);
     *src = a_nil();
 }
 
