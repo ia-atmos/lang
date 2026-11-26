@@ -486,11 +486,18 @@ Two more readings. The cost is in the checks, not in the semantics:
 fast as `off`, within the noise, except on n-body. And Atmos is slower than
 Lua 5.4 on these kernels, by 1.1 to 3.5 times, with or without the checks:
 that gap belongs to the code generator, not to `pin`. Atmos compiles to
-C, but the C is a direct translation of a dynamically typed program: values
-are 16 bytes with a type tag, variables live in the frame of the task, in
-the heap, and each operation tests types. Compiling removes the dispatch
-loop of an interpreter, not this work, and the virtual machine of Lua 5.4
-does less of it per operation. The first run was 1.3 to 5.4 times slower
+C, but compiling removes only the dispatch loop of an interpreter, which is
+the cheap part on a current processor. The rest is still a virtual machine:
+every value is a 16-byte tagged cell in memory, and every operation loads
+its operands from memory, tests the tags, and stores its result to memory.
+The C compiler keeps no variable in a register, since the cells are
+addressed by the runtime and by the error paths. On most single operations
+Atmos executes about as many instructions as Lua 5.4, or fewer, and still
+takes longer (`x = x + 1.5`: 30 instructions against 43, 6.7 ns against
+1.3): the time is in the trips of each value through memory, in a table
+path that is a chain of calls (a field read: 206 instructions against 94),
+and in the bookkeeping of reference counts, which a tracing collector does
+not pay on a copy (measured by `atmos-lang`, paper-pin#17). The first run was 1.3 to 5.4 times slower
 than Lua 5.4; reading variables in place in operators, inline comparison and
 division of floats, and counted loops with no call (paper-pin#16, in
 `9ea77e1`) took mandelbrot from 5.4 to 2.3 times and fannkuch from 4.6 to

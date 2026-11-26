@@ -32,7 +32,7 @@ outside as paper-pin#18. Resumed on
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
-| #17 | Why compiled Atmos loses to the Lua 5.4 VM: asked to atmos-lang | Waiting |
+| #17 | Why compiled Atmos loses to the Lua 5.4 VM | Answered 2026-11-26; atmos-lang implements two fixes; rerun when merged |
 | #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Done: three remedies on main `9ea77e1`; rerun 2026-11-26 |
 | #15 | Rerun the CLBG after atmos-pin#32 reaches main | Done 2026-11-26: +2% to +15% (was +19% to +33%) |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
@@ -43,7 +43,17 @@ outside as paper-pin#18. Resumed on
   `atmos-lang`, 2026-11-26, at the author's word). After the rerun on
   `9ea77e1`, Atmos off is 1.0 to 3.0 times Lua 5.4. Asked: the central
   reason, whether and how far it can improve, and which kernels could reach
-  1.0. Waiting for the answer; it goes to the author and to Section 9.
+  1.0. Answered 2026-11-26: compiling removes only the dispatch; values
+  are 16-byte tagged cells that go through memory at each operation
+  (store-forwarding stalls, a temporary per assignment), table access is
+  a chain of calls, and counting costs per copy. Two fixes measured by
+  hand (store by fields; compute into the destination): `x = x + 1.5`
+  0.47 -> 0.21 s (Lua 0.22), mandelbrot 1.30 -> 1.00 (Lua 0.63).
+  Estimated ceilings: days of work for mandelbrot, spectral-norm, fasta
+  near 1.0 to 1.2; inline table paths for n-body and fannkuch near 1.5;
+  direct calls for fib near 1.0; numeric locals in C locals (weeks) to
+  beat Lua. `atmos-lang` implements the two fixes and tells the commit.
+  To do: rerun, and update Section 9.
 
 - **#16 Atmos slower than Lua 5.4 on the CLBG** (sent to `atmos-lang`,
   2026-11-26, at the author's request). Independent of pin: with
