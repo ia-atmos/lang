@@ -11,7 +11,7 @@ with where it came from (`session#N`) and a before and an after.
 correction needs a change of the compiler, it goes to `atmos-lang`.
 
 Sources so far: `env-iup` (its `.claude/plans/IDIOMS.md`, items
-`env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`, `atmos-oo#11`. The
+`env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`, `atmos-oo#11`, `atmos-lang#139`. The
 examples of `context` follow lang d0fe0ac.
 Since lang 9d4561a the predicate of a `loop e on` names the event by
 the variable of the loop (`until e.press`, not `it.press`).
@@ -162,6 +162,24 @@ func area (s :Shape.Rect.Sq) { super() + 1 }
 
 Caveat: `super` for functions is on lang main (9c6458f); `Super` for
 tasks exists only on the branch `oo-task` (a84cb6c), not on main.
+
+### Ask for a tagged table where the value may be a string (atmos-lang#139)
+
+A tag is a string, so a tag pattern also matches a text with the same
+characters: `"List" ?? :List` is true. Where the value may be a string,
+ask for a tagged table: `v ?? :T []` is true for `:T [...]` and its
+subtypes, false for the string "T" and for a table with no tag (manual,
+"Equivalence", lang 82d6653). The author kept tags as strings
+("Mantém tag igual a string. Usar o seu truque por enquanto"), from a
+question of `pico-slides#82`.
+
+```
+;; before
+if (type(c) == :table) && (c ?? :List) { <...> }   ;; or, wrong for the text "List": if c ?? :List
+
+;; after
+if c ?? :List [] { <...> }
+```
 
 ### The idiom of the library is fine (env-iup#23)
 
