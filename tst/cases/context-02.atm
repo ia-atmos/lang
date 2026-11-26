@@ -3,7 +3,9 @@ spawn {
     loop on :hit { print "hit" }
 }
 spawn {
-    context (\{ print "+A" }, \{ print "-A" }) {
+    context {
+        :enter { print "+A" }
+        :leave { print "-A" }
         loop on :draw {
             print "a1"
             emit @:global :hit

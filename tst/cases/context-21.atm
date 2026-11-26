@@ -2,8 +2,12 @@
 ;; inner one with: a key applies only the outer one
 var s = ""
 spawn {
-    context (\{ set s = s ++ "+A" }, \(_) { set s = s ++ "-A" }) {
-        context <:draw> (\{ set s = s ++ "+B" }, \(_) { set s = s ++ "-B" }) {
+    context {
+        :enter { set s = s ++ "+A" }
+        :leave \(_) { set s = s ++ "-A" }
+        context <:draw> {
+            :enter { set s = s ++ "+B" }
+            :leave \(_) { set s = s ++ "-B" }
             spawn { loop on :draw { set s = s ++ "d" } }
             spawn { loop on :key  { set s = s ++ "k" } }
             await false

@@ -123,6 +123,8 @@ typedef struct Defer {
     // set :out: the place goes back to nil, if it still refers to the
     // value. 1: a table (slots `ot`, `ok`); 2: a variable (`odst`).
     // The value is in the slot `ov`.
+    // 3: `enter`/`leave` of the context in trail `ot`: it ends with the
+    // defers of the block, before its pins are finalized
     int   out;
     int   ot, ok, ov;
     const char* odst;
@@ -1030,6 +1032,12 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
         } else if (mine[i].out == 2) {
             out(u, "if (a_truthy(L[%d])) a_out_var_end(&%s, L[%d]);",
                 mine[i].flag, mine[i].odst, mine[i].ov);
+            continue;
+        } else if (mine[i].out == 3) {
+            out(u, "if (a_truthy(L[%d])) {", mine[i].flag);
+            out(u, "    AStatus st_c = a_ctx_end(t, %d);", mine[i].ot);
+            out(u, "    if (st == A_OK) st = st_c;");
+            out(u, "}");
             continue;
         }
         int id = ++u->nlabels;
@@ -2367,7 +2375,36 @@ static void gen_dots (Unit* u, Dst d) {
 // spawn T(...)  |  spawn @ts T(...)
 // As a statement, the task is pinned to the enclosing block.
 // Otherwise it flows out, and the receiver must pin it.
+static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n);
+
+// The constants of a context value: its tag and its two keys.
+static const char* ctx_keys (void) {
+    return xfmt("atm_K[%d], atm_K[%d], atm_K[%d]", konst("Context",7),
+        konst("enter",5), konst("leave",5));
+}
+
+// in [<P>] X, ...: binds what the next spawn or pool creates.
+static void gen_bind (Unit* u, Expr* ctx, Opnd x, Patt* cpat) {
+    if (ctx == NULL) {
+        return;
+    }
+    if (cpat != NULL) {
+        int n;
+        Opnd* os = gen_filters(u, &cpat, 1, &n);
+        out(u, "    st = a_ctx_bind(%s, %s, fs, 1);", x.c, ctx_keys());
+        out(u, "}");
+        out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
+        for (int i=0; i<n; i++) {
+            opnd_rel(u, os[i]);
+        }
+    } else {
+        out_try(u, "a_ctx_bind(%s, %s, NULL, 0)", x.c, ctx_keys());
+    }
+}
+
 static void gen_spawn (Unit* u, Expr* e, Dst d) {
+    Expr* ctx = e->u.spawn.ctx;
+    Opnd cx = (ctx == NULL) ? opnd_c(NULL) : gen_expr(u, ctx);
     Opnd f = gen_expr(u, e->u.spawn.f);
     Opnd pool = opnd_c("a_nil()");
     if (e->u.spawn.pool != NULL) {
@@ -2389,16 +2426,22 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
     }
     if (born && holder!=NULL) {
         // the value of a field: pinned from birth with its table
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn_in(&%s, %s, a_top-%s, %s)", t.c, f.c, m.n,
             holder);
     } else if (stmt || born) {
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
     } else {
         if (e->u.spawn.pool != NULL) {
             // `spawn @p`: the pool must exist (a nil `p` is an error)
             out_try(u, "a_spawn_pool(%s)", pool.c);
         }
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
+    }
+    if (ctx != NULL) {
+        opnd_rel(u, cx);
     }
     opnd_rel(u, f);
     opnd_rel(u, pool);
@@ -2816,26 +2859,23 @@ static void gen_solo (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
-// context (enter, leave) {...} | context X {...}: the block runs as a transparent task
-// that is a context, before its first reaction.
+// context [<P>] {...}  |  in [<P>] X, do {...}: the block runs as a
+// transparent task that is a context, before its first reaction.
 static void gen_context (Unit* u, Expr* e, Dst d) {
-    Opnd en = gen_expr(u, e->u.context.enter);
-    Expr* le = e->u.context.leave;
-    Opnd lv = (le == NULL) ? opnd_c(NULL) : gen_expr(u, le);
+    Expr* pair = e->u.context.pair;
+    Opnd pr = (pair == NULL) ? opnd_c(NULL) : gen_expr(u, pair);
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
     int id = gen_trail(u);
+    e->u.context.id = id;
     gen_trail_end(u, id);
     Expr* blk = e->u.context.blk;
     gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
     out(u, "a_lin = %d;", lin_of(e->tk));
-    if (le == NULL) {
-        out_try(u, "a_trail_context_pair(t, %d, %s)", id, en.c);
-    } else {
-        out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
-        opnd_rel(u, lv);
+    if (pair != NULL) {
+        out_try(u, "a_trail_context_val(t, %d, %s, %s)", id, pr.c, ctx_keys());
+        opnd_rel(u, pr);
     }
-    opnd_rel(u, en);
     if (e->u.context.patt != NULL) {
         int n;
         Opnd* os = gen_filters(u, &e->u.context.patt, 1, &n);
@@ -2852,6 +2892,31 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     gen_suspend(u, dst_none());
     blk_close(u, b, dst_none(), hnd_none());
     store(u, r, d);
+}
+
+// enter F  leave F: registered in the trail of the context; `enter`
+// applies it from here. Both end with the defers of the block.
+static void gen_ctxfn (Unit* u, Expr* e) {
+    Expr* ctx = e->u.ctxfn.ctx;
+    if (ctx->u.context.id < 0 || !u->task) {
+        err(e->tk, "invalid %s : expected the block of a context",
+            e->u.ctxfn.leave ? "leave" : "enter");
+    }
+    int id = ctx->u.context.id;
+    Opnd f = gen_expr(u, e->u.ctxfn.f);
+    out(u, "a_lin = %d;", lin_of(e->tk));
+    out_try(u, "a_ctx_%s(t, %d, %s)", e->u.ctxfn.leave ? "leave" : "enter",
+        id, f.c);
+    opnd_rel(u, f);
+    Defer d;
+    memset(&d, 0, sizeof(d));
+    d.flag  = slot_new(u);
+    d.trail = -1;
+    d.out   = 3;
+    d.ot    = id;
+    out(u, "a_set(&L[%d], a_bool(1));", d.flag);
+    u->defs = realloc(u->defs, (u->ndefs+1) * sizeof(Defer));
+    u->defs[u->ndefs++] = d;
 }
 
 // await P
@@ -2948,6 +3013,11 @@ static Opnd gen_expr (Unit* u, Expr* e) {
                 n = gen_expr(u, e->u.tasks.n);
             }
             Opnd t = opnd_tmp(u);
+            if (e->u.tasks.ctx != NULL) {
+                Opnd cx = gen_expr(u, e->u.tasks.ctx);
+                gen_bind(u, e->u.tasks.ctx, cx, e->u.tasks.cpat);
+                opnd_rel(u, cx);
+            }
             out_try(u, "a_tasks(&%s, %s)", t.c, n.c);
             opnd_rel(u, n);
             return t;
@@ -3001,6 +3071,10 @@ static void gen (Unit* u, Expr* e, Dst d) {
             break;
         case E_DEFER:
             gen_defer(u, e);
+            store_void(u, d);
+            break;
+        case E_CTX_FN:
+            gen_ctxfn(u, e);
             store_void(u, d);
             break;
         case E_SPAWN:

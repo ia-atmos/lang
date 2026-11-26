@@ -3,7 +3,9 @@
 var layer = :world
 func set_layer (l) { val old = layer ; set layer = l ; old }
 spawn {
-    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+    context {
+        :enter { set_layer(:panel) }
+        :leave \(old) { set_layer(old) }
         loop on :draw { print("panel task draws on", layer) }
     }
 }

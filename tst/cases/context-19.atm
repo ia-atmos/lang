@@ -1,12 +1,12 @@
-;; #19 (the author, 2026-11-22): context <:draw> applies only to the emits of :draw; the
+;; #19 (the author, 2026-11-22): in <:draw> X applies only to the emits of :draw; the
 ;; first reaction (no emit), a key and the time run without it
 var layer = :world
 var n = 0
 func in_layer (l) {
-    [\{ set n = n + 1 ; val o = layer ; set layer = l ; o }, \(o) { set layer = o }]
+    :Context [enter=\{ set n = n + 1 ; val o = layer ; set layer = l ; o }, leave=\(o) { set layer = o }]
 }
 spawn {
-    context <:draw> in_layer(:panel) {
+    in <:draw> in_layer(:panel), do {
         print("first", layer)
         spawn { loop on :draw { print("draw", layer) } }
         spawn { loop on :key  { print("key", layer) } }

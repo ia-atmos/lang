@@ -1,0 +1,17 @@
+;; #23 (the author, 2026-11-26): in X, spawn T(...): the task lives in the context
+var layer = :world
+val panel = :Context [
+    enter = \{ print("+") ; val o = layer ; set layer = :panel ; o },
+    leave = \(o) { print("-") ; set layer = o },
+]
+task T (id) {
+    print("start", id, layer)
+    loop on :draw { print("draw", id, layer) }
+}
+spawn {
+    in panel, spawn T(1)
+    spawn T(2)
+    await false
+}
+emit :draw
+print("end", layer)

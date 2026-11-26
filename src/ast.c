@@ -241,6 +241,16 @@ void ast_dump (Expr* e) {
             break;
         case E_SPAWN:
             printf("(spawn ");
+            if (e->u.spawn.ctx != NULL) {
+                printf("in ");
+                if (e->u.spawn.cpat != NULL) {
+                    printf("<");
+                    dump_patt(e->u.spawn.cpat);
+                    printf("> ");
+                }
+                ast_dump(e->u.spawn.ctx);
+                printf(" ");
+            }
             if (e->u.spawn.pool != NULL) {
                 printf("@");
                 ast_dump(e->u.spawn.pool);
@@ -257,6 +267,15 @@ void ast_dump (Expr* e) {
             break;
         case E_TASKS:
             printf("(tasks");
+            if (e->u.tasks.ctx != NULL) {
+                printf(" in ");
+                if (e->u.tasks.cpat != NULL) {
+                    printf("<");
+                    dump_patt(e->u.tasks.cpat);
+                    printf("> ");
+                }
+                ast_dump(e->u.tasks.ctx);
+            }
             if (e->u.tasks.n != NULL) {
                 printf(" ");
                 ast_dump(e->u.tasks.n);
@@ -299,19 +318,22 @@ void ast_dump (Expr* e) {
             printf(")");
             break;
         case E_CONTEXT:
-            printf("(context ");
+            printf(e->u.context.pair != NULL ? "(in " : "(context ");
             if (e->u.context.patt != NULL) {
                 printf("<");
                 dump_patt(e->u.context.patt);
                 printf("> ");
             }
-            ast_dump(e->u.context.enter);
-            printf(" ");
-            if (e->u.context.leave != NULL) {
-                ast_dump(e->u.context.leave);
+            if (e->u.context.pair != NULL) {
+                ast_dump(e->u.context.pair);
                 printf(" ");
             }
             ast_dump(e->u.context.blk);
+            printf(")");
+            break;
+        case E_CTX_FN:
+            printf("(%s ", e->u.ctxfn.leave ? "leave" : "enter");
+            ast_dump(e->u.ctxfn.f);
             printf(")");
             break;
         case E_MUTE_ON:

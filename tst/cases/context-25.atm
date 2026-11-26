@@ -1,0 +1,23 @@
+;; #21 (the author, 2026-11-26): enter and leave are statements of the block:
+;; they see its variables; the context applies from where enter executes
+var layer = :world
+func set_layer (l) {
+    val old = layer
+    set layer = l
+    old
+}
+spawn {
+    context {
+        print("before enter", layer)
+        val l = :hud
+        :enter { set_layer(l) }
+        :leave { set_layer(it) }
+        print("after enter", layer)
+        loop on :draw { print("draw", layer) }
+    }
+}
+spawn {
+    loop on :draw { print("other", layer) }
+}
+emit :draw
+print("end", layer)

@@ -4,8 +4,12 @@ task T () {
     loop on :draw { print "t" }
 }
 spawn {
-    context (\{ print "+A" }, \{ print "-A" }) {
-        context (\{ print "+B" }, \{ print "-B" }) {
+    context {
+        :enter { print "+A" }
+        :leave { print "-A" }
+        context {
+            :enter { print "+B" }
+            :leave { print "-B" }
             spawn @ts T()
             loop on :draw { print "b" }
         }

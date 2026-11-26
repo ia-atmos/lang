@@ -1,0 +1,14 @@
+;; #23: no leave is allowed; a binding that fails leaves nothing pending
+var n = 0
+val w = :Context [enter=\{ set n = n + 1 }]
+task T () { loop on :x { nil } }
+catch :E {
+    in w, spawn T(throw(:E))
+    print "never"
+}
+spawn T()
+emit :x
+print("enters", n)
+in w, spawn T()
+emit :x
+print("enters", n)

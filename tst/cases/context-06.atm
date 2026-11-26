@@ -1,7 +1,9 @@
 ;; #2 (the author, 2026-11-22): no filter: any event that awakes a
 ;; task inside switches, and an event that awakes nothing inside does not
 spawn {
-    context (\{ print "+A" }, \{ print "-A" }) {
+    context {
+        :enter { print "+A" }
+        :leave { print "-A" }
         par {
             loop on :draw { print "draw" }
         } with {

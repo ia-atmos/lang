@@ -1,6 +1,6 @@
-;; #4: the pair must be a table
+;; #4: the value must be a :Context
 spawn {
-    context 10 {
+    in 10, do {
         await false
     }
 }

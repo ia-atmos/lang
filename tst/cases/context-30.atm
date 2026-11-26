@@ -1,0 +1,19 @@
+;; #23: in X, await T(): what the await starts lives in the context, the code after does not
+var layer = :world
+val panel = :Context [
+    enter = \{ val o = layer ; set layer = :panel ; o },
+    leave = \(o) { set layer = o },
+]
+task T () {
+    await :go
+    print("inside", layer)
+    10
+}
+spawn {
+    val v = in panel, await T()
+    print("after", v, layer)
+    await :go
+    print("later", layer)
+}
+emit :go
+emit :go

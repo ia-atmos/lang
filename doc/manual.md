@@ -700,7 +700,7 @@ The following keywords are reserved in Atmos:
     func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
-    in                  ;; in iterator
+    in                  ;; in iterator, in context
     include             ;; include file
     it                  ;; implicit parameter
     loop                ;; loop block
@@ -3756,22 +3756,43 @@ emit :key [:c]      ;; --> behind c
 
 ### Context
 
-A `context` sets a state of a library (a canvas, a layer, a color) while the
-code that lives in its block runs, and restores it before any other code
-runs:
+A context sets a state of a library (a canvas, a layer, a color) while the
+code that lives in it runs, and restores it before any other code runs.
+A context is a value, `:Context [enter=f, leave=g]`, bound with `in` to what a
+command starts, or defined in place by a `context` block:
 
 ```
-Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
-        | `context´ [`<´ Patt `>´] Expr Block
+In      : `in´ [`<´ Patt `>´] Expr `,´ (Spawn | Await | Tasks | `do´ Block)
+Context : `context´ [`<´ Patt `>´] Block
+Enter   : `:enter´ (Block | Lambda)         ;; in the block of a context
+Leave   : `:leave´ (Block | Lambda)         ;; in the block of a context
 ```
 
-The first expression is a function `enter`, which sets the state and returns
-what `leave` needs to restore it.
-The second is a function `leave`, which receives that value.
-In the second form, the expression is a pair `[enter, leave]`, so that a
-library can give both in one value (`context eng.on(STARS) {...}`).
-The block runs as a [transparent task](#tasks), as in a
-[mute](#mute) block.
+In a context value, `enter` sets the state and returns what `leave` needs to
+restore it; `leave` receives that value, and is optional.
+`in X, C` binds the value `X` to what the command `C` starts:
+
+- `in X, spawn T(...)` and `in X, spawn {...}`: the task spawned.
+- `in X, tasks(n)`: the pool, and so every task spawned into it.
+- `in X, await P`: what the await starts (`in X, await T(...)`), not the code
+  after it.
+- `in X, do {...}`: the block, which runs as a [transparent task](#tasks), as
+  in a [mute](#mute) block.
+
+The identity of a context is its value: tasks, pools and blocks bound to the
+same value share one context, and the state is not switched between them.
+A value bound again inside itself applies once.
+
+A `context` block defines a context in place, for its own block, which runs
+as a transparent task.
+Its sections `:enter` and `:leave` give the two functions: `:leave` receives
+what `:enter` returned, as `it` or as its parameter (`:leave \(old) {...}`).
+They see the variables of the block declared before them.
+The context applies from where `:enter` executes: code of the block before it
+runs without the state.
+`:leave` runs, when the block ends, with its [defers](#defer), in the reverse
+order of declaration; a block that ends before its `:enter` runs neither.
+Outside the block of a context, `:enter` and `:leave` are plain tags.
 
 The runtime calls `enter` before it resumes a task or block that lives in the
 context, and `leave` before code outside the context runs again: an `emit`
@@ -3779,12 +3800,13 @@ from inside, the end of a traversal of an `emit`, or the context itself
 terminating.
 Where a task lives decides its context, not where it was spawned from: the
 tasks of a pool declared inside a context run inside it, and a task spawned
-from inside a context into a pool declared outside does not.
+from inside a context into a pool declared outside does not, unless the pool
+or the task is bound itself.
 Contexts nest: the inner one is entered after the outer one, and left before
 it.
 
 The pattern is an [await pattern](#await), between `<` and `>` as in the
-first format of a [mute](#mute), since an expression follows.
+first format of a [mute](#mute), since an expression may follow.
 With a pattern, the context applies only while the traversal of an emit that
 matches it resumes code inside: for other emits, and outside an emit (the
 first reaction of the block, an `abort` from code), the code inside runs as if
@@ -3802,8 +3824,8 @@ A context cannot set a state for code outside it to see.
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
 It is an error to `emit`, `spawn`, `abort` or `mute` inside `enter` or
-`leave`, also from a function they call, and for `enter` or `leave` not to be
-a function.
+`leave`, also from a function they call, and to bind a value that is not a
+`:Context` or whose `enter` or `leave` is not a function.
 
 Examples:
 
@@ -3815,7 +3837,9 @@ func set_layer (l) {        ;; returns the previous layer
     old
 }
 spawn {
-    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+    context {
+        :enter { set_layer(:panel) }
+        :leave { set_layer(it) }
         loop on :draw {
             print(layer)    ;; --> panel
         }
@@ -3829,33 +3853,55 @@ spawn {
 emit :draw
 ```
 
-A library can give the pair:
+A library gives the value, which is bound to a task, a pool and a block:
 
 ```
-func in_layer (l) {         ;; [enter, leave]
-    [\{ set_layer(l) }, \(old) { set_layer(old) }]
+func in_layer (l) {
+    :Context [enter=\{ set_layer(l) }, leave=\(old) { set_layer(old) }]
 }
+val panel = in_layer(:panel)
+in panel, spawn Button(...)             ;; a task
+pin items = in panel, tasks()           ;; every task of the pool
 spawn {
-    context in_layer(:panel) {
+    in panel, do {                      ;; a block
         loop on :draw {
-            print(layer)    ;; --> panel
+            print(layer)                ;; --> panel
         }
     }
 }
+val v = in panel, await Dialog()        ;; the dialog, not the code after
 ```
+
+With a pattern, the state is set once per `:draw`, and the screen can be
+cleared right after it is set:
+
+```
+context <:draw> {
+    :enter { ray.begin_texture_mode(target) ; ray.clear(GREEN1) }
+    :leave { ray.end_texture_mode() }
+    loop {
+        ...                 ;; the screens, which draw into the texture
+    }
+}
+```
+
+`enter` runs again in the same `:draw` only when code inside runs code outside
+(an `emit`, a `spawn` into a pool outside, an `abort` or a `mute`).
 
 With a pattern, the state is set only to draw: the watching of each coin, the
-clock and the keys run without it:
+clock and the keys run without it.
+The pool is declared outside and shares the context of the tiles:
 
 ```
-context <:draw> ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE) {
-    spawn { loop on :draw { tiles() } }
-    pin coins = tasks()
-    loop c in cs {
-        spawn @coins Coin(c)
-    }
-    await false
+val world = ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE)
+pin coins = in <:draw> world, tasks()
+in <:draw> world, spawn {
+    loop on :draw { tiles() }
 }
+loop c in cs {
+    spawn @coins Coin(c)
+}
+await :all coins
 ```
 
 ### Parallel

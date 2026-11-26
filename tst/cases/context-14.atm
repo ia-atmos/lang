@@ -1,6 +1,6 @@
-;; #4: the pair must hold two functions
+;; #4: the value must hold functions
 spawn {
-    context [1, 2] {
+    in :Context [enter=1, leave=2], do {
         await false
     }
 }
