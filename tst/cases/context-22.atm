@@ -8,8 +8,8 @@ task Star () {
 }
 spawn {
     context <:draw> {
-        enter { set n = n + 1 }
-        leave \(_) { nil }
+        :enter { set n = n + 1 }
+        :leave \(_) { nil }
         pin ts = tasks()
         loop i in 10 { spawn @ts Star() }
         await false

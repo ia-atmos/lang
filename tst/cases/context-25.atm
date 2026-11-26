@@ -10,8 +10,8 @@ spawn {
     context {
         print("before enter", layer)
         val l = :hud
-        enter { set_layer(l) }
-        leave { set_layer(it) }
+        :enter { set_layer(l) }
+        :leave { set_layer(it) }
         print("after enter", layer)
         loop on :draw { print("draw", layer) }
     }

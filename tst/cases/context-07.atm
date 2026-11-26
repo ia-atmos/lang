@@ -7,8 +7,8 @@ func set_layer (l) {
 }
 spawn {
     context {
-        enter { set_layer(:panel) }
-        leave \(old) { set_layer(old) }
+        :enter { set_layer(:panel) }
+        :leave \(old) { set_layer(old) }
         loop on :draw { print("panel", layer) }
     }
 }

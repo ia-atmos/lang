@@ -2,8 +2,8 @@
 ;; resume of a trail inside, with a lazy switch
 spawn {
     context {
-        enter { print "+A" }
-        leave { print "-A" }
+        :enter { print "+A" }
+        :leave { print "-A" }
         loop on :draw { print "a" }
     }
 }

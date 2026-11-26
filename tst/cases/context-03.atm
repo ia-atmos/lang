@@ -4,8 +4,8 @@ task Star (i) {
 }
 spawn {
     context {
-        enter { print "+A" }
-        leave { print "-A" }
+        :enter { print "+A" }
+        :leave { print "-A" }
         pin ts = tasks()
         loop i in 3 {
             spawn @ts Star(i)

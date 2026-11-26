@@ -1,4 +1,4 @@
-;; #21: enter outside the block of a context is a name
-enter {
+;; #21: :enter outside the block of a context is a tag
+:enter {
     await :X
 }

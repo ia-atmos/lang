@@ -3,8 +3,8 @@
 spawn {
     context {
         pin q = [10]
-        enter { print("enter", q@0) }
-        leave { print("leave", q@0) }
+        :enter { print("enter", q@0) }
+        :leave { print("leave", q@0) }
         defer { print("defer", q@0) }
         await :stop
     }

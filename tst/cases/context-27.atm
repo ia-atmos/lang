@@ -2,9 +2,9 @@
 spawn {
     watching :stop {
         context {
-            leave { print("leave") }
+            :leave { print("leave") }
             await :go
-            enter { print("enter") }
+            :enter { print("enter") }
             await false
         }
     }

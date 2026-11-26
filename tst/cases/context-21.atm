@@ -3,11 +3,11 @@
 var s = ""
 spawn {
     context {
-        enter { set s = s ++ "+A" }
-        leave \(_) { set s = s ++ "-A" }
+        :enter { set s = s ++ "+A" }
+        :leave \(_) { set s = s ++ "-A" }
         context <:draw> {
-            enter { set s = s ++ "+B" }
-            leave \(_) { set s = s ++ "-B" }
+            :enter { set s = s ++ "+B" }
+            :leave \(_) { set s = s ++ "-B" }
             spawn { loop on :draw { set s = s ++ "d" } }
             spawn { loop on :key  { set s = s ++ "k" } }
             await false

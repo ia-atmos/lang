@@ -10,8 +10,8 @@ task Star (i) {
 }
 spawn {
     context {
-        enter { target(:STARS) }
-        leave { target(:MAIN) }
+        :enter { target(:STARS) }
+        :leave { target(:MAIN) }
         pin stars = tasks()
         loop i in 50 { spawn @stars Star(i) }
         await false

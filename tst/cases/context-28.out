@@ -1,0 +1,11 @@
++
+start	1	panel
+-
+start	2	world
++
+draw	1	panel
+-
+draw	2	world
+end	world
++
+-

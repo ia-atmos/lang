@@ -1,2 +1,2 @@
-(context <:draw> (call (@ eng "on") X) { (await :X) })
+(in <:draw> (call (@ eng "on") X) { (await :X) })
 (context <(! :draw)> { (enter (func (it) { (call a) })) (leave (func (x) { (call b x) })) (await :Y) })

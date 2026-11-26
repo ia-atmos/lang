@@ -2,8 +2,8 @@
 task T () { await false }
 spawn {
     context {
-        enter { spawn T() }
-        leave { nil }
+        :enter { spawn T() }
+        :leave { nil }
         await false
     }
 }

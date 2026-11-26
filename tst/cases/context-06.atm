@@ -2,8 +2,8 @@
 ;; task inside switches, and an event that awakes nothing inside does not
 spawn {
     context {
-        enter { print "+A" }
-        leave { print "-A" }
+        :enter { print "+A" }
+        :leave { print "-A" }
         par {
             loop on :draw { print "draw" }
         } with {

@@ -2372,7 +2372,36 @@ static void gen_dots (Unit* u, Dst d) {
 // spawn T(...)  |  spawn @ts T(...)
 // As a statement, the task is pinned to the enclosing block.
 // Otherwise it flows out, and the receiver must pin it.
+static Opnd* gen_filters (Unit* u, Patt** fs, int nf, int* n);
+
+// The constants of a context value: its tag and its two keys.
+static const char* ctx_keys (void) {
+    return xfmt("atm_K[%d], atm_K[%d], atm_K[%d]", konst("Context",7),
+        konst("enter",5), konst("leave",5));
+}
+
+// in [<P>] X, ...: binds what the next spawn or pool creates.
+static void gen_bind (Unit* u, Expr* ctx, Opnd x, Patt* cpat) {
+    if (ctx == NULL) {
+        return;
+    }
+    if (cpat != NULL) {
+        int n;
+        Opnd* os = gen_filters(u, &cpat, 1, &n);
+        out(u, "    st = a_ctx_bind(%s, %s, fs, 1);", x.c, ctx_keys());
+        out(u, "}");
+        out(u, "if (st != A_OK) goto CL_%d;", u->cleanup);
+        for (int i=0; i<n; i++) {
+            opnd_rel(u, os[i]);
+        }
+    } else {
+        out_try(u, "a_ctx_bind(%s, %s, NULL, 0)", x.c, ctx_keys());
+    }
+}
+
 static void gen_spawn (Unit* u, Expr* e, Dst d) {
+    Expr* ctx = e->u.spawn.ctx;
+    Opnd cx = (ctx == NULL) ? opnd_c(NULL) : gen_expr(u, ctx);
     Opnd f = gen_expr(u, e->u.spawn.f);
     Opnd pool = opnd_c("a_nil()");
     if (e->u.spawn.pool != NULL) {
@@ -2394,16 +2423,22 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
     }
     if (born && holder!=NULL) {
         // the value of a field: pinned from birth with its table
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn_in(&%s, %s, a_top-%s, %s)", t.c, f.c, m.n,
             holder);
     } else if (stmt || born) {
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
     } else {
         if (e->u.spawn.pool != NULL) {
             // `spawn @p`: the pool must exist (a nil `p` is an error)
             out_try(u, "a_spawn_pool(%s)", pool.c);
         }
+        gen_bind(u, ctx, cx, e->u.spawn.cpat);
         out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
+    }
+    if (ctx != NULL) {
+        opnd_rel(u, cx);
     }
     opnd_rel(u, f);
     opnd_rel(u, pool);
@@ -2821,8 +2856,8 @@ static void gen_solo (Unit* u, Expr* e, Dst d) {
     store(u, r, d);
 }
 
-// context (enter, leave) {...} | context X {...}: the block runs as a transparent task
-// that is a context, before its first reaction.
+// context [<P>] {...}  |  in [<P>] X, do {...}: the block runs as a
+// transparent task that is a context, before its first reaction.
 static void gen_context (Unit* u, Expr* e, Dst d) {
     Expr* pair = e->u.context.pair;
     Opnd pr = (pair == NULL) ? opnd_c(NULL) : gen_expr(u, pair);
@@ -2835,7 +2870,7 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
     out(u, "a_lin = %d;", lin_of(e->tk));
     if (pair != NULL) {
-        out_try(u, "a_trail_context_pair(t, %d, %s)", id, pr.c);
+        out_try(u, "a_trail_context_val(t, %d, %s, %s)", id, pr.c, ctx_keys());
         opnd_rel(u, pr);
     }
     if (e->u.context.patt != NULL) {
@@ -2975,6 +3010,11 @@ static Opnd gen_expr (Unit* u, Expr* e) {
                 n = gen_expr(u, e->u.tasks.n);
             }
             Opnd t = opnd_tmp(u);
+            if (e->u.tasks.ctx != NULL) {
+                Opnd cx = gen_expr(u, e->u.tasks.ctx);
+                gen_bind(u, e->u.tasks.ctx, cx, e->u.tasks.cpat);
+                opnd_rel(u, cx);
+            }
             out_try(u, "a_tasks(&%s, %s)", t.c, n.c);
             opnd_rel(u, n);
             return t;

@@ -852,6 +852,8 @@ typedef struct ATrailX {
     AVal     enter;
     AVal     leave;
     AVal     cval;
+    // the value it is bound to (`in X, ...`): its identity
+    AVal     cobj;
     // `context <P>`: applied only for the emits that match the filter,
     // matched once per emit (`ctime`: the time of the last match)
     struct APatt** cfilt;
@@ -964,6 +966,8 @@ typedef struct ATasks {
     // its tasks that were not freed yet, alive or not: what they hold
     // in `pub` is released with the pool
     struct ATask* all;
+    // `in X, tasks()`: a trail that holds the context of the pool
+    struct ATrail* ctx;
 } ATasks;
 
 #define A_TASK_OF(v)  ((ATask*)(v).u.o)
@@ -1008,10 +1012,15 @@ void a_trail_doom (struct ATask* t, int i);
 // mute P on :T {...}: events `:T [true]` and `:T [false]` mute and
 // unmute trail `i` from now on. Takes over the filters (`!P`).
 void a_trail_mute (struct ATask* t, int i, AVal tag, APatt** fs, int n);
-// `context (enter, leave) {...}`: makes trail `i` a context, before it
-// starts.
-AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
-AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
+// in X, do {...}: binds trail `i` to the context value X, before it
+// starts. X is `:Context [enter=f, leave=g]`: `tag`, `ken` and `klv`
+// are the tag and the two keys.
+AStatus a_trail_context_val (struct ATask* t, int i, AVal v, AVal tag,
+                             AVal ken, AVal klv);
+// in X, spawn T(...)  in X, tasks(): binds the task or the pool created
+// by the next `a_spawn` or `a_tasks`; takes over the `n` filters.
+AStatus a_ctx_bind (AVal v, AVal tag, AVal ken, AVal klv,
+                    struct APatt** fs, int n);
 // context <P> ...: takes over the `n` filters
 AStatus a_trail_context_filt (struct ATask* t, int i, struct APatt** fs, int n);
 // enter F, leave F in the block of the context in trail `i`: `enter`

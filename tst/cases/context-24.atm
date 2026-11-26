@@ -2,8 +2,8 @@
 ;; pattern, whether the event matches it or not
 spawn {
     context <:draw> {
-        enter { nil }
-        leave \(_) { nil }
+        :enter { nil }
+        :leave \(_) { nil }
         par {
             loop {
                 val e = await(:key)

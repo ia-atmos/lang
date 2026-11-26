@@ -671,6 +671,8 @@ static Expr* parser_spawn (void) {
         return e;
     }
     Expr* e = mk(E_SPAWN, tk);
+    e->u.spawn.ctx  = NULL;
+    e->u.spawn.cpat = NULL;
     if (accept_str("@")) {
         e->u.spawn.pool = parser_at_err();
     }
@@ -1339,18 +1341,23 @@ static Expr* parser_1_prim (void) {
         next();
         return parser_exit(TK0);
 
-    // enter {...}  enter \(x) {...}  leave {...}  leave \(x) {...}:
-    // statements of the block of a context, not keywords elsewhere
-    } else if (CTXE!=NULL && check_tag(TK_ID) &&
-               (!strcmp(TK1.str,"enter") || !strcmp(TK1.str,"leave")))
+    // :enter {...}  :enter \(x) {...}  :leave {...}  :leave \(x) {...}:
+    // sections of the block of a context, plain tags elsewhere
+    } else if (CTXE!=NULL && check_tag(TK_TAG) &&
+               (!strcmp(TK1.str,":enter") || !strcmp(TK1.str,":leave")))
     {
         next();
         Tk tk = TK0;
-        if (TK0.sep!=TK1.sep || !(check_str("{") || check_str("\\"))) {
-            return mk(E_ACC, tk);
+        if (!(check_str("{") || check_str("\\"))) {
+            if ((check_str("(") || check_str("[")) && TK0.sep==TK1.sep) {
+                Expr* e = mk(E_TAGGED, tk);
+                e->u.tagged.e = parser_1_prim();
+                return e;
+            }
+            return mk(E_TAG, tk);
         }
         Expr* e = mk(E_CTX_FN, tk);
-        e->u.ctxfn.leave = !strcmp(tk.str, "leave");
+        e->u.ctxfn.leave = !strcmp(tk.str, ":leave");
         e->u.ctxfn.ctx   = CTXE;
         if (check_str("{")) {
             Expr* p = mk(E_PROTO, tk);
@@ -1554,17 +1561,53 @@ static Expr* parser_1_prim (void) {
             e->u.context.patt = parser_await();
             ANGLE_TARGET = 0;
         }
-        if (check_str("{")) {
-            Expr* up = CTXE;
-            CTXE = e;
-            e->u.context.blk = parser_block();
-            CTXE = up;
+        Expr* up = CTXE;
+        CTXE = e;
+        e->u.context.blk = parser_block();
+        CTXE = up;
+        return e;
+
+    // in [<P>] X, spawn T(...) | spawn {...} | await P | tasks(n) | do {...}
+    // X is a context value: what the command starts lives in it.
+    } else if (accept_str("in")) {
+        Tk tk = TK0;
+        Patt* patt = NULL;
+        if (check_str("<") || check_str("<<")) {
+            ANGLE_TARGET = 1;
+            patt = parser_await();
+            ANGLE_TARGET = 0;
+        }
+        Expr* x = parser_6_pip(NULL);
+        accept_str_err(",");
+        Expr* up = CTXE;
+        CTXE = NULL;
+        Expr* cmd = parser_1_prim();
+        CTXE = up;
+        if (cmd->tag == E_SPAWN) {
+            cmd->u.spawn.ctx  = x;
+            cmd->u.spawn.cpat = patt;
+            return cmd;
+        } else if (cmd->tag == E_TASKS) {
+            cmd->u.tasks.ctx  = x;
+            cmd->u.tasks.cpat = patt;
+            return cmd;
+        }
+        Expr* e = mk(E_CONTEXT, tk);
+        e->u.context.patt = patt;
+        e->u.context.pair = x;
+        e->u.context.id   = -1;
+        if (cmd->tag == E_SPAWN_BLK) {
+            // spawn { in X, do {...} }
+            e->u.context.blk = cmd->u.sblk.blk;
+            cmd->u.sblk.blk = block1(e);
+            return cmd;
+        } else if (cmd->tag==E_DO && !cmd->u.xdo.esc) {
+            e->u.context.blk = cmd->u.xdo.blk;
+        } else if (cmd->tag == E_AWAIT) {
+            // what the await starts lives in the context
+            e->u.context.blk = block1(cmd);
         } else {
-            e->u.context.pair = parser_6_pip(NULL);
-            Expr* up = CTXE;
-            CTXE = NULL;
-            e->u.context.blk = parser_block();
-            CTXE = up;
+            err(tk, "invalid in : expected spawn, await, tasks or do");
         }
         return e;
 

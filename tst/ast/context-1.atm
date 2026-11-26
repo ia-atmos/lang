@@ -1,6 +1,6 @@
 ;; #21 (the author, 2026-11-26): context { enter {...} leave {...} ... }
 context {
-    enter { f() }
-    leave \(old) { g(old) }
+    :enter { f() }
+    :leave \(old) { g(old) }
     await :X
 }

@@ -276,9 +276,9 @@ struct Expr {
         struct { Expr* head; int n; Case* cases; }      ifs;
         struct { int n; Tk* ids; Expr* itr; Expr* blk; } loop;
         // pool: destination pool, or NULL
-        struct { Expr* pool; Expr* f; List args; }      spawn;
+        struct { Expr* pool; Expr* f; List args; Expr* ctx; Patt* cpat; } spawn;
         struct { Expr* blk; }                           sblk;
-        struct { Expr* n; }                             tasks;
+        struct { Expr* n; Expr* ctx; Patt* cpat; }     tasks;
         // to: target, or NULL
         struct { Expr* to; Expr* e; }                   emit;
         struct { Patt* p; }                             await;

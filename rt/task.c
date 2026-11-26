@@ -933,6 +933,34 @@ static int ctx_pass (ATrailX* x) {
     return x->cpass;
 }
 
+// Two trails are the same context if they are the same trail, or if
+// they are bound to the same value (`in X, ...`).
+static int ctx_same (ATrail* a, ATrail* b) {
+    if (a == b) {
+        return 1;
+    }
+    AVal x = a->x->cobj;
+    AVal y = b->x->cobj;
+    return x.type==A_TAB && y.type==A_TAB && x.u.o==y.u.o;
+}
+
+// Adds a context to the chain, unless it passes no event now or its
+// value is already there.
+static int ctx_add (ATrail* tr, ATrail** out, int n) {
+    if (!ctx_pass(tr->x)) {
+        return n;
+    }
+    for (int k=0; k<n; k++) {
+        if (ctx_same(out[k], tr)) {
+            return n;
+        }
+    }
+    if (n < CTX_MAX) {
+        out[n++] = tr;
+    }
+    return n;
+}
+
 // The contexts around trail `i` of task `t`, from the innermost.
 static int ctx_chain (ATask* t, int i, ATrail** out) {
     int n = 0;
@@ -941,13 +969,8 @@ static int ctx_chain (ATask* t, int i, ATrail** out) {
             const ATrailD* ds = t->desc->trails;
             for (int j=i; j>=0; j=ds[j].up) {
                 ATrail* tr = &t->trs[j];
-                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF &&
-                    ctx_pass(tr->x))
-                {
-                    if (n == CTX_MAX) {
-                        return n;
-                    }
-                    out[n++] = tr;
+                if (tr->x!=NULL && tr->x->ctx && tr->status!=TR_OFF) {
+                    n = ctx_add(tr, out, n);
                 }
             }
         }
@@ -961,6 +984,13 @@ static int ctx_chain (ATask* t, int i, ATrail** out) {
             if (nd->hdr.type == A_XTASK) {
                 t = (ATask*) nd;
                 break;
+            }
+            // a pool bound to a context: `in X, tasks()`
+            if (nd->hdr.type == A_TASKS) {
+                ATrail* tr = ((ATasks*)nd)->ctx;
+                if (tr!=NULL && tr->x!=NULL && tr->x->ctx) {
+                    n = ctx_add(tr, out, n);
+                }
             }
         }
     }
@@ -1013,7 +1043,7 @@ static AStatus ctx_switch (ATask* t, int i) {
     int n = (t == NULL) ? 0 : ctx_chain(t, i, ch);
     // common prefix, from the outermost
     int p = 0;
-    while (p<NCTX && p<n && CTX[p]==ch[n-1-p]) {
+    while (p<NCTX && p<n && ctx_same(CTX[p],ch[n-1-p])) {
         p++;
     }
     AStatus ret = ctx_leave(p);
@@ -1038,43 +1068,117 @@ static AStatus ctx_here (void) {
     return ctx_switch(a_cur, (a_trl == NULL) ? 0 : a_trl->idx);
 }
 
-AStatus a_trail_context (ATask* t, int i, AVal enter, AVal leave) {
-    if (enter.type != A_FUNC) {
-        return a_error("invalid context : expected function : got %s",
-            a_typename(enter));
+// The functions of a context value, `:Context [enter=f, leave=g]`
+// (`leave` is optional).
+static AStatus ctx_val (AVal v, AVal tag, AVal ken, AVal klv,
+                        AVal* en, AVal* lv)
+{
+    if (v.type!=A_TAB || !a_is(v, tag)) {
+        return a_error("invalid context : expected :Context : got %s",
+            a_typename(v));
     }
-    if (leave.type != A_FUNC) {
-        return a_error("invalid context : expected function : got %s",
-            a_typename(leave));
+    *en = a_nil();
+    *lv = a_nil();
+    if (a_index(en, v, ken) != A_OK) {
+        return A_ERROR;
+    }
+    if (a_index(lv, v, klv) != A_OK) {
+        a_dec(*en);
+        return A_ERROR;
+    }
+    if (en->type!=A_FUNC || (lv->type!=A_FUNC && lv->type!=A_NIL)) {
+        AStatus st = a_error("invalid context : expected function : got %s",
+            a_typename(en->type!=A_FUNC ? *en : *lv));
+        a_dec(*en);
+        a_dec(*lv);
+        return st;
+    }
+    return A_OK;
+}
+
+// in X, do {...}: trail `i` is bound to the value X.
+AStatus a_trail_context_val (ATask* t, int i, AVal v, AVal tag, AVal ken,
+                             AVal klv)
+{
+    AVal en, lv;
+    if (ctx_val(v, tag, ken, klv, &en, &lv) != A_OK) {
+        return A_ERROR;
     }
     ATrailX* x = trail_x(&t->trs[i]);
-    x->ctx = 1;
-    a_cpy(&x->enter, enter);
-    a_cpy(&x->leave, leave);
-    x->cval = a_nil();
+    x->ctx   = 1;
+    x->enter = en;
+    x->leave = lv;
+    x->cval  = a_nil();
+    a_cpy(&x->cobj, v);
     LIVE++;
     return A_OK;
 }
 
-// context X {...}: X holds the pair, enter at 0 and leave at 1.
-AStatus a_trail_context_pair (ATask* t, int i, AVal pair) {
-    if (pair.type != A_TAB) {
-        return a_error("invalid context : expected table : got %s",
-            a_typename(pair));
+// in X, spawn T(...)  in X, tasks(): the binding waits for the task
+// or the pool created next.
+static struct {
+    int     on;
+    AVal    obj, enter, leave;
+    APatt** filt;
+    int     nfilt;
+} PEND;
+
+static void ctx_pend_clear (void) {
+    if (!PEND.on) {
+        return;
     }
-    AVal en = a_nil();
-    AVal lv = a_nil();
-    if (a_index(&en, pair, a_int(0)) != A_OK) {
+    PEND.on = 0;
+    a_dec(PEND.obj);
+    a_dec(PEND.enter);
+    a_dec(PEND.leave);
+    for (int i=0; i<PEND.nfilt; i++) {
+        patt_free(PEND.filt[i]);
+    }
+    free(PEND.filt);
+    PEND.filt  = NULL;
+    PEND.nfilt = 0;
+}
+
+AStatus a_ctx_bind (AVal v, AVal tag, AVal ken, AVal klv, APatt** fs, int n) {
+    ctx_pend_clear();
+    AVal en, lv;
+    if (ctx_val(v, tag, ken, klv, &en, &lv) != A_OK) {
+        for (int i=0; i<n; i++) {
+            patt_free(fs[i]);
+        }
         return A_ERROR;
     }
-    if (a_index(&lv, pair, a_int(1)) != A_OK) {
-        a_dec(en);
-        return A_ERROR;
+    PEND.on    = 1;
+    PEND.enter = en;
+    PEND.leave = lv;
+    PEND.obj   = a_nil();
+    a_cpy(&PEND.obj, v);
+    if (n > 0) {
+        PEND.filt = malloc(n * sizeof(APatt*));
+        memcpy(PEND.filt, fs, n * sizeof(APatt*));
+        PEND.nfilt = n;
     }
-    AStatus st = a_trail_context(t, i, en, lv);
-    a_dec(en);
-    a_dec(lv);
-    return st;
+    return A_OK;
+}
+
+// The pending binding goes to a trail: the root of a task, or the one
+// that stands for a pool.
+static AStatus ctx_pend_take (ATrail* tr) {
+    ATrailX* x = trail_x(tr);
+    x->ctx   = 1;
+    x->enter = PEND.enter;
+    x->leave = PEND.leave;
+    x->cobj  = PEND.obj;
+    x->cval  = a_nil();
+    x->cfilt  = PEND.filt;
+    x->ncfilt = PEND.nfilt;
+    x->ctime  = 0;
+    x->cpass  = 0;
+    PEND.on    = 0;
+    PEND.filt  = NULL;
+    PEND.nfilt = 0;
+    LIVE++;
+    return (x->ncfilt > 0) ? filt_start(x->cfilt, x->ncfilt) : A_OK;
 }
 
 AStatus a_trail_context_filt (ATask* t, int i, APatt** fs, int n) {
@@ -1159,6 +1263,8 @@ static void ctx_drop (ATrail* tr) {
     a_dec(x->enter);
     a_dec(x->leave);
     a_dec(x->cval);
+    a_dec(x->cobj);
+    x->cobj  = a_nil();
     x->enter = a_nil();
     x->leave = a_nil();
     x->cval  = a_nil();
@@ -1260,6 +1366,11 @@ void a_node_free (ANode* n) {
             }
         }
     } else if (n->hdr.type == A_TASKS) {
+        if (((ATasks*)n)->ctx != NULL) {
+            trail_off(((ATasks*)n)->ctx);
+            free(((ATasks*)n)->ctx);
+            ((ATasks*)n)->ctx = NULL;
+        }
         // the tasks that outlive the pool no longer refer to it
         ATask* t = ((ATasks*)n)->all;
         while (t != NULL) {
@@ -2358,7 +2469,7 @@ AStatus a_spawn_pool (AVal pool) {
     return A_OK;
 }
 
-AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
+static AStatus spawn_ (AVal* dst, AVal proto, AVal pool, int base) {
     if (ctx_chk("spawn") != A_OK) {
         a_settop(base);
         return A_ERROR;
@@ -2472,7 +2583,20 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
         }
     }
     a_cpy(dst, a_obj(&t->node.hdr));
+    if (PEND.on) {
+        // in X, spawn T(...): the task lives in the context
+        AStatus st = ctx_pend_take(&t->trs[0]);
+        if (st != A_OK) {
+            return st;
+        }
+    }
     return chk_aborted(trail_resume(t, &t->trs[0], R_START));
+}
+
+AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
+    AStatus st = spawn_(dst, proto, pool, base);
+    ctx_pend_clear();
+    return st;
 }
 
 AStatus a_trail_spawn (ATask* t, int i) {
@@ -2485,6 +2609,7 @@ AStatus a_trail_spawn (ATask* t, int i) {
 
 AStatus a_tasks (AVal* dst, AVal max) {
     if (max.type!=A_NIL && !a_isnum(max)) {
+        ctx_pend_clear();
         return a_error("invalid tasks limit : expected number");
     }
     ATasks* ts = calloc(1, sizeof(ATasks));
@@ -2492,6 +2617,12 @@ AStatus a_tasks (AVal* dst, AVal max) {
     ts->max = a_isnum(max) ? (int)a_dbl(max) : -1;
     node_add((a_cur != NULL) ? &a_cur->node : &ROOT.node, &ts->node);
     a_cpy(dst, a_obj(&ts->node.hdr));
+    if (PEND.on) {
+        // in X, tasks(): a trail that stands for the pool in the chains
+        ts->ctx = calloc(1, sizeof(ATrail));
+        ts->ctx->status = TR_SUSPENDED;
+        return ctx_pend_take(ts->ctx);
+    }
     return A_OK;
 }
 

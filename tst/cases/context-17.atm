@@ -4,8 +4,8 @@ spawn {
         await false
     }
     context {
-        enter { abort(t) }
-        leave { nil }
+        :enter { abort(t) }
+        :leave { nil }
         await false
     }
 }

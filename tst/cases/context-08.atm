@@ -1,8 +1,8 @@
 ;; #5 (the author, 2026-11-22): emit inside enter or leave is an error
 spawn {
     context {
-        enter { emit :x }
-        leave { nil }
+        :enter { emit :x }
+        :leave { nil }
         await false
     }
 }

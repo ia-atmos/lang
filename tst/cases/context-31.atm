@@ -1,0 +1,22 @@
+;; #23: the same value nested is entered once; a pool outside, awaited outside (#22)
+var n = 0
+val w = :Context [enter=\{ set n = n + 1 ; print("+") }, leave=\{ print("-") }]
+task Coin () {
+    await :take
+}
+pin coins = in w, tasks()
+spawn {
+    in w, do {
+        in w, spawn { loop on :draw { print("tiles") } }
+        spawn @coins Coin()
+        spawn @coins Coin()
+        await false
+    }
+}
+spawn {
+    await :all coins
+    print("taken")
+}
+emit :draw
+emit :take
+print("enters", n)

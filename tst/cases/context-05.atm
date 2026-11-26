@@ -5,11 +5,11 @@ task T () {
 }
 spawn {
     context {
-        enter { print "+A" }
-        leave { print "-A" }
+        :enter { print "+A" }
+        :leave { print "-A" }
         context {
-            enter { print "+B" }
-            leave { print "-B" }
+            :enter { print "+B" }
+            :leave { print "-B" }
             spawn @ts T()
             loop on :draw { print "b" }
         }

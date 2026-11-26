@@ -1,7 +1,11 @@
-;; #4 (the author, 2026-11-22): context X {...}, X gives the pair
-context eng.on(X) {
+;; #23 (the author, 2026-11-26): in X, cmd
+in eng.on(X), do {
     await :X
 }
-context (p) {
+in p, spawn T(1)
+in p, spawn {
     await :Y
 }
+val v = in p, await T(2)
+pin ts = in <:draw> p, tasks()
+f(in p, spawn T(3), 4)

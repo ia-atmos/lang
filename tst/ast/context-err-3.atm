@@ -1,0 +1,2 @@
+;; #23: in X, binds a spawn, an await, a pool or a do
+in p, print(1)

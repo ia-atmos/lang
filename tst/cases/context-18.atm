@@ -8,8 +8,8 @@ spawn {
         await false
     }
     context {
-        enter { nil }
-        leave { off(t) }
+        :enter { nil }
+        :leave { off(t) }
         await :x
     }
 }

@@ -3,8 +3,8 @@ var X = false
 spawn {
     catch :E {
         context {
-            enter { if X { throw(:E) } }
-            leave { nil }
+            :enter { if X { throw(:E) } }
+            :leave { nil }
             loop on :draw { print "draw" }
         }
     }

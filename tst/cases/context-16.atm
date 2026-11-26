@@ -1,6 +1,6 @@
-;; #4: in the pair form, both must be functions
+;; #4: a leave that is not a function
 spawn {
-    context [\{ nil }, 10] {
+    in :Context [enter=\{ nil }, leave=10], do {
         await false
     }
 }

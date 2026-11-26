@@ -1,9 +1,9 @@
-;; #19 (the author, 2026-11-22): context <P> X {...}
-context <:draw> eng.on(X) {
+;; #19 (the author, 2026-11-22): in <P> X, cmd | context <P> {...}
+in <:draw> eng.on(X), do {
     await :X
 }
 context <!:draw> {
-    enter { a() }
-    leave \(x) { b(x) }
+    :enter { a() }
+    :leave \(x) { b(x) }
     await :Y
 }

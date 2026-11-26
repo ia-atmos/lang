@@ -277,6 +277,9 @@ static void hoist (Expr* e) {
             HPROTO--;
             break;
         case E_SPAWN:
+            if (e->u.spawn.ctx != NULL) {
+                hoist(e->u.spawn.ctx);
+            }
             hoist(e->u.spawn.f);
             hoist_list(&e->u.spawn.args);
             break;
@@ -574,9 +577,10 @@ static int awaits (Expr* e) {
             return e->u.proto.inl && awaits(e->u.proto.blk);
         case E_SPAWN:
             return awaits(e->u.spawn.pool) || awaits(e->u.spawn.f) ||
+                   awaits(e->u.spawn.ctx) ||
                    awaits_list(&e->u.spawn.args);
         case E_TASKS:
-            return awaits(e->u.tasks.n);
+            return awaits(e->u.tasks.n) || awaits(e->u.tasks.ctx);
         case E_EMIT:
             return awaits(e->u.emit.to) || awaits(e->u.emit.e);
         case E_MUTE:
@@ -1001,6 +1005,10 @@ static void res (Expr* e) {
             break;
 
         case E_SPAWN:
+            res(e->u.spawn.ctx);
+            if (e->u.spawn.cpat != NULL) {
+                res_patt(e->u.spawn.cpat);
+            }
             res(e->u.spawn.pool);
             res(e->u.spawn.f);
             res_list(&e->u.spawn.args);
@@ -1010,6 +1018,10 @@ static void res (Expr* e) {
             break;
 
         case E_TASKS:
+            res(e->u.tasks.ctx);
+            if (e->u.tasks.cpat != NULL) {
+                res_patt(e->u.tasks.cpat);
+            }
             res(e->u.tasks.n);
             break;
 
