@@ -2,7 +2,9 @@
 var X = false
 spawn {
     catch :E {
-        context (\{ if X { throw(:E) } }, \{ nil }) {
+        context {
+            enter { if X { throw(:E) } }
+            leave { nil }
             loop on :draw { print "draw" }
         }
     }

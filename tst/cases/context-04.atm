@@ -1,7 +1,9 @@
 ;; #1: the first reaction and the defers run inside the context
 spawn {
     watching :stop {
-        context (\{ print "+A" }, \{ print "-A" }) {
+        context {
+            enter { print "+A" }
+            leave { print "-A" }
             defer { print "d" }
             print "start"
             await false

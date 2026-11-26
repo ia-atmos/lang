@@ -1,4 +1,4 @@
-;; #4: the two functions close with a parenthesis
-context (a, b {
+;; #21: enter outside the block of a context is a name
+enter {
     await :X
 }

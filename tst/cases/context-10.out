@@ -1,4 +1,4 @@
 ==> ERROR:
- |  context-10.atm:4 (call)
- v  context-10.atm:4 (throw)
+ |  context-10.atm:5 (call)
+ v  context-10.atm:5 (throw)
 ==> invalid spawn : inside enter or leave of a context

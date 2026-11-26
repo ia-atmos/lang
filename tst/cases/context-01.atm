@@ -1,7 +1,9 @@
 ;; #1 (the author, 2026-11-22): enter and leave run around each
 ;; resume of a trail inside, with a lazy switch
 spawn {
-    context (\{ print "+A" }, \{ print "-A" }) {
+    context {
+        enter { print "+A" }
+        leave { print "-A" }
         loop on :draw { print "a" }
     }
 }

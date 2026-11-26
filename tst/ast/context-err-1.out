@@ -1,1 +1,1 @@
-context-err-1.atm : line 2 : near '{' : expected ')'
+context-err-1.atm : line 2 : near '{' : sequence error : expected ';' or new line

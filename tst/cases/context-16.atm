@@ -1,6 +1,6 @@
-;; #4: in the two-expression form, both must be functions
+;; #4: in the pair form, both must be functions
 spawn {
-    context (\{ nil }, 10) {
+    context [\{ nil }, 10] {
         await false
     }
 }

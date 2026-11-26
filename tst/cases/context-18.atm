@@ -7,7 +7,9 @@ spawn {
     pin t = spawn {
         await false
     }
-    context (\{ nil }, \{ off(t) }) {
+    context {
+        enter { nil }
+        leave { off(t) }
         await :x
     }
 }

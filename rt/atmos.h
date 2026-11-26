@@ -1014,6 +1014,12 @@ AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
 AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
 // context <P> ...: takes over the `n` filters
 AStatus a_trail_context_filt (struct ATask* t, int i, struct APatt** fs, int n);
+// enter F, leave F in the block of the context in trail `i`: `enter`
+// applies it from now on; `a_ctx_end` leaves it (if applied) and drops
+// both, with the defers of the block.
+AStatus a_ctx_enter (struct ATask* t, int i, AVal f);
+AStatus a_ctx_leave (struct ATask* t, int i, AVal f);
+AStatus a_ctx_end   (struct ATask* t, int i);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;

@@ -305,13 +305,16 @@ void ast_dump (Expr* e) {
                 dump_patt(e->u.context.patt);
                 printf("> ");
             }
-            ast_dump(e->u.context.enter);
-            printf(" ");
-            if (e->u.context.leave != NULL) {
-                ast_dump(e->u.context.leave);
+            if (e->u.context.pair != NULL) {
+                ast_dump(e->u.context.pair);
                 printf(" ");
             }
             ast_dump(e->u.context.blk);
+            printf(")");
+            break;
+        case E_CTX_FN:
+            printf("(%s ", e->u.ctxfn.leave ? "leave" : "enter");
+            ast_dump(e->u.ctxfn.f);
             printf(")");
             break;
         case E_MUTE_ON:

@@ -290,11 +290,13 @@ static void hoist (Expr* e) {
             hoist(e->u.solo.blk);
             break;
         case E_CONTEXT:
-            hoist(e->u.context.enter);
-            if (e->u.context.leave != NULL) {
-                hoist(e->u.context.leave);
+            if (e->u.context.pair != NULL) {
+                hoist(e->u.context.pair);
             }
             hoist(e->u.context.blk);
+            break;
+        case E_CTX_FN:
+            hoist(e->u.ctxfn.f);
             break;
         case E_PAR:
             hoist_list(&e->u.par.blks);
@@ -1046,13 +1048,16 @@ static void res (Expr* e) {
             }
             break;
 
+        case E_CTX_FN:
+            res(e->u.ctxfn.f);
+            break;
+
         case E_CONTEXT:
             if (e->u.context.patt != NULL) {
                 res_patt(e->u.context.patt);
             }
-            res(e->u.context.enter);
-            if (e->u.context.leave != NULL) {
-                res(e->u.context.leave);
+            if (e->u.context.pair != NULL) {
+                res(e->u.context.pair);
             }
             chk_await(e->tk, "context");
             res_block(e->u.context.blk, 1);

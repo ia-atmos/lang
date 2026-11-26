@@ -3,7 +3,9 @@ spawn {
     pin t = spawn {
         await false
     }
-    context (\{ abort(t) }, \{ nil }) {
+    context {
+        enter { abort(t) }
+        leave { nil }
         await false
     }
 }

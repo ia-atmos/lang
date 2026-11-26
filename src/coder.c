@@ -123,6 +123,8 @@ typedef struct Defer {
     // set :out: the place goes back to nil, if it still refers to the
     // value. 1: a table (slots `ot`, `ok`); 2: a variable (`odst`).
     // The value is in the slot `ov`.
+    // 3: `enter`/`leave` of the context in trail `ot`: it ends with the
+    // defers of the block, before its pins are finalized
     int   out;
     int   ot, ok, ov;
     const char* odst;
@@ -982,6 +984,12 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
         } else if (mine[i].out == 2) {
             out(u, "if (a_truthy(L[%d])) a_out_var_end(&%s, L[%d]);",
                 mine[i].flag, mine[i].odst, mine[i].ov);
+            continue;
+        } else if (mine[i].out == 3) {
+            out(u, "if (a_truthy(L[%d])) {", mine[i].flag);
+            out(u, "    AStatus st_c = a_ctx_end(t, %d);", mine[i].ot);
+            out(u, "    if (st == A_OK) st = st_c;");
+            out(u, "}");
             continue;
         }
         int id = ++u->nlabels;
@@ -2768,23 +2776,20 @@ static void gen_solo (Unit* u, Expr* e, Dst d) {
 // context (enter, leave) {...} | context X {...}: the block runs as a transparent task
 // that is a context, before its first reaction.
 static void gen_context (Unit* u, Expr* e, Dst d) {
-    Opnd en = gen_expr(u, e->u.context.enter);
-    Expr* le = e->u.context.leave;
-    Opnd lv = (le == NULL) ? opnd_c(NULL) : gen_expr(u, le);
+    Expr* pair = e->u.context.pair;
+    Opnd pr = (pair == NULL) ? opnd_c(NULL) : gen_expr(u, pair);
     Opnd r = opnd_tmp(u);
     Blk b = blk_open(u);
     int id = gen_trail(u);
+    e->u.context.id = id;
     gen_trail_end(u, id);
     Expr* blk = e->u.context.blk;
     gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
     out(u, "a_lin = %d;", lin_of(e->tk));
-    if (le == NULL) {
-        out_try(u, "a_trail_context_pair(t, %d, %s)", id, en.c);
-    } else {
-        out_try(u, "a_trail_context(t, %d, %s, %s)", id, en.c, lv.c);
-        opnd_rel(u, lv);
+    if (pair != NULL) {
+        out_try(u, "a_trail_context_pair(t, %d, %s)", id, pr.c);
+        opnd_rel(u, pr);
     }
-    opnd_rel(u, en);
     if (e->u.context.patt != NULL) {
         int n;
         Opnd* os = gen_filters(u, &e->u.context.patt, 1, &n);
@@ -2801,6 +2806,31 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     gen_suspend(u, dst_none());
     blk_close(u, b, dst_none(), hnd_none());
     store(u, r, d);
+}
+
+// enter F  leave F: registered in the trail of the context; `enter`
+// applies it from here. Both end with the defers of the block.
+static void gen_ctxfn (Unit* u, Expr* e) {
+    Expr* ctx = e->u.ctxfn.ctx;
+    if (ctx->u.context.id < 0 || !u->task) {
+        err(e->tk, "invalid %s : expected the block of a context",
+            e->u.ctxfn.leave ? "leave" : "enter");
+    }
+    int id = ctx->u.context.id;
+    Opnd f = gen_expr(u, e->u.ctxfn.f);
+    out(u, "a_lin = %d;", lin_of(e->tk));
+    out_try(u, "a_ctx_%s(t, %d, %s)", e->u.ctxfn.leave ? "leave" : "enter",
+        id, f.c);
+    opnd_rel(u, f);
+    Defer d;
+    memset(&d, 0, sizeof(d));
+    d.flag  = slot_new(u);
+    d.trail = -1;
+    d.out   = 3;
+    d.ot    = id;
+    out(u, "a_set(&L[%d], a_bool(1));", d.flag);
+    u->defs = realloc(u->defs, (u->ndefs+1) * sizeof(Defer));
+    u->defs[u->ndefs++] = d;
 }
 
 // await P
@@ -2950,6 +2980,10 @@ static void gen (Unit* u, Expr* e, Dst d) {
             break;
         case E_DEFER:
             gen_defer(u, e);
+            store_void(u, d);
+            break;
+        case E_CTX_FN:
+            gen_ctxfn(u, e);
             store_void(u, d);
             break;
         case E_SPAWN:

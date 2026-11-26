@@ -326,6 +326,10 @@ typedef struct Clause {
 } Clause;
 static Clause* CLAUSE = NULL;
 
+// The block form of a context being parsed: `enter` and `leave` are
+// statements of its block (not of a function inside it).
+static Expr* CTXE = NULL;
+
 static Expr* mk (ETag tag, Tk tk);
 static Tk tk_id (Tk tk, const char* str);
 
@@ -474,7 +478,10 @@ static Expr* proto_body (void) {
     int n     = NPARS;
     PARS  = NULL;
     NPARS = 0;
+    Expr* ctx = CTXE;
+    CTXE = NULL;
     Expr* blk = parser_block();
+    CTXE = ctx;
     if (n > 0) {
         List* es = &blk->u.block.es;
         es->v = realloc(es->v, (es->n+n) * sizeof(Expr*));
@@ -1332,6 +1339,29 @@ static Expr* parser_1_prim (void) {
         next();
         return parser_exit(TK0);
 
+    // enter {...}  enter \(x) {...}  leave {...}  leave \(x) {...}:
+    // statements of the block of a context, not keywords elsewhere
+    } else if (CTXE!=NULL && check_tag(TK_ID) &&
+               (!strcmp(TK1.str,"enter") || !strcmp(TK1.str,"leave")))
+    {
+        next();
+        Tk tk = TK0;
+        if (TK0.sep!=TK1.sep || !(check_str("{") || check_str("\\"))) {
+            return mk(E_ACC, tk);
+        }
+        Expr* e = mk(E_CTX_FN, tk);
+        e->u.ctxfn.leave = !strcmp(tk.str, "leave");
+        e->u.ctxfn.ctx   = CTXE;
+        if (check_str("{")) {
+            Expr* p = mk(E_PROTO, tk);
+            proto_par(p, tk_id(tk,"it"), 0);
+            p->u.proto.blk = proto_body();
+            e->u.ctxfn.f = p;
+        } else {
+            e->u.ctxfn.f = parser_lambda();
+        }
+        return e;
+
     // super(...), in the body of a clause
     } else if (CLAUSE!=NULL && check_tag(TK_ID) && !strcmp(TK1.str,"super")) {
         next();
@@ -1511,31 +1541,33 @@ static Expr* parser_1_prim (void) {
         e->u.solo.blk = parser_block();
         return e;
 
-    // context [<P>] (enter, leave) {...}  |  context [<P>] X {...}
+    // context [<P>] {... enter F ... leave F ...}  |  context [<P>] X {...}
     // The pattern is between `<` `>`, as in `mute <P> t(b)`: an
-    // expression follows.
+    // expression may follow.
     } else if (accept_str("context")) {
         Expr* e = mk(E_CONTEXT, TK0);
         e->u.context.patt = NULL;
+        e->u.context.pair = NULL;
+        e->u.context.id   = -1;
         if (check_str("<") || check_str("<<")) {
             ANGLE_TARGET = 1;
             e->u.context.patt = parser_await();
             ANGLE_TARGET = 0;
         }
-        if (accept_str("(")) {
-            e->u.context.enter = parser_6_pip(NULL);
-            if (accept_str(",")) {
-                e->u.context.leave = parser_6_pip(NULL);
-            } else {
-                e->u.context.leave = NULL;  // (X): the pair
-            }
-            accept_str_err(")");
+        if (check_str("{")) {
+            Expr* up = CTXE;
+            CTXE = e;
+            e->u.context.blk = parser_block();
+            CTXE = up;
         } else {
-            e->u.context.enter = parser_6_pip(NULL);
-            e->u.context.leave = NULL;      // X: the pair
+            e->u.context.pair = parser_6_pip(NULL);
+            Expr* up = CTXE;
+            CTXE = NULL;
+            e->u.context.blk = parser_block();
+            CTXE = up;
         }
-        e->u.context.blk = parser_block();
         return e;
+
 
     // mute [<P>] t(b)  |  mute [P] on :T {...}
     // The pattern names the events silenced (none: all of them). It is

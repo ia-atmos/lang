@@ -3732,15 +3732,26 @@ code that lives in its block runs, and restores it before any other code
 runs:
 
 ```
-Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
+Context : `context´ [`<´ Patt `>´] Block
         | `context´ [`<´ Patt `>´] Expr Block
+Enter   : `enter´ (Block | Lambda)          ;; in the block of a context
+Leave   : `leave´ (Block | Lambda)          ;; in the block of a context
 ```
 
-The first expression is a function `enter`, which sets the state and returns
-what `leave` needs to restore it.
-The second is a function `leave`, which receives that value.
-In the second form, the expression is a pair `[enter, leave]`, so that a
-library can give both in one value (`context eng.on(STARS) {...}`).
+In the first form, the statements `enter` and `leave` of the block give the
+two functions: `enter` sets the state and returns what `leave` needs to
+restore it; `leave` receives that value, as `it` or as its parameter
+(`leave \(old) {...}`).
+They see the variables of the block declared before them.
+The context applies from where `enter` executes: code of the block before it
+runs without the state.
+`leave` runs, when the block ends, with its [defers](#defer), in the reverse
+order of declaration; a block that ends before its `enter` runs neither.
+Outside the block of a context, `enter` and `leave` are names.
+
+In the second form, the expression is a pair `[enter, leave]` of functions,
+so that a library can give both in one value (`context eng.on(STARS) {...}`).
+
 The block runs as a [transparent task](#tasks), as in a
 [mute](#mute) block.
 
@@ -3755,7 +3766,7 @@ Contexts nest: the inner one is entered after the outer one, and left before
 it.
 
 The pattern is an [await pattern](#await), between `<` and `>` as in the
-first format of a [mute](#mute), since an expression follows.
+first format of a [mute](#mute), since an expression may follow.
 With a pattern, the context applies only while the traversal of an emit that
 matches it resumes code inside: for other emits, and outside an emit (the
 first reaction of the block, an `abort` from code), the code inside runs as if
@@ -3773,8 +3784,8 @@ A context cannot set a state for code outside it to see.
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
 It is an error to `emit`, `spawn`, `abort` or `mute` inside `enter` or
-`leave`, also from a function they call, and for `enter` or `leave` not to be
-a function.
+`leave`, also from a function they call, and, in the second form, for `enter`
+or `leave` not to be a function.
 
 Examples:
 
@@ -3786,7 +3797,9 @@ func set_layer (l) {        ;; returns the previous layer
     old
 }
 spawn {
-    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+    context {
+        enter { set_layer(:panel) }
+        leave { set_layer(it) }
         loop on :draw {
             print(layer)    ;; --> panel
         }
@@ -3814,6 +3827,22 @@ spawn {
     }
 }
 ```
+
+With a pattern, the state is set once per `:draw`, and the screen can be
+cleared right after it is set:
+
+```
+context <:draw> {
+    enter { ray.begin_texture_mode(target) ; ray.clear(GREEN1) }
+    leave { ray.end_texture_mode() }
+    loop {
+        ...                 ;; the screens, which draw into the texture
+    }
+}
+```
+
+`enter` runs again in the same `:draw` only when code inside runs code outside
+(an `emit`, a `spawn` into a pool outside, an `abort` or a `mute`).
 
 With a pattern, the state is set only to draw: the watching of each coin, the
 clock and the keys run without it:

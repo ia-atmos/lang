@@ -2,6 +2,8 @@
 context <:draw> eng.on(X) {
     await :X
 }
-context <!:draw> (a, b) {
+context <!:draw> {
+    enter { a() }
+    leave \(x) { b(x) }
     await :Y
 }

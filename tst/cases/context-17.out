@@ -1,4 +1,4 @@
 ==> ERROR:
- |  context-17.atm:6 (call)
- v  context-17.atm:6 (throw)
+ |  context-17.atm:7 (call)
+ v  context-17.atm:7 (throw)
 ==> invalid abort : inside enter or leave of a context

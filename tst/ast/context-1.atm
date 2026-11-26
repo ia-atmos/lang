@@ -1,4 +1,6 @@
-;; #4 (the author, 2026-11-22): context (enter, leave) {...}
-context (\{ f() }, \(old) { g(old) }) {
+;; #21 (the author, 2026-11-26): context { enter {...} leave {...} ... }
+context {
+    enter { f() }
+    leave \(old) { g(old) }
     await :X
 }
