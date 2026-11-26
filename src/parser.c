@@ -350,7 +350,8 @@ static Expr* clause_name (Tk tk, const char* name) {
     return e;
 }
 
-// super(...), in the body of a clause:
+// super(...), in the body of a function clause, and Super(...), in the
+// body of a task clause:
 //  super(a, b)  -->  $super(f, n, tag1, ..., tagN, a, b)
 //  super()      -->  $super(f, n, tag1, ..., tagN, x, y, ...)   (its parameters)
 static Expr* parser_super (Tk tk) {
@@ -1341,7 +1342,8 @@ static Expr* parser_1_prim (void) {
         return parser_exit(TK0);
 
     // super(...), in the body of a clause
-    } else if (CLAUSE!=NULL && check_tag(TK_ID) && !strcmp(TK1.str,"super")) {
+    } else if (CLAUSE!=NULL && check_tag(TK_ID) &&
+               !strcmp(TK1.str, CLAUSE->task ? "Super" : "super")) {
         next();
         return parser_super(TK0);
 

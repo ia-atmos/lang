@@ -5,7 +5,7 @@ task Bad (b :Bad) {
 }
 task Bad (b :Bad.Walker) {
     par {
-        await super()                       ;; everything a :Bad does
+        await Super()                       ;; everything a :Bad does
     } with {
         loop on :wall {
             print(b.name, "turns")          ;; plus its own reaction
@@ -14,7 +14,7 @@ task Bad (b :Bad.Walker) {
 }
 task Bad (b :Bad.Walker.Ice) {
     watching :squished {
-        await super()                       ;; a walker, until squished
+        await Super()                       ;; a walker, until squished
     }
     print(b.name, "is flat")
     loop on :update {
