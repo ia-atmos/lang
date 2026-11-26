@@ -591,6 +591,7 @@ AStatus a_setindex_last (AVal t, AVal v);
 
 // set t@+ = v  (append)
 AStatus a_setindex_next (AVal t, AVal v);
+AStatus a_out_next (AVal* k, AVal t);
 
 // :X [...]  (sets the `tag` key of a table)
 AStatus a_tag (AVal t, AVal tag);

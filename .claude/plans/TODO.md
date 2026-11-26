@@ -182,7 +182,7 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (`atmos-args` is archived).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`).
 
 | Session | Id | Topic |
 |---|---|---|
@@ -219,7 +219,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
 | `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
 | `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
-| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards |
+| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards (archived 2026-11-26 by `atmos-lang`, on the author's words there: "Pedro vai controlar esse repo. Acho que podemos arquivar aqui? Peça para sessao pai arquivar se for o caso"; all pushed up to 3e7ebd5; `atmos#12`) |
 | `paper-pin` | session_011eECofALi31oSimzbLxYZp | paper on `pin` |
 | `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
 | `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
@@ -274,6 +274,15 @@ To message a session with `send_message` (`atmos-args` is archived).
   "A cada passo grande, me mostre alguns screenshots." For every
   project with a screen: at a milestone or a feature that changes what
   is on screen, the session shows him a few screenshots in its report.
+- **A pair of Atmos excerpts per group of changes** (2026-11-26, said
+  in `atmos`): "Para todos os projetos, alem dos screenshots, mostrar
+  também trechos de código Atmos idiomaticos e ruins. Um par por grupo
+  de mudanças." Every project (ports and environments): in a report to
+  him, each group of changes comes with one idiomatic excerpt and one
+  bad one (awkward, verbose, a workaround), with file and line.
+  Added the same day: "1. Numerar 2. Justificar os ruins": each excerpt
+  takes a number of the session's `#N` sequence, and each bad one says
+  why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session

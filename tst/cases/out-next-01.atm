@@ -1,0 +1,16 @@
+;; set :out v@+ = o: the place is the index that is next at the set; it
+;; goes back to nil when `o` ends, which leaves a hole if it is not the
+;; last element.
+pin v = []
+do {
+    pin a = [x=1]
+    do {
+        pin b = [x=2]
+        set :out v@+ = a
+        set :out v@+ = b
+        set v@+ = 30
+        print(#v, v@0.x, v@1.x, v@2)
+    }                               ;; b ends: a hole at 1
+    print(#v, v@0.x, v@1, v@2)
+}                                   ;; a ends
+print(#v, v@0, v@1, v@2)
