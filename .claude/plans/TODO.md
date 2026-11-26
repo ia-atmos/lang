@@ -280,6 +280,9 @@ To message a session with `send_message` (`atmos-args` is archived).
   de mudanças." Every project (ports and environments): in a report to
   him, each group of changes comes with one idiomatic excerpt and one
   bad one (awkward, verbose, a workaround), with file and line.
+  Added the same day: "1. Numerar 2. Justificar os ruins": each excerpt
+  takes a number of the session's `#N` sequence, and each bad one says
+  why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
