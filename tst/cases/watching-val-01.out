@@ -1,0 +1,12 @@
+true	10	20
+false	1
+false
+true
+true	nil
+false	5000
+true	done
+false	Z
+true	1	2	3
+one	nil
+reply
+timeout

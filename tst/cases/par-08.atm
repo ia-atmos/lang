@@ -1,5 +1,5 @@
 spawn {
-    val r = watching :X {
+    val ok1, r = watching :X {
         par :any {
             await(:Y)
             :inner_y
@@ -8,11 +8,12 @@ spawn {
             :inner_z
         }
     }
-    print(r)
-    val s = watching :X {
+    print(ok1, r)
+    val ok2, s = watching :X {
         await(:W)
         :body
     }
+    print(ok2)
     X.print(s)
 }
 emit(:Z)

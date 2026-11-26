@@ -1,0 +1,90 @@
+;; a watching gives a boolean, then values, as a catch does:
+;;  - true  + the values of the body, if the body terminates
+;;  - false + the value of the condition, if the condition occurs
+
+;; the body terminates
+val a, b, c = watching :X {
+    (10, 20)
+}
+print(a, b, c)                  ;; --> true 10 20
+
+;; the condition occurs
+spawn {
+    val ok, e = watching :X {
+        await(false)
+    }
+    print(ok, e.n)              ;; --> false 1
+}
+emit(:X [n=1])
+
+;; a single destination takes the boolean
+spawn {
+    val ok = watching :Y {
+        await(false)
+    }
+    print(ok)                   ;; --> false
+}
+emit(:Y)
+val ok = watching :Y { 99 }
+print(ok)                       ;; --> true
+
+;; a body with no value
+val x, y = watching :X { }
+print(x, y)                     ;; --> true nil
+
+;; a timeout: false + the time past the expiry
+spawn {
+    val ok, late = watching 10ms {
+        await(:never)
+        :done
+    }
+    print(ok, late)             ;; --> false 5000
+}
+emit @:global 15ms
+
+;; the same task, in time
+spawn {
+    val ok, v = watching 10ms {
+        await(:go)
+        :done
+    }
+    print(ok, v)                ;; --> true done
+}
+emit(:go)
+
+;; both at once: the condition comes first
+spawn {
+    val ok, v = watching :Z {
+        await(:Z)
+        :body
+    }
+    print(ok, v)                ;; --> false Z
+}
+emit(:Z)
+
+;; all the values, in a list of arguments
+print(watching :X { (1, 2, 3) })    ;; --> true 1 2 3
+
+;; a par :any is unchanged: only the values of the branch
+val p, q = par :any {
+    :one
+} with {
+    await(false)
+}
+print(p, q)                     ;; --> one nil
+
+;; the idiom of a timeout
+task Fetch () {
+    val ok, v = watching 100ms {
+        await(:reply)
+    }
+    if ok => v => :timeout
+}
+spawn {
+    val r1 = await Fetch()
+    print(r1)                   ;; --> reply
+    val r2 = await Fetch()
+    print(r2)                   ;; --> timeout
+}
+emit(:reply)
+emit @:global 100ms
