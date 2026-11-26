@@ -1,0 +1,10 @@
+spawn {
+    spawn {
+        defer {
+            print "nested task aborted"
+        }
+        await false     ;; never awakes
+    }
+    await :X
+}                       ;; on :X, aborts the nested task
+emit :X

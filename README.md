@@ -119,6 +119,7 @@ Environment variables:
 
 # Documentation
 
+- [Guide](doc/guide.md): a tour in short steps, each a program that runs
 - [Manual](doc/manual.md)
 - [Examples](exs/)
 
@@ -202,7 +203,7 @@ src/    compiler: lexer, parser, resolver, coder
 rt/     runtime: values, strings, tables, operations, tasks, stdlib
 rt/atmos.h   C API for generated code, natives, and environments
 tst/    tests
-doc/    manual
+doc/    guide, manual
 exs/    examples
 ```
 

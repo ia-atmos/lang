@@ -1,0 +1,17 @@
+task XY () {
+    await :X
+    await :Y
+}
+spawn {
+    loop i in 2 {
+        await XY()      ;; a complete X, then Y
+        print(i + 1)
+    }
+    print "done"
+}
+emit :X
+emit :X
+emit :Y     ;; 1
+emit :X
+emit :Y     ;; 2, done
+emit :Y

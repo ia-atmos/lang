@@ -1,0 +1,10 @@
+task T () {
+    await :X
+    print "awakes from X"
+}
+pin t = spawn T()
+mute t(true)
+emit :X         ;; ignored
+print "muted"
+mute t(false)
+emit :X         ;; awakes

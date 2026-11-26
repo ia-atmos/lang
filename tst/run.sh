@@ -3,7 +3,7 @@
 # Runs the golden tests.
 #
 #   tst/run.sh            all suites
-#   tst/run.sh lex        one suite (lex, ast, cases, golden)
+#   tst/run.sh lex        one suite (lex, ast, cases, golden, guide)
 #
 # Each case is a `NAME.atm` with the expected output in `NAME.out`
 # (stdout followed by stderr). An address, as in `function: 0x5040...`,
@@ -28,6 +28,7 @@ for suite in $suites; do
         ast) flags="--ast" ;;
         cases)  flags="" ;;
         golden) flags="" ;;
+        guide)  flags="" ;;
         *)   echo "unknown suite: $suite" ; exit 1 ;;
     esac
     cd $suite

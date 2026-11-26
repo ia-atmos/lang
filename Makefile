@@ -94,7 +94,13 @@ test-golden: all
 test-env: all
 	tst/env/run.sh
 
-test: test-rt test-lex test-ast test-cases test-golden test-env
+# The examples of doc/guide.md: each runs alone and prints its output,
+# and the guide shows the same text as the files.
+test-guide: all
+	tst/run.sh guide
+	tst/guide/check.py
+
+test: test-rt test-lex test-ast test-cases test-golden test-env test-guide
 
 # Every configuration of the runtime, from clean and with -Werror, in
 # build/cfgs (the libraries of build/ are not touched). Not part of
@@ -109,4 +115,4 @@ cfgs-all: $(BLD)/libatmos.a $(foreach c,$(CFGS),$(BLD)/libatmos$(c).a)
 clean:
 	rm -rf build
 
-.PHONY: all env test test-cfgs cfgs-all test-rt test-lex test-ast test-cases test-golden test-env clean
+.PHONY: all env test test-cfgs cfgs-all test-rt test-lex test-ast test-cases test-golden test-env test-guide clean

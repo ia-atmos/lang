@@ -1,0 +1,9 @@
+start	0	100
+start	1	200
+start	2	300
+start	3	400
+stop	0	100
+stop	1	200
+pending	2
+pending	3
+done

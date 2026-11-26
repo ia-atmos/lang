@@ -1,0 +1,12 @@
+func check (v) {
+    if v < 0 {
+        throw :negative
+    }
+    v
+}
+task T () {
+    await 10ms
+    check(-1)
+}
+val v = await T()
+print(v)

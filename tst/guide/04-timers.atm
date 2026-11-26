@@ -1,0 +1,12 @@
+spawn {
+    par :any {
+        await 30ms
+        print "30ms"        ;; never prints
+    } with {
+        await 10ms
+        print "10ms"        ;; prints
+        await 15ms
+        print "15ms"        ;; prints, aborts the other branch
+    }
+}
+emit @:global 30ms          ;; 30ms elapse at once

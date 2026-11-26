@@ -1,0 +1,7 @@
+task T (i) {
+    await :X
+    print("task " ++ i ++ " awakes on X")
+}
+spawn T(1)      ;; starts a task, which awaits `:X`
+spawn T(2)      ;; starts another one
+emit :X         ;; awakes both

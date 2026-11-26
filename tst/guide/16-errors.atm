@@ -1,0 +1,17 @@
+task T () {
+    spawn {
+        await :X
+        throw :Y
+    }
+    await false
+}
+
+spawn {
+    val ok, err = catch :Y {
+        spawn T()
+        await false
+    }
+    print(ok, err)
+}
+
+emit :X

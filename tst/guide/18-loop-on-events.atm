@@ -1,0 +1,10 @@
+spawn {
+    loop e on :V {
+        if (e.v % 2) == 1 {     ;; only the odd values
+            print(e.v)
+        }
+    }
+}
+loop i in 6 {
+    emit(:V [v=i])
+}
