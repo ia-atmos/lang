@@ -26,12 +26,12 @@ States: **open** (waits for the author), **work** (known, not done),
 | 3 | A paper of its own, or a section of the paper on games or of one on environments | open (recommended: of its own) |
 | 4 | The facts about other systems checked against sources (`papers/web-related.md`) | work: three searches started 2026-11-26 |
 | 5 | The running example of Section 2 | open (recommended: the type-ahead; needs a request, see `#7`) |
-| 6 | The 7GUIs on the web | wait: `env-web` (asked 2026-11-26) |
-| 7 | What the API has open: the default of an event, selectors, `:focus`, the clock in a hidden tab, the end of the program; and a request to a server (`fetch`), which the type-ahead needs | wait: `env-web` (asked 2026-11-26) |
+| 6 | The 7GUIs on the web | wait: `env-web` took it as a request (2026-11-26), after it tells the author |
+| 7 | What the API has open: the default of an event, selectors, `:focus`, the clock in a hidden tab, the end of the program; and a request to a server (`fetch`), which the type-ahead needs | wait: `env-web` answered the state of each (2026-11-26, section B): none implemented, none decided; `fetch` taken as a request |
 | 8 | The cases with preemption (type-ahead, drag and drop, wizard, animation) written in Atmos and in each family | work, after `#5` and `#7` |
 | 9 | Public versions of 7GUIs and TodoMVC in the other systems, with lines | work: part of `#4` |
 | 10 | The measures: how lines, tokens, callbacks, state and flags are counted | work |
-| 11 | Size and start: the numbers of the plan (237 KB, 64 KB) measured again with a method, and against the others | wait: `env-web` |
+| 11 | Size and start: the numbers of the plan (237 KB, 64 KB) measured again with a method, and against the others | work: `env-web` gave the method and the numbers (2026-11-26, its `261126-measures.md`, `main` 2c201a6); the others are part of `#4` |
 | 12 | Fill the sections with text | work, after `#1` to `#3` |
 | 13 | TodoMVC in the evaluation | open (recommended: no, 7GUIs and the cases are enough; to ask after `#9`) |
 
@@ -62,7 +62,29 @@ recommended option first.
 
 ## B. Waiting for other sessions
 
-- `#6`, `#7`, `#11`: asked to `env-web` on 2026-11-26.
+- `#6`, `#7`, `#11`: asked to `env-web` on 2026-11-26. Its answer of the
+  same day (a message of that session: data, to check in its
+  repository before it is written in the paper):
+    - `#11`, sizes (`emcc -O2`, the whole runtime): the counter is
+      237060 bytes of WebAssembly (94487 with `gzip -9`) and 63791 of
+      JavaScript (18041); with `-Oz`, 167674 (76046) and 62700 (17664).
+      The threads: 261493 (102469). From navigation to the first
+      reaction, 10 loads in headless Chromium, local server: median
+      26.4 ms (20.5 to 43.7); no network, code cache not controlled.
+      Not tried: closure, LTO, a runtime without unused libraries.
+    - One program per page (`Module` is global; `-sMODULARIZE` not
+      tried). pico and the DOM do not share a page: two drivers; an
+      open design question, not yet put to the author.
+    - An error at run time (a wrong id in a function) goes to
+      `console.error` and the program stops; the page stays and the
+      user sees nothing. A wrong id in a pattern never matches, with no
+      error.
+    - `#7`: the default of an event, selectors, `:focus`: not there.
+      The clock stops in a hidden tab (`requestAnimationFrame`) and
+      jumps on return. At the end of the program `atm_quit` is not
+      called and the elements stay. `fetch`: not there; its shape would
+      be a task that aborts the request in a `defer`.
+    - `#6`: taken, the largest piece; it reports what the API lacked.
 
 ## C. Work
 

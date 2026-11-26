@@ -164,8 +164,11 @@ Each one: the case, the code in Atmos, and the same in each family
     - Q4: how much of a program is the environment? The diff between
       the IUP and the web version of each task
     - Q5: what does it cost? The size of the page and its time to start
-      **[have]**: the counter is 18 lines, and its page 237 KB of
-      WebAssembly and 64 KB of JavaScript (`-O2`, the whole runtime)
+      **[have]** (`env-web`, `261126-measures.md`): the counter is 18
+      lines; its page is 237 KB of WebAssembly and 64 KB of JavaScript
+      (`-O2`, the whole runtime), 94 KB and 18 KB with gzip; 168 KB of
+      WebAssembly with `-Oz`; a median of 26 ms from navigation to the
+      first reaction (headless Chromium, local, no network)
 - Threats: the programs are small; the Atmos versions are written by
   who proposes the approach; lines are a weak measure
 
@@ -198,7 +201,9 @@ against its source in `papers/web-related.md`.
 - The DOM by ids is imperative: no view derived from a state. The
   answer is the control flow, shown by the cases; where a derived view
   is better (a list that is filtered and sorted), to say so.
-- Ids are strings: a wrong id is an error at run time.
+- Ids are strings: a wrong id in a function is an error at run time,
+  which stops the program and shows only in the console; a wrong id in
+  the pattern of an `await` never matches, with no error.
 - Games in the browser (pico and SDL through Emscripten, with
   Asyncify) **[open]** (`paper-web#2`).
 
