@@ -2079,8 +2079,11 @@ do {                                ;; a map
 }                                   ;; `play.enemies` is nil again
 ```
 
-The place may be a field or an index of a table, a variable of an outer
-block, or the `pub` of the running task.
+The place may be a field or an index of a table, the next index of a
+vector (`set :out v@+ = x`, the index `#v` at the time of the `set`), a
+variable of an outer block, or the `pub` of the running task.
+A place in a vector that goes back to `nil` leaves a hole if it is not
+the last element.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
 The place goes back to `nil`, if it still refers to the value, when the

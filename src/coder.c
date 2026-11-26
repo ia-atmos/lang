@@ -1540,7 +1540,7 @@ static void gen_set_op (Unit* u, Expr* e) {
 // used.
 static void gen_set_out (Unit* u, Expr* e) {
     Expr* dst = e->u.set.dsts.v[0];
-    if (dst->tag==E_INDEX && dst->u.index.kind!=IDX_EXPR) {
+    if (dst->tag==E_INDEX && dst->u.index.kind==IDX_LAST) {
         err(dst->tk, "invalid set :out : expected field or index");
     }
     if (dst->tag==E_ACC && dst->var->kind==V_PIN) {
@@ -1563,7 +1563,12 @@ static void gen_set_out (Unit* u, Expr* e) {
         d.ot  = slot_new(u);
         d.ok  = slot_new(u);
         out(u, "a_cpy(&L[%d], %s);", d.ot, l.t.c);
-        out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+        if (dst->u.index.kind == IDX_NEXT) {
+            // t@+: the index that is next now
+            out_try(u, "a_out_next(&L[%d], L[%d])", d.ok, d.ot);
+        } else {
+            out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+        }
         out_try(u, "a_out_tab(L[%d], L[%d], L[%d])", d.ot, d.ok, d.ov);
         // until the value ends, if it has an end of its own; else, until
         // this block ends
