@@ -60,3 +60,26 @@ indexes (refusing them breaks 4 lines in 2 ports).
   (`invalid set :out : expected field or index`), which is TODO-pin #21
   (open, `atmos-pin`). The manual's example at "Pin" is a plain
   `set out@+ = o`, not `:out`. Not this session's to change.
+
+## The 4 `set :out` on an index (read 2026-11-26, clones of sdl-flare and sdl-snkrx)
+
+| Where | Line | Use of the table | A nil when the value ends |
+|---|---|---|---|
+| sdl-flare src/loot.atm:259 | `set :out loot.dropping@(#loot.dropping) = e` (an enemy that died this frame) | walked by `loop` (loot.atm, play.atm:453), reset to `[]` each frame | a hole, only if the enemy's table ends before `loot.logic` of the same frame |
+| sdl-snkrx src/button.atm:20 | `set :out owner.pub.springs@(id) = s` | read by key `springs@(e.id)`; ids are tags, or numbers in credits.atm (sparse already) | correct: "no spring" |
+| sdl-snkrx src/shop.atm:54 | same, `ShopButton` | same | correct |
+| sdl-snkrx src/shop.atm:551 | `set :out shop.pub.items@(i) = s` | read by `items@(e.i)` | correct |
+
+The 19 `A.w.objs@(o.b).task` of sdl-snkrx are a field of an element
+(counted as field): no hole.
+
+Alternatives in code, with no `set :out` on an index:
+- flare: (a) do the work at the death (xp and loot in `loot_dropping`):
+  changes the order of the random draws against the original; (b) append
+  a copy of the data it needs (`xp`, `loot`, `loot_count`, `x`, `y`) with a
+  plain `@+`: needs `e.loot` not pinned, and `set en.loot = []` would no
+  longer reset the enemy; (c) a task reference instead of the table (a
+  dead task stays valid), if the data were in its `pub`.
+- snkrx: invert: the owner emits to the button, which pulls its own
+  spring (`emit @btn :Button.pull`); for `ItemCard`, the shop answers the
+  card. More code; the current form is not wrong.
