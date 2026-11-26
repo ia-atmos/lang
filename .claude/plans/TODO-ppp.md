@@ -40,6 +40,15 @@ ports by form of the place (field, index, `@#`, `@+`, variable, `pub`).
 Recommended so far: refuse `@+` (no change, 0 uses, no hole/shift rule
 needed); refusing indexes in general waits for the count.
 
+Count by `atmos-lang` (2026-11-26): 63 `set :out` in 4 repositories:
+field 55 (lessmilk 26, sdl-snxkx 19, sdl-flare 10), index 4, `@#` 0,
+`@+` 0, outer variable 4 (env-ray), `pub` 0. The 4 indexes: sdl-flare
+`loot.dropping@(#loot.dropping) = e` (an append by hand, walked by
+`loop`, reset to `[]` each frame: the only vector use); sdl-snxkx
+`owner.pub.springs@(id)` x2 and `shop.pub.items@(i)`, keyed, never
+walked. Recommended (#6): refuse `@+` (no change) and keep `set :out` on
+indexes (refusing them breaks 4 lines in 2 ports).
+
 ## Notes
 
 - The golden tests `0058`-`0063` (`ppp-1` to `ppp-6`) are written with
