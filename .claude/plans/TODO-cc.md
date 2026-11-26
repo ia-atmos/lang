@@ -12,8 +12,8 @@ Last update: 2026-11-26.
 |---|------|-------|
 | #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
 | #2 | `import`: each file compiled apart (the author, 2026-11-26) | Approved 2026-11-26 ("#2 sim"). Prototype on `cc`: Pingus converted in a copy passes 40/40 (section "Import: the prototype") |
-| #3 | Which top-level names are local to a file (the author: "usar val para locais") | Asked 2026-11-26: what he means; today no name collides, each C symbol carries its module |
-| #4 | Native code under `import`: `:prelude` in every unit, `:prelude.once` only in its own | Not asked yet; on the branch as a provisional spelling |
+| #3 | Which top-level names are local to a file (the author: "usar val para locais") | Answered 2026-11-26 ("Tudo certo"): every top-level name is seen by who imports, as with `include`; no rule for `val` |
+| #4 | Native code under `import`: `:prelude` in every unit, `:prelude.once` only in its own | Asked 2026-11-26, after his question "o prelude é usado? É necessário? Pq?"; recommended: keep both tags as on the branch |
 | #5 | `-c` with modules, where the cache lives and how it is cleaned (overlaps `atmos-cli`) | Not asked yet |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
@@ -254,3 +254,20 @@ Open, seen in the prototype:
 - The manual is not updated.
 - An `await` at the top level of a module does not hold the importer
   (accepted in `#2`).
+
+## The prelude (2026-11-26)
+
+**Autor**: "Uma pergunta, o prelude é usado? É necessário? Pq?"
+
+Counted in what is cloned here (the search of the organization returned
+nothing, so the other environments and ports were not counted):
+`env-sdl/sdl.atm` (one prelude of 1080 lines: the SDL headers, 27
+variables, the functions that its natives call, `main`), two tests of
+`env-sdl`, `sdl-pingus/engine/sdl.atm` (one line, `#include
+"engine/pingus.h"`), 17 files of `lang/tst` and `doc`.
+
+Why it exists: the other native literals are statements or expressions
+inside a function; an `#include`, a type, a C function or a C variable
+needs the file scope. Without it, that C would live in `.h`/`.c` files
+given to the C compiler by flags, and a program would no longer be
+only its `.atm` files.
