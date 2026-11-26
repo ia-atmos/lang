@@ -461,21 +461,21 @@ to 13% by wall clock. Medians and wall-clock times are in `summary.md`.
 
 | program | size | C | Lua 5.4 | LuaJIT | Atmos off | unchecked | Atmos | Atmos / off | Atmos / Lua 5.4 |
 |---|---|---|---|---|---|---|---|---|---|
-| binary-trees | 16 | 0.20 | 2.55 | 0.76 | 2.30 | 2.41 | 2.49 | 1.09 | 0.98 |
-| fannkuch-redux | 9 | 0.02 | 0.22 | 0.04 | 0.61 | 0.67 | 0.68 | 1.13 | 3.05 |
-| fasta | 1,000,000 | 0.13 | 1.15 | 0.45 | 1.51 | 1.53 | 1.64 | 1.08 | 1.42 |
-| fib | 35 | 0.02 | 0.61 | 0.05 | 1.02 | 1.00 | 1.00 | 0.98 | 1.63 |
-| mandelbrot | 1000 | 0.06 | 0.63 | 0.07 | 1.15 | 1.15 | 1.21 | 1.05 | 1.92 |
-| n-body | 500,000 | 0.02 | 0.88 | 0.11 | 2.52 | 2.85 | 2.96 | 1.18 | 3.37 |
-| spectral-norm | 500 | 0.01 | 0.38 | 0.02 | 0.60 | 0.60 | 0.66 | 1.11 | 1.76 |
+| binary-trees | 16 | 0.20 | 2.44 | 0.76 | 2.21 | 2.29 | 2.47 | 1.12 | 1.01 |
+| fannkuch-redux | 9 | 0.02 | 0.22 | 0.04 | 0.53 | 0.53 | 0.52 | 0.99 | 2.33 |
+| fasta | 1,000,000 | 0.13 | 1.14 | 0.45 | 1.50 | 1.46 | 1.65 | 1.10 | 1.45 |
+| fib | 35 | 0.02 | 0.62 | 0.08 | 1.02 | 1.00 | 1.00 | 0.98 | 1.63 |
+| mandelbrot | 1000 | 0.06 | 0.64 | 0.07 | 1.21 | 1.21 | 1.23 | 1.02 | 1.93 |
+| n-body | 500,000 | 0.02 | 0.88 | 0.11 | 1.72 | 1.71 | 1.85 | 1.08 | 2.11 |
+| spectral-norm | 500 | 0.01 | 0.38 | 0.02 | 0.55 | 0.54 | 0.64 | 1.16 | 1.68 |
 
-These are the figures on `main` at `306f7e9` (2026-11-26). The mechanism
-costs from nothing to 18% of the run on these programs. On n-body and
-fannkuch most of it is already in `unchecked`, which keeps end-of-block
-finalization and deep pins and removes only the checks; on fasta and
-spectral-norm it is in the checks.
+These are the figures on `main` at `ce8e8da` (2026-11-26). The mechanism
+costs from nothing to 16% of the run on these programs, and the cost is in
+the checks: `unchecked`, which keeps end-of-block finalization and deep
+pins, runs as fast as `off` on all but binary-trees, where a third of the
+cost is already there.
 
-The experiment was run three times, and the history is part of the result.
+The experiment was run four times, and the history is part of the result.
 The first run (`results-1175264.csv`, 2026-11-25) gave 19% to 33% for the
 mechanism, and showed where it went: fib allocates no table and paid about
 30%. The generated C was the same in the three builds; the difference was
@@ -485,10 +485,10 @@ it ended, even when the slots held only numbers (15% more instructions on
 fib, by callgrind). Two changes followed (atmos-pin#32): the end of a block
 walks only its variables, and a value that can never be an object is
 assigned with no test. The second run (`results-9ea77e1.csv`) gave 2% to
-15%.
+15%, and the later ones stay in that range.
 
 Atmos is slower than Lua 5.4 on these kernels, with or without the checks:
-from 0.98 to 3.4 times now, from 1.3 to 5.4 times in the first run. That
+from 1.0 to 2.3 times now, from 1.3 to 5.4 times in the first run. That
 gap belongs to the code generator, not to `pin`. Atmos compiles to C, but
 compiling removes only the dispatch loop of an interpreter, which is the
 cheap part on a current processor. The rest is still a virtual machine:
@@ -507,18 +507,20 @@ counting has a cost on each copy that a tracing collector does not pay
 Three rounds of fixes to the generator, none changing the language, came
 out of these measurements: variables read in place in operators, inline
 comparison and division of floats, and counted loops with no call
-(paper-pin#16); then values stored field by field, and the result of an
-operator written straight into its variable (paper-pin#17). The same
-addition now takes 0.14 s, less than Lua 5.4, and mandelbrot went from 5.4
-to 1.9 times Lua 5.4. What remains is known: no inline path for a field or
-a vector element (n-body, fannkuch), intermediate results that still go
-through memory, and numeric variables that are not kept in registers,
-which is the step that would make compilation show. C and LuaJIT only
-place the figures. Peak memory is the same in the three builds of Atmos
-(binary-trees: 50 to 53 MB, against 57 MB on Lua 5.4 and 77 MB on LuaJIT;
-the others about 2 MB). These programs are small kernels with little
-allocation except binary-trees; on a real program, Doom, the checks cost
-2.8% (above, measured before these changes).
+(paper-pin#16); values stored field by field, and the result of an
+operator written straight into its variable; and an inline path for a
+field or a vector element that has a place (paper-pin#17). The same
+addition now takes 0.14 s, less than Lua 5.4; a field or a vector access
+alone is at or below the time of Lua 5.4; mandelbrot went from 5.4 to 1.9
+times Lua 5.4, n-body from 3.9 to 2.1, fannkuch from 4.6 to 2.3. What
+remains is known: calls (fib), intermediate results of a chain of
+operations that still go through memory, and numeric variables that are
+not kept in registers, which is the step that would make compilation show.
+C and LuaJIT only place the figures. Peak memory is the same in the three
+builds of Atmos (binary-trees: 50 to 53 MB, against 57 MB on Lua 5.4 and
+81 MB on LuaJIT; the others about 2 MB). These programs are small kernels
+with little allocation except binary-trees; on a real program, Doom, the
+checks cost 2.8% (above, measured before these changes).
 
 `ATMOS_PIN=unchecked` keeps the semantics of `pin` with no checks;
 `ATMOS_PIN=off` also keeps `pin` only for tasks and pools (`doc/manual.md`).
