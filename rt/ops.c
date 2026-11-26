@@ -237,7 +237,7 @@ AStatus a_cat_set (AVal a, AVal b) {
     return st;
 }
 
-AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
+AStatus a_next_slow (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {
         case A_TAB: {
