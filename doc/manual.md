@@ -3969,6 +3969,8 @@ A negative position counts from the end: `-1` is the last byte.
   occurrence of the plain string `x` in `s`, from position `i` on; or `nil`
 - `string.split(s [, sep])`: a vector with the pieces of `s` between the
   occurrences of `sep`, or between blanks if `sep` is absent
+- `string.join(t [, sep])`: a string with the strings and numbers of the
+  vector `t`, separated by `sep` (the inverse of `string.split`)
 - `string.byte(s [, i [, j]])`: the codes of the bytes from `i` to `j`, which
   default to the first one only
 - `string.char(...)`: the string with the given byte codes
@@ -3984,6 +3986,7 @@ Examples:
 string.sub("hello", 1, 3)           ;; ell
 string.find("hello", "l")           ;; 2, 2
 string.split("a,b,,c", ",")         ;; ["a", "b", "", "c"]
+string.join([0, 1, 2], "-")         ;; 0-1-2
 string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
 ```
 
@@ -4059,8 +4062,6 @@ A vector is a [table](#table) with the keys `0` to `#t-1`.
   `i`, which defaults to the last, shifting down the elements after it
 - `vector.sort(t [, f])`: sorts `t` in place; `f(a,b)` tells if `a` comes
   before `b`, and defaults to `a < b`; the sort is stable
-- `vector.join(t [, sep])`: a string with the strings and numbers in `t`,
-  separated by `sep`
 
 Examples:
 
@@ -4069,7 +4070,6 @@ pin t = [3, 1, 2]
 vector.sort(t)                      ;; [1, 2, 3]
 vector.insert(t, 0, 0)              ;; [0, 1, 2, 3]
 vector.remove(t)                    ;; 3
-vector.join(t, "-")                 ;; 0-1-2
 
 pin cs = []
 val c = vector.insert(cs, [x=1])    ;; `cs` owns the table, `c` refers to it

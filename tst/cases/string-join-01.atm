@@ -1,0 +1,4 @@
+print(string.join(string.split("a,b,,c", ","), ","))
+print(string.join([1, 2.5, "x"]))
+print(catch true { string.join("abc") })
+print(vector.join)
