@@ -12,7 +12,7 @@ The branch of this session is `iter`.
   `261124-atmos.md`, `atmos-lang#119`); measurements on the ports and
   merges into `main` stay with `atmos-lang`. The pause of 2026-11-23 ended on
   2026-11-25 (his words, relayed by `atmos`). Nothing approved is left
-  to do here; `#10` to `#13` wait for him.
+  to do here; `#10` to `#13` closed on 2026-11-26.
 
 ## Index
 
@@ -26,10 +26,10 @@ The branch of this session is `iter`.
 | `#6` | The forms of `loop`: four spellings of a counter, a range as a value, a loop that builds a list | Decided 2026-11-22: `#6b` (his answer "b"); on the branch `iter`; measurement asked of `atmos-lang` |
 | `#7` | Changing a table while it is walked: no rule, an element is skipped in silence | Decided 2026-11-22: the body must not change the table it walks; the implementation may assume it |
 | `#8` | `val t = await :tick until find(ts, f)` (`atmos-lang#1`) keeps working, or gets another spelling | Closed: `await :tick until iter.find(ts, f)` is on `main` since `7c64f69` (`find-01`); `atmos-pool` told |
-| `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | His idea on 2026-11-22: `#10d`, the kind fixed when the table is made, errors after; recommended `#10d` after a measurement on the ports; waiting |
-| `#11` | The syntax of `#10` | Options sketched on 2026-11-22, recommended `#11a`; after `#10` |
-| `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Put to him on 2026-11-22 ("vamos por partes"), recommended `#12b`; waiting |
-| `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | After `#12` |
+| `#10` | Whether a loop over a table separates the vector part from the other keys (as Lua's `ipairs` and `pairs`), or tables split into two types | Closed 2026-11-26: one kind of table for both, vectors and dictionaries (his words: "vamos manter so tabelas para ambos") |
+| `#11` | The syntax of `#10` | Closed 2026-11-26: one kind of table for both, vectors and dictionaries (his words: "vamos manter so tabelas para ambos") |
+| `#12` | Part 1 of `#10d`: how the kind of a table is known, by the content of `[...]`, by a syntax for every constructor, or by the content with a mark for the empty dictionary | Closed 2026-11-26: one kind of table for both, vectors and dictionaries (his words: "vamos manter so tabelas para ambos") |
+| `#13` | Part 2 of `#10d`: the mark of `#12b`, and the names of the kinds (`:table.vector`, `:table.dict`, his "table.vector, table.xxx") for `type`, `??` and `match` | Closed 2026-11-26: one kind of table for both, vectors and dictionaries (his words: "vamos manter so tabelas para ambos") |
 | `#14` | A tagged table walks its `tag` as a key (`:T [10, 20]` gives `0 1 tag`) | Decided 2026-11-22: `#14a` (the walk does not visit `tag`); on the branch `iter` |
 | `#15` | Defect: a table changed while walked. Appending to its vector while its other keys are walked visits the same key again and again (an endless loop); removing a key and adding others, which compacts the hash part, skips a key that was not removed | Closed 2026-11-22 by `#7`: a walk over a changed table is undefined, not a defect |
 | `#16` | `iter.keys(t)` and `iter.values(t)`, iterators over the keys only and the values only | Decided 2026-11-22: `#16a` (his answer: "a"); on the branch `iter` |
@@ -218,6 +218,10 @@ On the branch `iter`, reversible by not merging:
   members, every tick) it is below a microsecond per frame.
 
 ## D. Decided by the author
+
+- `#10` to `#13` (2026-11-26): closed, "vamos manter so tabelas para
+  ambos": one kind of table for vectors and dictionaries, no kinds, no
+  new syntax; the parts are walked with `iter.values` and `iter.keys`.
 
 - `#6` (2026-11-22): `#6b`. On the branch (`3ee56a0`): `loop ... in e`
   with `e` nil raises `invalid loop : unexpected nil` (the coder checks
