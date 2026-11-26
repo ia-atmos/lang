@@ -10,7 +10,7 @@ prefix; those born here are `atmos-pool#N`.
 | Item | Title | State |
 |---|---|---|
 | `atmos-lang#1` | An await over a pool with a condition | Done: `await :tick until iter.find(ts, f)`, on main with the branch `iter` (7c64f69, 2026-11-22) |
-| `atmos-lang#2` | Phases inside a tick | Decided `#2a` (2026-11-26): the convention in the manual; open, not now: the environment could emit a number of tick events per frame |
+| `atmos-lang#2` | Phases inside a tick | Done: `#2a`, the paragraph in "Emit" and the case emit-phases-01 on main (e23388b, 2026-11-26); open, not now: the environment emitting a number of tick events |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
