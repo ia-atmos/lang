@@ -5,16 +5,77 @@ is here with the source it was read from on 2026-11-26, or is marked
 **unverified**. What is not here is from memory and does not go into
 the paper. A quote is the text of the page as fetched.
 
-States of this file: sections 3 to 6 are checked; sections 1, 2, 7 and
-8 wait for their searches.
+States of this file: sections 1 to 6 are checked; sections 7 and 8
+wait for their search.
 
-## 1. Synchronous languages on the web (HipHop.js, others)
+## 1. Synchronous languages on the web
 
-Waits for its search.
+### HipHop.js
+
+Sources: Berry and Serrano, PLDI 2020 (the PDF was read); the
+repository `manuel-serrano/hiphop` (`README.md`, `doc/`, branch
+`master`). Not read: the papers of 2011 and of 2018 (only their
+metadata).
+
+| Point | Fact | Source |
+|---|---|---|
+| What it is | An extension of the syntax of JavaScript (`hiphop <stmt>`, files `*.hh.js`), "inspired from Esterel". It runs on unmodified engines, in the server and in the browser; Hop.js is not required. | PLDI 2020; `README.md` |
+| How it is compiled | To an "augmented boolean circuit" (a net list); the reaction is "a linear-time software simulator of the circuit". The documentation of today adds an option that compiles acyclic net lists to plain JavaScript. | PLDI 2020, section 5; `doc/dev.md` |
+| Statements | `module`, `run`, `signal`, `emit`, `sustain`, `if`, `yield` (the pause), `halt`, `loop`, `fork {} par {}`, `await` (with `count`, `immediate`), `abort {} when`, `weakabort {} when`, `every`, `do {} every`, `suspend`, traps as labels with `break`, and `async`. | `doc/syntax/hiphop.bnf`, `doc/lang/flow.md` |
+| Events in | A listener of JavaScript calls the machine: `mach.react({sig: value})`. In the login page of the paper: `<input onkeyup=~{M.react({name: this.value})}/>`. A shortcut `mach.bindEvent(event, obj)` exists. | PLDI 2020, section 2.4; `doc/api.md` |
+| Values out | A listener on an output signal (`mach.addEventListener("O", ...)`), called at the end of the reaction; or the signal read as a property of the machine (`M.O.nowval`) inside reactive expressions of Hop.js (`~{...}`, `<react>`). The binding to the DOM is of Hop.js or by hand, not of HipHop. | same |
+| Asynchronous JavaScript | `async [sig] { ... }` starts a body of JavaScript and blocks its own thread until `this.notify(v)`. When an enclosing `abort` or `every` preempts it, its clause `kill { ... }` runs (the timer of the paper: `kill { clearInterval(this.intv) }`). | PLDI 2020, section 2.2; `doc/lang/async.md` |
+| Static or dynamic | Programs are values of JavaScript and are staged (`${...}` splices statements and branches) before the machine is built. With `{dynamic: true}`, `mach.appendChild` and `mach.removeChild` change a labelled `fork` or sequence between two reactions. The paper: "dynamic at source-code level: it allows the user to partially reconfigure the program between two synchronous reactions", not discussed further there. | `doc/staging.md`, `doc/api.md`; PLDI 2020, section 6 |
+| Semantics | The constructive semantics of Esterel: signals are instantaneous, a cycle that is not constructive is detected at run time, in the reaction, with an error. | PLDI 2020, sections 5.1 and 5.2 |
+| Examples and numbers | A login panel (two versions, with a timer of the session), a pillbox of prescriptions (399 nets, about 86 KB), an interactive music system (up to 10,000 nets, about 2.1 MB, a reaction never above 15 ms). 192 to 216 bytes per net. No type-ahead and no 7GUIs. | PLDI 2020 |
+
+What follows for our comparison (a reading of ours, to be shown with
+code): the element reaches the program through a listener written in
+JavaScript or in the page, so the callback still exists at the border;
+what a statement started is undone by a `kill` clause, which is the
+counterpart of `defer`; a set of activities that grows is a `fork`
+changed from outside, between reactions, where we have a pool of tasks;
+and its signals are instantaneous with a check of causality, where our
+events are a queue of data with no cycles to check.
+
+### Others
+
+| System | Fact | Source |
+|---|---|---|
+| Pendulum | "An immersion of a subset of Esterel into a Web client context": an extension of OCaml (`let%sync`), compiled to sequential code and then to JavaScript by js_of_ocaml. Events of the DOM are input signals, and it emits into properties of elements; evaluated with TodoMVC. | El Sibaïe and Chailloux, REBLS 2016 (the PDF was read) |
+| ReactiveML | The reference is confirmed; a toplevel in the browser was **not found** (its pages gave 404). | Crossref |
+| SugarCubesJS | A library of JavaScript after the reactive model of Boussinot, "first targeted to ease the build of WebApps". No paper was found. | github.com/LordManta/SugarCubesJS |
+| Céu in the browser | Only a tutorial of a third party that compiles Céu with Emscripten on a server; no binding to the DOM, no publication. | github.com/VicentiuM/Ceu-Emscripten |
+
+Besides HipHop.js, Pendulum is the only published language in the
+style of Esterel that was found over the DOM.
 
 ## 2. The lineage (Esterel, Céu) and Elm
 
-Waits for its search.
+### Esterel and Céu
+
+| Fact | Source |
+|---|---|
+| The kernel of Esterel has `do stat watching S`, `stat1 \|\| stat2` and `trap`; it rests on the "synchrony hypothesis: the outputs of a system are conceptually synchronous with its inputs". | Berry and Gonthier (read in the report INRIA RR-842, 1988) |
+| `watching` is the form before Esterel v5: "we now suggest to replace the 'do...watching' statement by 'abort...when'". | Berry, The Esterel v5 Language Primer, 2000 |
+| Céu, 2013: `par/or`, `par/and`, `finalize`, internal events with a stack, checks of concurrency at compile time. No `watching` and no organisms there. | Sant'Anna et al., SenSys 2013 |
+| Céu, 2015: the name "Structured Synchronous Reactive Programming", organisms, pools with a lexical scope, and `watching`; its evaluation mentions a game over SDL. | Sant'Anna et al., Modularity 2015 |
+| Céu, 2017 (TECS) and Céu-Media (WebMedia 2016): references confirmed, text not read. | Crossref |
+| Pingus in Céu: 9,186 lines of C++ into 3,697 of Céu, a qualitative study of four behaviours. | Sant'Anna, SBGames 2018 (the PDF was read) |
+
+### Elm
+
+| Point | Fact | Source |
+|---|---|---|
+| Architecture | Model ("the state of your application"), view ("a way to turn your state into HTML"), update ("a way to update your state based on messages"). The view runs again at each change and a virtual DOM is diffed. | guide.elm-lang.org/architecture; elm/virtual-dom |
+| Events | Attributes that carry a message or a decoder: `onClick : msg -> Attribute msg`, `on : String -> Json.Decoder msg -> Attribute msg`. | elm/html 1.0.0, `Html/Events.elm` |
+| Elements | No reference to an element is held; where one is needed, it is named by its id, a string (`Browser.Dom.focus : String -> Task Error ()`). The first clause is our reading of the API. | elm/browser 1.0.2, `Browser/Dom.elm` |
+| The default of an event | Data given back by the decoder: `preventDefaultOn : String -> Json.Decoder (msg, Bool) -> Attribute msg`, and `stopPropagationOn`, `custom`. | `Html/Events.elm` |
+| Time | A subscription computed from the model: `Time.every : Float -> (Posix -> msg) -> Sub msg`; a delay is `Process.sleep`. | elm/time 1.0.0; elm/core 1.0.5 |
+| Sequence | `Task.andThen` puts effects in sequence. No task waits for an event of the page (in the modules read), so an interaction in steps is a state of the model with cases in `update`: tasks sequence effects, not events of the user. Our reading, not a sentence of the documentation. | elm/core 1.0.5, `Task.elm`, `Process.elm` |
+| Cancellation | Explicit, by a name or an identifier: `Http.cancel : String -> Cmd msg` with the `tracker` of the request; `Process.kill : Id -> Task x ()`. Not tied to a scope. | elm/http 2.0.0; elm/core `Process.elm` |
+| Size | No official number of a minimal page. TodoMVC: 122,297 bytes, 24,123 minified, 9,148 with gzip. The RealWorld application: 29 KB. | guide.elm-lang.org/optimization/asset_size.html; "Small Assets without the Headache", 2018-08-21 |
+| FRP | Elm left signals in 0.17: "So is Elm about FRP anymore? No." | "A Farewell to FRP", elm-lang.org/news, 2016-05-10 |
 
 ## 3. Components and signals: React, Solid, Svelte
 
@@ -105,6 +166,42 @@ Waits for its search.
 
 ## References
 
+- G. Berry, G. Gonthier. The Esterel synchronous programming language:
+  design, semantics, implementation. Science of Computer Programming
+  19(2):87-152, 1992. DOI 10.1016/0167-6423(92)90005-V.
+- G. Berry. The Esterel v5 Language Primer, Version v5_91. 2000.
+- G. Berry, M. Serrano. HipHop.js: (A)Synchronous Reactive Web
+  Programming. PLDI 2020, pp. 533-545. DOI 10.1145/3385412.3385984.
+- G. Berry, C. Nicolas, M. Serrano. HipHop: a synchronous reactive
+  extension for Hop. PLASTIC 2011, pp. 49-56.
+  DOI 10.1145/2093328.2093337. (Text not read.)
+- G. Berry, M. Serrano. Hop and HipHop: Multitier Web Orchestration.
+  2014. arXiv:1312.0078. (The venue is to confirm.)
+- C. Vidal, G. Berry, M. Serrano. Hiphop.js: a language to orchestrate
+  web applications. SAC 2018, pp. 2193-2195. DOI 10.1145/3167132.3167440.
+  (Three pages; text not read.)
+- E. Czaplicki, S. Chong. Asynchronous Functional Reactive Programming
+  for GUIs. PLDI 2013, pp. 411-422. DOI 10.1145/2491956.2462161. (Text
+  not read.)
+- R. El Sibaïe, E. Chailloux. Synchronous-Reactive Web Programming.
+  REBLS 2016, pp. 9-16. DOI 10.1145/3001929.3001931.
+- L. Mandel, M. Pouzet. ReactiveML: a reactive extension to ML. PPDP
+  2005, pp. 82-93. DOI 10.1145/1069774.1069782. (Text not read.)
+- F. Sant'Anna, N. Rodriguez, R. Ierusalimschy, O. Landsiedel,
+  P. Tsigas. Safe System-level Concurrency on Resource-Constrained
+  Nodes. SenSys 2013. DOI 10.1145/2517351.2517360.
+- F. Sant'Anna, R. Ierusalimschy, N. Rodriguez. Structured Synchronous
+  Reactive Programming with Céu. Modularity 2015, pp. 29-40.
+  DOI 10.1145/2724525.2724571.
+- F. Sant'Anna, R. Ierusalimschy, N. Rodriguez, S. Rossetto, A. Branco.
+  The Design and Implementation of the Synchronous Language Céu. ACM
+  TECS 16(4), 2017. DOI 10.1145/3035544. (Text not read.)
+- F. Sant'Anna. Structured Synchronous Reactive Programming for Game
+  Development. Case Study: On Rewriting Pingus from C++ to Céu. SBGames
+  2018.
+- R. Santos, G. Lima, F. Sant'Anna, N. Rodriguez. CÉU-MEDIA: Local
+  Inter-Media Synchronization Using CÉU. WebMedia 2016, pp. 143-150.
+  DOI 10.1145/2976796.2976856. (Text not read.)
 - E. Bainomugisha, A. Lombide Carreton, T. Van Cutsem, S. Mostinckx,
   W. De Meuter. A survey on reactive programming. ACM Computing Surveys
   45(4), 2013. DOI 10.1145/2501654.2501666.
