@@ -182,7 +182,7 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`).
 
 | Session | Id | Topic |
 |---|---|---|
@@ -193,7 +193,7 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` |
 | `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
 | `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
-| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build |
+| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build (archived 2026-11-26 by `atmos`, on the author's words there: "ok. Acho que pode pedir pra sessao pai atmos arquivar aqui?"; all on `main`, index `TODO-float.md`; `atmos-float#12` and `#8` carried by `atmos`, `atmos#19`) |
 | `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
 | `atmos-cli` | session_011eECoijhygAGqD1jDZ3pWZ | the command line |
 | `atmos-blocks` | session_011eECoipBcPZnUN2BbGAyuB | the end of a transparent block |
