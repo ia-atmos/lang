@@ -146,10 +146,10 @@ static AStatus std_next (AFunc* self, int argc, AVal* argv) {
 // but `nil`, which `a_next` walks. Its members are `v, k`: in a table or a pool, the value and
 // its key; over a number `n`, `v` goes from `0` to `n-1` and `k` is
 // `nil`; over two numbers `a, b`, from `a` up to `b` inclusive, as the
-// range of a loop; over a function, the first and second values of each
+// range of a loop, and over three, `a, b, s`, by the step `s`; over a function, the first and second values of each
 // call, until it gives `nil`.
 typedef struct {
-    AVal xs, lim;
+    AVal xs, lim, step;
     int  swap;
 } Cur;
 
@@ -160,11 +160,18 @@ static AStatus cur_init (const char* name, int argc, AVal* argv, int nrest,
     Cur* c, int* next)
 {
     c->xs  = arg(argc, argv, 0);
-    c->lim = a_nil();
-    *next  = 1;
+    c->lim  = a_nil();
+    c->step = a_nil();
+    *next   = 1;
     if (a_isnum(c->xs) && argc>=2+nrest && a_isnum(argv[1])) {
         c->lim = argv[1];
         *next  = 2;
+        // a third number is the step, if the call still has the
+        // arguments that follow
+        if (argc>=3+nrest && a_isnum(argv[2])) {
+            c->step = argv[2];
+            *next   = 3;
+        }
     }
     if (c->xs.type!=A_TAB && c->xs.type!=A_TASKS && c->xs.type!=A_FUNC && !a_isnum(c->xs)) {
         return a_error("invalid argument to '%s' : expected table, tasks, number or function : got %s",
@@ -205,7 +212,7 @@ static AStatus walk (const char* name, int argc, AVal* argv, int nrest,
     AStatus st = A_OK;
     AVal pos=a_nil(), k=a_nil(), v=a_nil();
     while (1) {
-        st = a_next(c.xs, c.lim, &pos, &k, &v);
+        st = a_next(c.xs, c.lim, c.step, &pos, &k, &v);
         if (st!=A_OK || k.type==A_NIL) {
             break;
         }
@@ -366,7 +373,7 @@ static AStatus std_fold (AFunc* self, int argc, AVal* argv) {
     AStatus st;
     AVal pos=a_nil(), k=a_nil(), v=a_nil();
     while (1) {
-        st = a_next(c.xs, c.lim, &pos, &k, &v);
+        st = a_next(c.xs, c.lim, c.step, &pos, &k, &v);
         if (st!=A_OK || k.type==A_NIL) {
             break;
         }
@@ -485,7 +492,7 @@ static AStatus zip_next (AFunc* self, int argc, AVal* argv) {
     AVal out[2];
     for (int i=0; i<2; i++) {
         AVal* x = &c[i*5];
-        AStatus st = a_next(x[0], x[1], &x[2], &x[3], &x[4]);
+        AStatus st = a_next(x[0], x[1], a_nil(), &x[2], &x[3], &x[4]);
         if (st != A_OK) {
             return st;
         }
@@ -527,7 +534,7 @@ static AStatus iter_step (AFunc* self, int key) {
     AVal* c = self->caps;
     AVal k = a_nil(), v = a_nil();
     a_cpy(&k, c[2]);
-    AStatus st = a_next(c[0], a_nil(), &c[1], &k, &v);
+    AStatus st = a_next(c[0], a_nil(), a_nil(), &c[1], &k, &v);
     if (st != A_OK) {
         a_clr(&k);
         a_clr(&v);

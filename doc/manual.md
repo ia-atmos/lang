@@ -2973,6 +2973,11 @@ supported:
     ranges over calls to the given function, until it returns `nil`
 - `(:number,:number)`:
     ranges from the first number up to the second number inclusive
+- `(:number,:number,:number)`:
+    ranges from the first number to the second inclusive, by the third, the
+    step, which may be negative or a float (`(10,0,-2)`, `(0.0,1.0,0.25)`);
+    a range that the step moves away from is empty, and a step of `0` is an
+    error
 - `:number`:
     equivalent to `(0,x-1)` where `x` is the given number, which is the
     number of iterations
@@ -4033,6 +4038,8 @@ A collection `xs` is what a loop walks, and its members are:
 - in a range `(a, b)`, each `v` from `a` up to `b` inclusive, with `k` as
   `nil`: the two numbers come before the function, as in
   `iter.find((a, b), f)` or `(a, b) -> iter.find(f)`
+- in a range with a step `(a, b, s)`, each `v` from `a` to `b` inclusive by
+  `s`, as in a [loop](#loop): `iter.find((a, b, s), f)`
 - in a function, the first and second values `v` and `k` of each call, until
   it evaluates to `nil`
 

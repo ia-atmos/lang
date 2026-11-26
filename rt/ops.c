@@ -237,7 +237,7 @@ AStatus a_cat_set (AVal a, AVal b) {
     return st;
 }
 
-AStatus a_next_slow (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
+AStatus a_next_slow (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {
         case A_TAB: {
@@ -279,7 +279,26 @@ AStatus a_next_slow (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
         case A_NUM: {
             AVal x;
             int end;
-            if (a_isnum(lim)) {
+            if (step.type != A_NIL) {
+                // a..b by s: a, a+s, a+2s, ... while not past b; each
+                // value is computed from `a`, so a float step does
+                // not drift
+                if (!a_isnum(step) || !a_isnum(lim)) {
+                    return a_error("invalid loop : expected number : got %s",
+                        a_typename(a_isnum(step) ? lim : step));
+                }
+                int sgn = a_num_cmp(step, a_int(0));
+                if (sgn!=-1 && sgn!=1) {
+                    return a_error("invalid loop : step is 0");
+                }
+                if (it.type==A_INT && step.type==A_INT) {
+                    x = a_int((AInt) ((AUInt)it.u.i + (AUInt)p*(AUInt)step.u.i));
+                } else {
+                    x = a_num(a_float(it) + (AFloat)p * a_float(step));
+                }
+                int c = a_num_cmp(x, lim);
+                end = (c != 0) && (c != -sgn);
+            } else if (a_isnum(lim)) {
                 // a..b
                 x = (it.type == A_INT) ? a_int(it.u.i + p) : a_num(it.u.n + p);
                 int c = a_num_cmp(x, lim);

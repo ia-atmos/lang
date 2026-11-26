@@ -1530,12 +1530,12 @@ AStatus a_in (AVal* dst, AVal v, AVal t);
 //  - nil: 0, 1, ...
 //  - function: its results, until the first is nil
 // Sets `k` to nil at the end.
-AStatus a_next_slow (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v);
+AStatus a_next_slow (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v);
 
 // The counted loops over integers, `loop i in n` and `loop i in (a,b)`,
-// with no call.
-static inline AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
-    if (it.type==A_INT && (lim.type==A_NIL || lim.type==A_INT)) {
+// with no call. A range with a step, `(a,b,s)`, takes the slow path.
+static inline AStatus a_next (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v) {
+    if (it.type==A_INT && step.type==A_NIL && (lim.type==A_NIL || lim.type==A_INT)) {
         AInt p = (pos->type == A_INT) ? pos->u.i : 0;
         AInt x;
         int end;
@@ -1552,7 +1552,7 @@ static inline AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
         *pos = a_int((AInt) ((AUInt)p + 1));
         return A_OK;
     }
-    return a_next_slow(it, lim, pos, k, v);
+    return a_next_slow(it, lim, step, pos, k, v);
 }
 
 // String representation, as `print` shows it (owned).
