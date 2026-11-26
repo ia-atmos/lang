@@ -177,8 +177,8 @@ Each one: the case, the code in Atmos, and the same in each family
 By family; the table of the plan (Section 4 of it), each fact checked
 against its source in `papers/web-related.md`.
 
-- Synchronous languages on the web: HipHop.js and Hop; others to check
-  (Pendulum, ReactiveML). The difference must be precise: a language of
+- Synchronous languages on the web: HipHop.js and Pendulum (checked;
+  no other published one was found). The difference must be precise: a language of
   its own or an embedding; a static program or tasks created at run
   time; how values reach the page; one model for desktop, games and
   boards.
@@ -189,8 +189,12 @@ against its source in `papers/web-related.md`.
   concurrency in other languages and in libraries of JavaScript.
 - Statecharts: XState.
 - Attributes in the HTML: htmx, hyperscript.
-- Research on control flow for the web: Arrowlets, Links, Eliom,
-  sagas and CSP in the browser.
+- Sequences of events in a library: `Lwt_js_events` of js_of_ocaml
+  (`Lwt.pick`, the nearest to our `par/or`, with a weaker
+  cancellation), redux-saga (`race`, `takeLatest`, `finally`), Concur,
+  CSP in the browser.
+- Research on control flow for the web: Arrowlets, Links, Ur/Web,
+  continuations.
 - Other languages over WebAssembly and the DOM: the cost of handles
   and of closures (Go `syscall/js`, Rust `web-sys`).
 

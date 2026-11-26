@@ -5,8 +5,9 @@ is here with the source it was read from on 2026-11-26, or is marked
 **unverified**. What is not here is from memory and does not go into
 the paper. A quote is the text of the page as fetched.
 
-States of this file: sections 1 to 6 are checked; sections 7 and 8
-wait for their search.
+All sections were checked once. A line count is of physical lines
+(blank ones and comments included), taken with `wc -l` on a clone made
+on 2026-11-26; it is not yet the measure of the paper (`paper-web#10`).
 
 ## 1. Synchronous languages on the web
 
@@ -158,14 +159,157 @@ Structured concurrency elsewhere:
 
 ## 7. Attributes in the HTML; research on control flow for the web
 
-Waits for its search.
+### Attributes
 
-## 8. Task sets and sizes (7GUIs, TodoMVC, WebAssembly)
+| System | Fact | Source |
+|---|---|---|
+| htmx | Behaviour in attributes: `hx-get`, `hx-trigger`, `hx-target` (which "takes a CSS selector"), `hx-swap`; "on the server side you typically respond with HTML, not JSON". "htmx is small (~16k min.gz'd), dependency-free". | htmx.org; htmx.org/docs |
+| htmx | Time and cancellation are modifiers: `delay:<time>` (starts again if the event comes again), `throttle:<time>`, `changed`; `hx-sync` with `drop`, `abort`, `replace`, `queue`. What is cancelled is a request, not code. | htmx.org/docs; htmx.org/attributes/hx-sync |
+| _hyperscript | A language in attributes, "inspired by HyperTalk", "no async or await" (38 KB). `wait 2s`, `wait for <event>`, `wait for load or 1s`: a sequence in time, written in line. | hyperscript.org; hyperscript.org/commands/wait |
+| _hyperscript | Events that come while a handler runs are queued (`queue last` is the default; `none`, `all`, `first`; `every` runs in parallel). No way to abort a running handler from outside was found: `halt` leaves the current one, and `repeat until event` looks at the event only at the end of a turn. No paper was found. | hyperscript.org/features/on; hyperscript.org/commands/halt |
+| Alpine.js | "a collection of 15 attributes, 6 properties, and 2 methods" (`x-data`, `x-on`). | alpinejs.dev |
 
-Waits for its search.
+### Sequences of events in a library
+
+| System | Fact | Source |
+|---|---|---|
+| Lwt_js_events (js_of_ocaml) | The nearest in style to our `await` and `par/or`: `let%lwt _ = Lwt_js_events.click elt in ...` waits in sequence, and `Lwt.pick [...]` "behaves as the first thread in the list to terminate, and cancels the others". The tutorial of Ocsigen draws on a canvas with `mousedowns`, and inside it a `pick` of `mousemoves` and `mouseup`. | `lwt_js_events.mli` (ocsigen/js_of_ocaml); ocsigen.org/tuto/latest/application.html |
+| Lwt | The cancellation is weaker than an abortion: `Lwt.pick` "tries to cancel all other promises that are still pending"; it arrives as the exception `Lwt.Canceled`; "By default, cancelling the loop will not cancel the potential currently running handler"; and "It is recommended to avoid Lwt.cancel". | `lwt.mli` (ocsigen/lwt); `lwt_js_events.mli` |
+| redux-saga | Generators with `take` (waits for an action), `race` ("the middleware automatically cancels all the losing Effects"), `takeLatest` ("automatically cancels any previous saga task started previously if it's still running"), and `cancel`, which "will use Generator.prototype.return to make the Generator jump directly to the finally block". "Cancellation propagates downward." `fork` is attached, `spawn` detached. | redux-saga.js.org/docs/advanced/TaskCancellation; redux-saga.js.org/docs/api |
+| core.async, js-csp | CSP in the browser; Nolen: "global event loops defy local reasoning". | swannodette.github.io, 2013-07-12 and 2013-07-31; github.com/js-csp/js-csp |
+
+### Papers
+
+References confirmed in Crossref; the text of none was read, so what
+each contributes is **unverified** and from memory: Arrowlets (Khoo et
+al. 2009), Links (Cooper et al. 2006), Ur/Web (Chlipala 2015),
+continuations for the web (Queinnec 2000 and 2003; Krishnamurthi et al.
+2007), Stopify (Baxter et al. 2018), Eliom (Radanne et al. 2016), Lwt
+(Vouillon 2008), js_of_ocaml (Vouillon and Balat 2014).
+
+## 8. Task sets and sizes
+
+### 7GUIs
+
+"7GUIs was been created as a spin-off of the master's thesis Comparison
+of Object-Oriented and Functional Programming for GUI Development by
+Eugen Kiss at the Human-Computer Interaction group of the Leibniz
+Universität Hannover in 2014" (7guis.github.io/7guis/more).
+
+| Task | The challenge, as the site says |
+|---|---|
+| Counter | "Understanding the basic ideas of a language/toolkit." |
+| Temperature Converter | "bidirectional data flow, user-provided text input." |
+| Flight Booker | "Constraints." |
+| Timer | "concurrency, competing user/signal interactions, responsiveness." |
+| CRUD | "separating the domain and presentation logic, managing mutation, building a non-trivial layout." |
+| Circle Drawer | "undo/redo, custom drawing, dialog control." |
+| Cells | "change propagation, widget customization, implementing a more authentic/involved GUI application." |
+
+Two of the seven are about what we claim: the Timer ("a timer process
+that updates the elapsed time runs concurrently to the user's
+interactions") and the dialog of the Circle Drawer ("keeping the
+relevant context between several successive GUI interaction steps").
+The others are about data flow and constraints, where a derived view
+does well: the paper must say so. Kiss himself notes that 7GUIs lacks
+"tricky asynchrony".
+
+Public versions, lines per task (Counter, Temperature, Flight, Timer,
+CRUD, Circles, Cells):
+
+| System | Repository | Lines |
+|---|---|---|
+| Elm | github.com/joakin/elm-7guis | 21, 158, 305, 116, 242, 367, 1043 |
+| Elm | github.com/dwayne/elm-7guis | 54, 270, 442, 230, 601, 914, 1609 |
+| React and MobX (by Kiss) | github.com/eugenkiss/7guis-React-TypeScript-MobX | 18, 120, 120, 105, 115, about 443, 546 |
+| React | github.com/andrewgreenh/7guis | 18, 76, 102, 87, 273, 254, 731 |
+| React and XState (machine + page) | github.com/abhimanyuPathania/seven-guis | 28+62, 74+80, 106+212, 73+85, 188+175, 284+101, 200+122 |
+| Svelte (official examples, six tasks, no Cells) | sveltejs/svelte, branch `svelte-4`, `documentation/examples/20-7guis` | 7, 24, 58, 38, 90, 129 |
+| Plain JavaScript | github.com/bradwoods/7guis-html-css-js | 11, 41, 185, 96, 227, 311, 341 (and 86 to 151 of HTML each) |
+| Plain JavaScript | github.com/marshallworks/7GUIs | 9, 16, 54, 34, 119, 136, 216 |
+| ClojureScript, Reagent | github.com/polymeris/7guis-clojurescript | 14, 53, 72, 51, 110, 139, 268 |
+| Atmos over IUP (ours, not the web) | `ia-atmos/env-iup`, `exs/7guis/` | 20, 36, 91, 51, 110, 169, 209 |
+
+**Not found**: 7GUIs in HipHop.js, Solid, RxJS alone, htmx or
+_hyperscript. For the comparison with HipHop.js that the author asked,
+there is no public version to take: its cases are the ones of its
+paper (the login panel), or the paper writes the HipHop.js versions.
+No peer-reviewed paper that uses 7GUIs as its evaluation was found (a
+weak negative: DBLP was not reachable).
+
+### TodoMVC
+
+The specification (tastejs/todomvc, `app-spec.md`): a new item on
+Enter, a toggle of all, edit on a double click (Enter and blur save,
+Escape discards), a counter, "clear completed", persistence in
+`localStorage`, and routes `#/`, `#/active`, `#/completed`.
+
+| Example | Lines of source |
+|---|---|
+| Elm | 434 |
+| React | 312 |
+| Svelte | 193 |
+| jQuery | 196, and 68 of HTML |
+| JavaScript (ES5, ES6) | 933, 840 |
+| Reagent | 305 |
+| js_of_ocaml | 477 |
+| Solid, HipHop.js | not there |
+
+Used in papers: Pendulum (REBLS 2016), and O'Connor and Wickström,
+"Quickstrom", PLDI 2022, which found bugs in almost half of the
+implementations.
+
+### Sizes of other languages over WebAssembly
+
+| System | Number | Source |
+|---|---|---|
+| Go | "smallest possible size being around ~2MB", about 500 kB with gzip | go.dev/wiki/WebAssembly |
+| TinyGo | "The 'Hello world' example is 575 bytes"; "~10kB isn't unusual" | same |
+| Rust and Yew | the `minimal` example: 158 KB, 116 KB with `wasm-opt -Os`, 99 KB with wasm-pack | yew.rs/docs/advanced-topics/optimizations |
+| Flutter web | "the inherent file size of CanvasKit (around 1.5 MB)" | flutter.dev/blog |
+| Lua | Wasmoon 393 kB (130 kB with gzip); Fengari 214 kB (69 kB) | github.com/ceifa/wasmoon, its own table |
+| Blazor, Leptos, Kotlin/Wasm | no official number found | |
+| Atmos (ours) | 237 KB and 64 KB of JavaScript (94 KB and 18 KB with gzip); 168 KB with `-Oz` | `ia-atmos/env-web`, `261126-measures.md` |
+
+In this company the size is in the range of Rust with Yew and of Lua,
+far below Go and Flutter, and above the JavaScript libraries (htmx
+about 16 kB, Elm's TodoMVC 9 kB with gzip).
 
 ## References
 
+- S. Baxter, R. Nigam, J. Politz, S. Krishnamurthi, A. Guha. Putting in
+  all the stops: execution control for JavaScript. PLDI 2018,
+  pp. 30-45. DOI 10.1145/3192366.3192370.
+- A. Chlipala. Ur/Web: A Simple Model for Programming the Web. POPL
+  2015, pp. 153-165. DOI 10.1145/2676726.2677004.
+- E. Cooper, S. Lindley, P. Wadler, J. Yallop. Links: Web Programming
+  Without Tiers. FMCO 2006, LNCS, pp. 266-296.
+  DOI 10.1007/978-3-540-74792-5_12.
+- Y. Khoo, M. Hicks, J. Foster, V. Sazawal. Directing JavaScript with
+  arrows. DLS 2009, pp. 49-58. DOI 10.1145/1640134.1640143.
+- E. Kiss. Comparison of Object-Oriented and Functional Programming for
+  GUI Development. Master's thesis, Leibniz Universität Hannover, 2014.
+  7guis.github.io/7guis
+- S. Krishnamurthi, P. Hopkins, J. McCarthy, P. Graunke, G. Pettyjohn,
+  M. Felleisen. Implementation and use of the PLT Scheme Web server.
+  Higher-Order and Symbolic Computation 20(4):431-460, 2007.
+  DOI 10.1007/s10990-007-9008-y.
+- L. O'Connor, O. Wickström. Quickstrom: Property-based acceptance
+  testing with LTL specifications. PLDI 2022. arXiv:2203.11532.
+- C. Queinnec. The influence of browsers on evaluators or,
+  continuations to program web servers. ICFP 2000, pp. 23-33.
+  DOI 10.1145/351240.351243.
+- C. Queinnec. Inverting back the inversion of control or,
+  continuations versus page-centric programming. SIGPLAN Notices
+  38(2):57-64, 2003. DOI 10.1145/772970.772977.
+- G. Radanne, J. Vouillon, V. Balat. Eliom: A Core ML Language for
+  Tierless Web Programming. APLAS 2016, LNCS, pp. 377-397.
+  DOI 10.1007/978-3-319-47958-3_20.
+- J. Vouillon. Lwt: a cooperative thread library. ML Workshop 2008,
+  pp. 3-12. DOI 10.1145/1411304.1411307.
+- J. Vouillon, V. Balat. From bytecode to JavaScript: the Js_of_ocaml
+  compiler. Software: Practice and Experience 44(8):951-972, 2014.
+  DOI 10.1002/spe.2187.
 - G. Berry, G. Gonthier. The Esterel synchronous programming language:
   design, semantics, implementation. Science of Computer Programming
   19(2):87-152, 1992. DOI 10.1016/0167-6423(92)90005-V.
