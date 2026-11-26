@@ -13,10 +13,10 @@ spawn {
 }
 emit @:global 20ms
 spawn {
-    val v = watching 1s {
+    val ok, v = watching 1s {
         await(:X)
         :x
     }
-    print(v)
+    print(ok, v)
 }
 emit(:X)

@@ -3977,15 +3977,26 @@ Watching : `watching´ Patt Block
 The parentheses of a [counted pattern](#await) are optional:
 `watching 3, :X {...}` is the same as `watching (3, :X) {...}`.
 
-A `watching P { B }` is equivalent to a `par :any` as follows:
+A `watching` evaluates to a boolean plus values, as a [catch](#exceptions)
+does:
+If its block terminates, it evaluates to `true` plus the values of the block.
+If the pattern is satisfied first, it evaluates to `false` plus the value of
+the pattern, as an [await](#await) gives it.
+A single destination, as in `val ok = watching ...`, takes only the boolean.
+
+A `watching P { B }` is equivalent to a `par :any` as follows, except for the
+boolean, which a [`par :any`](#parallel) does not give:
 
 ```
 par :any {
-    await P
+    await P     ;; false, plus this value
 } with {
-    B
+    B           ;; true, plus these values
 }
 ```
+
+If the pattern is satisfied in the same reaction in which the block
+terminates, the pattern comes first, and the `watching` evaluates to `false`.
 
 Examples:
 
@@ -3996,6 +4007,17 @@ watching 1s {
     loop on :X {
         print("one more :X occurred before 1 second")
     }
+}
+```
+
+```
+val ok, v = watching 5s {
+    await(:reply)
+}
+if ok {
+    print("reply", v)       ;; :reply occurred before 5 seconds
+} else {
+    print("timeout")
 }
 ```
 

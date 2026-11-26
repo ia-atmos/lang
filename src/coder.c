@@ -2511,11 +2511,13 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
 // function that shares the slots of the task.
 //
 // As a branch of a `par :any`, its values are raised as a join for
-// the par identified by slot `key`. Otherwise, its first value is the
-// result of the block, which also goes to `ret`, if given. Any other
-// exit crosses to the parent unchanged.
+// the par identified by slot `key`. As a branch of a `watching`
+// (`flag` is 0 or 1, otherwise -1), the boolean `flag` goes before the
+// values. Otherwise, its first value is the result of the block, which
+// also goes to `ret`, if given. Any other exit crosses to the parent
+// unchanged.
 static void gen_tra (Unit* up, int id, List* body, ParMode mode, int key,
-                     const char* ret, int lin, DKind want)
+                     const char* ret, int lin, DKind want, int flag)
 {
     Unit u;
     memset(&u, 0, sizeof(u));
@@ -2534,7 +2536,18 @@ static void gen_tra (Unit* up, int id, List* body, ParMode mode, int key,
         if (want == D_MULTI) {
             Dst m = dst_multi(&u);
             gen_block(&u, body, m);
-            out(&u, "a_pay_pull(%s);", m.n);
+            if (flag >= 0) {
+                out(&u, "a_open(%s, 1);", m.n);
+                out(&u, "a_putc(a_top-%s-1, a_bool(%d));", m.n, flag);
+                out(&u, "a_pay_pull(%s + 1);", m.n);
+            } else {
+                out(&u, "a_pay_pull(%s);", m.n);
+            }
+        } else if (want==D_SLOT && flag>=0) {
+            // the single value taken is the boolean
+            gen_block(&u, body, dst_none());
+            out(&u, "a_push(a_bool(%d));", flag);
+            out(&u, "a_pay_pull(1);");
         } else if (want == D_SLOT) {
             Opnd r = opnd_tmp(&u);
             gen_block(&u, body, dst_slot(r.c));
@@ -2582,9 +2595,9 @@ static int gen_trail (Unit* u) {
 
 // Starts a transparent block as the trail `id`.
 static void gen_spawn_tra (Unit* u, int id, Expr* blk, ParMode mode, int key,
-                           const char* ret, DKind want)
+                           const char* ret, DKind want, int flag)
 {
-    gen_tra(u, id, &blk->u.block.es, mode, key, ret, blk->tk.lin, want);
+    gen_tra(u, id, &blk->u.block.es, mode, key, ret, blk->tk.lin, want, flag);
     out(u, "a_lin = %d;", lin_of(blk->tk));
     out_try(u, "a_trail_spawn(t, %d)", id);
 }
@@ -2625,7 +2638,8 @@ static void gen_par (Unit* u, Expr* e, Dst d) {
     }
     for (int i=0; i<k; i++) {
         gen_spawn_tra(u, lo+i, e->u.par.blks.v[i], mode, h.joink,
-            (mode == PAR_ALL) ? rs[i].c : NULL, d.kind);
+            (mode == PAR_ALL) ? rs[i].c : NULL, d.kind,
+            e->u.par.watch ? (i != 0) : -1);
     }
     if (mode == PAR_ALL) {
         out(u, "st = a_await_trails(tr, %d, %d);", lo, k);
@@ -2869,7 +2883,7 @@ static void gen_mute_on (Unit* u, Expr* e, Dst d) {
     Blk b = blk_open(u);
     int id = gen_trail(u);
     gen_trail_end(u, id);
-    gen_spawn_tra(u, id, e->u.mute_on.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.mute_on.blk, PAR_NONE, 0, r.c, D_NONE, -1);
 
     int n;
     Patt** fs = mute_filt(e->u.mute_on.fs, e->u.mute_on.nf);
@@ -2905,7 +2919,7 @@ static void gen_solo (Unit* u, Expr* e, Dst d) {
     for (int i=0; i<n; i++) {
         opnd_rel(u, os[i]);
     }
-    gen_spawn_tra(u, id, e->u.solo.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.solo.blk, PAR_NONE, 0, r.c, D_NONE, -1);
 
     out(u, "st = a_await_trails(tr, %d, 1);", id);
     gen_suspend(u, dst_none());
@@ -2924,7 +2938,7 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     e->u.context.id = id;
     gen_trail_end(u, id);
     Expr* blk = e->u.context.blk;
-    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
+    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE, -1);
     out(u, "a_lin = %d;", lin_of(e->tk));
     if (pair != NULL) {
         out_try(u, "a_trail_context_val(t, %d, %s, %s)", id, pr.c, ctx_keys());
@@ -3145,7 +3159,7 @@ static void gen (Unit* u, Expr* e, Dst d) {
             // ends with the enclosing block
             int id = gen_trail(u);
             gen_trail_end(u, id);
-            gen_spawn_tra(u, id, e->u.sblk.blk, PAR_NONE, 0, NULL, D_NONE);
+            gen_spawn_tra(u, id, e->u.sblk.blk, PAR_NONE, 0, NULL, D_NONE, -1);
             store_void(u, d);
             break;
         }
