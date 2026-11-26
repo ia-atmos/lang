@@ -302,7 +302,7 @@ static int is_pub (AVal t, AVal k) {
     return t.type==A_XTASK && k.type==A_STR && !strcmp(A_STR_OF(k)->s,"pub");
 }
 
-AStatus a_index (AVal* dst, AVal t, AVal k) {
+AStatus a_index_x (AVal* dst, AVal t, AVal k) {
     if (is_pub(t, k)) {
         a_cpy(dst, A_TASK_OF(t)->pub);
         return A_OK;
@@ -328,7 +328,7 @@ AStatus a_index (AVal* dst, AVal t, AVal k) {
     return A_OK;
 }
 
-AStatus a_setindex (AVal t, AVal k, AVal v) {
+AStatus a_setindex_x (AVal t, AVal k, AVal v) {
     if (is_pub(t, k)) {
         return a_pub_set(A_TASK_OF(t), v);
     }
