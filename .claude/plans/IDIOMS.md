@@ -11,7 +11,8 @@ with where it came from (`session#N`) and a before and an after.
 correction needs a change of the compiler, it goes to `atmos-lang`.
 
 Sources so far: `env-iup` (its `.claude/plans/IDIOMS.md`, items
-`env-iup#18` to `#23`), `pico-1oom#16`.
+`env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`. The
+examples of `context` follow lang d0fe0ac.
 
 ## In a program
 
@@ -35,6 +36,17 @@ loop e on :button [h=cnv] until it.press {
 
 It does not apply when the condition needs something computed inside
 the body.
+
+### A predicate of more than one term goes in parentheses (env-iup#20)
+
+A refinement of the rule above. The author: "Para um until desse
+tamanho, vale a pena parenteses em volta".
+
+```
+loop e on :button until (it.press && (it.but == :left) && it.status.double) {
+    <...>
+}
+```
 
 ### Exclusive cases go in an `ifs` (env-iup#22)
 
@@ -77,6 +89,54 @@ CFG_ITEM_BOOL("undo", func () { game_opt_undo_enabled }, func (v) { set game_opt
 
 ;; after
 CFG_ITEM_BOOL("undo", \{ game_opt_undo_enabled }, \{ set game_opt_undo_enabled = it })
+```
+
+### What follows a state change goes in `:enter` (env-ray#49)
+
+What must happen right after a context sets its state (a clear after the
+begin) goes in its `:enter`, not in a separate first task inside the
+context.
+
+```
+;; before
+context <:draw> ray.ctx.texture_mode(target) {
+    spawn {
+        loop on :draw { ray.clear(GREEN1) }
+    }
+    loop { <...the screens...> }
+}
+
+;; after
+context <:draw> {
+    :enter { ray.begin_texture_mode(target) ; ray.clear(GREEN1) }
+    :leave { ray.end_texture_mode() }
+    loop { <...the screens...> }
+}
+```
+
+### A pool is declared where its awaiter sees it (env-ray#48)
+
+A pool whose tasks draw in a mode is bound with `in`, declared where the
+code that awaits it can see it; no invented event to get its end out.
+
+```
+;; before
+spawn {
+    context <:draw> ray.ctx.mode2d(<...>) {
+        pin coins = tasks()
+        <...>
+        await :all coins
+        emit :taken
+        await false
+    }
+}
+await :taken
+
+;; after
+val world = ray.ctx.mode2d(<...>)
+pin coins = in <:draw> world, tasks()
+<...>
+await :all coins
 ```
 
 ### The idiom of the library is fine (env-iup#23)
