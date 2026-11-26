@@ -33,6 +33,13 @@ test it before use. Keeping it would break the stable rule "a place
 never refers to a finalized value" and every `if place` test in the
 ports that use `set :out` (count to be asked of `atmos-lang`).
 
+2026-11-26, the author: "Outra opção seria recusar o :out. Temos usos?"
+Read as: keep refusing `set :out` on `@+` (today's compile error), and
+maybe on vector indexes. Asked `atmos-lang` to count `set :out` in the
+ports by form of the place (field, index, `@#`, `@+`, variable, `pub`).
+Recommended so far: refuse `@+` (no change, 0 uses, no hole/shift rule
+needed); refusing indexes in general waits for the count.
+
 ## Notes
 
 - The golden tests `0058`-`0063` (`ppp-1` to `ppp-6`) are written with
