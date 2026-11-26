@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # Checks that doc/guide.md and tst/guide/ agree: after each marker
 # `<!-- tst/guide/NAME.atm -->`, the first fenced block is NAME.atm and
-# the second is NAME.out; and every NAME.atm has a marker.
+# the second is NAME.out; every NAME.atm has a marker; and the paragraph
+# just before a marker ends with a colon (the step player of env-web
+# splits the text of the steps by that).
 import os, re, sys
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +21,16 @@ for name, code, out in rx.findall(guide):
         want = open(os.path.join(here, name + '.' + ext)).read().rstrip('\n')
         if txt != want:
             print('FAIL: doc/guide.md differs from tst/guide/%s.%s' % (name, ext))
+            fail += 1
+
+lines = guide.split('\n')
+for i, l in enumerate(lines):
+    if l.startswith('<!-- tst/guide/'):
+        j = i - 1
+        while j >= 0 and lines[j].strip() == '':
+            j -= 1
+        if not lines[j].rstrip().endswith(':'):
+            print('FAIL: the paragraph before %s does not end with a colon' % l)
             fail += 1
 
 for f in sorted(os.listdir(here)):

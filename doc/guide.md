@@ -411,6 +411,8 @@ suffix:
 - a `par :any` rejoins after any body terminates, and
 - a `par` without any suffix never rejoins.
 
+The next example awaits three events, in whatever order they occur:
+
 <!-- tst/guide/11-par-all.atm -->
 
 ```
@@ -470,6 +472,9 @@ A task pool, created with the `tasks` primitive, allows that multiple tasks
 share a parent container in the hierarchy.
 When the pool goes out of scope, all attached tasks are aborted.
 When a task terminates, it leaves the pool.
+
+The next example attaches four tasks to a pool, and traverses the pool after
+some of them terminate:
 
 <!-- tst/guide/13-pools.atm -->
 
