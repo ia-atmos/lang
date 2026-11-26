@@ -95,3 +95,14 @@ raises `invalid access : finalized ...`; there is no test.
 | A. a type | `type(x)` gives `dead` once it ends, so `x ?? :dead` by the type rule | yes, for free | a dead task is no longer `?? :xtask` (`await :xtask`, matches); a value changes type over time |
 | B. a function (recommended) | `atmos.status(x)` also takes tables and pools: `dead` when finalized (tasks as today) | none; `x ?? :table` stays true | nothing |
 | C. a rule of `??` | `x ?? :dead` true for a dead task or a finalized value, type kept | yes | clashes with a tag `:dead` of the user (`:dead [] ?? :dead` is already true by the tag rule) |
+
+## #6 reformulated by the author (2026-11-26): what `set :out` on an index does when the value ends
+
+| Option | Effect | Ports (the 4 index uses) |
+|---|---|---|
+| 1. refuse on any index | compile error | 4 lines break (flare 1, snkrx 3) |
+| 2. nil (today) | a hole in a walked vector | 0 break; latent hole in flare only |
+| 3. error if the value is still there | the program must clear the place itself before the value ends (a loan that must be returned); the runtime never edits the table | snkrx breaks at run time: its buttons end (pool re-made) while `owner.pub.springs` still refers to them, so each needs a `defer` that clears; flare errs only if an enemy ends before the reset of the frame |
+| 4. a `:dead` marker in the place | no hole, `#v` unchanged; every reader must test it (depends on #7) | flare's loop and snkrx's `spring_pull` must test |
+
+Recommended: 2 (consistent with fields, no breakage; the hole is #22).
