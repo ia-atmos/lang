@@ -289,7 +289,8 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 - **A plain index needs no parentheses** (2026-11-26, said in
   `sdl-snxkx`: "peca a sessao atmos para trocar todos"; `atmos#23`):
   write `t@k`, `t@0`, `t@:x`; keep `t@(e)` only for an expression
-  (`t@(i+1)`).
+  (`t@(i+1)`), and for `@(task)`, since `task` is a keyword (found by
+  `sdl-flare`).
 - **General instruction for the ports** (2026-11-26, confirmed in
   `pico-1oom`: "Confirmo, pode enviar"; `pico-1oom#29`, `atmos#16`). It
   does not replace "Fidelity, then expressiveness"; it says what fidelity
