@@ -2958,6 +2958,9 @@ Atmos supports four loop variations:
    iteration, with an optional variable to capture the event.
    The parentheses of a counted pattern are optional:
    `loop on 35, :tic {...}` iterates at every 35th `:tic`.
+   A predicate of the pattern that is an expression may name the event
+   under test with the variable of the loop, besides `it`:
+   `loop e on :X until e.v > 5 {...}`.
 
 The following iterator expression types with predefined behaviors are
 supported:
@@ -3058,6 +3061,12 @@ loop on 1s {
 ```
 loop e on :X {      ;; <-- (`emit :X [v=10]`)
     print(e.v)      ;; --> 10
+}
+```
+
+```
+loop e on :X until e.v > 5 {    ;; only the occurrences with v > 5
+    print(e.v)
 }
 ```
 
