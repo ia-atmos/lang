@@ -3534,7 +3534,9 @@ The optional target between brackets determines the scope of the broadcast:
 - `:parent`: parent task, or the pool of the task, if it lives in one
 - `:global`: all tasks
 - `t: task`: the given task
-- `n: number`: `n`th level up in the task hierarchy (`0` = current task)
+- `n: number`: `n`th level up in the task hierarchy (`0` = current task);
+  only named tasks count as levels: a `watching`, a `par`, or a `spawn {}`
+  around the `emit` does not change the level
 
 An [exception](#exceptions) that a task raises in reaction to an event goes
 up the hierarchy of tasks, but only inside the target of the `emit`: a
