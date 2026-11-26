@@ -13,8 +13,8 @@ Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
 `.claude/plans/261124-atmos.md`): coordination, status and questions for
 the author go to `atmos`; measurements on the ports and merges into `main`
 stay with `atmos-lang`. Item numbers stay local to this session (rule
-#71, corrected by `atmos` on 2026-11-25): the next is #17, seen from
-outside as paper-pin#17. Resumed on
+#71, corrected by `atmos` on 2026-11-25): the next is #18, seen from
+outside as paper-pin#18. Resumed on
 2026-11-25 (author: "desbloqueado, vá em frente").
 
 ## Index
@@ -32,11 +32,18 @@ outside as paper-pin#17. Resumed on
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
+| #17 | Why compiled Atmos loses to the Lua 5.4 VM: asked to atmos-lang | Waiting |
 | #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Done: three remedies on main `9ea77e1`; rerun 2026-11-26 |
 | #15 | Rerun the CLBG after atmos-pin#32 reaches main | Done 2026-11-26: +2% to +15% (was +19% to +33%) |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open
+
+- **#17 Why a compiled Atmos loses to the Lua 5.4 interpreter** (asked to
+  `atmos-lang`, 2026-11-26, at the author's word). After the rerun on
+  `9ea77e1`, Atmos off is 1.0 to 3.0 times Lua 5.4. Asked: the central
+  reason, whether and how far it can improve, and which kernels could reach
+  1.0. Waiting for the answer; it goes to the author and to Section 9.
 
 - **#16 Atmos slower than Lua 5.4 on the CLBG** (sent to `atmos-lang`,
   2026-11-26, at the author's request). Independent of pin: with
