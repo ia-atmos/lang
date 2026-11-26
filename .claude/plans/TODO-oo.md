@@ -22,14 +22,12 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | on `oo` at `9991ed1` (2026-11-25): main merged in, the manual written, suite passing; measured by `atmos-lang` on 2026-11-25 (2197 files: same diagnostics, generated C the same once globals are renumbered; no port changes); done: merged into main by `atmos-lang` as `9c6458f` (2026-11-25, "#7 sim") (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
 | #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | decided by him as sdl-tux#24a (2026-11-26, checked in that transcript): `atmos-oo` rewrites `badguy.atm` with clauses and `super`, a file per kind, on a branch `oo` of sdl-tux, after the fish is in its main; the 73 runs must stay identical; `sdl-tux` checks and merges; at the end, show him a representative piece |
-| #11 | How `super()` works for tasks (his question, via sdl-tux#24) | prototype by the session, to be confirmed (2026-11-26): branch `oo-task` at `7943ee9`; in a task clause `super(...)` is the parent task applied to the arguments, used as `await super()` or `spawn super()`; suite pass=1099 with ASAN |
+| #11 | How `super()` works for tasks (his question, via sdl-tux#24) | answered (2026-11-26); he named it `Super` for tasks, `super` for functions; prototype on branch `oo-task` (not asked for: he wanted only the answer here), `await Super()` or `spawn Super()`; suite pass=1099 with ASAN; not to be merged unless he asks |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
 
 - **#10**: waiting for `sdl-tux` to say the fish is in its main.
-- **#11**: answered him in this session; whether to merge `oo-task` waits
-  for him.
 
 To confirm or undo when he reads:
 
@@ -68,6 +66,8 @@ To confirm or undo when he reads:
 - #7, 2026-11-20: "ok va em frente", to the prototype of clauses with
   one or more tagged parameters, chosen by specificity, with no
   grouping and no order. Not yet an approval to merge.
+- #11, 2026-11-26: `Super` for tasks, `super` for functions; this session
+  only answers, the game is done in `sdl-tux`.
 - #8, 2026-11-23: "Super": the parent clause is called by `super(...)`.
 - #7, 2026-11-25: "#7 sim", the merge of clauses and `super` into main.
 - #7, 2026-11-23: merge the clauses and update the ports that can use
