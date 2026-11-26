@@ -176,6 +176,23 @@ static List parser_stmts (const char* clo);
 // until the program ends, and its C goes to a unit of its own.
 static void include_file (List* l, Tk tk, const char* path, int import);
 
+// `a/b/../c` is `a/c`: a file has the same path from wherever it is
+// reached, in the messages and in the C of its module.
+static char* path_norm (const char* path) {
+    char* p = xfmt("%s", path);
+    for (char* up=strstr(p,"/../"); up!=NULL; up=strstr(p,"/../")) {
+        char* seg = up;
+        while (seg>p && seg[-1]!='/') {
+            seg--;
+        }
+        if (seg==up || !strncmp(seg,"../",3)) {
+            break;
+        }
+        memmove(seg, up+4, strlen(up+4)+1);
+    }
+    return p;
+}
+
 // The name of a module in its C symbols: its path, with `_` for what
 // is not a letter or a digit.
 static const char* mod_name (Tk tk, const char* path) {
@@ -206,6 +223,7 @@ static void parser_include (List* l, int import) {
     if (path[0]!='/' && sla!=NULL) {
         path = xfmt("%.*s/%s", (int)(sla-cur), cur, TK0.str);
     }
+    path = path_norm(path);
     include_file(l, TK0, path, import);
 }
 
@@ -239,6 +257,12 @@ static void include_file (List* l, Tk tk, const char* path, int import) {
     Tk  tk1 = TK1;
     lexer_init(path, src, len);
     Expr* mod = NULL;
+    // what the compiler adds to a module is at the start of its file,
+    // and not at the import, which would change the C of the module
+    // with who imports it
+    Tk mtk = tk;
+    mtk.file = NFILES - 1;
+    mtk.lin  = 1;
     if (import) {
         mod = mk(E_IMPORT, tk);
         mod->u.import.mod = NMODS;
@@ -251,7 +275,7 @@ static void include_file (List* l, Tk tk, const char* path, int import) {
     List inc = parser_stmts("<eof>");
     if (import) {
         // the module stays until the program ends: `await(false)`
-        Tk f = tk;
+        Tk f = mtk;
         f.tag = TK_KEY;
         f.str = "false";
         f.len = 5;
@@ -259,10 +283,10 @@ static void include_file (List* l, Tk tk, const char* path, int import) {
         p->kind = PT_VAL;
         p->tk   = f;
         p->e    = mk(E_BOOL, f);
-        Expr* awt = mk(E_AWAIT, tk);
+        Expr* awt = mk(E_AWAIT, mtk);
         awt->u.await.p = p;
         list_add(&inc, awt);
-        Expr* blk = mk(E_BLOCK, tk);
+        Expr* blk = mk(E_BLOCK, mtk);
         blk->u.block.es = inc;
         mod->u.import.blk = blk;
         list_add(l, mod);

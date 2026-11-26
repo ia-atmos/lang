@@ -3151,7 +3151,8 @@ static void gen (Unit* u, Expr* e, Dst d) {
             int cur = CUR;
             CUR = e->u.import.mod;
             const char* name = gen_task(e->proto, NULL, 0,
-                &e->u.import.blk->u.block.es, 1, lin_of(e->tk));
+                &e->u.import.blk->u.block.es, 1,
+                lin_of(e->u.import.blk->tk));
             CUR = cur;
             COut* o = &OUTS[CUR];
             o->mods = realloc(o->mods, (o->nmods+1) * sizeof(int));

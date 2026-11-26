@@ -16,7 +16,7 @@ Last update: 2026-11-26.
 | #4 | Native code under `import`: the names of the two preludes | Decided 2026-11-26: `:prelude.h` (every unit) and `:prelude.c` (the unit of its file), his suggestion ("Poderia ser prelude.c e .h?"). On `cc` |
 | #4a | `:prelude` with no suffix | Decided 2026-11-26 ("Sempre"): always an error (`invalid native : expected ':prelude.h' or ':prelude.c'`). On `cc`; every environment and port must migrate before a merge |
 | #5 | `-c` with modules | Decided 2026-11-26 ("Recomendado"): one C file per module in a directory. On `cc` as `-c -o <dir>` (the paths are printed); `-c` alone refuses a program with modules; with no `import`, the standard output as before. The final spelling (`--emit-c=DIR`) is of `atmos-cli` |
-| #6 | The cache: where it lives, how it is cleaned (overlaps `atmos-cli`) | Not asked yet. On `cc`: `ATMOS_CACHE`, else `$XDG_CACHE_HOME/atmos`, else `~/.cache/atmos`; never cleaned |
+| #6 | Where the C and the objects of the modules are kept | The author, 2026-11-26: "Poderia especificar o dir? Mantendo os arquivos...", then "#6 poderia ser local/corrente?". On `cc`, by the session, to be confirmed: `.atmos/` in the current directory, or `--build <dir>`; the files stay, under the names of the modules (section "The build directory") |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -303,3 +303,32 @@ followed the link to `lang` in the copy and rewrote
 `tst/cases/native-err-04.atm` (its `:prelude` became `:prelude.h`), which
 was committed so in `c` of the previous step; the case and the script
 are corrected.
+
+## The build directory (2026-11-26, on `cc`, to be confirmed)
+
+Replaces the cache by hash (`ATMOS_CACHE` is gone).
+
+- The C, the object and the list of included files of each module stay
+  in `.atmos/<hash of the command>/` of the current directory, or in
+  the directory of `--build <dir>` (also `--build=<dir>`), as
+  `<module>.c`, `.o`, `.d`; the program itself under the name of its
+  file (`main_atm.c`, `tst_engine_atm.c`), so that two programs of a
+  directory do not take the place of each other. The file `cmd` of the
+  directory has the command. A directory per command: a build with
+  ASAN or with `-t` (which changes the C) does not replace the other.
+- A unit is compiled again if its C differs from the kept file, or a
+  file in its `.d` is newer than its object.
+- If the directory cannot be written, all goes to the temporary
+  directory and is removed, as a program with no `import`.
+- A program with no `import` leaves nothing, as before.
+- For the same module to have the same C from two programs: the path
+  of a file is normalized (`tst/../engine/x.atm` is `engine/x.atm`,
+  also in the messages), and what the compiler adds to a module (its
+  final `await(false)`) is at line 1 of its file, not at the import.
+- `.atmos/` is in `.gitignore`; `tst/run.sh` no longer sets a cache.
+
+Pingus converted, same container (`tst/run.sh`, 40 tests, all pass):
+first run 81 s, second 47 s; with `ASAN=1`, 133 s then 103 s (measured
+before the last fix). Build `-O1`: 12.4 s from nothing, 0.2 s with no
+change, 2.2 s after a change in `engine/engine.atm`. `.atmos` has 18 to
+54 MB with 2 or 3 commands.
