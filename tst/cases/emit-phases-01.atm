@@ -1,0 +1,20 @@
+;; Phases in a tick: one task emits an event per phase, in order; an
+;; emit runs to completion before the next, so the phases never mix,
+;; whatever the order in which the tasks were spawned.
+task Watcher () {
+    loop on :check {
+        print(:check)
+    }
+}
+task Mover (i) {
+    loop on :move {
+        print(:move, i)
+    }
+}
+spawn Watcher()
+spawn Mover(1)
+spawn Mover(2)
+loop _ in 2 {
+    emit :move
+    emit :check
+}
