@@ -960,6 +960,9 @@ typedef struct ATask {
     int      depth;
     // depth of the deepest pinned argument: the task cannot leave it
     int      mindepth;
+    // the body of a module (`import`): ends with the block of its
+    // import, after what started later
+    int      mod;
     AVal     pub;
     AVal     ret;
     // pool it was spawned in, for identification only
@@ -1007,6 +1010,9 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base);
 // is pinned from birth, so that it owns what it stores in its `pub`
 // already in its first run.
 AStatus a_spawn_pin (AVal* dst, AVal proto, int base);
+
+// Starts the body of a module, pinned to the block of its import.
+AStatus a_spawn_mod (AVal* dst, AVal proto, int base);
 
 // The same, for a spawn whose task goes to a field of the table `h`:
 // if the table is pinned, the task is pinned with it from birth.

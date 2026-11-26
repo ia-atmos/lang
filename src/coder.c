@@ -3036,7 +3036,7 @@ static void gen (Unit* u, Expr* e, Dst d) {
             Opnd t = opnd_tmp(u);
             out(u, "a_lin = %d;", lin_of(e->tk));
             out(u, "a_set(&%s, a_task(&%s, 0));", f.c, name);
-            out_try(u, "a_spawn_pin(&%s, %s, a_top)", t.c, f.c);
+            out_try(u, "a_spawn_mod(&%s, %s, a_top)", t.c, f.c);
             opnd_rel(u, f);
             gen_pin_end(u, t.c, 1);
             store_void(u, d);

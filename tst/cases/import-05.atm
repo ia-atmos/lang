@@ -1,0 +1,19 @@
+;; the body of a module is as deep as the main chunk: a task of the
+;; program may hold what a module pins, and the module ends after what
+;; started later, also when the program is aborted
+import "imp/res.atm"
+task T (r) {
+    defer {
+        print("T", res_use(), r.open)
+    }
+    await(false)
+}
+spawn T(RES)
+spawn {
+    defer {
+        print("blk", res_use())
+    }
+    await(false)
+}
+print("main", res_use())
+throw(:stop)

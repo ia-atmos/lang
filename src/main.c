@@ -274,9 +274,9 @@ static int mtime (const char* path, struct timespec* t) {
 
 // An object of the cache is good if no file that its C included (the
 // list that the C compiler left in `dep`, in the format of make) is
-// newer than it. The C itself (`src`) is not checked: its text is in
-// the name of the object.
-static int cache_ok (const char* obj, const char* dep, const char* src) {
+// newer than it. The C itself is not checked: its text is in the name
+// of the object.
+static int cache_ok (const char* obj, const char* dep) {
     struct timespec to;
     if (!mtime(obj, &to)) {
         return 0;
@@ -286,12 +286,12 @@ static int cache_ok (const char* obj, const char* dep, const char* src) {
         return 0;
     }
     int ok = 1;
-    int first = 1;
+    int n = 0;
     char w[4096];
     while (ok && fscanf(f, "%4095s", w)==1) {
-        // the target, the continuations, and the C itself
-        if (first || !strcmp(w,"\\") || !strcmp(w,src)) {
-            first = 0;
+        // the continuations, the target, and the C itself, which comes
+        // first and was in a temporary directory
+        if (!strcmp(w,"\\") || n++<2) {
             continue;
         }
         struct timespec td;
@@ -378,7 +378,7 @@ static int build_units (CUnit* us, int n, const char* dir, const char* exe) {
             dep = xfmt("%s/%016llx.d", cache, h);
         }
         objs = xfmt("%s %s", objs, obj);
-        if (cache!=NULL && cache_ok(obj,dep,src)) {
+        if (cache!=NULL && cache_ok(obj,dep)) {
             continue;
         }
         // compiled aside and then renamed, so that another build

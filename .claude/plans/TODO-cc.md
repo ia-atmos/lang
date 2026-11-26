@@ -11,8 +11,10 @@ Last update: 2026-11-26.
 | # | Item | State |
 |---|------|-------|
 | #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
-| #2 | `import`: each file compiled apart (the author, 2026-11-26) | Asked 2026-11-26; recommended: the front end still reads every file, one C unit per file, the body of a file as a task of its own (section "Import") |
-| #3 | Which top-level names are local to a file (the author: "usar val para locais") | Not asked yet (after #2) |
+| #2 | `import`: each file compiled apart (the author, 2026-11-26) | Approved 2026-11-26 ("#2 sim"). Prototype on `cc`: Pingus converted in a copy passes 40/40 (section "Import: the prototype") |
+| #3 | Which top-level names are local to a file (the author: "usar val para locais") | Asked 2026-11-26: what he means; today no name collides, each C symbol carries its module |
+| #4 | Native code under `import`: `:prelude` in every unit, `:prelude.once` only in its own | Not asked yet; on the branch as a provisional spelling |
+| #5 | `-c` with modules, where the cache lives and how it is cleaned (overlaps `atmos-cli`) | Not asked yet |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -189,3 +191,66 @@ Proposed (nothing decided):
 - Expected, from the split measured on 2026-11-23 (not linked): a
   cold build about 4 s at `-O1` on 4 cores against 21.9 s; after a
   change in one file, only that unit. Not measured with a real import.
+
+## Import: the prototype (2026-11-26, branch `cc`)
+
+What the branch does:
+
+- `import "x.atm"` (a keyword, top level only, relative to the file, a
+  file once). The parser keeps its statements as one node; the resolver
+  resolves them in the scope of the program (names seen as with
+  `include`, hoisting included), as a task with no parameters.
+- One C unit per module (`coder.c`, `COut`): its functions (numbered
+  per module), its constants, its top-level variables as
+  `AVal atm_G_<module>_<name>`, declared `extern` in the units that
+  use them. So two modules may have the same top-level name: nothing
+  collides at link, and the latest declaration is the one seen, as
+  with `include`. A program with no `import` gets the same C as before.
+- The body of a module ends with `await(false)` and is started by
+  `a_spawn_mod` (`rt/task.c`): pinned to the block of the import, as
+  deep as the main chunk (else a task of the program could not take
+  what a module pins: "invalid escape"), and left out of the abort of
+  the children of a trail, so that it ends in its turn as the block
+  unwinds (else a `defer` of the program found the tables of a module
+  finalized).
+- `main.c`: each unit is compiled to an object named by the hash of
+  its C and of the command, in `ATMOS_CACHE`, or `$XDG_CACHE_HOME/atmos`,
+  or `~/.cache/atmos`; an object is good while no file its C included
+  (the `.d` of the C compiler) is newer; the stale ones are compiled at
+  the same time, then all are linked. No LTO in this path.
+- Native code: a `:prelude` goes to every unit, in order, as a header;
+  a `:prelude.once` only to the unit of its file (provisional, `#4`).
+- Tests `tst/cases/import-01..05`, `import-err-01..03`. `make test`
+  (plain and `ATMOS_ASAN=1`) and `make test-cfgs` pass.
+
+Pingus, converted in a copy (not pushed): every `include` to `import`
+(55 units); in `env-sdl/sdl.atm` and `engine/pingus.h`, the 33 C
+variables `static T X = v;` became `extern T X;` with `T X = v;` in a
+`:prelude.once`, and `int main` moved there. Same container, 4 cores:
+
+| Pingus | `include`, `main` | `include`, LTO (`#1`) | `import` |
+|---|---|---|---|
+| build `-O1`, nothing in the cache | 20.6 s | 7.6 s | 11.4 s |
+| build again, no change | 20.6 s | 7.6 s | 0.2 s |
+| after a change in `engine/engine.atm` | 20.6 s | 7.6 s | 2.2 s |
+| after `touch engine/pingus.h` | 20.6 s | 7.6 s | 11.4 s |
+| `tst/run.sh` (40 tests, `-O2`) | 121 s | 68 to 78 s | 78 s, then 44 s |
+| the same with `ASAN=1` | not measured | 121 to 141 s | 121 s, then 92 s |
+
+All 40 tests pass, also with ASAN. The first build is slower than LTO
+because each of the 55 units reads the SDL headers and the preludes
+again (the C grows from 91 to 149 thousand lines).
+
+Open, seen in the prototype:
+
+- A function `static` of a shared prelude that keeps a `static`
+  variable inside (two in `env-sdl`: a cache of 8 entries, a table of
+  constants) has one copy per unit. Harmless there; not in general.
+- `a_lin` carries the index of the file in the program: a new file
+  changes the C of the units after it.
+- `-c` prints the units one after the other, each after a line
+  `//// atmos unit : NAME.c` (`doom` and `env-esp32` build from `-c`).
+- The cache is never cleaned (45 MB after the suites of Pingus).
+- The manual is not updated.
+- An `await` at the top level of a module does not hold the importer
+  (accepted in `#2`).
