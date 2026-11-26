@@ -32,7 +32,7 @@ outside as paper-pin#18. Resumed on
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
-| #17 | Why compiled Atmos loses to the Lua 5.4 VM | Answered 2026-11-26; atmos-lang implements two fixes; rerun when merged |
+| #17 | Why compiled Atmos loses to the Lua 5.4 VM | Done: answered, two fixes on main `306f7e9`, third run 2026-11-26 (0.98x to 3.4x) |
 | #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Done: three remedies on main `9ea77e1`; rerun 2026-11-26 |
 | #15 | Rerun the CLBG after atmos-pin#32 reaches main | Done 2026-11-26: +2% to +15% (was +19% to +33%) |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
