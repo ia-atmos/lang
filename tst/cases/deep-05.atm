@@ -13,7 +13,7 @@ do {
     set G.car = spawn Car(1)
     pin H = [car = spawn Car(2), spawn Car(3)]
     print(G.car.pub.phy.x, H.car.pub.phy.x)
-    emit(:go)
+    emit :go
     set G.other = spawn Car(4)
     print(:in)
 }

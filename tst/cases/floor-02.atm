@@ -24,4 +24,4 @@ spawn {
     emit @t :close [h=h]
     print(catch true { emit @:global :close [h=h] })
 }
-emit(:go)
+emit :go

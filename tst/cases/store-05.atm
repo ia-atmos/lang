@@ -13,7 +13,7 @@ do {
     spawn @us T(b)
     spawn @us T(a)
     spawn T(b)
-    emit(:X)
+    emit :X
 }
 print(#ts)
 func f () {

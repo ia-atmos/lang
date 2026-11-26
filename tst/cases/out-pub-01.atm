@@ -13,11 +13,11 @@ task T () {
 }
 pin t = spawn T()
 print(t.pub.v)
-emit(:a)
+emit :a
 print(t.pub)
-emit(:b)
+emit :b
 print(t.pub.v)
-emit(:c)
+emit :c
 print(t.pub)
 
 ;; a value that outlives the task: the place goes with the task

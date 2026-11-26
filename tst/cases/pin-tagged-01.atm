@@ -20,7 +20,7 @@ spawn {
     print(:closed, 2)
 }
 pin e = :close [h=d]
-emit(e)
+emit e
 
 ;; an unpinned constructor may hold it too: it is born with its floor in
 ;; the block of what it holds

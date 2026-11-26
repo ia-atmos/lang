@@ -31,7 +31,7 @@ do {
     loop i in 2 {
         spawn @hs H(accept())
     }
-    emit(:go)
+    emit :go
     spawn @hs H(accept())
     print(#hs)
 }

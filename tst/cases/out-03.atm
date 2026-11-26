@@ -30,8 +30,8 @@ task Map () {
 }
 do {
     pin m = spawn Map()
-    emit(:next)
-    emit(:end)
+    emit :next
+    emit :end
 }
 print(:map_gone, combat.last_enemy)
 
@@ -42,7 +42,7 @@ do {
     val reg = func () { set :out combat.task = t }
     reg()
     print(:task, combat.task != nil)
-    emit(:t)
+    emit :t
     print(:task_done, combat.task)
 }
 

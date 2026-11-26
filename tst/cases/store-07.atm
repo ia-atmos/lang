@@ -20,7 +20,7 @@ func main () {
         spawn U(:blk)
         pin u = spawn U(:pin)
         print(#ts, #us)
-        emit(:X)
+        emit :X
     }
     print(catch true { task Bad () { t } })
 }

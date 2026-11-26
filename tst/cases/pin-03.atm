@@ -9,7 +9,7 @@ do {
     pin x = spawn T()
     pin b = [10]
     set x.pub = b
-    emit(:X)
+    emit :X
 }
 task U () {
     defer { print(:evt, pub.v) }
