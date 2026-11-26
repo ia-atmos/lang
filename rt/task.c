@@ -2275,6 +2275,13 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
     return st;
 }
 
+AStatus a_spawn_pool (AVal pool) {
+    if (pool.type == A_NIL) {
+        return a_error("invalid spawn : expected tasks pool : got nil");
+    }
+    return A_OK;
+}
+
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {
     if (ctx_chk("spawn") != A_OK) {
         a_settop(base);

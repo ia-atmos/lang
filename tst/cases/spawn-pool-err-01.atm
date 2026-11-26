@@ -1,0 +1,6 @@
+;; spawn @p with p nil is an error (it used to spawn outside any pool)
+task T () { }
+val p = nil
+print(catch true { spawn @p T() })
+pin ts = tasks()
+print((spawn @ts T()) ?? :xtask)

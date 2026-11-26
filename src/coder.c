@@ -2343,6 +2343,10 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
     } else if (stmt || born) {
         out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
     } else {
+        if (e->u.spawn.pool != NULL) {
+            // `spawn @p`: the pool must exist (a nil `p` is an error)
+            out_try(u, "a_spawn_pool(%s)", pool.c);
+        }
         out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
     }
     opnd_rel(u, f);

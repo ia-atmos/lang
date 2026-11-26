@@ -977,6 +977,9 @@ extern struct ATrail* a_trl;
 // The running trail was aborted by what it just did: it must unwind.
 AStatus a_chk_aborted (AStatus st);
 
+// The pool of a `spawn @p`: an error if `p` is nil.
+AStatus a_spawn_pool (AVal pool);
+
 // spawn T(...): arguments at `[base,a_top)`. The pool is nil for none;
 // a full pool gives nil.
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base);
