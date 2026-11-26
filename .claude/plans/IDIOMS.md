@@ -11,7 +11,7 @@ with where it came from (`session#N`) and a before and an after.
 correction needs a change of the compiler, it goes to `atmos-lang`.
 
 Sources so far: `env-iup` (its `.claude/plans/IDIOMS.md`, items
-`env-iup#18` to `#23`).
+`env-iup#18` to `#23`), `pico-1oom#16`.
 
 ## In a program
 
@@ -65,6 +65,18 @@ emit(:action [h=but])
 
 ;; after
 emit :action [h=but]
+```
+
+### A small function is a lambda (pico-1oom#16)
+
+The author, on getters and setters: "Pq não usar lambda?".
+
+```
+;; before
+CFG_ITEM_BOOL("undo", func () { game_opt_undo_enabled }, func (v) { set game_opt_undo_enabled = v })
+
+;; after
+CFG_ITEM_BOOL("undo", \{ game_opt_undo_enabled }, \{ set game_opt_undo_enabled = it })
 ```
 
 ### The idiom of the library is fine (env-iup#23)
