@@ -202,7 +202,7 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
-| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, unarchived on 2026-11-25, `atmos#1`) |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, unarchived on 2026-11-25, `atmos#1`; all its items closed on 2026-11-26, `TODO-ppp.md` on branch `ppp` dd73e3d; its archiving asked of its parent `atmos-lang`, as reported by the session) |
 | `env-web` | session_011eECoffhJTecG6BZSq3GQi | environment: the browser |
 | `atmos` | session_011eECohhJbc4GMpAj3yyeEo | the manager of all sessions |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
