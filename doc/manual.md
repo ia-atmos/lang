@@ -4012,7 +4012,7 @@ watching 1s {
 
 ```
 val ok, v = watching 5s {
-    await(:reply)
+    await :reply
 }
 if ok {
     print("reply", v)       ;; :reply occurred before 5 seconds
