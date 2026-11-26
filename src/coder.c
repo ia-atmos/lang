@@ -2806,7 +2806,9 @@ static void gen_await (Unit* u, Expr* e, Dst d) {
 
 // emit @to (e)
 static void gen_emit (Unit* u, Expr* e) {
-    Opnd to = opnd_c("a_nil()");
+    // no target is the current task (level 0); a target that evaluates
+    // to nil sends to no one
+    Opnd to = opnd_c("a_int(0)");
     if (e->u.emit.to != NULL) {
         to = gen_expr(u, e->u.emit.to);
     }

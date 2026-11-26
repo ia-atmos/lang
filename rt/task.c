@@ -2008,7 +2008,9 @@ static AStatus emit_to (ANode** ret, AVal to, int* anc) {
     *anc = 0;
 
     if (to.type == A_NIL) {
-        // default
+        // no one: `emit @x` with `x` nil
+        *ret = NULL;
+        return A_OK;
     } else if (to.type==A_XTASK || to.type==A_TASKS) {
         *ret = (ANode*) to.u.o;
         return A_OK;
@@ -2122,6 +2124,9 @@ AStatus a_emit (AVal to, AVal evt) {
     st = emit_to(&n, to, &anc);
     if (st != A_OK) {
         return st;
+    }
+    if (n == NULL) {
+        return A_OK;
     }
     if (a_isnum(evt)) {
         // time passes for the whole program
