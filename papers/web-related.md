@@ -230,10 +230,10 @@ CRUD, Circles, Cells):
 | ClojureScript, Reagent | github.com/polymeris/7guis-clojurescript | 14, 53, 72, 51, 110, 139, 268 |
 | Atmos over IUP (ours, not the web) | `ia-atmos/env-iup`, `exs/7guis/` | 20, 36, 91, 51, 110, 169, 209 |
 
-**Not found**: 7GUIs in HipHop.js, Solid, RxJS alone, htmx or
-_hyperscript. For the comparison with HipHop.js that the author asked,
-there is no public version to take: its cases are the ones of its
-paper (the login panel), or the paper writes the HipHop.js versions.
+**Not found** as a public repository: 7GUIs in HipHop.js, Solid, RxJS
+alone, htmx or _hyperscript. For HipHop.js there is one task in a
+paper: the Timer, in SAC 2018 (section 9). The others would be written
+by us.
 No peer-reviewed paper that uses 7GUIs as its evaluation was found (a
 weak negative: DBLP was not reachable).
 
@@ -275,8 +275,106 @@ In this company the size is in the range of Rust with Yew and of Lua,
 far below Go and Flutter, and above the JavaScript libraries (htmx
 about 16 kB, Elm's TodoMVC 9 kB with gzip).
 
+## 9. The papers, read (second pass, 2026-11-26)
+
+The text of each was obtained and read, except where said. This
+section corrects the ones above where they differ.
+
+### HipHop, from 2011 to 2020
+
+| Paper | Fact |
+|---|---|
+| PLASTIC 2011 (Scheme, over Hop) | The work is cut "into two parts: a reactive HipHop program and the Hop linking part". A listener written by hand feeds the machine (`(hiphop-input-and-react! M ...)`), and "When the machine is called to react is left to the user." Examples: requests in parallel with an abort button and a timeout, and an audio player. A limit it states, against Orc: "HipHop does not offer the flexibility of the Orc f > x > g operator that dynamically creates parallel executions". No evaluation. |
+| SAC 2018 (three pages) | **Its one example is the Timer of 7GUIs** ("We study the timer application of the 7 GUIs project"), then with a button to suspend. The claim: the JavaScript version "has been modified in a non-local way by adding isSusp, patching existing functions, and adding another function", and in Hiphop.js "the BasicTimer code can be directly reused without modification". The binding is by hand in both directions: `stm.input("reset"); stm.react();` and `stm.addEventListener("elapsed", evt => { $("meter").value = evt.signalValue; ... })`. No evaluation. |
+| Vidal's thesis, "Programmation web réactive", Université Côte d'Azur, 2018 (read in part) | Section 5.3.2: branches of a parallel are added and removed between two instants (`m.getElementById("parallelFoo").appendChild(lp)`); the branch starts at the next instant, and the change "modifie l'AST du programme ... et recompile l'ensemble du programme". Limits it states (chapter 9): no local variables ("les variables ne sont pas implémentées"), and closures in their place escape the checks. On Pendulum: "le travail connexe le plus proche de Hiphop.js". |
+| PLDI 2020 | The page of the login: `<input onkeyup=~{M.react({name: this.value})}/>`, `<button ... onclick=~{M.react({login: true})}>`, `<react>~{M.time.nowval}</react>`. The stated goal is the opposite of ours: "the boundary between traditional HTML code and reactive HipHop.js code is kept clear. Both can be developed separately". Its related work does not mention Céu, Pendulum nor ReactiveML. On the data-flow family (Flapjax, Elm, React): "These constructs are not really relevant to the control-based orchestration issues we want to address." On promises: "none of the examples considered in their study required preemption as used here. We think that preemptive operations are absolutely fundamental". On `async`: "These additions do help writing basic temporal behaviors, but in a limited way." |
+
+So the precise difference to claim (to be shown with code): in every
+HipHop the program is a machine apart from the page, and the two are
+joined by listeners and by reads of signals; in ours the program names
+the elements and awaits their events, with nothing to join. And a new
+concurrent activity is, there, a change of the program from outside
+that compiles it again; here, a `spawn` in a pool.
+
+### Pendulum (REBLS 2016)
+
+- Elements are parameters of the program; their events are input
+  signals and their properties output signals: `present
+  window##onmousemove (emit sp##.textContent ...)`. The reaction is
+  implicit: each event that is referred triggers a step.
+- No abort and no finalizer: preemption is `trap`/`exit`.
+- Static: "the element construct that is currently constrained to
+  static element but that could be extended to a collection"; of
+  HipHop, "It even allows the programmer to dynamically add statements,
+  which is powerful but could possibly leads to runtime errors".
+- TodoMVC is a benchmark of speed only (add, select and remove 100
+  items; 82 ms against 153 ms of Elm and 424 ms of React of that time,
+  values read from a bar chart).
+
+Of the three (HipHop.js, Pendulum, ours), Pendulum binds the DOM as we
+do, in the language, and is static; HipHop.js is dynamic from outside
+and binds by hand.
+
+### Elm (PLDI 2013), Flapjax (OOPSLA 2009), Arrowlets (DLS 2009)
+
+| Paper | Fact |
+|---|---|
+| Elm 2013 | The Elm of signals, left in 2016. No signals of signals ("We avoid these issues by ruling out signals of signals"), so no dynamic graph. It cites no synchronous language. "We do not provide direct performance evaluations of Elm". |
+| Flapjax | Behaviors ("like a variable—it always has a value—except that changes to its value propagate automatically") and event streams; `$E(elt, "click")`, `$B(input)`, `insertValueB`, `insertDomB`. On callbacks: "Ajax applications are agglomerations of callbacks with largely implicit control flows", and "even local reasoning about a program's data depends on global reasoning about the program's control flow". Its examples include a drag and drop (`mergeE(moveEE,dropEE).switchE()`) and a search with `calmE(1000)`. The evaluation is qualitative. |
+| Arrowlets | The drag and drop as a state machine of arrows: `next` (sequence), `or` ("executes whichever of f and g is triggered first, and cancels the other"), `repeat`, `product`. Cancellation from outside by the "progress arrow" that `run()` gives (`p.cancel()`); each `EventA` registers a canceller that removes its listener. No finalizer beyond that. |
+
+Arrowlets is, in 2009, a sequence with a parallel-or that cancels the
+loser: the same shape as ours, as combinators and with no finalizers.
+
+### Céu (TECS 2017, the author's preprint)
+
+Its contributions: external events in a queue, internal events with a
+stack, static checks of concurrency, `finalize` for resources of C,
+first-class timers. `watching`, pools and organisms are not in it
+(they are of Modularity 2015). No GUI example.
+
+### The thesis of 7GUIs (Kiss 2014)
+
+- Method: the seven tasks in each approach, compared by a subset of
+  the Cognitive Dimensions of Notations (abstraction level, closeness
+  of mapping, hidden dependencies, error-proneness, diffuseness,
+  viscosity); an analysis by the author, no study with users.
+- Compared: "Java/JavaFX on the object-oriented side, and
+  Scala/ScalaFX, Scala.Rx, ReactFX and Elm on the functional side".
+- Conclusion: "the toolkit in general played the most crucial role in
+  our case studies ... Paradigm and language differences played a more
+  minor role." A warning for our evaluation: with 7GUIs alone the
+  environment may weigh more than the language.
+- It asks for what we would bring: "it would be also worthwhile to
+  focus or find more negative GUI programming examples to uncover or
+  dismiss some potential limitations of (Siblings of) FRP for example
+  with respect to a static dependency graph."
+
+### Sequential code for interfaces, before us
+
+| Work | Fact |
+|---|---|
+| Cardelli and Pike, Squeak, SIGGRAPH 1985 | "a user interface implementation language that exploits this concurrency rather than hiding it ... based on concurrent programming constructs but can be compiled into a conventional sequential language". The oldest ancestor found. |
+| Syme, Petricek, Lomov, F# async, PADL 2011 | "cooperative resumption-based asynchronous tasks are a perfect match for GUI programming" (`let! me = Async.AwaitObservable wnd.LeftButtonDown`); the cancellation is a token passed implicitly, and "finally clauses are run". |
+| Leijen, TyDe 2017 | "block-scoped interleaving, cancellation, and timeout's that are lacking in other major asynchronous frameworks". Not about GUIs. |
+| Madsen, Lhoták, Tip, OOPSLA 2017 | Events: "lost events and event races, and results in code that is hard to understand and debug"; and "promises are complex and error-prone in their own right". |
+
+Not obtained, so not used: Edwards 2009; Bierman et al. 2012; Okur et
+al. 2014; Myers 1991 ("eliminating the spaghetti of call-backs");
+Kambona et al. 2013.
+
 ## References
 
+- L. Cardelli, R. Pike. Squeak: a Language for Communicating with
+  Mice. SIGGRAPH 1985.
+- D. Leijen. Structured Asynchrony with Algebraic Effects. TyDe 2017
+  (read as MSR-TR-2017-21).
+- M. Madsen, O. Lhoták, F. Tip. A Model for Reasoning About JavaScript
+  Promises. OOPSLA 2017.
+- D. Syme, T. Petricek, D. Lomov. The F# Asynchronous Programming
+  Model. PADL 2011.
+- C. Vidal. Programmation web réactive. PhD thesis, Université Côte
+  d'Azur, 2018. HAL tel-01900619.
 - S. Baxter, R. Nigam, J. Politz, S. Krishnamurthi, A. Guha. Putting in
   all the stops: execution control for JavaScript. PLDI 2018,
   pp. 30-45. DOI 10.1145/3192366.3192370.
@@ -318,15 +416,14 @@ about 16 kB, Elm's TodoMVC 9 kB with gzip).
   Programming. PLDI 2020, pp. 533-545. DOI 10.1145/3385412.3385984.
 - G. Berry, C. Nicolas, M. Serrano. HipHop: a synchronous reactive
   extension for Hop. PLASTIC 2011, pp. 49-56.
-  DOI 10.1145/2093328.2093337. (Text not read.)
+  DOI 10.1145/2093328.2093337.
 - G. Berry, M. Serrano. Hop and HipHop: Multitier Web Orchestration.
   2014. arXiv:1312.0078. (The venue is to confirm.)
 - C. Vidal, G. Berry, M. Serrano. Hiphop.js: a language to orchestrate
   web applications. SAC 2018, pp. 2193-2195. DOI 10.1145/3167132.3167440.
-  (Three pages; text not read.)
+  (Three pages.)
 - E. Czaplicki, S. Chong. Asynchronous Functional Reactive Programming
-  for GUIs. PLDI 2013, pp. 411-422. DOI 10.1145/2491956.2462161. (Text
-  not read.)
+  for GUIs. PLDI 2013, pp. 411-422. DOI 10.1145/2491956.2462161.
 - R. El Sibaïe, E. Chailloux. Synchronous-Reactive Web Programming.
   REBLS 2016, pp. 9-16. DOI 10.1145/3001929.3001931.
 - L. Mandel, M. Pouzet. ReactiveML: a reactive extension to ML. PPDP
@@ -339,7 +436,7 @@ about 16 kB, Elm's TodoMVC 9 kB with gzip).
   DOI 10.1145/2724525.2724571.
 - F. Sant'Anna, R. Ierusalimschy, N. Rodriguez, S. Rossetto, A. Branco.
   The Design and Implementation of the Synchronous Language Céu. ACM
-  TECS 16(4), 2017. DOI 10.1145/3035544. (Text not read.)
+  TECS 16(4), 2017. DOI 10.1145/3035544. (Read as the preprint.)
 - F. Sant'Anna. Structured Synchronous Reactive Programming for Game
   Development. Case Study: On Rewriting Pingus from C++ to Céu. SBGames
   2018.
