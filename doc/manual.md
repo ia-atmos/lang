@@ -2587,6 +2587,9 @@ The at notation uses parenthesis (instead of brackets) to provide the index
 expression.
 It is possible to omit the parenthesis to index literal numbers,
 identifiers, and tags.
+The form with no parenthesis is the idiom for them: `t@i`, `t@0`, and `t@:x`,
+rather than `t@(i)`, which is kept for an index that is an expression, as in
+`t@(i+1)`.
 The dot notation is a syntactic sugar to index string keys: `t.x` expands to
 `t@("x")`.
 Finally, the tip markers `#` and `+` refer to the last (`#t-1`) and append
