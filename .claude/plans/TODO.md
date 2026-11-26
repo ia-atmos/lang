@@ -182,13 +182,13 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`, `atmos-pool`).
 
 | Session | Id | Topic |
 |---|---|---|
 | `atmos-lang` | session_011eECogKVQ7ZzmWCoMST2wK | the compiler; measurements on the ports; merges |
 | `atmos-pin` | session_011eECogSDhkVfyt7qme5DLh | the rules of `pin` |
-| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools |
+| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools (archived 2026-11-26 by `atmos`, on the author's words there: "Ok peca pra arquivar entao", after `pool` 39a273b reached `main` in a8c56dc; branches `pool-find`, `pool-grid`, `pool` left for him; `atmos#25`) |
 | `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
 | `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "arquivar atmos-grab entao"; no open items, `atmos#20`) |
 | `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
