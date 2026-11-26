@@ -2,4 +2,5 @@
 1	2	30
 30	2
 3	3	nil
+false	invalid index : no last element
 0	nil

@@ -8,5 +8,5 @@ print(x, #stk)
 set stk@+ = 3
 print(#stk, stk@#, stk@+)
 pin e = []
-set e@# = nil
+print(catch true { set e@# = nil })   ;; no last element
 print(#e, e@#)
