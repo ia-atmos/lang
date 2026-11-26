@@ -2013,6 +2013,14 @@ static AStatus emit_to (ANode** ret, AVal to, int* anc) {
         return A_OK;
     } else if (to.type==A_XTASK || to.type==A_TASKS) {
         *ret = (ANode*) to.u.o;
+        // the running task or an ancestor, given by value: as by level
+        // (`emit @(task) e` is `emit e`)
+        for (ANode* x=n; x!=NULL; x=x->up) {
+            if (x == *ret) {
+                *anc = 1;
+                break;
+            }
+        }
         return A_OK;
     } else if (a_isnum(to)) {
         lvl = a_dbl(to);
