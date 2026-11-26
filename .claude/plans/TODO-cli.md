@@ -16,7 +16,7 @@ Last update: 2026-11-26.
 | #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
 | #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Decided by the author (2026-11-25): "remove all short aliases". Done on `cli` (`d0d9a99`) |
 | #5 | The order of the migration of the ports to the long options | Decided by the author (2026-11-26): "remover as curtas": one merge, no period with both forms; the ports move at the merge. Suite on `cli` after the removal and the merge of `main`: lex 33, ast 96, cases 519, golden 443, env 1, cli 26, with ASAN |
-| #6 | When to merge `cli`: now, with the names of the branch, or after `#2` | Asked 2026-11-26; recommended: after `#2`, so that the ports move once |
+| #6 | When to merge `cli`: now, with the names of the branch, or after `#2` | Decided by the author (2026-11-26): "#6a" (he first typed "#6b", interrupted it, and sent "#6a"): after `#2`. The branch waits, kept over `main`; the ports move once, at the merge |
 
 ## Branch `cli`
 

@@ -3550,6 +3550,28 @@ So, with `emit @t (e)`, an exception of `t` goes to who emits, not to who
 holds `t`; with `emit @:global (e)`, it goes to who holds the task that
 raised it, since every task is inside the target.
 
+An `emit` runs to completion before the statement that follows it: every
+task that it awakes reacts, and the reactions that they cause also end,
+before the emitter goes on.
+So, when some work must happen in a fixed order inside each step of time,
+whatever the order in which the tasks were spawned, one task emits an
+event per phase, in order:
+
+```
+task Pingu () {
+    loop on :move { <...> }     ;; first, every pingu moves
+}
+task Trap () {
+    loop on :check { <...> }    ;; then, every trap looks at them
+}
+spawn Trap()                    ;; spawned first, it still checks after the moves
+spawn Pingu()
+loop on :frame {
+    emit :move
+    emit :check
+}
+```
+
 An event that is a [pinned value](#pin), or that holds one, can only reach
 tasks that live inside the block of the value.
 Otherwise, a task could keep the event after the block reclaims it.
