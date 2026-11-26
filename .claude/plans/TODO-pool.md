@@ -10,16 +10,16 @@ prefix; those born here are `atmos-pool#N`.
 | Item | Title | State |
 |---|---|---|
 | `atmos-lang#1` | An await over a pool with a condition | Done: `await :tick until iter.find(ts, f)`, on main with the branch `iter` (7c64f69, 2026-11-22) |
-| `atmos-lang#2` | Phases inside a tick | Proposal ready (`261120-pool-proposals.md`), not yet put to him |
+| `atmos-lang#2` | Phases inside a tick | Decided `#2a` (2026-11-26): the convention in the manual; open, not now: the environment could emit a number of tick events per frame |
 | `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
 | `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
-| `atmos-lang#60` | Where the exception of `emit @t` goes | Reverted on `pool` (7cd9858) by the session (rule #95), to be confirmed (`atmos#2`): to who emits, as on main; the manual "Emit" says it and the cases emit-to-exc-* show it |
-| `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`), decided in `atmos-lang` and not acknowledged | Manual and cases checked; a case added on the branch; still not acknowledged |
-| `atmos-pool#2` | A spatial index (grid) as a library | Written and measured on the branch (`lib/grid.atm`); whether it becomes a library is his |
+| `atmos-lang#60` | Where the exception of `emit @t` goes | Done: to who emits; manual + cases merged into main (7af7971, 2026-11-25) |
+| `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`) | Acknowledged by the author (2026-11-25, "Sim", to the right description); the loop keeps skipping tasks that end, as now |
+| `atmos-pool#2` | A spatial index (grid) as a library | Decided (2026-11-25, "Sim"): kept out for now, on the branch `pool-grid` |
 | `atmos-pool#3` | With `atmos-lang#60` on the branch, a holder in the middle of a reaction receives the exception late: who emitted goes on after its `emit @t` | Remark, for his decision on `#60` |
-| `atmos-pool#4` | Where libraries written in Atmos live (`lib/` on the branch is a guess) | Question, not yet put to him |
+| `atmos-pool#4` | Where libraries written in Atmos live | Deferred by the author (2026-11-25) until a second library appears |
 
 ## A. Waiting for the author (one at a time)
 
@@ -77,6 +77,23 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#2` (2026-11-26, here): `#2a`, the convention of a task that
+  emits the phases, in the manual. The author, verbatim: "Poderia ter
+  uma alternativa de passar pro ambiente um numero de eventos de ticks.
+  Mas deixamos em aberto agora."
+
+- `atmos-pool#2`, `#4` (2026-11-25, here): the grid stays out, on
+  `pool-grid`; where Atmos libraries live waits for a second library.
+
+- `atmos-pool#1` (2026-11-25, here): acknowledged, "Sim", after the
+  right description (section 3 of `261118-pool.md`), and after the
+  question on dead tasks in a loop (they are skipped, kept as is).
+
+
+- `atmos-lang#60` (2026-11-25, here): the exception of `emit @t` goes
+  to who emits, as main already does; #60 reverted, the rule written in
+  "Emit". The grid moved to the branch `pool-grid`.
 
 - `atmos-lang#1` (2026-11-22, through `atmos-iter#1` = `#1a`): no new
   pattern; the library `iter` (`iter.find`, `iter.filter`, `iter.any`),

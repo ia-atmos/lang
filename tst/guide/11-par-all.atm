@@ -1,0 +1,16 @@
+spawn {
+    par :all {
+        await :X
+        print "X"
+    } with {
+        await :Y
+        print "Y"
+    } with {
+        await :Z
+        print "Z"
+    }
+    print "X, Y, and Z occurred"
+}
+emit :Z
+emit :X
+emit :Y

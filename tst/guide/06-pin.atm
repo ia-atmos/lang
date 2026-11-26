@@ -1,0 +1,11 @@
+task T (name) {
+    defer {
+        print(name ++ " is aborted")
+    }
+    await false     ;; never awakes
+}
+do {
+    pin t = spawn T("t")
+    print "block terminates"
+}                   ;; aborts `t`
+print "after the block"

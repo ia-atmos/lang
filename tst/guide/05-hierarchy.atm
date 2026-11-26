@@ -1,0 +1,10 @@
+spawn {
+    spawn {
+        await :Y    ;; never awakes: aborted when :X occurs
+        print "never prints"
+    }
+    await :X        ;; awakes, terminates, and aborts the nested task
+    print "outer task terminates"
+}
+emit :X
+emit :Y

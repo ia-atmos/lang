@@ -1,0 +1,5 @@
+==> ERROR:
+ |  17-traces.atm:11 (await)
+ |  17-traces.atm:9 (call)
+ v  17-traces.atm:3 (throw)
+==> negative

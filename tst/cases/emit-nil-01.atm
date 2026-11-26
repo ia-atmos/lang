@@ -1,0 +1,10 @@
+;; emit @x with x nil sends to no one; no target is the current task
+spawn { await :E ; print(:woke) }
+val x = nil
+emit @x :E
+print(:after_nil)
+emit :E
+task T () { }
+pin t = spawn T()
+emit @t :E          ;; a task that ended: no one
+print(:end)

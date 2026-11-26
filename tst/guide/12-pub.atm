@@ -1,0 +1,6 @@
+task T () {
+    set pub = 10    ;; exposes `pub` to the outside
+    await false
+}
+pin t = spawn T()
+print(t.pub)        ;; reads `pub` of `t`

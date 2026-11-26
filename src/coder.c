@@ -64,6 +64,10 @@ typedef struct Unit {
     int npcs;
     // number of slots in `L`
     int nslots;
+    // the slots that are variables (and not temporaries), for the end
+    // of their block
+    char* isname;
+    int   cname;
     // number of count variables `n<i>`
     int ncnts;
     // number of cleanup labels
@@ -86,6 +90,9 @@ typedef struct Unit {
     const char* bornh;
     // inside the body of a defer, which never suspends
     int indefer;
+    // the value being assigned is known to be no object (#32): no test
+    // of a name or of a store
+    int scalar;
     // the block being generated declares a captured variable
     int box;
     // the next block is the outermost of a task: it ends its orphans
@@ -176,6 +183,22 @@ static int* nslots (Unit* u) {
 
 static int slot_new (Unit* u) {
     return (*nslots(u))++;
+}
+
+static void slot_name (Unit* u, int s) {
+    Unit* o = (u->root != NULL) ? u->root : u;
+    if (s >= o->cname) {
+        int n = (s+1 > 2*o->cname) ? s+1 : 2*o->cname;
+        o->isname = realloc(o->isname, n);
+        memset(o->isname + o->cname, 0, n - o->cname);
+        o->cname = n;
+    }
+    o->isname[s] = 1;
+}
+
+static int slot_isname (Unit* u, int s) {
+    Unit* o = (u->root != NULL) ? u->root : u;
+    return s < o->cname && o->isname[s];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -447,6 +470,7 @@ static const char* var_raw (Unit* u, Var* v) {
         if (v->slot < 0) {
             v->slot  = slot_new(u);
             v->level = (u->level > 0) ? u->level : 0;
+            slot_name(u, v->slot);
         }
         return xfmt("L[%d]", v->slot);
     } else {
@@ -998,8 +1022,21 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
     u->ndefs = b.ndefs;
 
     if (*nslots(u) > b.lo) {
-        out(u, "a_unname(&L[%d], %d, D + %d);", b.lo, *nslots(u)-b.lo,
-            u->level);
+        // only the variables of the block may give a ceiling: its
+        // temporaries are empty when it ends
+        int n = *nslots(u);
+        for (int i=b.lo; i<n; ) {
+            if (!slot_isname(u, i)) {
+                i++;
+                continue;
+            }
+            int j = i;
+            while (j<n && slot_isname(u, j)) {
+                j++;
+            }
+            out(u, "a_unname(&L[%d], %d, D + %d);", i, j-i, u->level);
+            i = j;
+        }
         out(u, "a_clrs(&L[%d], %d);", b.lo, *nslots(u)-b.lo);
     }
     // the parameters of a function or task end with its body
@@ -1198,6 +1235,43 @@ static const char* var_depth (Unit* u, Var* x) {
     }
 }
 
+// An operator whose result is never an object (a number or a boolean).
+static int op_scalar (const char* op) {
+    static const char* OPS[] = {
+        "+", "-", "*", "/", "//", "%", "<", "<=", ">", ">=", "==", "!=",
+        "??", "!?", "&", "|", "^", "<<", ">>", NULL
+    };
+    for (int i=0; OPS[i]!=NULL; i++) {
+        if (!strcmp(OPS[i], op)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// An expression whose value is never an object.
+static int expr_scalar (Expr* e) {
+    switch (e->tag) {
+        case E_NIL:
+        case E_BOOL:
+        case E_NUM:
+        case E_STR:
+        case E_TAG:
+        case E_CLK:
+            return 1;
+        case E_PARENS:
+            return expr_scalar(e->u.parens.e);
+        case E_BIN:
+            return op_scalar(e->tk.str);
+        case E_UNO:
+            return !strcmp(e->tk.str,"-") || !strcmp(e->tk.str,"#") ||
+                   !strcmp(e->tk.str,"~") || !strcmp(e->tk.str,"!") ||
+                   !strcmp(e->tk.str,"not");
+        default:
+            return 0;
+    }
+}
+
 // After a declaration: a pin takes ownership of a task or pool; a val
 // or var only accepts one that is pinned elsewhere.
 static void gen_dcl_chk (Unit* u, Expr* e) {
@@ -1205,6 +1279,8 @@ static void gen_dcl_chk (Unit* u, Expr* e) {
         const char* v = var_c(u, e->vars[i]);
         if (e->vars[i]->kind == V_PIN) {
             gen_pin(u, v);
+        } else if (u->scalar) {
+            // no object: nothing to name or to check
         } else {
             // a name: it refers to a value that has an owner, or holds
             // an unpinned one, which gets its ceiling here
@@ -1255,7 +1331,9 @@ static void gen_dcl (Unit* u, Expr* e) {
         if (born) {
             gen_pin_end(u, var_c(u,e->vars[0]), 1);
         } else {
+            u->scalar = expr_scalar(e->u.dcl.set);
             gen_dcl_chk(u, e);
+            u->scalar = 0;
         }
         return;
     } else {
@@ -1315,6 +1393,11 @@ static void gen_assign_x (Unit* u, Loc l, Opnd v) {
             out_try(u, "a_pin_set(&%s, %s, D + %d)", dst, v.c, x->level);
         }
         opnd_rel(u, v);
+        return;
+    }
+    if (l.e->tag==E_ACC && u->scalar) {
+        // no object: nothing to name or to check
+        opnd_mov(u, v, var_c(u, l.e->var));
         return;
     }
     if (l.e->tag == E_ACC) {
@@ -1413,7 +1496,37 @@ static void gen_set_op (Unit* u, Expr* e) {
     }
 
     Opnd v = gen_expr(u, e->u.set.src);
-    gen_assign(u, l, gen_binop(u, e->tk, op, cur, v));
+    if (!strcmp(op,"++")) {
+        // a table is extended in place; any other value is rebound
+        out(u, "if (%s.type == A_TAB) {", cur.c);
+        u->ind++;
+        out(u, "a_lin = %d;", lin_of(e->tk));
+        out_try(u, "a_cat_set(%s, %s)", cur.c, v.c);
+        opnd_rel(u, cur);
+        opnd_rel(u, v);
+        opnd_rel(u, l.k);
+        opnd_rel(u, l.t);
+        u->ind--;
+        out(u, "} else {");
+        u->ind++;
+        if (e->u.set.fixed) {
+            // a name that cannot be reassigned
+            out(u, "a_lin = %d;", lin_of(e->tk));
+            out_try(u, "a_error(\"invalid set : expected table or mutable "
+                "variable : got %%s\", a_typename(%s))", cur.c);
+            u->ind--;
+            out(u, "}");
+            return;
+        }
+        gen_assign(u, l, gen_binop(u, e->tk, op, cur, v));
+        u->ind--;
+        out(u, "}");
+        return;
+    }
+    Opnd r = gen_binop(u, e->tk, op, cur, v);
+    u->scalar = op_scalar(op);
+    gen_assign(u, l, r);
+    u->scalar = 0;
 }
 
 // set x = e  |  set t@k, y = e
@@ -1427,7 +1540,7 @@ static void gen_set_op (Unit* u, Expr* e) {
 // used.
 static void gen_set_out (Unit* u, Expr* e) {
     Expr* dst = e->u.set.dsts.v[0];
-    if (dst->tag==E_INDEX && dst->u.index.kind!=IDX_EXPR) {
+    if (dst->tag==E_INDEX && dst->u.index.kind==IDX_LAST) {
         err(dst->tk, "invalid set :out : expected field or index");
     }
     if (dst->tag==E_ACC && dst->var->kind==V_PIN) {
@@ -1450,7 +1563,12 @@ static void gen_set_out (Unit* u, Expr* e) {
         d.ot  = slot_new(u);
         d.ok  = slot_new(u);
         out(u, "a_cpy(&L[%d], %s);", d.ot, l.t.c);
-        out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+        if (dst->u.index.kind == IDX_NEXT) {
+            // t@+: the index that is next now
+            out_try(u, "a_out_next(&L[%d], L[%d])", d.ok, d.ot);
+        } else {
+            out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+        }
         out_try(u, "a_out_tab(L[%d], L[%d], L[%d])", d.ot, d.ok, d.ov);
         // until the value ends, if it has an end of its own; else, until
         // this block ends
@@ -1500,7 +1618,9 @@ static void gen_set (Unit* u, Expr* e) {
         }
         Opnd v = gen_expr(u, e->u.set.src);
         out(u, "a_lin = %d;", lin_of(e->tk));
+        u->scalar = expr_scalar(e->u.set.src);
         gen_assign_x(u, ls[0], v);
+        u->scalar = 0;
     } else {
         Dst m = dst_multi(u);
         gen(u, e->u.set.src, m);
@@ -2223,6 +2343,10 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
     } else if (stmt || born) {
         out_try(u, "a_spawn_pin(&%s, %s, a_top-%s)", t.c, f.c, m.n);
     } else {
+        if (e->u.spawn.pool != NULL) {
+            // `spawn @p`: the pool must exist (a nil `p` is an error)
+            out_try(u, "a_spawn_pool(%s)", pool.c);
+        }
         out_try(u, "a_spawn(&%s, %s, %s, a_top-%s)", t.c, f.c, pool.c, m.n);
     }
     opnd_rel(u, f);
@@ -2686,7 +2810,9 @@ static void gen_await (Unit* u, Expr* e, Dst d) {
 
 // emit @to (e)
 static void gen_emit (Unit* u, Expr* e) {
-    Opnd to = opnd_c("a_nil()");
+    // no target is the current task (level 0); a target that evaluates
+    // to nil sends to no one
+    Opnd to = opnd_c("a_int(0)");
     if (e->u.emit.to != NULL) {
         to = gen_expr(u, e->u.emit.to);
     }

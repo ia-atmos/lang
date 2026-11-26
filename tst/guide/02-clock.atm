@@ -1,0 +1,6 @@
+print "Counts 3 seconds:"
+loop in 3 {
+    await 1s
+    print "1 second..."
+}
+print "3 seconds elapsed."

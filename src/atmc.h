@@ -261,7 +261,10 @@ struct Expr {
         // op: binary operator of a compound assignment, or NULL
         // out: `set :out`, a place that refers to a value until the
         // block ends
-        struct { List dsts; Expr* src; int proto; const char* op; int out; }
+        // fixed: `set x ++= e` on a name that cannot be reassigned
+        // (extends a table in place only)
+        struct { List dsts; Expr* src; int proto; const char* op; int out;
+                 int fixed; }
                                                         set;
         struct { List es; }                             block;
         // esc: has an escape tag (in tk)

@@ -1,0 +1,10 @@
+;; set t@# on an empty vector: no last element to assign; removing it has no effect
+pin t = []
+print(t@#, t@+)
+print(catch true { set t@# = 1 })
+print(catch true { set t@# = nil })
+set t@+ = 10
+set t@# = 20
+X.print(t)
+set t@# = nil
+X.print(t)

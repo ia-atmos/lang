@@ -2008,7 +2008,9 @@ static AStatus emit_to (ANode** ret, AVal to, int* anc) {
     *anc = 0;
 
     if (to.type == A_NIL) {
-        // default
+        // no one: `emit @x` with `x` nil
+        *ret = NULL;
+        return A_OK;
     } else if (to.type==A_XTASK || to.type==A_TASKS) {
         *ret = (ANode*) to.u.o;
         return A_OK;
@@ -2122,6 +2124,9 @@ AStatus a_emit (AVal to, AVal evt) {
     st = emit_to(&n, to, &anc);
     if (st != A_OK) {
         return st;
+    }
+    if (n == NULL) {
+        return A_OK;
     }
     if (a_isnum(evt)) {
         // time passes for the whole program
@@ -2268,6 +2273,13 @@ AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
     AStatus st = a_spawn(dst, proto, a_nil(), base);
     SPAWN_PIN = 0;
     return st;
+}
+
+AStatus a_spawn_pool (AVal pool) {
+    if (pool.type == A_NIL) {
+        return a_error("invalid spawn : expected tasks pool : got nil");
+    }
+    return A_OK;
 }
 
 AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base) {

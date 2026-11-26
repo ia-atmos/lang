@@ -27,7 +27,7 @@ func repeat (s, var n) {
             set line@+ = string.sub(s, k, k)
             set k = (k+1) % len
         }
-        io.write(vector.join(line), "\n")
+        io.write(string.join(line), "\n")
         set n = n - m
     }
 }
@@ -50,7 +50,7 @@ func random (t, var n) {
             }
             set line@+ = t@j@0
         }
-        io.write(vector.join(line), "\n")
+        io.write(string.join(line), "\n")
         set n = n - m
     }
 }

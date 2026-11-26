@@ -1,0 +1,3 @@
+==> ERROR:
+ v  cset-err-05.atm:2 (throw)
+==> invalid set : expected table or mutable variable : got number

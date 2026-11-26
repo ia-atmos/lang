@@ -174,6 +174,69 @@ AStatus a_cat (AVal* dst, AVal a, AVal b) {
     return A_OK;
 }
 
+// set a ++= b, with `a` a table: the entries of `b` go into `a` itself,
+// as `++` would put them (the keys 0,1,... of `b` in sequence after the
+// last index of `a`, the other keys over those of `a`, the tag of `b` if
+// any), each one stored as by `set a@k = v`, with its checks. The
+// entries of `b` are read before the first store.
+AStatus a_cat_set (AVal a, AVal b) {
+    if (b.type == A_TASKS) {
+        AVal y = a_tasks_tab(b);
+        AStatus st = a_cat_set(a, y);
+        a_dec(y);
+        return st;
+    }
+    if (b.type != A_TAB) {
+        return a_error("invalid operation '++' : unexpected %s",
+            a_typename(b));
+    }
+    if (a_is_fin(b)) {
+        return a_err_fin(b);
+    }
+    ATab* tb = A_TAB_OF(b);
+    uint32_t pos = 0;
+    AVal k, v;
+    size_t n = 0;
+    while (a_tab_next(tb, &pos, &k, &v)) {
+        n++;
+    }
+    AVal* es = malloc((2*n + 1) * sizeof(AVal));
+    size_t i = 0;
+    pos = 0;
+    while (i<n && a_tab_next(tb, &pos, &k, &v)) {
+        a_inc(k);
+        a_inc(v);
+        es[2*i]   = k;
+        es[2*i+1] = v;
+        i++;
+    }
+    n = i;
+    AVal tag = tb->tag;
+    a_inc(tag);
+    AStatus st = A_OK;
+    int64_t seq = 0;
+    for (i=0; i<n && st==A_OK; i++) {
+        AVal x = es[2*i];
+        AVal y = es[2*i+1];
+        if (x.type==A_INT && x.u.i==seq) {
+            st = a_setindex(a, a_int(A_TAB_OF(a)->an), y);
+            seq++;
+        } else {
+            st = a_setindex(a, x, y);
+        }
+    }
+    if (st==A_OK && tag.type!=A_NIL) {
+        a_cpy(&A_TAB_OF(a)->tag, tag);
+    }
+    a_dec(tag);
+    for (i=0; i<n; i++) {
+        a_dec(es[2*i]);
+        a_dec(es[2*i+1]);
+    }
+    free(es);
+    return st;
+}
+
 AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v) {
     int64_t p = (pos->type == A_INT) ? pos->u.i : 0;
     switch (it.type) {

@@ -1,0 +1,5 @@
+val xs = [3, 8, 5, 12, 7]
+val odd = iter.filter(xs, \{ (it % 2) == 1 })
+X.print(odd)
+X.print(iter.map(odd, \{ it * 10 }))
+print(iter.sum(xs), iter.any(xs, \{ it > 10 }))

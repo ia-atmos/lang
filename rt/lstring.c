@@ -271,7 +271,7 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
             spec[k++] = *p++;
         }
         char conv = (p < end) ? *p++ : '\0';
-        if (conv=='\0' || strchr("dixXocfeEgGs",conv)==NULL) {
+        if (conv=='\0' || strchr("diuxXocfeEgGs",conv)==NULL) {
             st = a_error("invalid format : unexpected conversion '%%%c'",
                 conv ? conv : ' ');
             break;
@@ -285,7 +285,7 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
         char  small[128];
         char* out = small;
         int   len = 0;
-        if (strchr("dixXoc", conv) != NULL) {
+        if (strchr("diuxXoc", conv) != NULL) {
             int64_t i;
             if (!a_toint(v, &i)) {
                 st = a_error("invalid format : expected integer : got %s",
@@ -336,12 +336,52 @@ static AStatus str_format (AFunc* self, int argc, AVal* argv) {
     return A_OK;
 }
 
+// string.join(t [, sep]): the strings and numbers of the vector `t` in
+// one string, separated by `sep`: the inverse of `string.split`.
+static AStatus str_join (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AStr* sep = NULL;
+    AVal t = arg(argc, argv, 0);
+    if (t.type != A_TAB) {
+        return a_error("invalid argument to 'join' : expected table : got %s",
+            a_typename(t));
+    }
+    AVal len = a_nil();
+    if (a_len(&len, t) != A_OK) {
+        return A_ERROR;
+    }
+    int64_t n = len.u.i;
+    if (arg(argc,argv,1).type!=A_NIL &&
+        arg_str(argc,argv,1,"join",&sep)!=A_OK)
+    {
+        return A_ERROR;
+    }
+    Buf b = { NULL, 0, 0 };
+    for (int64_t i=0; i<n; i++) {
+        AVal x = a_tab_get(A_TAB_OF(t), a_int(i));
+        if (x.type!=A_STR && !a_isnum(x)) {
+            free(b.s);
+            return a_error("invalid argument to 'join' : "
+                "expected string or number : got %s", a_typename(x));
+        }
+        if (i>0 && sep!=NULL) {
+            buf_add(&b, sep->s, sep->len);
+        }
+        AVal s = a_tostring(x);
+        buf_str(&b, s);
+        a_dec(s);
+    }
+    a_push(buf_val(&b));
+    return A_OK;
+}
+
 void atm_lib_string_init (void) {
     atm_g_string = a_tab();
     field(atm_g_string, "len",    str_len);
     field(atm_g_string, "sub",    str_sub);
     field(atm_g_string, "find",   str_find);
     field(atm_g_string, "split",  str_split);
+    field(atm_g_string, "join",   str_join);
     field(atm_g_string, "byte",   str_byte);
     field(atm_g_string, "char",   str_char);
     field(atm_g_string, "upper",  str_upper);

@@ -1,0 +1,18 @@
+task T (id, ms) {
+    set pub = id
+    print(:start, id, ms)
+    await (ms * 1ms)
+    print(:stop, id, ms)
+}
+
+do {
+    pin ts = tasks()
+    loop i in 4 {
+        spawn @ts T(i, (i+1) * 100)
+    }
+    await 250ms
+    loop _, t in ts {
+        print(:pending, t.pub)
+    }
+}                   ;; aborts the tasks still in the pool
+print "done"

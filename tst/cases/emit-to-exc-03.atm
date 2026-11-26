@@ -1,0 +1,19 @@
+;; Who emits holds the target: the exception is raised at the emit.
+task T () {
+    await :X
+    throw :boom
+}
+task H () {
+    pin t = spawn T()
+    await :go
+    val e = catch :boom {
+        emit @t :X
+        :none
+    }
+    print(:caught, e)
+    await :go
+    print(:alive)
+}
+pin h = spawn H()
+emit :go
+emit :go

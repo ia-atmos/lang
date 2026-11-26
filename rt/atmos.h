@@ -591,6 +591,7 @@ AStatus a_setindex_last (AVal t, AVal v);
 
 // set t@+ = v  (append)
 AStatus a_setindex_next (AVal t, AVal v);
+AStatus a_out_next (AVal* k, AVal t);
 
 // :X [...]  (sets the `tag` key of a table)
 AStatus a_tag (AVal t, AVal tag);
@@ -993,6 +994,9 @@ extern struct ATrail* a_trl;
 
 // The running trail was aborted by what it just did: it must unwind.
 AStatus a_chk_aborted (AStatus st);
+
+// The pool of a `spawn @p`: an error if `p` is nil.
+AStatus a_spawn_pool (AVal pool);
 
 // spawn T(...): arguments at `[base,a_top)`. The pool is nil for none;
 // a full pool gives nil.
@@ -1497,6 +1501,8 @@ static inline AStatus a_le (AVal* dst, AVal a, AVal b) {
 // a ++ b: strings and numbers concatenate; tables merge, with the
 // vector part of `b` appended and its other keys favored.
 AStatus a_cat (AVal* dst, AVal a, AVal b);
+// set a ++= b, with `a` a table: in place (see `a_cat_set` in ops.c).
+AStatus a_cat_set (AVal a, AVal b);
 
 // v ?? x: the value matches the pattern.
 //  - equal values

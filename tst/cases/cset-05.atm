@@ -1,0 +1,26 @@
+;; `++=` on a table extends it in place
+pin v = [1, 2]
+set v ++= [3, 4]
+X.print(v)
+set v ++= v
+X.print(v)
+var w = [1]
+val al = w
+set w ++= [2]
+print(#w, #al, w == al)
+pin t = [x=1]
+set t ++= [x=2, y=3]
+X.print(t)
+val g = [xs=[1]]
+set g.xs ++= [2]
+X.print(g)
+pin ts = tasks()
+task T () { await(:never) }
+spawn @ts T()
+spawn @ts T()
+pin u = []
+set u ++= ts
+print(#u)
+var s = "ab"
+set s ++= "cd"
+print(s)

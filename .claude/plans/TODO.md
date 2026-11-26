@@ -182,7 +182,7 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (`atmos-args` is archived).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`).
 
 | Session | Id | Topic |
 |---|---|---|
@@ -202,7 +202,7 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
 | `atmos-cc` | session_011eECoibvvH58hfgFezzYvM | the time of a build |
-| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (found archived on 2026-11-24, `atmos#1`) |
+| `atmos-ppp` | session_011eECogRQbTZU7Bn4bZysFK | the tip markers `@#` `@+` (archived 2026-11-26 by `atmos-lang`, on the author's "Peça para o pai arquivar"; `++=` in place and `string.join` merged; the branch `ppp` stays, to delete) |
 | `env-web` | session_011eECoffhJTecG6BZSq3GQi | environment: the browser |
 | `atmos` | session_011eECohhJbc4GMpAj3yyeEo | the manager of all sessions |
 | `sdl-pingus` | session_011eECoent86e4ta3otsCoEa | port: Pingus |
@@ -219,11 +219,12 @@ To message a session with `send_message` (`atmos-args` is archived).
 | `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
 | `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
 | `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
-| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards |
+| `env-esp32` | session_011eECoh5ihcYSug4LCqgMmr | environment: ESP32 boards (archived 2026-11-26 by `atmos-lang`, on the author's words there: "Pedro vai controlar esse repo. Acho que podemos arquivar aqui? Peça para sessao pai arquivar se for o caso"; all pushed up to 3e7ebd5; `atmos#12`) |
 | `paper-pin` | session_011eECofALi31oSimzbLxYZp | paper on `pin` |
 | `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
 | `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
 | `paper-media` | session_011eECoiQwcXzsrFhTMMYGr7 | paper on media |
+| `paper-web` | session_011eECoei7PA2fA6jzUtWpqz | paper on Atmos in the browser (created 2026-11-26 by `atmos`, `atmos#17`; material `261126-paper-web.md`) |
 
 ## Standing rules from the author, for all sessions
 
@@ -270,8 +271,41 @@ To message a session with `send_message` (`atmos-args` is archived).
   has. A defect fix that changes no rule of the language goes to `main`
   through `atmos-lang`, after the suite and the measurement on the
   ports.
+- **Screenshots at each big step** (2026-11-26, said in `pico-1oom`):
+  "A cada passo grande, me mostre alguns screenshots." For every
+  project with a screen: at a milestone or a feature that changes what
+  is on screen, the session shows him a few screenshots in its report.
+- **A pair of Atmos excerpts per group of changes** (2026-11-26, said
+  in `atmos`): "Para todos os projetos, alem dos screenshots, mostrar
+  também trechos de código Atmos idiomaticos e ruins. Um par por grupo
+  de mudanças." Every project (ports and environments): in a report to
+  him, each group of changes comes with one idiomatic excerpt and one
+  bad one (awkward, verbose, a workaround), with file and line.
+  Added the same day: "1. Numerar 2. Justificar os ruins": each excerpt
+  takes a number of the session's `#N` sequence, and each bad one says
+  why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
+- **General instruction for the ports** (2026-11-26, confirmed in
+  `pico-1oom`: "Confirmo, pode enviar"; `pico-1oom#29`, `atmos#16`). It
+  does not replace "Fidelity, then expressiveness"; it says what fidelity
+  means ("Fidelidade não é compatibilidade de formatos. É algo interno
+  sobre o comportamento observável somente durante a execução").
+  1. Freedom: fidelity is of the behaviour observable while the program
+     runs, not of the shape of the code nor of file formats; no line by
+     line translation.
+  2. Idioms: idiomatic Atmos (tables, lambdas, `if`/`ifs`/`match` as
+     expressions, strings and tables, the standard library); no integer
+     widths, pointer emulation or memory management of the original,
+     except where the behaviour needs them.
+  3. External files: the formats the program reads and writes for itself
+     (configuration, logs, saves) may change to native forms (`X.load`,
+     `X.dump`); the exception is the data of the original (WADs, LBX).
+  4. Bugs: do not reproduce bugs of safety or tied to the language of the
+     original; fix the original in a local copy for the checks only, and
+     record each one.
+  5. Each port answers the author in its session: how much it follows
+     1-4, what it will redo, a grade from 1 to 10.
 - **Fidelity, then expressiveness** (2026-11-14, said in the session
   of Lessmilk): once a port is fully faithful to its original, it may
   relax the constraints of exactness in favor of expressiveness, as

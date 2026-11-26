@@ -1,0 +1,6 @@
+watching 350ms {
+    loop on 100ms {
+        print "100ms elapse"    ;; prints every 100ms
+    }
+}
+print "done"

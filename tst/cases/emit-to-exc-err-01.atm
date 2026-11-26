@@ -1,0 +1,16 @@
+;; Nobody handles it: the error of the program, with the emit in the
+;; trace.
+task T () {
+    await :X
+    throw :boom
+}
+pin ts = tasks()
+spawn @ts T()
+spawn {
+    await :go
+    loop _, t in ts {
+        emit @t :X
+    }
+}
+emit :go
+print(:never)

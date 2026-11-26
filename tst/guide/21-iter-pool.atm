@@ -1,0 +1,10 @@
+task T (id) {
+    set pub = id
+    await :Stop
+}
+pin ts = tasks()
+loop i in 3 {
+    spawn @ts T(i * 10)
+}
+val t = iter.find(ts, \{ it.pub == 10 })
+print(t.pub, #iter.filter(ts, \{ it.pub > 0 }))

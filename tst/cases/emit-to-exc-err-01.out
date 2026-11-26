@@ -1,0 +1,3 @@
+==> ERROR:
+ v  emit-to-exc-err-01.atm:5 (throw)
+==> boom

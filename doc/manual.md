@@ -2079,8 +2079,11 @@ do {                                ;; a map
 }                                   ;; `play.enemies` is nil again
 ```
 
-The place may be a field or an index of a table, a variable of an outer
-block, or the `pub` of the running task.
+The place may be a field or an index of a table, the next index of a
+vector (`set :out v@+ = x`, the index `#v` at the time of the `set`), a
+variable of an outer block, or the `pub` of the running task.
+A place in a vector that goes back to `nil` leaves a hole if it is not
+the last element.
 The assignment has no check of an escape, and the place does not adopt the
 value, which still belongs to its block.
 The place goes back to `nil`, if it still refers to the value, when the
@@ -2378,6 +2381,12 @@ with a binary [operation](#operations): `set x OP= e` is equivalent to
 `set x = x OP (e)`, but evaluates the location only once.
 The valid operators are `+` `-` `*` `/` `//` `%` `++` `&` `|` `^` `<<` `>>`
 `&&` `||`.
+The exception is `++=` on a table: `set x ++= e` puts the entries of `e` into
+the table of `x` itself, as `x ++ e` would put them in a new one, each entry
+stored as by `set x@k = v`.
+The table stays the same, so every name that refers to it sees the change,
+and `x` may be a name that cannot be reassigned, such as a `pin`.
+On a string or a number, `++=` builds a new value, as the other operators.
 
 The third format, `set :out`, makes a location of an outer block refer to a
 value of the current block until the block terminates, when the location
@@ -2397,6 +2406,7 @@ set y = 0               ;; ERROR: cannot reassign `y`
 
 set x += 1              ;; x is 21
 set y@0 *= 2            ;; y@0 is 40
+set y ++= [50, 60]      ;; y is [40, 50, 60], the same table
 
 var a, b = 1, 2
 set a, b = b, a         ;; swaps a and b
@@ -2557,6 +2567,9 @@ The result is an unpinned table.
 If the operands hold [pinned values](#pin), such as the tasks of a pool, the
 result is born with its floor in their block.
 
+The compound assignment `set x ++= e` extends the table of `x` in place, with
+no new table (see [Set](#set)).
+
 ## Indexing
 
 Atmos uses the at (`@`) or dot (`.`) notations to index [tables](#table):
@@ -2578,6 +2591,9 @@ The dot notation is a syntactic sugar to index string keys: `t.x` expands to
 `t@("x")`.
 Finally, the tip markers `#` and `+` refer to the last (`#t-1`) and append
 (`#t`) indexes, respectively, since the first index of a vector is `0`.
+In an empty vector, there is no last element: reading `t@#` evaluates to
+`nil`, removing it (`set t@# = nil`) has no effect, and assigning another
+value to it is an error.
 
 The same `At` rules apply to [table constructors](#table),
 [spawn pools](#tasks), and [emit targets](#emit).
@@ -3520,6 +3536,15 @@ The optional target between brackets determines the scope of the broadcast:
 - `t: task`: the given task
 - `n: number`: `n`th level up in the task hierarchy (`0` = current task)
 
+An [exception](#exceptions) that a task raises in reaction to an event goes
+up the hierarchy of tasks, but only inside the target of the `emit`: a
+`catch` there handles it.
+If it leaves the target, it is raised at the `emit`, in the task that
+emits, as the exception of a call.
+So, with `emit @t (e)`, an exception of `t` goes to who emits, not to who
+holds `t`; with `emit @:global (e)`, it goes to who holds the task that
+raised it, since every task is inside the target.
+
 An event that is a [pinned value](#pin), or that holds one, can only reach
 tasks that live inside the block of the value.
 Otherwise, a task could keep the event after the block reclaims it.
@@ -3950,13 +3975,15 @@ A negative position counts from the end: `-1` is the last byte.
   occurrence of the plain string `x` in `s`, from position `i` on; or `nil`
 - `string.split(s [, sep])`: a vector with the pieces of `s` between the
   occurrences of `sep`, or between blanks if `sep` is absent
+- `string.join(t [, sep])`: a string with the strings and numbers of the
+  vector `t`, separated by `sep` (the inverse of `string.split`)
 - `string.byte(s [, i [, j]])`: the codes of the bytes from `i` to `j`, which
   default to the first one only
 - `string.char(...)`: the string with the given byte codes
 - `string.upper(s)`, `string.lower(s)`: converts the letters in `s`
 - `string.rep(s, n [, sep])`: `n` copies of `s`, separated by `sep`
 - `string.format(fmt, ...)`: formats its arguments as `printf` in C, with the
-  conversions `%d` `%i` `%x` `%X` `%o` `%c` (integers), `%f` `%e` `%g`
+  conversions `%d` `%i` `%u` `%x` `%X` `%o` `%c` (integers), `%f` `%e` `%g`
   (numbers), `%s` (any value, as `tostring`), and `%%`
 
 Examples:
@@ -3965,6 +3992,7 @@ Examples:
 string.sub("hello", 1, 3)           ;; ell
 string.find("hello", "l")           ;; 2, 2
 string.split("a,b,,c", ",")         ;; ["a", "b", "", "c"]
+string.join([0, 1, 2], "-")         ;; 0-1-2
 string.format("%5.2f|%s", 3.14159, :ok)     ;; " 3.14|ok"
 ```
 
@@ -4040,8 +4068,6 @@ A vector is a [table](#table) with the keys `0` to `#t-1`.
   `i`, which defaults to the last, shifting down the elements after it
 - `vector.sort(t [, f])`: sorts `t` in place; `f(a,b)` tells if `a` comes
   before `b`, and defaults to `a < b`; the sort is stable
-- `vector.join(t [, sep])`: a string with the strings and numbers in `t`,
-  separated by `sep`
 
 Examples:
 
@@ -4050,7 +4076,6 @@ pin t = [3, 1, 2]
 vector.sort(t)                      ;; [1, 2, 3]
 vector.insert(t, 0, 0)              ;; [0, 1, 2, 3]
 vector.remove(t)                    ;; 3
-vector.join(t, "-")                 ;; 0-1-2
 
 pin cs = []
 val c = vector.insert(cs, [x=1])    ;; `cs` owns the table, `c` refers to it

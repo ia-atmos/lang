@@ -1,0 +1,15 @@
+print "1"
+spawn {         ;; task #1
+    print "a1"
+    await :X
+    print "a2"
+}
+print "2"
+spawn {         ;; task #2
+    print "b1"
+    await :X
+    print "b2"
+}
+print "3"
+emit :X
+print "4"

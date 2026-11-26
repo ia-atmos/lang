@@ -1,0 +1,14 @@
+spawn {
+    mute on :Pause {
+        loop on 100ms {
+            print "100ms elapse"
+        }
+    }
+}
+await 250ms
+print "pause"
+emit(:Pause [true])     ;; mutes the block above
+await 300ms             ;; nothing prints
+print "resume"
+emit(:Pause [false])    ;; gives it the events back
+await 200ms

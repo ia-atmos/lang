@@ -1,0 +1,8 @@
+spawn {
+    watching 1s {
+        await :X
+        print "X happens before 1s"
+    }
+    print "watching terminates"
+}
+emit :X

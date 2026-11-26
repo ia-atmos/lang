@@ -187,46 +187,12 @@ static AStatus vec_sort (AFunc* self, int argc, AVal* argv) {
     return st;
 }
 
-// vector.join(t, sep): the strings and numbers of `t` in one string,
-// separated by `sep`.
-static AStatus vec_join (AFunc* self, int argc, AVal* argv) {
-    (void) self;
-    int64_t n;
-    AStr* sep = NULL;
-    if (arg_vec(argc, argv, "join", &n) != A_OK) {
-        return A_ERROR;
-    }
-    if (arg(argc,argv,1).type!=A_NIL &&
-        arg_str(argc,argv,1,"join",&sep)!=A_OK)
-    {
-        return A_ERROR;
-    }
-    Buf b = { NULL, 0, 0 };
-    for (int64_t i=0; i<n; i++) {
-        AVal x = a_tab_get(A_TAB_OF(argv[0]), a_int(i));
-        if (x.type!=A_STR && !a_isnum(x)) {
-            free(b.s);
-            return a_error("invalid argument to 'join' : "
-                "expected string or number : got %s", a_typename(x));
-        }
-        if (i>0 && sep!=NULL) {
-            buf_add(&b, sep->s, sep->len);
-        }
-        AVal s = a_tostring(x);
-        buf_str(&b, s);
-        a_dec(s);
-    }
-    a_push(buf_val(&b));
-    return A_OK;
-}
-
 void atm_lib_vector_init (void) {
     atm_g_vector = a_tab();
     field(atm_g_vector, "insert", vec_insert);
     field(atm_g_vector, "remove", vec_remove);
     field(atm_g_vector, "clear",  vec_clear);
     field(atm_g_vector, "sort",   vec_sort);
-    field(atm_g_vector, "join",   vec_join);
 }
 
 void atm_lib_vector_quit (void) {

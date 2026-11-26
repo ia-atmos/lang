@@ -440,7 +440,24 @@ AStatus a_setindex_last (AVal t, AVal v) {
     if (check(t) != A_OK) {
         return A_ERROR;
     }
+    if (A_TAB_OF(t)->an == 0) {
+        // an empty vector has no last element (the index would be -1):
+        // removing it (nil) has no effect, assigning to it is an error
+        if (v.type == A_NIL) {
+            return A_OK;
+        }
+        return a_error("invalid index : no last element");
+    }
     return a_setindex(t, a_int((int64_t)A_TAB_OF(t)->an - 1), v);
+}
+
+// set :out t@+ = v: the place is the next index of `t`, now.
+AStatus a_out_next (AVal* k, AVal t) {
+    if (check(t) != A_OK) {
+        return A_ERROR;
+    }
+    a_set(k, a_int(A_TAB_OF(t)->an));
+    return A_OK;
 }
 
 AStatus a_setindex_next (AVal t, AVal v) {
