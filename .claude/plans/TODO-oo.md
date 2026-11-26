@@ -21,14 +21,15 @@ Items are `#N` (standing rule in `TODO.md`); from other sessions,
 | #6 | Whether the manual also shows inheritance (form B: a class is a function that fills a record of methods) | open: not written; recommended only after `sdl-tux` tries it |
 | #7 | Clauses of a function chosen by the tags of its arguments (`func f (x :T)`, one or more parameters, tasks too): a prototype | on `oo` at `9991ed1` (2026-11-25): main merged in, the manual written, suite passing; measured by `atmos-lang` on 2026-11-25 (2197 files: same diagnostics, generated C the same once globals are renumbered; no port changes); done: merged into main by `atmos-lang` as `9c6458f` (2026-11-25, "#7 sim") (`261118-oo-clauses.md`) |
 | #8 | A form to call the parent clause | decided 2026-11-23 ("Super"): `super(...)`, implemented on `oo` (`0ba6917`) |
-| #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | in course (2026-11-25): `badguy.atm` is of `sdl-tux` (its #22); asked whether it takes it or `atmos-oo` does it on a branch `oo` of sdl-tux (recommended) |
+| #10 | Update the ports that can use clauses (first `sdl-tux`, `badguy.atm`; then the `collision` and the characters of SNKRX) | decided by him as sdl-tux#24a (2026-11-26, checked in that transcript): `atmos-oo` rewrites `badguy.atm` with clauses and `super`, a file per kind, on a branch `oo` of sdl-tux, after the fish is in its main; the 73 runs must stay identical; `sdl-tux` checks and merges; at the end, show him a representative piece |
+| #11 | How `super()` works for tasks (his question, via sdl-tux#24) | prototype by the session, to be confirmed (2026-11-26): branch `oo-task` at `7943ee9`; in a task clause `super(...)` is the parent task applied to the arguments, used as `await super()` or `spawn super()`; suite pass=1099 with ASAN |
 | #9 | An `await T(...)` whose spawn fails before the task exists marked the pattern as owning a task | done: on main (`a0f6262`, taken by `atmos-lang` on 2026-11-21); the branch `oo-own` is obsolete |
 
 ## Waiting for the author
 
-- **#10**: `sdl-tux` put it to the author as its #24 (a: `atmos-oo` on a
-  branch `oo` of sdl-tux, after it adds the fish; b: `sdl-tux` in its #22).
-  Both recommend a. Waiting for his answer there.
+- **#10**: waiting for `sdl-tux` to say the fish is in its main.
+- **#11**: answered him in this session; whether to merge `oo-task` waits
+  for him.
 
 To confirm or undo when he reads:
 
