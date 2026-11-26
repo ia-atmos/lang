@@ -1,6 +1,6 @@
 ;; an error of an emit from C inside a step (a callback of a library,
 ;; which ignores the status) is the status of the step
-```:prelude
+```:prelude.c
 static void lib_poll (void) {
     AVal e = a_strz("go");
     atm_emit(e);            // the callback ignores the status

@@ -13,7 +13,8 @@ Last update: 2026-11-26.
 | #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
 | #2 | `import`: each file compiled apart (the author, 2026-11-26) | Approved 2026-11-26 ("#2 sim"). Prototype on `cc`: Pingus converted in a copy passes 40/40 (section "Import: the prototype") |
 | #3 | Which top-level names are local to a file (the author: "usar val para locais") | Answered 2026-11-26 ("Tudo certo"): every top-level name is seen by who imports, as with `include`; no rule for `val` |
-| #4 | Native code under `import`: `:prelude` in every unit, `:prelude.once` only in its own | Asked 2026-11-26, after his question "o prelude é usado? É necessário? Pq?"; recommended: keep both tags as on the branch |
+| #4 | Native code under `import`: the names of the two preludes | Decided 2026-11-26: `:prelude.h` (every unit) and `:prelude.c` (the unit of its file), his suggestion ("Poderia ser prelude.c e .h?"). On `cc` |
+| #4a | `:prelude` with no suffix | Decided 2026-11-26 ("Sempre"): always an error (`invalid native : expected ':prelude.h' or ':prelude.c'`). On `cc`; every environment and port must migrate before a merge |
 | #5 | `-c` with modules, where the cache lives and how it is cleaned (overlaps `atmos-cli`) | Not asked yet |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
@@ -271,3 +272,18 @@ inside a function; an `#include`, a type, a C function or a C variable
 needs the file scope. Without it, that C would live in `.h`/`.c` files
 given to the C compiler by flags, and a program would no longer be
 only its `.atm` files.
+
+## The two preludes (2026-11-26, decided, on `cc`)
+
+- `:prelude.h`: in every unit. `:prelude.c`: only in the unit of its
+  file. `:prelude` alone: an error, always (`#4a`). `.once` is gone.
+- `lang`: the 15 cases with a prelude use `:prelude.c`, `tst/env/env.atm`
+  uses `:prelude.h`; new case `native-err-04`; the manual has the two
+  tags and a section "Import"; the README too.
+- Pingus converted again with the new tags: 40/40. The script of the
+  conversion is `.claude/plans/261126-cc-pingus-import.py` (a copy of
+  `sdl-pingus` and `env-sdl` side by side; an experiment, not the
+  migration of the ports).
+- Before a merge: every repository with a `:prelude` fails to compile
+  until it chooses a suffix. Known here: `env-sdl` (`sdl.atm`, 2 tests),
+  `sdl-pingus` (`engine/sdl.atm`). The others were not counted.

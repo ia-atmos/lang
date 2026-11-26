@@ -1,16 +1,16 @@
-;; #4 (the author, 2026-11-22): `context X {...}`, X gives [enter, leave]
+;; #4 (the author, 2026-11-22): `in X, do {...}`, X is :Context [enter=f, leave=g] (#23)
 var layer = :world
 func in_layer (l) {
-    [\{ val o = layer ; set layer = l ; o }, \(o) { set layer = o }]
+    :Context [enter=\{ val o = layer ; set layer = l ; o }, leave=\(o) { set layer = o }]
 }
 spawn {
-    context in_layer(:panel) {
+    in in_layer(:panel), do {
         loop on :draw { print("a", layer) }
     }
 }
 spawn {
     val p = in_layer(:menu)
-    context (p) {
+    in p, do {
         loop on :draw { print("b", layer) }
     }
 }

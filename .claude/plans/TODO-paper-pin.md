@@ -13,8 +13,8 @@ Since 2026-11-24 (`atmos`, atmos-lang#119, handoff
 `.claude/plans/261124-atmos.md`): coordination, status and questions for
 the author go to `atmos`; measurements on the ports and merges into `main`
 stay with `atmos-lang`. Item numbers stay local to this session (rule
-#71, corrected by `atmos` on 2026-11-25): the next is #16, seen from
-outside as paper-pin#16. Resumed on
+#71, corrected by `atmos` on 2026-11-25): the next is #17, seen from
+outside as paper-pin#17. Resumed on
 2026-11-25 (author: "desbloqueado, vá em frente").
 
 ## Index
@@ -32,10 +32,22 @@ outside as paper-pin#16. Resumed on
 | #9 | Related work: read dyn-lex | Done for dyn-lex and the benchmark repo |
 | #10 | Fill the sections with text | Done 2026-11-25 (author: "vá em frente"), in the draft |
 | #11 | Draft of all sections (`papers/pin-draft.md`) | By the session, to be confirmed |
-| #15 | Rerun the CLBG after atmos-pin#32 reaches main | Waiting for the merge |
+| #16 | Atmos slower than Lua on the CLBG: diagnosis sent to atmos-lang | Done: three remedies on main `9ea77e1`; rerun 2026-11-26 |
+| #15 | Rerun the CLBG after atmos-pin#32 reaches main | Done 2026-11-26: +2% to +15% (was +19% to +33%) |
 | #12 | Câmara's scripts compile once: the stated flaw is not in them | Remark, to be confirmed |
 
 ## Open
+
+- **#16 Atmos slower than Lua 5.4 on the CLBG** (sent to `atmos-lang`,
+  2026-11-26, at the author's request). Independent of pin: with
+  `ATMOS_PIN=off`, mandelbrot runs 963 M instructions against 417 M on
+  Lua 5.4 (callgrind, N=200). Causes: operands copied to temporaries and
+  cleared, arithmetic out of line with a status test, locals in the heap
+  frame of the task, the numeric loop as an iterator. Asked for a
+  measurement of a game against its Lua version, to cite beside the
+  kernels. To do: rerun the benchmark if the generator changes; decide
+  with the author whether Section 9 keeps the Lua column with this
+  explanation (the session's recommendation).
 
 - **#15 Rerun the CLBG after atmos-pin#32** (to do, no decision needed).
   atmos-pin reduced the cost of the checks (branch `pin` `c63c084`: the end

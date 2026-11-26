@@ -1,2 +1,6 @@
-(context (call (@ eng "on") X) { (await :X) })
-(context p { (await :Y) })
+(in (call (@ eng "on") X) { (await :X) })
+(spawn in p T 1)
+(spawn { (in p { (await :Y) }) })
+(val v = (in p { (await (spawn T 2)) }))
+(pin ts = (tasks in <:draw> p))
+(call f (spawn in p T 3) 4)

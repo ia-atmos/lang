@@ -1,0 +1,14 @@
+;; #21 (atmos-pin, 2026-11-26): leave runs with the defers of the block, in
+;; reverse order, before its pins are finalized
+spawn {
+    context {
+        pin q = [10]
+        :enter { print("enter", q@0) }
+        :leave { print("leave", q@0) }
+        defer { print("defer", q@0) }
+        await :stop
+    }
+    print("after")
+}
+emit :stop
+print("end")

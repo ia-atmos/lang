@@ -1,0 +1,20 @@
+;; #23: the same value shared by a pool, a task and a block: one enter per :draw
+var n = 0
+var s = ""
+val w = :Context [enter=\{ set n = n + 1 }, leave=\{ nil }]
+task Coin (id) {
+    loop on :draw { set s = s ++ id }
+}
+pin coins = in <:draw> w, tasks()
+spawn @coins Coin("a")
+spawn @coins Coin("b")
+in <:draw> w, spawn Coin("c")
+spawn {
+    in <:draw> w, do {
+        loop on :draw { set s = s ++ "d" }
+    }
+}
+emit :draw
+emit :frame
+emit :draw
+print("enters", n, s)

@@ -1,6 +1,6 @@
 ;; A native that holds another is finalized before it, wherever each
 ;; one is pinned, and takes it along when it leaves a block.
-```:prelude
+```:prelude.c
 static void res_fin (void* p) {
     printf("close\t%s\n", (char*) p);
     free(p);

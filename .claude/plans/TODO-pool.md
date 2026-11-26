@@ -5,16 +5,24 @@ Awaits and emits over pools and tasks. Material: `261118-pool.md`
 (standing rule of 2026-11-18): those born in `atmos-lang` keep its
 prefix; those born here are `atmos-pool#N`.
 
+## State
+
+Closed on 2026-11-26: nothing open with the author. He asked to archive
+the session ("Ok peca pra arquivar entao"); asked `atmos` to do it;
+`pool` 39a273b (`atmos-lang#4`) is on main (a8c56dc). Branches left: `pool-grid`
+(the grid, kept), `pool-find` (obsolete), `pool` (deletable after the
+merge).
+
 ## Index
 
 | Item | Title | State |
 |---|---|---|
 | `atmos-lang#1` | An await over a pool with a condition | Done: `await :tick until iter.find(ts, f)`, on main with the branch `iter` (7c64f69, 2026-11-22) |
-| `atmos-lang#2` | Phases inside a tick | Decided `#2a` (2026-11-26): the convention in the manual; open, not now: the environment could emit a number of tick events per frame |
-| `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Proposal ready, not yet put to him |
+| `atmos-lang#2` | Phases inside a tick | Done: `#2a`, the paragraph in "Emit" and the case emit-phases-01 on main (e23388b, 2026-11-26); open, not now: the environment emitting a number of tick events |
+| `atmos-lang#4` | An `emit` that names its receiver, instead of `emit @2` | Closed with no change: only named tasks count as levels; the clause in "Emit" and the case emit-level-01 on main (a8c56dc, 2026-11-26) |
 | `atmos-lang#31` | `await x` | Moved to `atmos-args` |
 | `atmos-lang#32` | `await :all ts` on an empty pool | Done in `atmos-lang` (`cab49e2`) |
-| `atmos-lang#33` | Time emitted to a pool or a task | Proposal ready, not yet put to him |
+| `atmos-lang#33` | Time emitted to a pool or a task | Decided `#33a` (2026-11-26): not now; `#33b` handed to the TODO of `atmos-lang` as future work |
 | `atmos-lang#60` | Where the exception of `emit @t` goes | Done: to who emits; manual + cases merged into main (7af7971, 2026-11-25) |
 | `atmos-pool#1` | The behaviours of section 3 of `261118-pool.md` (order of awaking, loop over a pool, `await(n, p)`) | Acknowledged by the author (2026-11-25, "Sim", to the right description); the loop keeps skipping tasks that end, as now |
 | `atmos-pool#2` | A spatial index (grid) as a library | Decided (2026-11-25, "Sim"): kept out for now, on the branch `pool-grid` |
@@ -77,6 +85,14 @@ All on the branch `pool`, reversible by not merging:
   loop.
 
 ## D. Decided by the author
+
+- `atmos-lang#33` (2026-11-26, here), verbatim: "#33a, mas colocar a
+  opcao #33b em TODO na sessao atmos-lang". Sent to `atmos-lang`.
+
+- `atmos-lang#4` (2026-11-26, here): closed, no `#4a` nor `#4b`. The
+  author: "Pq watching iria mudar o N? Tasks transparente nao mudam o
+  N... Muito menos trails". Only the manual says that only named tasks
+  count as levels.
 
 - `atmos-lang#2` (2026-11-26, here): `#2a`, the convention of a task that
   emits the phases, in the manual. The author, verbatim: "Poderia ter

@@ -1,0 +1,9 @@
+;; emit @(task) e is emit e: also for an event pinned in the block of the task
+task T () {
+    spawn { val e = await true ; print(:got, e@0) }
+    pin v = [7]
+    emit @(task) (v)
+    spawn { val e = await true ; print(:got, e@0) }
+    emit (v)
+}
+spawn T()

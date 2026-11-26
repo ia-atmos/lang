@@ -870,6 +870,8 @@ typedef struct ATrailX {
     AVal     enter;
     AVal     leave;
     AVal     cval;
+    // the value it is bound to (`in X, ...`): its identity
+    AVal     cobj;
     // `context <P>`: applied only for the emits that match the filter,
     // matched once per emit (`ctime`: the time of the last match)
     struct APatt** cfilt;
@@ -985,6 +987,8 @@ typedef struct ATasks {
     // its tasks that were not freed yet, alive or not: what they hold
     // in `pub` is released with the pool
     struct ATask* all;
+    // `in X, tasks()`: a trail that holds the context of the pool
+    struct ATrail* ctx;
 } ATasks;
 
 #define A_TASK_OF(v)  ((ATask*)(v).u.o)
@@ -1032,12 +1036,23 @@ void a_trail_doom (struct ATask* t, int i);
 // mute P on :T {...}: events `:T [true]` and `:T [false]` mute and
 // unmute trail `i` from now on. Takes over the filters (`!P`).
 void a_trail_mute (struct ATask* t, int i, AVal tag, APatt** fs, int n);
-// `context (enter, leave) {...}`: makes trail `i` a context, before it
-// starts.
-AStatus a_trail_context (struct ATask* t, int i, AVal enter, AVal leave);
-AStatus a_trail_context_pair (struct ATask* t, int i, AVal pair);
+// in X, do {...}: binds trail `i` to the context value X, before it
+// starts. X is `:Context [enter=f, leave=g]`: `tag`, `ken` and `klv`
+// are the tag and the two keys.
+AStatus a_trail_context_val (struct ATask* t, int i, AVal v, AVal tag,
+                             AVal ken, AVal klv);
+// in X, spawn T(...)  in X, tasks(): binds the task or the pool created
+// by the next `a_spawn` or `a_tasks`; takes over the `n` filters.
+AStatus a_ctx_bind (AVal v, AVal tag, AVal ken, AVal klv,
+                    struct APatt** fs, int n);
 // context <P> ...: takes over the `n` filters
 AStatus a_trail_context_filt (struct ATask* t, int i, struct APatt** fs, int n);
+// enter F, leave F in the block of the context in trail `i`: `enter`
+// applies it from now on; `a_ctx_end` leaves it (if applied) and drops
+// both, with the defers of the block.
+AStatus a_ctx_enter (struct ATask* t, int i, AVal f);
+AStatus a_ctx_leave (struct ATask* t, int i, AVal f);
+AStatus a_ctx_end   (struct ATask* t, int i);
 
 // Identity of the `par :any` whose branch raised the pending A_JOIN.
 extern void* a_join_key;
@@ -1454,6 +1469,10 @@ A_ARITH_FAST(a_mul, A_MUL, *)
 
 // a / b: always float
 static inline AStatus a_div (AVal* dst, AVal a, AVal b) {
+    if (a.type==A_NUM && b.type==A_NUM) {
+        a_set(dst, a_num(a.u.n / b.u.n));
+        return A_OK;
+    }
     return a_arith(A_DIV, dst, a, b);
 }
 
@@ -1492,6 +1511,11 @@ static inline AStatus a_lt (AVal* dst, AVal a, AVal b) {
         a_set(dst, a_bool(a.u.i < b.u.i));
         return A_OK;
     }
+    if (a.type==A_NUM && b.type==A_NUM) {
+        // as C: false if either is NaN
+        a_set(dst, a_bool(a.u.n < b.u.n));
+        return A_OK;
+    }
     return a_less(0, dst, a, b);
 }
 
@@ -1499,6 +1523,11 @@ static inline AStatus a_lt (AVal* dst, AVal a, AVal b) {
 static inline AStatus a_le (AVal* dst, AVal a, AVal b) {
     if (a.type==A_INT && b.type==A_INT) {
         a_set(dst, a_bool(a.u.i <= b.u.i));
+        return A_OK;
+    }
+    if (a.type==A_NUM && b.type==A_NUM) {
+        // as C: false if either is NaN
+        a_set(dst, a_bool(a.u.n <= b.u.n));
         return A_OK;
     }
     return a_less(1, dst, a, b);
@@ -1540,7 +1569,30 @@ AStatus a_in (AVal* dst, AVal v, AVal t);
 //  - nil: 0, 1, ...
 //  - function: its results, until the first is nil
 // Sets `k` to nil at the end.
-AStatus a_next (AVal it, AVal lim, AVal* pos, AVal* k, AVal* v);
+AStatus a_next_slow (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v);
+
+// The counted loops over integers, `loop i in n` and `loop i in (a,b)`,
+// with no call. A range with a step, `(a,b,s)`, takes the slow path.
+static inline AStatus a_next (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v) {
+    if (it.type==A_INT && step.type==A_NIL && (lim.type==A_NIL || lim.type==A_INT)) {
+        AInt p = (pos->type == A_INT) ? pos->u.i : 0;
+        AInt x;
+        int end;
+        if (lim.type == A_NIL) {
+            // 0..n-1
+            x   = p;
+            end = (p >= it.u.i);
+        } else {
+            // a..b
+            x   = (AInt) ((AUInt)it.u.i + (AUInt)p);
+            end = (x > lim.u.i);
+        }
+        a_set(k, end ? a_nil() : a_int(x));
+        *pos = a_int((AInt) ((AUInt)p + 1));
+        return A_OK;
+    }
+    return a_next_slow(it, lim, step, pos, k, v);
+}
 
 // String representation, as `print` shows it (owned).
 AVal a_tostring (AVal v);

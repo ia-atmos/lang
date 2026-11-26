@@ -76,3 +76,26 @@ context <:draw> {
     loop { ... }
 }
 ```
+
+## 5. A context as a value, bound with `in` (#23, the author, 2026-11-26)
+
+Decided one by one with the author:
+
+- The value is `:Context [enter=f, leave=g]`; its identity is the value:
+  what is bound to the same value shares one context, with no switch.
+- `in [<P>] X, cmd` binds it; cmd is `spawn T(...)`, `spawn {...}`,
+  `await P` (what the await starts, not the code after), `tasks(n)`, or
+  `do {...}`. The comma is the separator he asked for; no new keyword.
+- `in X, do {...}` replaces `context X {...}`; `context [<P>] {...}`
+  only defines, with the sections `:enter` and `:leave` (tags, not the
+  contextual names of section 4).
+- Rejected by him: grouping without a block ("a indentação engana").
+- The filter goes right after `in` / `context` (the author, "ok").
+
+```
+val world = ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE)
+pin coins = in <:draw> world, tasks()
+in <:draw> world, spawn { loop on :draw { tiles() } }
+spawn @coins Coin(c)
+await :all coins            ;; #22: the pool is outside, no emit :taken
+```

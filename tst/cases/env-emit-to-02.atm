@@ -1,7 +1,7 @@
 ;; atm_emit_to: the target ends normally, which awakes its parent,
 ;; outside the traversal; the exit that the parent raises reaches the
 ;; trail that awaits it, as with a broadcast (reported by env-uv)
-```:prelude
+```:prelude.c
 static struct ATask* WHO = NULL;
 static int TO = 1;
 static void wake (void) {

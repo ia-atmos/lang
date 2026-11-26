@@ -31,8 +31,11 @@ char* file_read (const char* path, size_t* len);
 typedef enum {
     NAT_STMT, NAT_PRE, NAT_INT, NAT_NUM, NAT_BOOL, NAT_STR, NAT_VAL,
     NAT_NUMBER, NAT_ERR,
-    // `:prelude.once`: declarations that only the unit of its file has
-    NAT_ONCE
+    // `:prelude.c`: C that only the unit of its file has (`NAT_PRE` is
+    // `:prelude.h`, which every unit has)
+    NAT_ONCE,
+    // `:prelude` alone, which is refused
+    NAT_OLD
 } NatKind;
 
 // Kind of a native, and where its code starts.
@@ -173,8 +176,10 @@ typedef enum {
     E_MUTE, E_MUTE_ON,
     // stage P {...}  solo P {...}
     E_SOLO,
-    // context (enter, leave) {...}  |  context X {...} (leave NULL: enter is the pair)
+    // context [<P>] {...}  |  context [<P>] X {...} (X: the pair)
     E_CONTEXT,
+    // enter F  leave F: statements of the block of a context
+    E_CTX_FN,
     // par {...} with {...}
     E_PAR,
 } ETag;
@@ -290,11 +295,11 @@ struct Expr {
         struct { Expr* head; int n; Case* cases; }      ifs;
         struct { int n; Tk* ids; Expr* itr; Expr* blk; } loop;
         // pool: destination pool, or NULL
-        struct { Expr* pool; Expr* f; List args; }      spawn;
+        struct { Expr* pool; Expr* f; List args; Expr* ctx; Patt* cpat; } spawn;
         struct { Expr* blk; }                           sblk;
         // mod: index in `MODS`
         struct { Expr* blk; int mod; }                  import;
-        struct { Expr* n; }                             tasks;
+        struct { Expr* n; Expr* ctx; Patt* cpat; }     tasks;
         // to: target, or NULL
         struct { Expr* to; Expr* e; }                   emit;
         struct { Patt* p; }                             await;
@@ -303,7 +308,10 @@ struct Expr {
         struct { int nf; Patt** fs; Expr* blk; }        mute_on;
         // kind: 1 stage, 2 solo
         struct { int kind; int nf; Patt** fs; Expr* blk; } solo;
-        struct { Patt* patt; Expr* enter; Expr* leave; Expr* blk; } context;
+        // pair: X, or NULL for the block form; id: its trail, for the coder
+        struct { Patt* patt; Expr* pair; Expr* blk; int id; } context;
+        // leave: 0 enter, 1 leave; ctx: the context
+        struct { int leave; Expr* f; Expr* ctx; }       ctxfn;
         struct { ParMode mode; List blks; }             par;
         struct { Expr* cnd; Expr* blk; }                xcatch;
         // inl: lambda of an if/ifs/match, expanded in place

@@ -1,0 +1,4 @@
+;; a prelude says where it goes: `.h` or `.c`
+```:prelude.h
+#include <math.h>
+```

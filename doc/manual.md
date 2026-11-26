@@ -36,7 +36,7 @@
     * Native
 * EXPRESSIONS
     * Chunks
-        - `;` `include` `do` `escape` `defer` `test`
+        - `;` `include` `import` `do` `escape` `defer` `test`
     * Declarations and Assignments
         - `val` `var` `pin` `where`
         - `func` `return`
@@ -399,7 +399,7 @@ Atmos compiles to C, and a program can embed C code in
 [native literals](#native-literals), which are enclosed by backquotes:
 
 ```
-```:prelude
+```:prelude.c
 #include <math.h>
 ```
 val x = 9
@@ -634,7 +634,7 @@ If the task raises an exception, it goes to the task that holds it, as usual,
 and not back to the environment.
 
 An environment may be part of the program itself, in a
-[native literal](#native-literals) with the tag `:prelude`.
+[native literal](#native-literals) with a tag `:prelude.c` or `:prelude.h`.
 More often it is a file that the program [includes](#include), such as
 `pico.atm` or `raylib.atm`.
 
@@ -700,7 +700,8 @@ The following keywords are reserved in Atmos:
     func                ;; function
     if                  ;; if block
     ifs                 ;; ifs block
-    in                  ;; in iterator
+    in                  ;; in iterator, in context
+    import              ;; import file
     include             ;; include file
     it                  ;; implicit parameter
     loop                ;; loop block
@@ -870,7 +871,8 @@ A tag in the beginning of the literal gives its kind:
 
 ```
 `stmts`             ;; C statements, evaluates to nil
-`:prelude decls`    ;; C declarations in the beginning of the file
+`:prelude.c decls`  ;; C declarations in the beginning of the file
+`:prelude.h decls`  ;; the same, also for the files that import this one
 `:number e`         ;; C expression converted to a number
 `:boolean e`        ;; C expression converted to a boolean
 `:string e`         ;; C string, which is copied (NULL becomes nil)
@@ -912,12 +914,22 @@ as usual, and not to the literal.
 
 The names with the prefixes `a_`, `A_`, and `atm_` belong to the runtime and to
 the code that the compiler generates.
-A `:prelude` must not declare names with these prefixes.
+A prelude must not declare names with these prefixes.
+
+A prelude says where its declarations go, as the two kinds of files of C.
+A `:prelude.c` is for the file itself: what exists once in the program, such as
+a C variable or a function that is not `static`.
+A `:prelude.h` is also for every file that reaches it through an
+[import](#import), which are compiled apart: what they need to see, such as an
+`#include`, a type, a `static` function, or the `extern` of a variable that a
+`:prelude.c` defines.
+In a program with no `import`, both are the same.
+A `:prelude` with no suffix is an error.
 
 Examples:
 
 ```
-```:prelude
+```:prelude.c
 #include <string.h>
 ```
 val s = "hello"
@@ -1517,8 +1529,9 @@ An `include` is only valid in the main chunk of a file, outside any block.
 The file name is relative to the file with the `include`.
 A file is only included once: other occurrences have no effect.
 
-All files are compiled together, as a single program.
-There is no separate compilation, and no loading of files during execution.
+All included files are compiled together, as a single program, and there is
+no loading of files during execution.
+An [import](#import) compiles a file apart.
 
 Examples:
 
@@ -1533,6 +1546,63 @@ func area (w, h) {
 ;; main.atm
 include "geometry.atm"
 print(area(2, 3))       ;; --> 6
+```
+
+### Import
+
+A file may also be joined with `import`, as a *module*:
+
+```
+Import : `import´ STR
+```
+
+As with an `include`, the declarations of the file are visible in the rest of
+the program, the file name is relative to the file with the `import`, the
+statement is only valid in the main chunk of a file, and a file is only
+imported once.
+The names of a module are not qualified: a name at the top level of two files
+refers to the latest declaration, as usual.
+
+The difference is in how the file is compiled and executed:
+
+- A module is compiled apart from the rest of the program.
+  When the program is built again, only the modules that changed are compiled
+  again, which matters for a program with many files.
+  The compiler still reads all files at each build, such that all names are
+  checked as in a single program.
+- The body of a module executes as a task of its own, which starts at the
+  `import` and remains until the program terminates.
+  Its top-level blocks, pins, and defers therefore live as those of the main
+  chunk, and terminate in the reverse order.
+  However, an `await` at the top level of a module suspends the module only,
+  and not the file with the `import`.
+
+A file reached by an `include` belongs to the file that includes it.
+The C code of a [prelude](#native-literals) is shared with the other files
+only if it is a `:prelude.h`.
+
+Examples:
+
+```
+;; counter.atm
+pin cnt = [n=0]
+func tick () {
+    set cnt.n = cnt.n + 1
+}
+spawn {
+    loop {              ;; remains alive with the program
+        await :tick
+        tick()
+    }
+}
+```
+
+```
+;; main.atm
+import "counter.atm"
+emit :tick
+emit :tick
+print(cnt.n)            ;; --> 2
 ```
 
 ### Blocks
@@ -2587,6 +2657,9 @@ The at notation uses parenthesis (instead of brackets) to provide the index
 expression.
 It is possible to omit the parenthesis to index literal numbers,
 identifiers, and tags.
+The form with no parenthesis is the idiom for them: `t@i`, `t@0`, and `t@:x`,
+rather than `t@(i)`, which is kept for an index that is an expression, as in
+`t@(i+1)`.
 The dot notation is a syntactic sugar to index string keys: `t.x` expands to
 `t@("x")`.
 Finally, the tip markers `#` and `+` refer to the last (`#t-1`) and append
@@ -2973,6 +3046,11 @@ supported:
     ranges over calls to the given function, until it returns `nil`
 - `(:number,:number)`:
     ranges from the first number up to the second number inclusive
+- `(:number,:number,:number)`:
+    ranges from the first number to the second inclusive, by the third, the
+    step, which may be negative or a float (`(10,0,-2)`, `(0.0,1.0,0.25)`);
+    a range that the step moves away from is empty, and a step of `0` is an
+    error
 - `:number`:
     equivalent to `(0,x-1)` where `x` is the given number, which is the
     number of iterations
@@ -3534,7 +3612,9 @@ The optional target between brackets determines the scope of the broadcast:
 - `:parent`: parent task, or the pool of the task, if it lives in one
 - `:global`: all tasks
 - `t: task`: the given task
-- `n: number`: `n`th level up in the task hierarchy (`0` = current task)
+- `n: number`: `n`th level up in the task hierarchy (`0` = current task);
+  only named tasks count as levels: a `watching`, a `par`, or a `spawn {}`
+  around the `emit` does not change the level
 
 An [exception](#exceptions) that a task raises in reaction to an event goes
 up the hierarchy of tasks, but only inside the target of the `emit`: a
@@ -3544,6 +3624,28 @@ emits, as the exception of a call.
 So, with `emit @t (e)`, an exception of `t` goes to who emits, not to who
 holds `t`; with `emit @:global (e)`, it goes to who holds the task that
 raised it, since every task is inside the target.
+
+An `emit` runs to completion before the statement that follows it: every
+task that it awakes reacts, and the reactions that they cause also end,
+before the emitter goes on.
+So, when some work must happen in a fixed order inside each step of time,
+whatever the order in which the tasks were spawned, one task emits an
+event per phase, in order:
+
+```
+task Pingu () {
+    loop on :move { <...> }     ;; first, every pingu moves
+}
+task Trap () {
+    loop on :check { <...> }    ;; then, every trap looks at them
+}
+spawn Trap()                    ;; spawned first, it still checks after the moves
+spawn Pingu()
+loop on :frame {
+    emit :move
+    emit :check
+}
+```
 
 An event that is a [pinned value](#pin), or that holds one, can only reach
 tasks that live inside the block of the value.
@@ -3727,22 +3829,43 @@ emit :key [:c]      ;; --> behind c
 
 ### Context
 
-A `context` sets a state of a library (a canvas, a layer, a color) while the
-code that lives in its block runs, and restores it before any other code
-runs:
+A context sets a state of a library (a canvas, a layer, a color) while the
+code that lives in it runs, and restores it before any other code runs.
+A context is a value, `:Context [enter=f, leave=g]`, bound with `in` to what a
+command starts, or defined in place by a `context` block:
 
 ```
-Context : `context´ [`<´ Patt `>´] `(´ Expr `,´ Expr `)´ Block
-        | `context´ [`<´ Patt `>´] Expr Block
+In      : `in´ [`<´ Patt `>´] Expr `,´ (Spawn | Await | Tasks | `do´ Block)
+Context : `context´ [`<´ Patt `>´] Block
+Enter   : `:enter´ (Block | Lambda)         ;; in the block of a context
+Leave   : `:leave´ (Block | Lambda)         ;; in the block of a context
 ```
 
-The first expression is a function `enter`, which sets the state and returns
-what `leave` needs to restore it.
-The second is a function `leave`, which receives that value.
-In the second form, the expression is a pair `[enter, leave]`, so that a
-library can give both in one value (`context eng.on(STARS) {...}`).
-The block runs as a [transparent task](#tasks), as in a
-[mute](#mute) block.
+In a context value, `enter` sets the state and returns what `leave` needs to
+restore it; `leave` receives that value, and is optional.
+`in X, C` binds the value `X` to what the command `C` starts:
+
+- `in X, spawn T(...)` and `in X, spawn {...}`: the task spawned.
+- `in X, tasks(n)`: the pool, and so every task spawned into it.
+- `in X, await P`: what the await starts (`in X, await T(...)`), not the code
+  after it.
+- `in X, do {...}`: the block, which runs as a [transparent task](#tasks), as
+  in a [mute](#mute) block.
+
+The identity of a context is its value: tasks, pools and blocks bound to the
+same value share one context, and the state is not switched between them.
+A value bound again inside itself applies once.
+
+A `context` block defines a context in place, for its own block, which runs
+as a transparent task.
+Its sections `:enter` and `:leave` give the two functions: `:leave` receives
+what `:enter` returned, as `it` or as its parameter (`:leave \(old) {...}`).
+They see the variables of the block declared before them.
+The context applies from where `:enter` executes: code of the block before it
+runs without the state.
+`:leave` runs, when the block ends, with its [defers](#defer), in the reverse
+order of declaration; a block that ends before its `:enter` runs neither.
+Outside the block of a context, `:enter` and `:leave` are plain tags.
 
 The runtime calls `enter` before it resumes a task or block that lives in the
 context, and `leave` before code outside the context runs again: an `emit`
@@ -3750,12 +3873,13 @@ from inside, the end of a traversal of an `emit`, or the context itself
 terminating.
 Where a task lives decides its context, not where it was spawned from: the
 tasks of a pool declared inside a context run inside it, and a task spawned
-from inside a context into a pool declared outside does not.
+from inside a context into a pool declared outside does not, unless the pool
+or the task is bound itself.
 Contexts nest: the inner one is entered after the outer one, and left before
 it.
 
 The pattern is an [await pattern](#await), between `<` and `>` as in the
-first format of a [mute](#mute), since an expression follows.
+first format of a [mute](#mute), since an expression may follow.
 With a pattern, the context applies only while the traversal of an emit that
 matches it resumes code inside: for other emits, and outside an emit (the
 first reaction of the block, an `abort` from code), the code inside runs as if
@@ -3773,8 +3897,8 @@ A context cannot set a state for code outside it to see.
 An error in `enter` or `leave` is raised in the task being resumed, or in the
 code that resumed it.
 It is an error to `emit`, `spawn`, `abort` or `mute` inside `enter` or
-`leave`, also from a function they call, and for `enter` or `leave` not to be
-a function.
+`leave`, also from a function they call, and to bind a value that is not a
+`:Context` or whose `enter` or `leave` is not a function.
 
 Examples:
 
@@ -3786,7 +3910,9 @@ func set_layer (l) {        ;; returns the previous layer
     old
 }
 spawn {
-    context (\{ set_layer(:panel) }, \(old) { set_layer(old) }) {
+    context {
+        :enter { set_layer(:panel) }
+        :leave { set_layer(it) }
         loop on :draw {
             print(layer)    ;; --> panel
         }
@@ -3800,33 +3926,55 @@ spawn {
 emit :draw
 ```
 
-A library can give the pair:
+A library gives the value, which is bound to a task, a pool and a block:
 
 ```
-func in_layer (l) {         ;; [enter, leave]
-    [\{ set_layer(l) }, \(old) { set_layer(old) }]
+func in_layer (l) {
+    :Context [enter=\{ set_layer(l) }, leave=\(old) { set_layer(old) }]
 }
+val panel = in_layer(:panel)
+in panel, spawn Button(...)             ;; a task
+pin items = in panel, tasks()           ;; every task of the pool
 spawn {
-    context in_layer(:panel) {
+    in panel, do {                      ;; a block
         loop on :draw {
-            print(layer)    ;; --> panel
+            print(layer)                ;; --> panel
         }
     }
 }
+val v = in panel, await Dialog()        ;; the dialog, not the code after
 ```
+
+With a pattern, the state is set once per `:draw`, and the screen can be
+cleared right after it is set:
+
+```
+context <:draw> {
+    :enter { ray.begin_texture_mode(target) ; ray.clear(GREEN1) }
+    :leave { ray.end_texture_mode() }
+    loop {
+        ...                 ;; the screens, which draw into the texture
+    }
+}
+```
+
+`enter` runs again in the same `:draw` only when code inside runs code outside
+(an `emit`, a `spawn` into a pool outside, an `abort` or a `mute`).
 
 With a pattern, the state is set only to draw: the watching of each coin, the
-clock and the keys run without it:
+clock and the keys run without it.
+The pool is declared outside and shares the context of the tiles:
 
 ```
-context <:draw> ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE) {
-    spawn { loop on :draw { tiles() } }
-    pin coins = tasks()
-    loop c in cs {
-        spawn @coins Coin(c)
-    }
-    await false
+val world = ray.ctx.mode2d(0, 0, 0, 0, 0, SCALE)
+pin coins = in <:draw> world, tasks()
+in <:draw> world, spawn {
+    loop on :draw { tiles() }
 }
+loop c in cs {
+    spawn @coins Coin(c)
+}
+await :all coins
 ```
 
 ### Parallel
@@ -4009,6 +4157,8 @@ A collection `xs` is what a loop walks, and its members are:
 - in a range `(a, b)`, each `v` from `a` up to `b` inclusive, with `k` as
   `nil`: the two numbers come before the function, as in
   `iter.find((a, b), f)` or `(a, b) -> iter.find(f)`
+- in a range with a step `(a, b, s)`, each `v` from `a` to `b` inclusive by
+  `s`, as in a [loop](#loop): `iter.find((a, b, s), f)`
 - in a function, the first and second values `v` and `k` of each call, until
   it evaluates to `nil`
 

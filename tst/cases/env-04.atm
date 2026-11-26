@@ -1,6 +1,6 @@
 ;; the quit of an environment runs after the variables of the program are
 ;; released: a handle that a global holds is closed before its library
-```:prelude
+```:prelude.c
 static void h_fin (void* p) {
     (void) p;
     printf("close handle\n");

@@ -1,0 +1,40 @@
+;; The level of `emit @n` counts named tasks only: a `watching`, a `par`
+;; and a `spawn {}` around the emit do not change who receives it.
+task Leaf (how) {
+    await :go
+    if how == :plain {
+        emit @1 :E
+    }
+    if how == :watching {
+        watching :never {
+            emit @1 :E
+        }
+    }
+    if how == :par {
+        par {
+            emit @1 :E
+        } with {
+            await :never
+        }
+    }
+    if how == :spawn {
+        spawn {
+            emit @1 :E
+        }
+        await :never
+    }
+}
+task Mid (how) {
+    spawn { await :E ; print(how, :mid_got_E) }
+    spawn Leaf(how)
+    await :never
+}
+task Top (how) {
+    spawn { await :E ; print(how, :top_got_E) }
+    spawn Mid(how)
+    await :never
+}
+loop _, how in [:plain, :watching, :par, :spawn] {
+    pin t = spawn Top(how)
+    emit :go
+}

@@ -1,0 +1,3 @@
+native-err-04.atm : line 2 : near ':prelude
+#include <math.h>
+' : invalid native : expected ':prelude.h' or ':prelude.c'

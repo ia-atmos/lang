@@ -5,14 +5,18 @@ task T () {
     :ok
 }
 spawn {
-    context <:draw> (\{ nil }, \(_) { nil }) {
+    context <:draw> {
+        :enter { nil }
+        :leave \(_) { nil }
         pin s = spawn T()
         val v = await(s)
         print(:filtered, v)
     }
 }
 spawn {
-    context (\{ nil }, \(_) { nil }) {
+    context {
+        :enter { nil }
+        :leave \(_) { nil }
         pin s = spawn T()
         val v = await(s)
         print(:plain, v)

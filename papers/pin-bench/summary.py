@@ -29,3 +29,10 @@ print("Spread: max/min of the 5 runs of `on`, per program")
 for p in P:
     xs = [float(r["seconds"]) for r in rows if r["program"] == p and r["variant"] == "on"]
     print(f"- {p}: {max(xs)/min(xs):.3f} over {len(xs)} runs")
+print()
+print("Best of the runs (min), seconds: less sensitive to a noisy machine")
+print("| program | " + " | ".join(V) + " | on/off | on/lua54 |")
+print("|---|" + "---|"*len(V) + "---|---|")
+for p in P:
+    m = {v: min(float(r["seconds"]) for r in rows if r["program"] == p and r["variant"] == v) for v in V}
+    print(f"| {p} | " + " | ".join(f"{m[v]:.3f}" for v in V) + f" | {m['on']/m['off']:.2f} | {m['on']/m['lua54']:.2f} |")

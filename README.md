@@ -257,7 +257,8 @@ From the [original implementation][atmos-lua], which compiles to Lua:
 - Native literals are C code, not Lua: `` `:number strlen("abc")` ``.
     - A leading tag converts the expression: `:number`, `:boolean`,
       `:string`, `:atmos`. With no tag, the code is a statement.
-    - `` `:prelude ...` `` declares at file scope, as in `#include`.
+    - `` `:prelude.c ...` `` declares at file scope, as in `#include`
+      (`:prelude.h` is also seen by the files that `import` it).
     - `$x` refers to the variable `x`.
 - The libraries are `string`, `vector`, `math`, `io`, and `os`, with
   0-based positions, instead of the libraries of Lua.

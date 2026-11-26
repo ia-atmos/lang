@@ -1,0 +1,3 @@
+==> ERROR:
+ v  context-32.atm:3 (throw)
+==> invalid context : expected :Context : got table

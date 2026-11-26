@@ -21,7 +21,7 @@ started, no decision needed), **moved** (another session handles it),
 | 1 | `await` over a pool with a condition ("a pingu enters my zone") | moved: `atmos-pool` |
 | 2 | Phases inside a tick, instead of the order of creation | moved: `atmos-pool` |
 | 3 | 32-bit reals | done 2026-11-19 (4565af1, the build option `ATMOS_REAL=float`, chosen by the author in `sdl-tux`); what follows moved: `atmos-float` |
-| 4 | An `emit` that names its receiver, instead of `emit @2` | moved: `atmos-pool` |
+| 4 | An `emit` that names its receiver, instead of `emit @2` | closed 2026-11-26 by the author in `atmos-pool` ("ok"): the premise was wrong (a `watching`, a `par` or a `spawn {}` does not change the level of `emit @n`, which counts named tasks only); no change of the language; a clause in the manual ("Emit") and the case `emit-level-01`, merged |
 | 5 | An optional `task main` as the entry point | closed 2026-11-17: no (decided in `atmos-envs`) |
 | 6 | The event of termination of transparent blocks | done 2026-11-23: `blocks` merged by `atmos-blocks` as 95946fe on the author's "#2a" (atmos-blocks#2); measured by `atmos-lang` on 8801b76 (same code): port diagnostics and C identical, sdl-pingus passes, a loop of `par :all` twice as fast; the ports told |
 | 7 | Iterating a tagged table gives the field `tag` | closed: kept, as the reference |
@@ -50,7 +50,7 @@ started, no decision needed), **moved** (another session handles it),
 | 30 | The C/C++ slot: Flare (Doom was added) | closed: chosen |
 | 31 | `await x` for a variable or a field | moved: `atmos-args` |
 | 32 | `await :all ts` on an empty pool never awakes | done 2026-11-18 (`cab49e2`) |
-| 33 | Time emitted to a pool or a task (slow motion) | moved: `atmos-pool` |
+| 33 | Time emitted to a pool or a task (slow motion) | decided 2026-11-26 by the author in `atmos-pool` ("#33a, mas colocar a opcao #33b em TODO na sessao atmos-lang"): `#33a`, not now, the global factor of the environment stays; `#33b` kept as future work: `emit @ts (dt)` / `emit @t (dt)`, time passes only for the timers under the target (the case is the slow motion of SNKRX; the nearest timer `CLK_MIN` would be per subtree; open: which clock an `await 1s` listens to; today `invalid emit : expected global`; departs from the reference; worth it when a second port needs two clocks; `261120-pool-proposals.md`, section #33) |
 | 34 | A constructor nested in a pinned one is not pinned with it | done 2026-11-15 |
 | 35 | Performance (dispatch of events, tables, small tables) | work |
 | 36 | A `spawn` that dies with its block, silently | done 2026-11-14 (session `spawn-check`) |
@@ -142,3 +142,6 @@ started, no decision needed), **moved** (another session handles it),
 | 127 | `emit @x` with `x` nil delivered to the whole current task (nil was the default target); asked by `sdl-snxkx` | decided 2026-11-26 (his answer: "Sim"): a target that evaluates to nil sends to no one; merged (branch `emit-nil`, case `emit-nil-01`); `sdl-snxkx` told |
 | 128 | `set t@# = v` on an empty vector wrote the index `-1` | decided 2026-11-26 (his answer: "Erro"): an error, `invalid index : no last element`; done with `#129` |
 | 129 | Merge of the branch `at-err`: `#128`, and `spawn @p` with `p` nil as an error (his proposal: "Erro, assim como spawn @nil") | decided 2026-11-26: merge, with `set t@# = nil` on an empty vector kept with no effect (his choice); merged; cases `index-last-err-01`, `spawn-pool-err-01`; the ports told |
+| 130 | A third element of a range is silently ignored (`(0, 10, 2)` walks by 1); the author asked, in `sdl-pingus`, for a descending range or a step | decided 2026-11-26 (his answer: "#130. sim"): `(a, b, s)` is the step, in loops and `iter`; no drift for floats; step 0 is `invalid loop : step is 0`; merged (branch `step`, case `loop-step-01`); `sdl-pingus` told |
+| 131 | `t@(k)` with a plain name where `t@k` would do: 5229 uses against 1188 of `t@k`, almost all in `pico-1oom` (4971) and `sdl-snxkx` (147); the author asked in `sdl-snxkx` ("Pq usar T@(i) em vez de T@i? Tem como avisar pra cima sobre isso?") | decided 2026-11-26 (his choice: "Uma nota no manual, e os dois portes reescrevem"): the manual says `t@i` is the idiom for a name and `t@(e)` is for an expression; `pico-1oom` and `sdl-snxkx` told to rewrite (a mechanical substitution, checked by an identical generated C) |
+| 132 | The value of a `watching` that ends by its condition is the value of the condition (the time past a timer), not `nil`, so `val res = watching 5s {...}` cannot tell a timeout from a result (`env-uv#14`) | open: to put to him after `#131` |

@@ -182,22 +182,22 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`, `atmos-pool`).
 
 | Session | Id | Topic |
 |---|---|---|
 | `atmos-lang` | session_011eECogKVQ7ZzmWCoMST2wK | the compiler; measurements on the ports; merges |
 | `atmos-pin` | session_011eECogSDhkVfyt7qme5DLh | the rules of `pin` |
-| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools |
+| `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools (archived 2026-11-26 by `atmos`, on the author's words there: "Ok peca pra arquivar entao", after `pool` 39a273b reached `main` in a8c56dc; branches `pool-find`, `pool-grid`, `pool` left for him; `atmos#25`) |
 | `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
-| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` |
+| `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "arquivar atmos-grab entao"; no open items, `atmos#20`) |
 | `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
 | `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
-| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build |
+| `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build (archived 2026-11-26 by `atmos`, on the author's words there: "ok. Acho que pode pedir pra sessao pai atmos arquivar aqui?"; all on `main`, index `TODO-float.md`; `atmos-float#12` and `#8` carried by `atmos`, `atmos#19`) |
 | `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
 | `atmos-cli` | session_011eECoijhygAGqD1jDZ3pWZ | the command line |
 | `atmos-blocks` | session_011eECoipBcPZnUN2BbGAyuB | the end of a transparent block |
-| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions |
+| `atmos-iter` | session_011eECofmVokL6pRNJNTDjhd | iterators, loops and functions (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "Pode arquivar atmos-iter entao"; no open items, `atmos#21`) |
 | `atmos-tag` | session_011eECogjajEpy59YjN42Max | the tag of a table |
 | `atmos-slices` | session_011eECoensrrB23ggBu4daLd | slices with no copy |
 | `atmos-threads` | session_011eECohRAjCia6Hb5cAcrz2 | threads |
@@ -286,6 +286,11 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
   why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
+- **A plain index needs no parentheses** (2026-11-26, said in
+  `sdl-snxkx`: "peca a sessao atmos para trocar todos"; `atmos#23`):
+  write `t@k`, `t@0`, `t@:x`; keep `t@(e)` only for an expression
+  (`t@(i+1)`). `emit @(task) :e` is written `emit :e`, the default
+  target, which is the same (`atmos#26`, confirmed by `atmos-lang`).
 - **General instruction for the ports** (2026-11-26, confirmed in
   `pico-1oom`: "Confirmo, pode enviar"; `pico-1oom#29`, `atmos#16`). It
   does not replace "Fidelity, then expressiveness"; it says what fidelity

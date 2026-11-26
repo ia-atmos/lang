@@ -1,0 +1,4 @@
+;; #23: in X, spawn: X must be a :Context
+task T () { await false }
+in [enter=\{ nil }], spawn T()
+print "never"

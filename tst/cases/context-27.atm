@@ -1,0 +1,14 @@
+;; #21: a block that ends before its enter runs neither enter nor leave
+spawn {
+    watching :stop {
+        context {
+            :leave { print("leave") }
+            await :go
+            :enter { print("enter") }
+            await false
+        }
+    }
+    print("after")
+}
+emit :stop
+print("end")

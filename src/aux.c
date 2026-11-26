@@ -86,9 +86,18 @@ NatKind nat_kind (const char* s, const char** code) {
     }
     // `:atmos`: already a value of the language; `:value` is its former
     // name, to be removed
-    if (n==12 && !strncmp(s+1,"prelude.once",12)) {
+    // the C at file scope: `.h` for every unit, `.c` for the unit of
+    // the file
+    if (n==9 && !strncmp(s+1,"prelude.h",9)) {
+        *code = s + 1 + n;
+        return NAT_PRE;
+    }
+    if (n==9 && !strncmp(s+1,"prelude.c",9)) {
         *code = s + 1 + n;
         return NAT_ONCE;
+    }
+    if (n==7 && !strncmp(s+1,"prelude",7)) {
+        return NAT_OLD;
     }
     if (n==5 && !strncmp(s+1,"atmos",5)) {
         *code = s + 1 + n;

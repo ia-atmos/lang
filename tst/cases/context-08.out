@@ -1,4 +1,4 @@
 ==> ERROR:
- |  context-08.atm:3 (call)
- v  context-08.atm:3 (throw)
+ |  context-08.atm:4 (call)
+ v  context-08.atm:4 (throw)
 ==> invalid emit : inside enter or leave of a context

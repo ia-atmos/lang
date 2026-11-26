@@ -379,6 +379,10 @@ typedef struct Clause {
 } Clause;
 static Clause* CLAUSE = NULL;
 
+// The block form of a context being parsed: `enter` and `leave` are
+// statements of its block (not of a function inside it).
+static Expr* CTXE = NULL;
+
 static Expr* mk (ETag tag, Tk tk);
 static Tk tk_id (Tk tk, const char* str);
 
@@ -527,7 +531,10 @@ static Expr* proto_body (void) {
     int n     = NPARS;
     PARS  = NULL;
     NPARS = 0;
+    Expr* ctx = CTXE;
+    CTXE = NULL;
     Expr* blk = parser_block();
+    CTXE = ctx;
     if (n > 0) {
         List* es = &blk->u.block.es;
         es->v = realloc(es->v, (es->n+n) * sizeof(Expr*));
@@ -717,6 +724,8 @@ static Expr* parser_spawn (void) {
         return e;
     }
     Expr* e = mk(E_SPAWN, tk);
+    e->u.spawn.ctx  = NULL;
+    e->u.spawn.cpat = NULL;
     if (accept_str("@")) {
         e->u.spawn.pool = parser_at_err();
     }
@@ -1385,6 +1394,34 @@ static Expr* parser_1_prim (void) {
         next();
         return parser_exit(TK0);
 
+    // :enter {...}  :enter \(x) {...}  :leave {...}  :leave \(x) {...}:
+    // sections of the block of a context, plain tags elsewhere
+    } else if (CTXE!=NULL && check_tag(TK_TAG) &&
+               (!strcmp(TK1.str,":enter") || !strcmp(TK1.str,":leave")))
+    {
+        next();
+        Tk tk = TK0;
+        if (!(check_str("{") || check_str("\\"))) {
+            if ((check_str("(") || check_str("[")) && TK0.sep==TK1.sep) {
+                Expr* e = mk(E_TAGGED, tk);
+                e->u.tagged.e = parser_1_prim();
+                return e;
+            }
+            return mk(E_TAG, tk);
+        }
+        Expr* e = mk(E_CTX_FN, tk);
+        e->u.ctxfn.leave = !strcmp(tk.str, ":leave");
+        e->u.ctxfn.ctx   = CTXE;
+        if (check_str("{")) {
+            Expr* p = mk(E_PROTO, tk);
+            proto_par(p, tk_id(tk,"it"), 0);
+            p->u.proto.blk = proto_body();
+            e->u.ctxfn.f = p;
+        } else {
+            e->u.ctxfn.f = parser_lambda();
+        }
+        return e;
+
     // super(...), in the body of a clause
     } else if (CLAUSE!=NULL && check_tag(TK_ID) && !strcmp(TK1.str,"super")) {
         next();
@@ -1564,31 +1601,69 @@ static Expr* parser_1_prim (void) {
         e->u.solo.blk = parser_block();
         return e;
 
-    // context [<P>] (enter, leave) {...}  |  context [<P>] X {...}
+    // context [<P>] {... enter F ... leave F ...}  |  context [<P>] X {...}
     // The pattern is between `<` `>`, as in `mute <P> t(b)`: an
-    // expression follows.
+    // expression may follow.
     } else if (accept_str("context")) {
         Expr* e = mk(E_CONTEXT, TK0);
         e->u.context.patt = NULL;
+        e->u.context.pair = NULL;
+        e->u.context.id   = -1;
         if (check_str("<") || check_str("<<")) {
             ANGLE_TARGET = 1;
             e->u.context.patt = parser_await();
             ANGLE_TARGET = 0;
         }
-        if (accept_str("(")) {
-            e->u.context.enter = parser_6_pip(NULL);
-            if (accept_str(",")) {
-                e->u.context.leave = parser_6_pip(NULL);
-            } else {
-                e->u.context.leave = NULL;  // (X): the pair
-            }
-            accept_str_err(")");
-        } else {
-            e->u.context.enter = parser_6_pip(NULL);
-            e->u.context.leave = NULL;      // X: the pair
-        }
+        Expr* up = CTXE;
+        CTXE = e;
         e->u.context.blk = parser_block();
+        CTXE = up;
         return e;
+
+    // in [<P>] X, spawn T(...) | spawn {...} | await P | tasks(n) | do {...}
+    // X is a context value: what the command starts lives in it.
+    } else if (accept_str("in")) {
+        Tk tk = TK0;
+        Patt* patt = NULL;
+        if (check_str("<") || check_str("<<")) {
+            ANGLE_TARGET = 1;
+            patt = parser_await();
+            ANGLE_TARGET = 0;
+        }
+        Expr* x = parser_6_pip(NULL);
+        accept_str_err(",");
+        Expr* up = CTXE;
+        CTXE = NULL;
+        Expr* cmd = parser_1_prim();
+        CTXE = up;
+        if (cmd->tag == E_SPAWN) {
+            cmd->u.spawn.ctx  = x;
+            cmd->u.spawn.cpat = patt;
+            return cmd;
+        } else if (cmd->tag == E_TASKS) {
+            cmd->u.tasks.ctx  = x;
+            cmd->u.tasks.cpat = patt;
+            return cmd;
+        }
+        Expr* e = mk(E_CONTEXT, tk);
+        e->u.context.patt = patt;
+        e->u.context.pair = x;
+        e->u.context.id   = -1;
+        if (cmd->tag == E_SPAWN_BLK) {
+            // spawn { in X, do {...} }
+            e->u.context.blk = cmd->u.sblk.blk;
+            cmd->u.sblk.blk = block1(e);
+            return cmd;
+        } else if (cmd->tag==E_DO && !cmd->u.xdo.esc) {
+            e->u.context.blk = cmd->u.xdo.blk;
+        } else if (cmd->tag == E_AWAIT) {
+            // what the await starts lives in the context
+            e->u.context.blk = block1(cmd);
+        } else {
+            err(tk, "invalid in : expected spawn, await, tasks or do");
+        }
+        return e;
+
 
     // mute [<P>] t(b)  |  mute [P] on :T {...}
     // The pattern names the events silenced (none: all of them). It is

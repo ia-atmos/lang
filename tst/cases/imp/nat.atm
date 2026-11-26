@@ -1,9 +1,9 @@
-```:prelude
+```:prelude.h
 #include <string.h>
 extern int nat_cnt;
 static int nat_twice (int x) { return 2*x; }
 ```
-```:prelude.once
+```:prelude.c
 int nat_cnt = 10;
 ```
 func nat_inc () {

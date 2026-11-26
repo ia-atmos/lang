@@ -1,0 +1,5 @@
+before enter	world
+after enter	hud
+draw	hud
+other	world
+end	world
