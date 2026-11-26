@@ -592,8 +592,53 @@ static Opnd gen_acc (Unit* u, Expr* e) {
     }
 }
 
+// The expression without its parentheses.
+static Expr* unparens (Expr* e) {
+    while (e->tag == E_PARENS) {
+        e = e->u.parens.e;
+    }
+    return e;
+}
+
+// A mutable variable.
+static int is_var (Expr* e) {
+    e = unparens(e);
+    return e->tag==E_ACC && e->var->kind==V_VAR;
+}
+
+// Whether the evaluation of `e` runs no code of the program, so that
+// it assigns no variable: literals, names, indexes, and operators over
+// them (which may raise, but not assign).
+static int is_quiet (Expr* e) {
+    switch (e->tag) {
+        case E_NIL: case E_BOOL: case E_NUM: case E_CLK:
+        case E_STR: case E_TAG: case E_ACC:
+            return 1;
+        case E_PARENS:
+            return is_quiet(e->u.parens.e);
+        case E_UNO:
+            return is_quiet(e->u.uno.e);
+        case E_BIN:
+            return is_quiet(e->u.bin.e1) && is_quiet(e->u.bin.e2);
+        case E_INDEX:
+            return is_quiet(e->u.index.t) &&
+                (e->u.index.kind!=IDX_EXPR || is_quiet(e->u.index.idx));
+        default:
+            return 0;
+    }
+}
+
+// An operand that is consumed at once, with no code of the program
+// in between: a mutable variable is borrowed in place, with no copy.
+static Opnd gen_now (Unit* u, Expr* e) {
+    if (is_var(e)) {
+        return opnd_c(var_c(u, unparens(e)->var));
+    }
+    return gen_expr(u, e);
+}
+
 static Opnd gen_uno (Unit* u, Expr* e) {
-    Opnd x = gen_expr(u, e->u.uno.e);
+    Opnd x = gen_now(u, e->u.uno.e);
     Opnd d = opnd_tmp(u);
     if (!strcmp(e->tk.str, "-")) {
         out_try(u, "a_neg(&%s, %s)", d.c, x.c);
@@ -683,8 +728,11 @@ static Opnd gen_bin (Unit* u, Expr* e) {
     if (!strcmp(op,"&&") || !strcmp(op,"||")) {
         return gen_logic(u, e);
     }
-    Opnd x = gen_expr(u, e->u.bin.e1);
-    Opnd y = gen_expr(u, e->u.bin.e2);
+    // the second operand is consumed at once; the first, if the
+    // second runs no code of the program
+    Opnd x = is_quiet(e->u.bin.e2) ?
+        gen_now(u, e->u.bin.e1) : gen_expr(u, e->u.bin.e1);
+    Opnd y = gen_now(u, e->u.bin.e2);
     return gen_binop(u, e->tk, op, x, y);
 }
 
