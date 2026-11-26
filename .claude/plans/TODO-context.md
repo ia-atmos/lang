@@ -128,3 +128,8 @@ it awaits.
   `toggle` inside `enter`/`leave`, also indirectly, are errors at runtime;
   the reason: they run other code in the middle of a switch (a nested
   switch, or the context freed while its `enter` runs).
+- #25 Rule of 2026-11-26 (the author's "crie" in `atmos`, checked in its
+  transcript, `atmos#29`): read `.claude/plans/IDIOMS.md` before writing
+  Atmos; when the author corrects or approves an excerpt here and a
+  general rule comes out, send it to `atmos` with `atmos-context#N`, a
+  before and an after.
