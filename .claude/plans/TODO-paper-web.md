@@ -10,6 +10,16 @@ The session was created by `atmos` on the author's request, made in
 coisa boa aí... Mas vamos precisar comparar com elm,hiphop e outros.
 Mande um plano pra lá".
 
+## Standing
+
+- Read `.claude/plans/IDIOMS.md` before writing Atmos, the excerpts of
+  the paper included; when the author corrects or approves an excerpt
+  and a general rule comes out, send it to `atmos` with its source
+  (`paper-web#N`), a before and an after. Relayed by `atmos` on
+  2026-11-26 as a rule of the author (`atmos#29`, his "crie"); the file
+  is on `main` (dddacda) and was read; his words were not checked in
+  the transcript of `atmos`.
+
 ## Index of items
 
 Items are `#N` (standing rule of the author, 2026-11-18): unique in this
