@@ -81,6 +81,16 @@ emit(:action [h=but])
 emit :action [h=but]
 ```
 
+Caveat (pico-frescogo#29): with an expression the rule changes the
+meaning, with no diagnostic. `await CONF.radar.resaque * 1ms` parses as
+`(await CONF.radar.resaque) * 1ms`, not as the wait of the product.
+Name the expression first, or keep the parentheses:
+
+```
+val resaque = CONF.radar.resaque * 1ms
+await resaque
+```
+
 ### A small function is a lambda (pico-1oom#16)
 
 The author, on getters and setters: "Pq não usar lambda?".
