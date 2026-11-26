@@ -224,6 +224,7 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `paper-games` | session_011eECogKyRYMVJJfbmpHYv9 | paper on the game ports |
 | `paper-snapshots` | session_011eECoiWKpJwsuKH43TLunQ | paper on snapshots and commands |
 | `paper-media` | session_011eECoiQwcXzsrFhTMMYGr7 | paper on media |
+| `paper-web` | session_011eECoei7PA2fA6jzUtWpqz | paper on Atmos in the browser (created 2026-11-26 by `atmos`, `atmos#17`; material `261126-paper-web.md`) |
 
 ## Standing rules from the author, for all sessions
 
