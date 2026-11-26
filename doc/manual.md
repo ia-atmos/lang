@@ -3362,6 +3362,10 @@ With `until`, the await only accepts an event if the predicate is truthy.
 With `while`, only if it is falsy.
 The predicate extends as far as possible, like the
 [arguments of a statement](#statement-arguments).
+When the await is the value of a declaration, as in
+`val e = await :X until e.n > 3`, or the pattern of a
+[`loop e on`](#loop), a predicate that is an expression may also name the
+event under test as `e`, the name that receives it.
 
 The full combinators (`!`, `&&`, `||`, and the `until`/`while` suffix) require
 the `<...>` form, with angle brackets (instead of parenthesis) as delimiters.
@@ -3491,6 +3495,7 @@ await <:X || :Y && :Z>          ;; awakes on :X, or after both :Y and :Z
 await <!:X>                     ;; awakes on any non-:X event
 await <:X until it.n==3>        ;; awaits :X until its field n equals 3
 await :X until it.n > 3         ;; no delimiters: `>` is the operator
+val e = await :X until e.n > 3  ;; the event under test, by the name declared
 await(3, :X)                    ;; awakes on the third :X
 await(n, 1s)                    ;; awakes after `n` periods of 1s
 await t                         ;; awakes when the task `t` terminates

@@ -1,0 +1,45 @@
+;; val e = await P until c: the predicate may name the event under test
+;; as `e`, the name being declared, besides `it`
+
+spawn {
+    val e = await :X until e.n > 1
+    print(:a, e.n)                  ;; --> a 2
+}
+
+;; `it` stays valid, and both may appear
+spawn {
+    var e = await :X until (it.n > 1) && (e.n > 2)
+    print(:b, e.n)                  ;; --> b 3
+}
+
+;; the name hides an outer one in the predicate
+val k = [n=10]
+spawn {
+    val k = await :X until k.n == 3
+    print(:c, k.n)                  ;; --> c 3
+}
+
+;; with more names, the first is the event
+spawn {
+    val e, x = await :X until e.n == 4
+    print(:d, e.n, x)               ;; --> d 4 nil
+}
+
+;; a set is not a declaration: the name is the variable, as before
+spawn {
+    var v = [n=1]
+    set v = await :X until v.n == 1
+    print(:e, v.n)                  ;; --> e 1
+}
+
+;; any other value is unchanged
+val w = 10
+spawn {
+    val w = w + 1
+    print(:f, w)                    ;; --> f 11
+}
+
+emit :X [n=1]
+emit :X [n=2]
+emit :X [n=3]
+emit :X [n=4]
