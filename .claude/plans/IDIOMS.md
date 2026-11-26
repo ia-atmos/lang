@@ -163,7 +163,7 @@ func area (s :Shape.Rect.Sq) { super() + 1 }
 Caveat: `super` for functions is on lang main (9c6458f); `Super` for
 tasks exists only on the branch `oo-task` (a84cb6c), not on main.
 
-### Ask for a tagged table where the value may be a string (atmos-lang#139)
+### Ask for a tagged table where the value may be a string (atmos-lang#139, pico-slides#82)
 
 A tag is a string, so a tag pattern also matches a text with the same
 characters: `"List" ?? :List` is true. Where the value may be a string,
@@ -180,6 +180,9 @@ if (type(c) == :table) && (c ?? :List) { <...> }   ;; or, wrong for the text "Li
 ;; after
 if c ?? :List [] { <...> }
 ```
+
+In `pico-slides` (9c72196): `Slides.istab(s) && (s.tag == :Slide) => ...`
+became `s ?? :Slide [] => ...`.
 
 ### The idiom of the library is fine (env-iup#23)
 
