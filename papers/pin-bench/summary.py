@@ -36,3 +36,12 @@ print("|---|" + "---|"*len(V) + "---|---|")
 for p in P:
     m = {v: min(float(r["seconds"]) for r in rows if r["program"] == p and r["variant"] == v) for v in V}
     print(f"| {p} | " + " | ".join(f"{m[v]:.3f}" for v in V) + f" | {m['on']/m['off']:.2f} | {m['on']/m['lua54']:.2f} |")
+
+if rows and "cpu_seconds" in rows[0]:
+    print()
+    print("Best of the runs (min), CPU seconds (user + system): the figure the paper uses")
+    print("| program | " + " | ".join(V) + " | on/off | on/lua54 | off/lua54 |")
+    print("|---|" + "---|"*len(V) + "---|---|---|")
+    for p in P:
+        m = {v: min(float(r["cpu_seconds"]) for r in rows if r["program"] == p and r["variant"] == v) for v in V}
+        print(f"| {p} | " + " | ".join(f"{m[v]:.3f}" for v in V) + f" | {m['on']/m['off']:.2f} | {m['on']/m['lua54']:.2f} | {m['off']/m['lua54']:.2f} |")

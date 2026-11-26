@@ -1,9 +1,9 @@
 #!/bin/sh
 # Runs each program in each variant REPS times; one line per run in results.csv:
-# program,size,variant,rep,seconds,peak_rss_kb,exit
+# program,size,variant,rep,seconds,peak_rss_kb,exit,cpu_seconds
 # Build first: see README.md. Output of the programs goes to /dev/null.
-REPS=${REPS:-5}
-echo "program,size,variant,rep,seconds,peak_rss_kb,exit"
+REPS=${REPS:-10}
+echo "program,size,variant,rep,seconds,peak_rss_kb,exit,cpu_seconds"
 for p in binarytrees:16 fannkuch:9 fasta:1000000 fib:35 mandelbrot:1000 nbody:500000 spectralnorm:500; do
     n=${p%%:*}; a=${p##*:}
     for r in $(seq 1 $REPS); do
@@ -15,7 +15,7 @@ for p in binarytrees:16 fannkuch:9 fasta:1000000 fib:35 mandelbrot:1000 nbody:50
                 *)      cmd="bin/$n-$v $a" ;;
             esac
             set -- $(./runm $cmd)
-            echo "$n,$a,$v,$r,$1,$2,$3"
+            echo "$n,$a,$v,$r,$1,$2,$3,$4"
         done
     done
 done
