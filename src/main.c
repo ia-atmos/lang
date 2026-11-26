@@ -237,7 +237,7 @@ static int build (const char* c, size_t clen, const char* exe) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Where the C and the objects of the modules are kept: the option
-// `--build`, or `.atmos` in the current directory.
+// `--build`, or `build` in the current directory.
 static const char* OPT_BUILD = NULL;
 
 // The file has exactly the text.
@@ -278,7 +278,7 @@ static const char* build_dir (const char* cc) {
         h = (h ^ (unsigned char)*c) * 16777619u;
     }
     const char* dir = xfmt("%s/%08x",
-        (OPT_BUILD != NULL) ? OPT_BUILD : ".atmos", h);
+        (OPT_BUILD != NULL) ? OPT_BUILD : "build", h);
     if (system(xfmt("mkdir -p '%s' 2>/dev/null", dir))!=0 ||
         access(dir, W_OK)!=0)
     {
@@ -451,7 +451,7 @@ static void usage (void) {
         "   -t          Enable test blocks.\n"
         "   -e <env>    Include the file of an environment first.\n"
         "   --build <dir>   Keep the C and the objects of the modules in the\n"
-        "               directory (default: .atmos).\n"
+        "               directory (default: build).\n"
     );
     if (ATMOS_ENV != NULL) {
         fprintf(stderr, "\nEnvironment: %s\n", (const char*)ATMOS_ENV);

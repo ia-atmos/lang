@@ -489,7 +489,7 @@ Options:
    -t          Enable test blocks.
    -e <env>    Include the file of an environment first.
    --build <dir>   Keep the C and the objects of the modules in the
-               directory (default: .atmos).
+               directory (default: build).
 ```
 
 The compiler translates the program to a single C file, and then calls the C
@@ -497,7 +497,7 @@ compiler to build it and link it with the Atmos runtime.
 A program with [modules](#import) becomes one C file per module, which are
 compiled at the same time.
 The C file and the compiled object of each module are kept in the directory
-`.atmos` of the current directory, or in the one given with `--build`, under
+`build` of the current directory, or in the one given with `--build`, under
 the name of the module.
 Each set of flags of the C compiler has a directory of its own inside it.
 A module is only compiled again when its C code changes, or a file that its C

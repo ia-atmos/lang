@@ -16,7 +16,7 @@ Last update: 2026-11-26.
 | #4 | Native code under `import`: the names of the two preludes | Decided 2026-11-26: `:prelude.h` (every unit) and `:prelude.c` (the unit of its file), his suggestion ("Poderia ser prelude.c e .h?"). On `cc` |
 | #4a | `:prelude` with no suffix | Decided 2026-11-26 ("Sempre"): always an error (`invalid native : expected ':prelude.h' or ':prelude.c'`). On `cc`; every environment and port must migrate before a merge |
 | #5 | `-c` with modules | Decided 2026-11-26 ("Recomendado"): one C file per module in a directory. On `cc` as `-c -o <dir>` (the paths are printed); `-c` alone refuses a program with modules; with no `import`, the standard output as before. The final spelling (`--emit-c=DIR`) is of `atmos-cli` |
-| #6 | Where the C and the objects of the modules are kept | The author, 2026-11-26: "Poderia especificar o dir? Mantendo os arquivos...", then "#6 poderia ser local/corrente?". On `cc`, by the session, to be confirmed: `.atmos/` in the current directory, or `--build <dir>`; the files stay, under the names of the modules (section "The build directory") |
+| #6 | Where the C and the objects of the modules are kept | Decided 2026-11-26 ("#6 build/ então"): `build/` in the current directory, or `--build <dir>`; the files stay, under the names of the modules, one directory per command inside it. He first asked for the files directly in the current directory; the costs were put to him. On `cc` |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
@@ -332,3 +332,7 @@ first run 81 s, second 47 s; with `ASAN=1`, 133 s then 103 s (measured
 before the last fix). Build `-O1`: 12.4 s from nothing, 0.2 s with no
 change, 2.2 s after a change in `engine/engine.atm`. `.atmos` has 18 to
 54 MB with 2 or 3 commands.
+
+`#6` decided: the default directory is `build/` (not `.atmos/`, which
+the section above names). `lang` already ignores `build/`; each port
+adds it to its `.gitignore`.
