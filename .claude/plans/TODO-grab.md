@@ -11,8 +11,7 @@ the rule are `#1`..`#8`.
 ## Resumed (2026-11-25)
 
 The pause of 2026-11-23 is over (`atmos`, at the author's request). #26 is merged (2026-11-23).
-#23 and #24 are closed (the ports rewrote on 2026-11-22). Next decision:
-#21 (1), a default `stage`.
+#23 and #24 are closed (the ports rewrote on 2026-11-22). No decision open (#21 (1) decided 2026-11-26: keep the error).
 
 Coordination (2026-11-24, atmos-lang#119): status and questions for the
 author go to `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
@@ -76,6 +75,7 @@ the author keep this file's own `#N` sequence (local, seen from outside as
 ## Decided
 
 - Merge (2026-11-22): the author approved the merge of `grab` into `main` (f416c03), and with it #1–#4 and #6–#8 as implemented. 1048 pass with ASAN, test-rt and test-env pass. The ports must now rewrite their uses of `toggle` (#24) and two locals (#23).
+- #21 (1) (2026-11-26): keep the error; a `solo` with no `stage` above it raises `invalid solo : expected enclosing stage`, and there is no default stage.
 - #22 (2026-11-22): the form of `mute`/`solo`/`stage`, see the index.
 - #18 (2026-11-22): rename the parameter, keep the keyword `grab`; found already renamed in env-sdl (`grabbed`).
 - #5 (2026-11-22): kept as is. The pattern of the grab decides whether the time stops; the manual shows the predicate that lets it pass (`tst/cases/grab-08`, branch `grab`).
