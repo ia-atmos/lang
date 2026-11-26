@@ -12,7 +12,7 @@ Last update: 2026-11-26.
 | # | Item | State |
 |---|------|-------|
 | #1 | What the author has in mind for the command line | Answered 2026-11-21: "Não quero -x, quero --xyz" (long options instead of short ones) |
-| #2 | The names of the long options | Deferred by the author (2026-11-25): "defer decision. we need to settle separate compilation" (`atmos-cc`). Branch `cli` keeps `--emit-c`, `--out`, `--test`, `--env` meanwhile |
+| #2 | The names of the long options | Deferred by the author (2026-11-25) until separate compilation. Settled in `atmos-cc` on 2026-11-26 (`import`, one C unit per module; seen on branch `cc`, `3755ef5`: `-c -o <dir>` writes one C file per module, `-c` alone is an error for a program with modules). Asked again 2026-11-26; recommended: `--emit-c` to the standard output, `--emit-c --out=<dir>` for the files, `--out=<exe>` to build, `--test`, `--env` |
 | #4 | Why `--emit-c` and not `--c`; who uses `-c` today | Answered 2026-11-21: two ports, `doom/Makefile` (lines 63, 79) and `env-esp32/esp32/main/CMakeLists.txt` (line 62), both to build the C themselves; none of the other 14 repositories of `ia-atmos` nor the tests of `lang` |
 | #3 | What becomes of `-c`, `-o`, `-t`, `-e` | Decided by the author (2026-11-25): "remove all short aliases". Done on `cli` (`d0d9a99`) |
 | #5 | The order of the migration of the ports to the long options | Decided by the author (2026-11-26): "remover as curtas": one merge, no period with both forms; the ports move at the merge. Suite on `cli` after the removal and the merge of `main`: lex 33, ast 96, cases 519, golden 443, env 1, cli 26, with ASAN |
@@ -134,3 +134,10 @@ Clones of the 15 repositories of `ia-atmos` besides `lang`, updated on
 
 None found in `sdl-flare`, `pico-slides`. In `lang` itself:
 `tst/golden/0030-test-2.flags` and `tst/env/run.sh`, moved on `cli`.
+- `atmos-cc`, 2026-11-26 (checked on `origin/cc`): `ATMOS_CACHE` is a
+  new variable, the directory of the compiled modules (default
+  `$XDG_CACHE_HOME/atmos`, else `~/.cache/atmos`), not cleaned yet
+  (`atmos-cc#6`, open with the author); `--verbose` and
+  `--cc-*`/`--ld-*` not started. The branches `cc` and `cli` both
+  rewrite the options in `src/main.c`: whichever merges second
+  resolves the conflict.
