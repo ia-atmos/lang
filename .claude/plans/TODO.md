@@ -63,6 +63,7 @@ Waiting for the author's "ok":
 |---|------|------|
 | 6 | Remove the event of termination of transparent blocks | See A |
 | 22 | Mark the plan of Pingus as done, with the link to the port | Waits for the author, who wants to test the game himself first (2026-11-18): the session `sdl-pingus` was asked to give him a step by step, from the clones on |
+| atmos#37 | `iter.fields(t)`: a loop over the fields of a table whose keys are not numbers (`loop k, v in iter.fields(t) {...}`), from `pico-slides#81`. Done but pending (the author, in `atmos-lang`, 2026-11-27: "adicionar iter.fields em todo", then "Era pra adicionar na lista de todos. Agora adiciona como feito mas pendente") | Branch `fields` (e150abc), case `iter-fields-01`, suite with ASAN and port diagnostics pass; not merged (his "Ainda não", `atmos-lang#148`/`#149`) and not announced |
 
 Not started, with no decision needed:
 
