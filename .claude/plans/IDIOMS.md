@@ -11,7 +11,7 @@ with where it came from (`session#N`) and a before and an after.
 correction needs a change of the compiler, it goes to `atmos-lang`.
 
 Sources so far: `env-iup` (its `.claude/plans/IDIOMS.md`, items
-`env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`, `atmos-oo#11`, `atmos-lang#139`. The
+`env-iup#18` to `#23`), `pico-1oom#16`, `env-ray#48` and `#49`, `atmos-oo#11`. The
 examples of `context` follow lang d0fe0ac.
 Since lang 9d4561a the predicate of a `loop e on` names the event by
 the variable of the loop (`until e.press`, not `it.press`).
@@ -81,14 +81,24 @@ emit(:action [h=but])
 emit :action [h=but]
 ```
 
-Caveat (pico-frescogo#29): with an expression the rule changes the
-meaning, with no diagnostic. `await CONF.radar.resaque * 1ms` parses as
-`(await CONF.radar.resaque) * 1ms`, not as the wait of the product.
-Name the expression first, or keep the parentheses:
+As the left operand of a binary operator, a call or an await with no
+parentheses is an error since lang 0e270fa (atmos-lang#141, #143, #145,
+from pico-frescogo#29): the author, "Por fora. Pois queremos usar a forma
+sem parenteses. Exemplo: set x = f y". Keep the form with no
+parentheses, and put the parentheses outside when it is an operand.
+`1 + f y` stays valid: only the left operand is concerned.
 
 ```
-val resaque = CONF.radar.resaque * 1ms
-await resaque
+;; before (an error: invalid call : use parentheses to disambiguate)
+set x = f y + 1
+;; after
+set x = (f y) + 1                    ;; or f(y + 1), if that is meant
+
+;; before (an error: invalid await : use parentheses to disambiguate)
+await CONF.radar.resaque * 1ms
+;; after
+await(CONF.radar.resaque * 1ms)      ;; the duration
+                                     ;; or (await x) * 1ms, the value of the await
 ```
 
 ### A small function is a lambda (pico-1oom#16)
@@ -172,28 +182,6 @@ func area (s :Shape.Rect.Sq) { super() + 1 }
 
 Caveat: `super` for functions is on lang main (9c6458f); `Super` for
 tasks exists only on the branch `oo-task` (a84cb6c), not on main.
-
-### Ask for a tagged table where the value may be a string (atmos-lang#139)
-
-A tag is a string, so a tag pattern also matches a text with the same
-characters: `"List" ?? :List` is true. Where the value may be a string,
-ask for a tagged table: `v ?? :T []` is true for `:T [...]` and its
-subtypes, false for the string "T" and for a table with no tag (manual,
-"Equivalence", lang 82d6653). The author kept tags as strings
-("Mantém tag igual a string. Usar o seu truque por enquanto"), from a
-question of `pico-slides#82`.
-
-```
-;; before
-if (type(c) == :table) && (c ?? :List) { <...> }   ;; or, wrong for the text "List": if c ?? :List
-
-;; after
-if c ?? :List [] { <...> }
-```
-
-A project whose vocabulary gives strings a meaning of their own may
-wrap all its tests in one function instead: `pico-slides#89` (8d1749f)
-has `Slides.is(v, T)`, where a string is the short form of `:text [...]`.
 
 ### The idiom of the library is fine (env-iup#23)
 
