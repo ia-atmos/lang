@@ -4,13 +4,13 @@ The time of a build with `include`: separate compilation, a
 `--verbose`, C flags on the command line. Material: `261123-cc.md`.
 Prototypes go to the branch `cc` (cut from `origin/main` at `5d1b6a7`).
 
-Last update: 2026-11-26.
+Last update: 2026-11-27.
 
 ## Index of items
 
 | # | Item | State |
 |---|------|-------|
-| #1 | Separate compilation: split the generated C into units compiled in parallel (first step), cache later | Asked 2026-11-23; recommended: split into N units in parallel. Prototype by the session, to be confirmed (rule `atmos-lang#95`, 2026-11-25): the split done by gcc itself, `-flto=auto`, for a C over 256 KB (section "LTO") |
+| #1 | Separate compilation: first path | Superseded by `#2` (import). The LTO for a large C (`-flto=auto`) was removed, decided 2026-11-27 ("Sim", after "Acho que não. Vai fazer diferença após o import?"): it does not apply to modules, and at link it would undo their cache. The change to `a_nat_is` stays |
 | #2 | `import`: each file compiled apart (the author, 2026-11-26) | Approved 2026-11-26 ("#2 sim"). Prototype on `cc`: Pingus converted in a copy passes 40/40 (section "Import: the prototype") |
 | #3 | Which top-level names are local to a file (the author: "usar val para locais") | Answered 2026-11-26 ("Tudo certo"): every top-level name is seen by who imports, as with `include`; no rule for `val` |
 | #4 | Native code under `import`: the names of the two preludes | Decided 2026-11-26: `:prelude.h` (every unit) and `:prelude.c` (the unit of its file), his suggestion ("Poderia ser prelude.c e .h?"). On `cc` |
@@ -336,3 +336,22 @@ change, 2.2 s after a change in `engine/engine.atm`. `.atmos` has 18 to
 `#6` decided: the default directory is `build/` (not `.atmos/`, which
 the section above names). `lang` already ignores `build/`; each port
 adds it to its `.gitignore`.
+
+## State of `cc` (2026-11-27)
+
+Merged with `main` (`origin/main` of 2026-11-27). `make test` (plain
+and `ATMOS_ASAN=1`: lex 33, ast 97, cases 560, golden 443, env 1, guide
+21) and `make test-cfgs` (48) pass.
+
+| `sdl-pingus/tst/run.sh` (40 tests) | Time | Result |
+|---|---|---|
+| `include`, only `:prelude` -> `:prelude.c` | 125 s | all pass |
+| `import` (converted copy), first run | 75 s | all pass |
+| `import`, second run (from `build/`) | 43 s | all pass |
+
+The original Pingus and env-sdl fail on `cc` with `invalid native :
+expected ':prelude.h' or ':prelude.c'` (`#4a`): they must migrate at
+the merge.
+
+Not started, of the author's request: `--verbose` (his point 2), C flags
+on the command line (his point 3).
