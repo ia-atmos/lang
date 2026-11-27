@@ -3,7 +3,7 @@
             await(true)
             return([2])
         } )()
-        X.print(atmos.status(t), t.pub)
+        X.print(type(t), t.pub)
         emit(:)
-        X.print(atmos.status(t), t.pub, t.ret)
+        X.print(type(t), t.ret)
     

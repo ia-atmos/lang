@@ -1,15 +1,7 @@
-A	2
-mid	2
-B	2
-x	nil
-t	1	end
-false	invalid access : finalized function pinned at out-02.atm:42
-false	invalid access : finalized table pinned at out-02.atm:43
-false	invalid access : finalized table pinned at out-02.atm:43
-false	invalid access : finalized table pinned at out-02.atm:43
-false	invalid access : finalized table pinned at out-02.atm:43
-false	invalid access : finalized pool pinned at out-02.atm:41
-true	0
-5
-nil
-7
+false	invalid set :out : expected task or pool : got table
+false	invalid set :out : expected task or pool : got function
+false	invalid set :out : expected task or pool : got number
+false	invalid set :out : expected task or pool : got nil
+false	invalid set :out : expected task or pool : got task
+false	invalid set :out : expected task or pool : got table
+0	nil

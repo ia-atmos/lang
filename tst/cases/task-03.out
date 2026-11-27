@@ -3,3 +3,5 @@
 20
 10
 dyn
+false	invalid access : dead task pinned at task-03.atm:19
+false	invalid access : dead task pinned at task-03.atm:19

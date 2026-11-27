@@ -1,8 +1,8 @@
 defer U 2
-after abort	suspended
+after abort	xtask.suspended
 defer inner
 defer U 1
-end	dead
+end	xtask.dead
 defer 1
 defer 2
 defer 3

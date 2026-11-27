@@ -1,36 +1,26 @@
-;; set :out pub = v: the pub of the running task refers to a value of an
-;; inner block, until the value ends: then it goes back to nil. An
-;; unpinned value stays until the block of the set ends.
-task T () {
+;; The pub ends with its task. Written by the task, it may hold what is
+;; pinned in the body block of the task, with a plain set; data of an
+;; inner block is an escape. The pub may also refer to another task, with
+;; set :out. A name that kept data read through a pub refers to a dead
+;; value after the task ends.
+task Widget () {
+    set pub = []
+    pin spring = [k=10]
+    set pub.spring = spring         ;; ok: both end with the task
     do {
-        pin x = [v=10]
-        set :out pub = x
-        await(:a)
-    }                               ;; x ends: pub is nil
-    await(:b)
-    set :out pub = [v=20]
-    await(:c)
-}
-pin t = spawn T()
-print(t.pub.v)
-emit :a
-print(t.pub)
-emit :b
-print(t.pub.v)
-emit :c
-print(t.pub)
-
-;; a value that outlives the task: the place goes with the task
-task U (z) {
-    set :out pub = z
-    await(:d)
-}
-do {
-    pin y = [v=30]
-    do {
-        pin u = spawn U(y)
-        print(u.pub.v)
+        pin inner = [k=20]
+        print(catch true { set pub.inner = inner })
+        pin sub = spawn { await false }
+        set :out pub.sub = sub      ;; a task of an inner block
+        print(type(pub.sub))
     }
-    print(y.v)
+    print(type(pub.sub))
+    await :end
 }
-print(:end)
+pin w = spawn Widget()
+val s = w.pub.spring                ;; a name of data of the task
+print(s.k, type(s), type(w.pub))
+emit :end
+print(type(w), type(s))
+print(catch true { s.k })
+print(catch true { w.pub })

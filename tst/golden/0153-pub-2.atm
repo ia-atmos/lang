@@ -1,5 +1,6 @@
         pin t = spawn (task () {
             set pub = 10
+            await(false)
         }) ()
         print(t.pub)
     

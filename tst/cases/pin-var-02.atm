@@ -1,11 +1,13 @@
 ;; A `pin var` with no initial value owns what it gets later: it is
-;; finalized at the end of its block, and a place written with `set :out`
-;; goes back to nil then.
-var y
-do {
+;; finalized at the end of its block.
+task T () {
     pin var t
     set t = [10]
-    set :out y = t
-    print(y@0)
+    set pub = [t=t]
+    await :x
 }
-print(y)
+pin a = spawn T()
+val k = a.pub.t
+print(k@0, type(k))
+emit :x
+print(type(k))

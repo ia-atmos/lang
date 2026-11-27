@@ -2,6 +2,6 @@
 X
 true	task
 20
-true	xtask	suspended
+true	xtask.suspended	xtask.suspended
 X
-dead
+xtask.dead

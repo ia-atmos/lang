@@ -5,7 +5,7 @@
             }) ()
             print(:0)
             (func (x) {
-                if (type(x) == 'xtask') {
+                if (x ?? :xtask) {
                     print(:2, x == t)
                 }
             }) (await(true))

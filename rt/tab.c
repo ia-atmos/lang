@@ -304,6 +304,10 @@ static int is_pub (AVal t, AVal k) {
 
 AStatus a_index_x (AVal* dst, AVal t, AVal k) {
     if (is_pub(t, k)) {
+        // the pub ends with its task
+        if (a_is_dead(t)) {
+            return a_err_fin(t);
+        }
         a_cpy(dst, A_TASK_OF(t)->pub);
         return A_OK;
     }
@@ -330,6 +334,9 @@ AStatus a_index_x (AVal* dst, AVal t, AVal k) {
 
 AStatus a_setindex_x (AVal t, AVal k, AVal v) {
     if (is_pub(t, k)) {
+        if (a_is_dead(t)) {
+            return a_err_fin(t);
+        }
         return a_pub_set(A_TASK_OF(t), v);
     }
     if (t.type != A_TAB) {
@@ -368,17 +375,11 @@ AStatus a_out_tab (AVal t, AVal k, AVal v) {
         return a_error("invalid index : unexpected %s",
             (k.type == A_NIL) ? "nil" : "nan");
     }
+    if (a_out_chk(v) != A_OK) {
+        return A_ERROR;
+    }
     a_tab_put(A_TAB_OF(t), k, v);
     return A_OK;
-}
-
-void a_out_tab_end (AVal t, AVal k, AVal v) {
-    if (t.type!=A_TAB || a_is_fin(t) || v.type<A_STR) {
-        return;
-    }
-    if (a_same(a_tab_get(A_TAB_OF(t),k), v)) {
-        a_tab_set(A_TAB_OF(t), k, a_nil());
-    }
 }
 
 void a_tab_put (ATab* t, AVal k, AVal v) {

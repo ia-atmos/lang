@@ -4,5 +4,5 @@
         pin ts = tasks(1)
         val ok1 = spawn @ts T()
         val ok2 = spawn @ts T()
-        print(type(ok1)=='xtask', ok2)
+        print(ok1 ?? :xtask, ok2)
     

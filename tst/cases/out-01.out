@@ -1,9 +1,11 @@
-count	2
-hero	10	true	true
-map	ends
-enemy	1	aborted
-enemy	2	aborted
-after	nil	nil	nil
-hero	true	true	true
-false	invalid access : finalized table pinned at out-01.atm:31
-end
+1	2	2	xtask.suspended	tasks
+false	invalid escape : task pinned at out-01.atm:13
+xtask.dead	xtask.dead	tasks.dead
+true	true	true	true
+true	false
+false	invalid access : dead task pinned at out-01.atm:13
+false	invalid access : dead pool pinned at out-01.atm:15
+false	invalid access : dead pool pinned at out-01.atm:15
+nil	xtask: 0x?
+xtask.dead	50	xtask: 0x?
+xtask.dead	nil	xtask: 0x?

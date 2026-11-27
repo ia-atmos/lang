@@ -9,6 +9,6 @@ nil	nil	nil
 done
 1	nil	3	nil
 nil	3	nil
-nil	suspended
-1	dead
+nil	xtask.suspended
+1	xtask.dead
 false	invalid index : expected table : got xtask

@@ -4,15 +4,19 @@ spawn (task () {
 }) ()
 pin t = spawn (task () {
     set pub = 10
+    await false
 }) ()
 print(t.pub)
 set t.pub = 20
 print(t.pub)
 task T (n) {
     set pub = n
-    await(false)
+    await false
 }
 pin u = spawn T(10)
 print(u.pub)
 func getpub () { pub }
 pin w = spawn (task () { set pub = :dyn ; print(getpub()) })()
+;; the pub ends with its task
+print(catch true { w.pub })
+print(catch true { set w.pub = 1 })

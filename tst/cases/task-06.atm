@@ -12,7 +12,7 @@ do {
 do {
     pin t = spawn T(4)
     abort(t)
-    print(atmos.status(t))
+    print(type(t))
     abort(t)
     print(:after)
 }

@@ -2,13 +2,13 @@
 A	U ends
 A	defer U
 A	defer orphan
-dead
+xtask.dead
 -- orphan running
 B	U ends
 B	defer U
 B	defer orphan
 B terminated
-dead
+xtask.dead
 M	defer orphan
 -- end
 defer main

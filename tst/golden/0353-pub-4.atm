@@ -1,7 +1,7 @@
         pin T = task () {
             do {
                 set pub = []
-                return(pub)
+                await(false)
             }
         }
         pin t = spawn T()

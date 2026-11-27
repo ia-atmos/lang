@@ -126,8 +126,7 @@ typedef struct Defer {
     // 3: `enter`/`leave` of the context in trail `ot`: it ends with the
     // defers of the block, before its pins are finalized
     int   out;
-    int   ot, ok, ov;
-    const char* odst;
+    int   ot;
 } Defer;
 
 // Appends one line at column zero (labels).
@@ -1097,15 +1096,7 @@ static void blk_close (Unit* u, Blk b, Dst d, Hnd h) {
             out(u, "a_pin_end(NULL, %s, &st, 0);", pin_ref(mine[i].pin));
             continue;
         }
-        if (mine[i].out == 1) {
-            out(u, "if (a_truthy(L[%d])) a_out_tab_end(L[%d], L[%d], L[%d]);",
-                mine[i].flag, mine[i].ot, mine[i].ok, mine[i].ov);
-            continue;
-        } else if (mine[i].out == 2) {
-            out(u, "if (a_truthy(L[%d])) a_out_var_end(&%s, L[%d]);",
-                mine[i].flag, mine[i].odst, mine[i].ov);
-            continue;
-        } else if (mine[i].out == 3) {
+        if (mine[i].out == 3) {
             out(u, "if (a_truthy(L[%d])) {", mine[i].flag);
             out(u, "    AStatus st_c = a_ctx_end(t, %d);", mine[i].ot);
             out(u, "    if (st == A_OK) st = st_c;");
@@ -1680,13 +1671,9 @@ static int is_place (Expr* dst) {
 
 // set x = e  |  set t@k, y = e
 // Tables and keys are evaluated before the values.
-// set :out x = e: the place refers to the value, with no check of an
-// escape and no adoption, until the enclosing block ends, when it goes
-// back to nil if it still refers to it. The value outlives the block
-// (it belongs to this block or to an outer one), so the place never
-// refers to a finalized value; a name that reads the place and
-// outlives the block refers to a finalized value, which may not be
-// used.
+// set :out x = e: the place refers to a task or a pool of an inner
+// block, with no check of an escape and no adoption. It is never reset:
+// when its block ends, the task is dead, and the reference stays valid.
 static void gen_set_out (Unit* u, Expr* e) {
     Expr* dst = e->u.set.dsts.v[0];
     if (dst->tag==E_INDEX && dst->u.index.kind==IDX_LAST) {
@@ -1701,46 +1688,22 @@ static void gen_set_out (Unit* u, Expr* e) {
     }
     Opnd v = gen_expr(u, e->u.set.src);
     out(u, "a_lin = %d;", lin_of(e->tk));
-    Defer d;
-    memset(&d, 0, sizeof(d));
-    d.flag  = slot_new(u);
-    d.trail = -1;
-    d.ov    = slot_new(u);
-    out(u, "a_cpy(&L[%d], %s);", d.ov, v.c);
     if (dst->tag == E_INDEX) {
-        d.out = 1;
-        d.ot  = slot_new(u);
-        d.ok  = slot_new(u);
-        out(u, "a_cpy(&L[%d], %s);", d.ot, l.t.c);
         if (dst->u.index.kind == IDX_NEXT) {
             // t@+: the index that is next now
-            out_try(u, "a_out_next(&L[%d], L[%d])", d.ok, d.ot);
+            Opnd k = opnd_tmp(u);
+            out_try(u, "a_out_next(&%s, %s)", k.c, l.t.c);
+            out_try(u, "a_out_tab(%s, %s, %s)", l.t.c, k.c, v.c);
+            opnd_rel(u, k);
         } else {
-            out(u, "a_cpy(&L[%d], %s);", d.ok, l.k.c);
+            out_try(u, "a_out_tab(%s, %s, %s)", l.t.c, l.k.c, v.c);
         }
-        out_try(u, "a_out_tab(L[%d], L[%d], L[%d])", d.ot, d.ok, d.ov);
-        // until the value ends, if it has an end of its own; else, until
-        // this block ends
-        out(u, "a_set(&L[%d], a_bool(!a_out_reg_tab(L[%d], L[%d], L[%d])));",
-            d.flag, d.ot, d.ok, d.ov);
     } else if (dst->tag == E_PUB) {
-        // the place is in the running task, which the entry holds
-        d.out  = 2;
-        d.ot   = slot_new(u);
-        d.odst = xfmt("A_TASK_OF(L[%d])->pub", d.ot);
-        out_try(u, "a_out_pub(&L[%d], L[%d], &L[%d])", d.ot, d.ov, d.flag);
+        out_try(u, "a_out_pub(%s)", v.c);
     } else {
-        Var* x = dst->var;
-        d.out  = 2;
-        d.odst = var_c(u, x);
-        out(u, "a_name(L[%d], %s);", d.ov, var_depth(u, x));
-        out(u, "a_cpy(&%s, L[%d]);", d.odst, d.ov);
-        out(u, "a_set(&L[%d], a_bool(!a_out_reg_var(&%s, %s, L[%d], %s)));",
-            d.flag, d.odst, x->boxed ? var_raw(u,x) : "a_nil()", d.ov,
-            var_depth(u, x));
+        out_try(u, "a_out_chk(%s)", v.c);
+        out(u, "a_cpy(&%s, %s);", var_c(u, dst->var), v.c);
     }
-    u->defs = realloc(u->defs, (u->ndefs+1) * sizeof(Defer));
-    u->defs[u->ndefs++] = d;
     opnd_rel(u, v);
     opnd_rel(u, l.k);
     opnd_rel(u, l.t);

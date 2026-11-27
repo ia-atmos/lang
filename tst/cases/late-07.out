@@ -2,13 +2,13 @@ U ends
 defer c
 defer U 2
 defer U 1
-dead
+xtask.dead
 B
 inner goes on
-aborted	suspended
+aborted	xtask.suspended
 defer inner
 defer V 1
-dead
+xtask.dead
 defer c
 2	2
 end

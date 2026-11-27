@@ -25,4 +25,4 @@ spawn {
     }
 }
 emit(:X)
-print(atmos.status(u))
+print(type(u))

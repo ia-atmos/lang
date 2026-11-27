@@ -11,11 +11,11 @@ task Parent () {
     await(false)
 }
 pin p = spawn Parent()
-print(atmos.status(p))
+print(type(p))
 task Self () {
     defer { print(:self_defer) }
     abort(task)
     print(:no3)
 }
 pin s = spawn Self()
-print(atmos.status(s))
+print(type(s))

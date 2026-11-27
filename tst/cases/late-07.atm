@@ -18,7 +18,7 @@ task U () {
 }
 pin u = spawn U()
 emit(:Go)
-print(atmos.status(u))
+print(type(u))
 
 ;; aborted while it waits
 task V () {
@@ -41,12 +41,12 @@ spawn {
     } with {
         await(:C)
         abort(v)
-        print("aborted", atmos.status(v))
+        print("aborted", type(v))
         abort(v)
     }
 }
 emit(:A)
-print(atmos.status(v))
+print(type(v))
 
 ;; the pending exit is a return with a value of the task
 task W () {

@@ -14,9 +14,17 @@ spawn @ts Ship(3)
 print(a.pub.rect.h)
 emit :go
 
-;; a value pinned in the body of the task cannot be published
-task Bad () {
+;; a value pinned in the body of the task may be published: the pub ends
+;; with the task; one of an inner block may not
+task Ok () {
     pin rect = [x=0]
     set pub = [rect=rect]
+}
+print(catch true { spawn Ok() ; nil })
+task Bad () {
+    do {
+        pin rect = [x=0]
+        set pub = [rect=rect]
+    }
 }
 print(catch true { spawn Bad() ; nil })

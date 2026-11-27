@@ -1,7 +1,7 @@
-10
-nil
-20
-nil
-30
-30
-end
+false	invalid escape : table pinned at out-pub-01.atm:11
+xtask.suspended
+xtask.dead
+10	table	table
+xtask.dead	table.dead
+false	invalid access : dead table pinned at out-pub-01.atm:8
+false	invalid access : dead task pinned at out-pub-01.atm:20

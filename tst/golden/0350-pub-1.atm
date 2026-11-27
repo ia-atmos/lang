@@ -1,6 +1,6 @@
         pin t = task () {
             set pub = []
-            return (pub)
+            await(false)
         }
         pin a = spawn (t) ()
         val x = a.pub
