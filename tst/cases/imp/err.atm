@@ -1,0 +1,3 @@
+func boom () {
+    nil + 1
+}

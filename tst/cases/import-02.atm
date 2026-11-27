@@ -1,0 +1,8 @@
+;; modules that import and include, names of one in the other, and the
+;; same name at the top level of two modules (the latest is seen)
+import "imp/a.atm"
+print(fa(0), fa(1), fa(2), fb(0), fb(1))
+print(name, b_name())
+print("before go")
+emit :go
+print("end")

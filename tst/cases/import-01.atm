@@ -1,0 +1,10 @@
+;; the file is a module: its body runs at the import, as a task of its
+;; own that stays until the program ends
+import "imp/geo.atm"
+import "imp/geo.atm"        ;; already imported: nothing happens
+
+print(area(2, PI), CNT.n)
+spawn Tick("main")
+emit :tick
+emit :tick
+print("end", CNT.n)

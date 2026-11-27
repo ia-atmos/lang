@@ -1,6 +1,6 @@
 ;; An old value in a cycle is reclaimed at the end of its block at the
 ;; latest; one with no cycle, at once. Nothing accumulates.
-```:prelude
+```:prelude.c
 static void res_fin (void* p) {
     printf("close\t%s\n", (char*) p);
     free(p);

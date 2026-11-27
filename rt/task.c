@@ -1671,6 +1671,12 @@ static AStatus trail_abort (ATask* t, ATrail* tr) {
         ANode*  n = NULL;
         int kind;
         while (st==A_OK && (kind = kit_next(&it,&c,&n))!=0) {
+            // a module is left to the block that pins it, which ends it
+            // in its turn, as the trail unwinds: what the rest of the
+            // program declared after it may still use it
+            if (kind!=1 && n->hdr.type==A_XTASK && ((ATask*)n)->mod) {
+                continue;
+            }
             st = (kind == 1) ? trail_abort(t, c) : node_abort(n);
         }
         node_trav(&t->node, -1);
@@ -2460,6 +2466,20 @@ AStatus a_spawn_pin (AVal* dst, AVal proto, int base) {
     return st;
 }
 
+// The body of a module (`import`): pinned to the block of the import,
+// and as deep as the main chunk, since its top-level names are those of
+// the program and it only ends with it.
+static int SPAWN_MOD = 0;
+
+AStatus a_spawn_mod (AVal* dst, AVal proto, int base) {
+    SPAWN_PIN = 1;
+    SPAWN_MOD = 1;
+    AStatus st = a_spawn(dst, proto, a_nil(), base);
+    SPAWN_PIN = 0;
+    SPAWN_MOD = 0;
+    return st;
+}
+
 AStatus a_spawn_in (AVal* dst, AVal proto, int base, AVal h) {
     if (h.type==A_TAB && h.u.o->pinned) {
         SPAWN_PIN   = 2;
@@ -2560,6 +2580,11 @@ static AStatus spawn_ (AVal* dst, AVal proto, AVal pool, int base) {
     }
     // the body is one deeper than the block the task is attached to
     t->depth = a_depth + 1;
+    if (SPAWN_MOD) {
+        t->depth = MAIN->depth;
+        t->mod   = 1;
+        SPAWN_MOD = 0;
+    }
     if (SPAWN_PIN == 1) {
         // pinned from birth, in the block of the spawn
         t->node.hdr.pinned = 1;

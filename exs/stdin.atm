@@ -4,7 +4,7 @@
 ;;
 ;;      printf 'one\ntwo\nquit\nthree\n' | atmos exs/stdin.atm
 
-```:prelude
+```:prelude.h
 #include <stdio.h>
 #include <string.h>
 

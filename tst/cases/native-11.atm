@@ -1,7 +1,7 @@
 ;; A binding declares that a native holds another value, as a child
 ;; resource holds its parent: the child is born with its floor in the
 ;; block of the parent, and is finalized before it.
-```:prelude
+```:prelude.c
 static void res_fin (void* p) {
     printf("close\t%s\n", (char*) p);
     free(p);

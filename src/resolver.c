@@ -30,6 +30,10 @@ static Proto* PROTO = NULL;
 static int    NPROTOS = 0;
 
 // Top-level variables of the main chunk.
+// Module being resolved, and the number of functions of each.
+static int MOD = 0;
+static int MODLID[FILES_MAX];
+
 static Var** GLOBALS  = NULL;
 static int   NGLOBALS = 0;
 
@@ -92,8 +96,14 @@ static Var* declare (Tk tk, VarKind kind) {
 
     // scopes: builtins, then the main block
     int top = (SCOPE->up!=NULL && SCOPE->up->up==NULL);
+    v->mod = MOD;
     if (top) {
         v->global = 1;
+        for (int i=0; i<NGLOBALS; i++) {
+            if (GLOBALS[i]->mod==MOD && !strcmp(GLOBALS[i]->tk.str,tk.str)) {
+                v->nth++;
+            }
+        }
         GLOBALS = realloc(GLOBALS, (NGLOBALS+1) * sizeof(Var*));
         GLOBALS[NGLOBALS++] = v;
     }
@@ -148,6 +158,8 @@ static Var* SELF = NULL;
 static Proto* proto_new (int dots, int task) {
     Proto* p = xalloc(sizeof(Proto));
     p->id   = NPROTOS++;
+    p->mod  = MOD;
+    p->lid  = MODLID[MOD]++;
     p->up   = PROTO;
     p->dots = dots;
     p->task = task;
@@ -250,6 +262,13 @@ static void hoist (Expr* e) {
         case E_BLOCK:
             hoist_list(&e->u.block.es);
             break;
+        case E_IMPORT: {
+            int mod = MOD;
+            MOD = e->u.import.mod;
+            hoist(e->u.import.blk);
+            MOD = mod;
+            break;
+        }
         case E_DO:
             hoist(e->u.xdo.blk);
             break;
@@ -672,11 +691,15 @@ static void res (Expr* e) {
             if (kind == NAT_ERR) {
                 err(e->tk, "invalid native : unknown type");
             }
+            if (kind == NAT_OLD) {
+                err(e->tk, "invalid native : expected ':prelude.h' "
+                    "or ':prelude.c'");
+            }
             int n = 0;
             for (const char* p=s; *p!='\0'; p++) {
                 n += (p[0]=='$' && nat_id(p+1)>0);
             }
-            if (kind==NAT_PRE && n>0) {
+            if ((kind==NAT_PRE || kind==NAT_ONCE) && n>0) {
                 err(e->tk, "invalid native : unexpected variable");
             }
             e->vars = xalloc((n+1) * sizeof(Var*));
@@ -1035,6 +1058,23 @@ static void res (Expr* e) {
             res_patt(e->u.await.p);
             break;
 
+        case E_IMPORT: {
+            // the body of a module: a task with no enclosing function,
+            // whose top-level names are those of the program
+            int    mod = MOD;
+            Proto* up  = PROTO;
+            MOD   = e->u.import.mod;
+            PROTO = NULL;
+            Proto* p = proto_new(0, 1);
+            p->module = 1;
+            e->proto  = p;
+            PROTO = p;
+            res_stmts(&e->u.import.blk->u.block.es, 1);
+            PROTO = up;
+            MOD   = mod;
+            break;
+        }
+
         case E_SPAWN_BLK:
             // a transparent block shares the frame of its task
             chk_await(e->tk, "spawn");
@@ -1157,4 +1197,16 @@ Var** resolver_main (Expr* prog, int* n) {
 
     *n = NGLOBALS;
     return GLOBALS;
+}
+
+int resolver_globals (int mod, Var*** vs) {
+    Var** l = xalloc((NGLOBALS+1) * sizeof(Var*));
+    int n = 0;
+    for (int i=0; i<NGLOBALS; i++) {
+        if (GLOBALS[i]->mod == mod) {
+            l[n++] = GLOBALS[i];
+        }
+    }
+    *vs = l;
+    return n;
 }

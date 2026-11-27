@@ -1,0 +1,8 @@
+pin RES = [open=true]
+func res_use () {
+    if RES.open => "open" => "closed"
+}
+defer {
+    set RES.open = false
+    print("res", "closed")
+}
