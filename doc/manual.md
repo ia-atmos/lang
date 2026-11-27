@@ -526,6 +526,11 @@ The following environment variables affect the build:
 - `ATMOS_HOME`: the directory with the runtime (`rt/` and `build/`).
   By default, it is the directory of the compiler itself, so a checkout may be
   moved after it is built.
+- `TMPDIR`: the directory where a program that runs at once (no `-o`) is
+  built and executed, in a temporary subdirectory removed at the end (default
+  `/tmp`). A host that mounts `/tmp` with no right to execute needs another
+  one, e.g. `TMPDIR=$HOME/tmp`; otherwise the compiler reports
+  `cannot run ... : Permission denied` and exits with `126`.
 
 ## Environments
 
