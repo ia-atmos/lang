@@ -1344,6 +1344,22 @@ static void frame_free (ATask* t) {
     free(f);
 }
 
+static void clr_deep (AVal v, uint32_t d);
+
+static void task_free_held (ATask* t, AVal x) {
+    if (x.type>=A_TAB && x.type!=A_XTASK && x.type!=A_TASKS &&
+        x.u.o->pinned==2 && x.u.o->rc>1)
+    {
+        if (t->pool != NULL) {
+            // the pool owns it until it ends, as with a task it holds
+            a_inc(x);
+            a_retire(x, x.u.o->depth, &t->pool->node.hdr);
+        } else {
+            clr_deep(x, x.u.o->depth);
+        }
+    }
+}
+
 void a_node_free (ANode* n) {
     node_unmute(n);
     if (n->hdr.type == A_XTASK) {
@@ -1352,6 +1368,11 @@ void a_node_free (ANode* n) {
         if (t->proto != NULL) {
             a_dec(a_obj(&t->proto->hdr));
         }
+        // its pub and its final value, if they are pinned with it and
+        // something else still refers to them (a place of a `set :out`),
+        // end with its pool, as if it still held them
+        task_free_held(t, t->pub);
+        task_free_held(t, t->ret);
         a_dec(t->pub);
         a_dec(t->ret);
         if (t->pool != NULL) {
