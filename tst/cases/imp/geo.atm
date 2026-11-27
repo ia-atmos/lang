@@ -1,0 +1,21 @@
+;; a module: its top-level names are those of the program
+val PI = 3
+pin CNT = [n=0]
+func area (w, h) {
+    set CNT.n = CNT.n + 1
+    w * h
+}
+task Tick (name) {
+    loop on :tick {
+        print(name, "tick")
+    }
+}
+;; lives until the program ends
+spawn {
+    await :tick
+    print("geo", "first tick")
+}
+defer {
+    print("geo", "bye")
+}
+print("geo", "loaded")

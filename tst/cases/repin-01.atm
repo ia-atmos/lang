@@ -1,6 +1,6 @@
 ;; A `pin` may be assigned: it owns the new value, in its block, and the
 ;; old one is finalized when its last reference goes.
-```:prelude
+```:prelude.c
 static void res_fin (void* p) {
     printf("close\t%s\n", (char*) p);
     free(p);

@@ -1,2 +1,2 @@
 val x = 1
-`:prelude int y = $x;`
+`:prelude.c int y = $x;`

@@ -36,7 +36,7 @@
     * Native
 * EXPRESSIONS
     * Chunks
-        - `;` `include` `do` `escape` `defer` `test`
+        - `;` `include` `import` `do` `escape` `defer` `test`
     * Declarations and Assignments
         - `val` `var` `pin` `where`
         - `func` `return`
@@ -399,7 +399,7 @@ Atmos compiles to C, and a program can embed C code in
 [native literals](#native-literals), which are enclosed by backquotes:
 
 ```
-```:prelude
+```:prelude.c
 #include <math.h>
 ```
 val x = 9
@@ -481,18 +481,33 @@ The compiler accepts the following options:
 ```
 $ atmos
 
-Usage: atmos [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...
+Usage: atmos [-c] [-o <out>] [-t] [-e <env>] [--build <dir>] <input> [<args>] ...
 
 Options:
-   -c          Emit C only (to the standard output).
+   -c          Emit C only (to the standard output, or, with -o <dir>,
+               one file per module in the directory).
    -o <out>    Build only.
    -t          Enable test blocks.
    -e <env>    Include the file of an environment first.
+   --build <dir>   Keep the C and the objects of the modules in the
+               directory (default: build).
 ```
 
 The compiler translates the program to a single C file, and then calls the C
 compiler to build it and link it with the Atmos runtime.
+A program with [modules](#import) becomes one C file per module, which are
+compiled at the same time.
+The C file and the compiled object of each module are kept in the directory
+`build` of the current directory, or in the one given with `--build`, under
+the name of the module.
+Each set of flags of the C compiler has a directory of its own inside it.
+A module is only compiled again when its C code changes, or a file that its C
+code includes.
+The directory may be removed at any time.
+With `-c -o <dir>`, the compiler writes the C files to the directory and prints
+their paths, for another build to compile them.
 The following environment variables affect the build:
+
 
 - `ATMOS_CC`: the C compiler (default `cc`).
 - `ATMOS_CFLAGS`: the flags for the C compiler (default `-O1`).
@@ -635,7 +650,7 @@ If the task raises an exception, it goes to the task that holds it, as usual,
 and not back to the environment.
 
 An environment may be part of the program itself, in a
-[native literal](#native-literals) with the tag `:prelude`.
+[native literal](#native-literals) with a tag `:prelude.c` or `:prelude.h`.
 More often it is a file that the program [includes](#include), such as
 `pico.atm` or `raylib.atm`.
 
@@ -702,6 +717,7 @@ The following keywords are reserved in Atmos:
     if                  ;; if block
     ifs                 ;; ifs block
     in                  ;; in iterator, in context
+    import              ;; import file
     include             ;; include file
     it                  ;; implicit parameter
     loop                ;; loop block
@@ -871,7 +887,8 @@ A tag in the beginning of the literal gives its kind:
 
 ```
 `stmts`             ;; C statements, evaluates to nil
-`:prelude decls`    ;; C declarations in the beginning of the file
+`:prelude.c decls`  ;; C declarations in the beginning of the file
+`:prelude.h decls`  ;; the same, also for the files that import this one
 `:number e`         ;; C expression converted to a number
 `:boolean e`        ;; C expression converted to a boolean
 `:string e`         ;; C string, which is copied (NULL becomes nil)
@@ -913,12 +930,22 @@ as usual, and not to the literal.
 
 The names with the prefixes `a_`, `A_`, and `atm_` belong to the runtime and to
 the code that the compiler generates.
-A `:prelude` must not declare names with these prefixes.
+A prelude must not declare names with these prefixes.
+
+A prelude says where its declarations go, as the two kinds of files of C.
+A `:prelude.c` is for the file itself: what exists once in the program, such as
+a C variable or a function that is not `static`.
+A `:prelude.h` is also for every file that reaches it through an
+[import](#import), which are compiled apart: what they need to see, such as an
+`#include`, a type, a `static` function, or the `extern` of a variable that a
+`:prelude.c` defines.
+In a program with no `import`, both are the same.
+A `:prelude` with no suffix is an error.
 
 Examples:
 
 ```
-```:prelude
+```:prelude.c
 #include <string.h>
 ```
 val s = "hello"
@@ -1518,8 +1545,9 @@ An `include` is only valid in the main chunk of a file, outside any block.
 The file name is relative to the file with the `include`.
 A file is only included once: other occurrences have no effect.
 
-All files are compiled together, as a single program.
-There is no separate compilation, and no loading of files during execution.
+All included files are compiled together, as a single program, and there is
+no loading of files during execution.
+An [import](#import) compiles a file apart.
 
 Examples:
 
@@ -1534,6 +1562,62 @@ func area (w, h) {
 ;; main.atm
 include "geometry.atm"
 print(area(2, 3))       ;; --> 6
+```
+
+### Import
+
+A file may also be joined with `import`, as a *module*:
+
+```
+Import : `import´ STR
+```
+
+As with an `include`, the declarations of the file are visible in the rest of
+the program, the file name is relative to the file with the `import`, the
+statement is only valid in the main chunk of a file, and a file is only
+imported once.
+The names of a module are not qualified: a name at the top level of two files
+refers to the latest declaration, as usual.
+
+The difference is in how the file is compiled and executed:
+
+- A module is compiled apart from the rest of the program.
+  When the program is built again, only the modules that changed are compiled
+  again, which matters for a program with many files.
+  The compiler still reads all files at each build, such that all names are
+  checked as in a single program.
+- The body of a module executes as a task of its own, which starts at the
+  `import` and remains until the program terminates.
+  Its top-level blocks, pins, and defers therefore live as those of the main
+  chunk, and terminate in the reverse order.
+  However, an `await` at the top level of a module suspends the module only,
+  and not the file with the `import`.
+
+A file reached by an `include` belongs to the file that includes it.
+The C code of a [prelude](#native-literals) is shared with the other files
+only if it is a `:prelude.h`.
+
+Examples:
+
+```
+;; counter.atm
+pin cnt = [n=0]
+func tick () {
+    set cnt.n = cnt.n + 1
+}
+spawn {
+    loop on :tick {     ;; remains alive with the program
+        tick()
+    }
+}
+```
+
+```
+;; main.atm
+import "counter.atm"
+emit :tick
+emit :tick
+print(cnt.n)            ;; --> 2
 ```
 
 ### Blocks

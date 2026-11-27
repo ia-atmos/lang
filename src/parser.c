@@ -10,6 +10,7 @@
 //         f[] f"" f``
 // 1_prim
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -175,9 +176,47 @@ static List parser_stmts (const char* clo);
 // include "file.atm": the statements of the file take the place of
 // the include, as if they were written there. The path is relative to
 // the file with the include. A file is only included once.
-static void include_file (List* l, Tk tk, const char* path);
+//
+// `import "file"`: the same, but the file is a module: its statements
+// are the body of a task of its own, started at the import and kept
+// until the program ends, and its C goes to a unit of its own.
+static void include_file (List* l, Tk tk, const char* path, int import);
 
-static void parser_include (List* l) {
+// `a/b/../c` is `a/c`: a file has the same path from wherever it is
+// reached, in the messages and in the C of its module.
+static char* path_norm (const char* path) {
+    char* p = xfmt("%s", path);
+    for (char* up=strstr(p,"/../"); up!=NULL; up=strstr(p,"/../")) {
+        char* seg = up;
+        while (seg>p && seg[-1]!='/') {
+            seg--;
+        }
+        if (seg==up || !strncmp(seg,"../",3)) {
+            break;
+        }
+        memmove(seg, up+4, strlen(up+4)+1);
+    }
+    return p;
+}
+
+// The name of a module in its C symbols: its path, with `_` for what
+// is not a letter or a digit.
+static const char* mod_name (Tk tk, const char* path) {
+    char* name = xfmt("%s", path);
+    for (char* c=name; *c!='\0'; c++) {
+        if (!isalnum((unsigned char)*c)) {
+            *c = '_';
+        }
+    }
+    for (int i=0; i<NMODS; i++) {
+        if (!strcmp(MODS[i].name, name)) {
+            err(tk, "invalid import : name of module already in use");
+        }
+    }
+    return name;
+}
+
+static void parser_include (List* l, int import) {
     Tk tk = TK0;
     if (!accept_tag(TK_STR)) {
         err(TK1, "expected file name");
@@ -190,12 +229,13 @@ static void parser_include (List* l) {
     if (path[0]!='/' && sla!=NULL) {
         path = xfmt("%.*s/%s", (int)(sla-cur), cur, TK0.str);
     }
-    include_file(l, TK0, path);
+    path = path_norm(path);
+    include_file(l, TK0, path, import);
 }
 
 // Adds the statements of a file to `l`, unless it was included before.
 // `tk` is where an error is reported.
-static void include_file (List* l, Tk tk, const char* path) {
+static void include_file (List* l, Tk tk, const char* path, int import) {
     static char* done[FILES_MAX];
     static int   ndone = 0;
 
@@ -203,7 +243,8 @@ static void include_file (List* l, Tk tk, const char* path) {
     size_t len = 0;
     char* src = (real == NULL) ? NULL : file_read(real, &len);
     if (src == NULL) {
-        err(tk, "invalid include : cannot read file");
+        err(tk, "invalid %s : cannot read file",
+            import ? "import" : "include");
     }
     for (int i=0; i<ndone; i++) {
         if (!strcmp(done[i], real)) {
@@ -211,7 +252,8 @@ static void include_file (List* l, Tk tk, const char* path) {
         }
     }
     if (ndone == FILES_MAX) {
-        err(tk, "invalid include : too many files");
+        err(tk, "invalid %s : too many files",
+            import ? "import" : "include");
     }
     done[ndone++] = real;
 
@@ -220,11 +262,44 @@ static void include_file (List* l, Tk tk, const char* path) {
     Tk  tk0 = TK0;
     Tk  tk1 = TK1;
     lexer_init(path, src, len);
+    Expr* mod = NULL;
+    // what the compiler adds to a module is at the start of its file,
+    // and not at the import, which would change the C of the module
+    // with who imports it
+    Tk mtk = tk;
+    mtk.file = NFILES - 1;
+    mtk.lin  = 1;
+    if (import) {
+        mod = mk(E_IMPORT, tk);
+        mod->u.import.mod = NMODS;
+        MODS[NMODS].name = mod_name(tk, path);
+        MODS[NMODS].file = NFILES - 1;
+        NMODS++;
+    }
     lexer_token(&TK1);
     TK0 = TK1;
     List inc = parser_stmts("<eof>");
-    for (int i=0; i<inc.n; i++) {
-        list_add(l, inc.v[i]);
+    if (import) {
+        // the module stays until the program ends: `await(false)`
+        Tk f = mtk;
+        f.tag = TK_KEY;
+        f.str = "false";
+        f.len = 5;
+        Patt* p = xalloc(sizeof(Patt));
+        p->kind = PT_VAL;
+        p->tk   = f;
+        p->e    = mk(E_BOOL, f);
+        Expr* awt = mk(E_AWAIT, mtk);
+        awt->u.await.p = p;
+        list_add(&inc, awt);
+        Expr* blk = mk(E_BLOCK, mtk);
+        blk->u.block.es = inc;
+        mod->u.import.blk = blk;
+        list_add(l, mod);
+    } else {
+        for (int i=0; i<inc.n; i++) {
+            list_add(l, inc.v[i]);
+        }
     }
     lexer_restore(lex);
     TK0 = tk0;
@@ -240,12 +315,14 @@ static List parser_stmts (const char* clo) {
         if (l.n>0 && TK0.sep==TK1.sep) {
             err(TK1, "sequence error : expected ';' or new line");
         }
-        if (check_str("include")) {
+        if (check_str("include") || check_str("import")) {
+            int import = check_str("import");
             if (!top) {
-                err(TK1, "invalid include : expected top-level statement");
+                err(TK1, "invalid %s : expected top-level statement",
+                    import ? "import" : "include");
             }
             next();
-            parser_include(&l);
+            parser_include(&l, import);
             continue;
         }
         list_add(&l, parser());
@@ -2021,6 +2098,9 @@ static Expr* parser (void) {
 }
 
 Expr* parser_main (void) {
+    MODS[0].file = 0;
+    MODS[0].name = "main";
+    NMODS = 1;
     lexer_token(&TK1);
     TK0 = TK1;
     Expr* e = mk(E_BLOCK, TK1);
@@ -2029,7 +2109,7 @@ Expr* parser_main (void) {
         // the environment comes first, as an include written at the
         // top of the program (which may still have it: a file is only
         // included once)
-        include_file(&l, TK1, OPT_ENV);
+        include_file(&l, TK1, OPT_ENV, 0);
     }
     List prog = parser_stmts("<eof>");
     for (int i=0; i<prog.n; i++) {

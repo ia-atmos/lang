@@ -1,5 +1,5 @@
 ;; atm_emit_to through a chain of holders deeper than the fixed array
-```:prelude
+```:prelude.c
 static struct ATask* WHO = NULL;
 static void wake (void) {
     if (WHO != NULL) {

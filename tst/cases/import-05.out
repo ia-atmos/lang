@@ -1,0 +1,7 @@
+main	open
+blk	open
+T	open	true
+res	closed
+==> ERROR:
+ v  import-05.atm:19 (throw)
+==> stop

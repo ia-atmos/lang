@@ -30,7 +30,12 @@ char* file_read (const char* path, size_t* len);
 //                      its former name
 typedef enum {
     NAT_STMT, NAT_PRE, NAT_INT, NAT_NUM, NAT_BOOL, NAT_STR, NAT_VAL,
-    NAT_NUMBER, NAT_ERR
+    NAT_NUMBER, NAT_ERR,
+    // `:prelude.c`: C that only the unit of its file has (`NAT_PRE` is
+    // `:prelude.h`, which every unit has)
+    NAT_ONCE,
+    // `:prelude` alone, which is refused
+    NAT_OLD
 } NatKind;
 
 // Kind of a native, and where its code starts.
@@ -70,6 +75,18 @@ extern const char* FILENAME;
 #define FILES_MAX 256
 extern const char* FILES[FILES_MAX];
 extern int NFILES;
+
+// Modules: the program (0), and each file reached by `import`, in
+// order. A module is compiled to a C unit of its own. A file reached
+// by `include` belongs to the module that includes it.
+typedef struct Mod {
+    // index in `FILES`
+    int         file;
+    // name in the C symbols of the module
+    const char* name;
+} Mod;
+extern Mod MODS[FILES_MAX];
+extern int NMODS;
 
 // File being read by the lexer.
 extern int FILE_CUR;
@@ -147,6 +164,8 @@ typedef enum {
     E_PUB,
     // spawn T(...)  spawn @ts T(...)  spawn {...}
     E_SPAWN, E_SPAWN_BLK,
+    // import "file": the statements of a file, as a module
+    E_IMPORT,
     // tasks(n)
     E_TASKS,
     // emit @to (e)
@@ -281,6 +300,8 @@ struct Expr {
         // pool: destination pool, or NULL
         struct { Expr* pool; Expr* f; List args; Expr* ctx; Patt* cpat; } spawn;
         struct { Expr* blk; }                           sblk;
+        // mod: index in `MODS`
+        struct { Expr* blk; int mod; }                  import;
         struct { Expr* n; Expr* ctx; Patt* cpat; }     tasks;
         // to: target, or NULL
         struct { Expr* to; Expr* e; }                   emit;
@@ -344,6 +365,10 @@ struct Var {
     const char* csym;
     // top-level variable of the main chunk: static C variable
     int     global;
+    // module that declares it, and how many top-level variables of
+    // the module have its name before it
+    int     mod;
+    int     nth;
     // function that declares it
     Proto*  proto;
     // prototype that defines it, as in `task T () {...}`, and if
@@ -367,6 +392,11 @@ struct Var {
 // not expanded in place.
 struct Proto {
     int    id;
+    // module of the function, its number in the module, and if it is
+    // the body of the module
+    int    mod;
+    int    lid;
+    int    module;
     // enclosing function (NULL for the main chunk)
     Proto* up;
     // variables of enclosing functions used here, in capture order
@@ -385,6 +415,9 @@ struct Proto {
 // Returns the top-level variables of the main chunk.
 Var** resolver_main (Expr* prog, int* n);
 
+// Top-level variables of a module, in order.
+int resolver_globals (int mod, Var*** vs);
+
 // Function of the main chunk.
 extern Proto* PROTO_MAIN;
 
@@ -393,6 +426,14 @@ extern Proto* PROTO_MAIN;
 ///////////////////////////////////////////////////////////////////////////////
 
 // Generates the C source of the whole program.
-char* coder_main (Expr* prog, Var** globals, int nglobals);
+// A C unit of the program: its name, and its text.
+typedef struct CUnit {
+    const char* name;
+    char*       c;
+} CUnit;
+
+// Compiles the program to its C units, one per module: the program
+// first. Returns how many.
+int coder_main (Expr* prog, CUnit** units);
 
 #endif

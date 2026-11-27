@@ -1,5 +1,5 @@
 ;; the names of a prelude do not clash with what the compiler declares
-```:prelude
+```:prelude.c
 static int K  = 10;
 static int F1 = 1;
 static int T0 = 2;
