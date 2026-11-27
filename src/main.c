@@ -158,14 +158,6 @@ static void opts_num (void) {
     }
 }
 
-// A generated C larger than this (in bytes) is compiled with the link
-// time optimization of the C compiler in parallel (`-flto=auto`): gcc
-// then splits the one file in partitions compiled at the same time
-// (sdl-pingus, 3 MB, -O1: 20.6 s to 7.6 s on 4 cores). Below it, the
-// overhead of LTO (about 40 ms) is not worth it. The flag comes before
-// ATMOS_CFLAGS, so that `-fno-lto` there turns it off.
-#define LTO_MIN (256*1024)
-
 // The runtime of the configuration, or NULL if it cannot be built.
 static const char* runtime (const char* home, int asan) {
     char* rel = xfmt("build/libatmos%s%s%s%s%s.a",
@@ -199,10 +191,9 @@ static const char* runtime (const char* home, int asan) {
 
 // The C compiler with its flags: those of the environment of a
 // dedicated compiler, then those of the user.
-static const char* cc_flags (const char* home, int asan, int lto) {
-    return xfmt("%s %s %s %s %s %s %s %s %s -w -I%s/rt",
+static const char* cc_flags (const char* home, int asan) {
+    return xfmt("%s %s %s %s %s %s %s %s -w -I%s/rt",
         env("ATMOS_CC", "cc"),
-        lto ? "-flto=auto" : "",
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
         asan ? "-fsanitize=address -fno-omit-frame-pointer -g" : "",
@@ -214,7 +205,7 @@ static const char* cc_flags (const char* home, int asan, int lto) {
 }
 
 // Builds the C source into an executable. Returns 0 on success.
-static int build (const char* c, size_t clen, const char* exe) {
+static int build (const char* c, const char* exe) {
     const char* home = home_dir();
     int asan = (getenv("ATMOS_ASAN") != NULL);
     const char* lib = runtime(home, asan);
@@ -222,7 +213,7 @@ static int build (const char* c, size_t clen, const char* exe) {
         return 1;
     }
     char* cmd = xfmt("%s %s %s -lm %s %s -o %s",
-        cc_flags(home, asan, clen > LTO_MIN), c, lib,
+        cc_flags(home, asan), c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
         exe
@@ -394,7 +385,7 @@ static int build_units (CUnit* us, int n, const char* inp, const char* tmp,
     if (lib == NULL) {
         return 1;
     }
-    const char* cc = cc_flags(home, asan, 0);
+    const char* cc = cc_flags(home, asan);
     const char* dir = build_dir(cc);
     int keep = (dir != NULL);
     if (!keep) {
@@ -574,7 +565,7 @@ int main (int argc, char** argv) {
         FILE* f = fopen(cfile, "w");
         fputs(c, f);
         fclose(f);
-        ret = build(cfile, strlen(c), xfile);
+        ret = build(cfile, xfile);
     }
     if (ret != 0) {
         fprintf(stderr, ATMOS_NAME " : C compilation failed\n");
