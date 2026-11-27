@@ -832,6 +832,9 @@ The literals for `nil`, `boolean` and `number` follow the same
 [lexical conventions of Lua][lua-lexical].
 A number with no fractional part and no exponent is an integer (e.g., `10`,
 `0xFF`), and any other is a float (e.g., `1.5`, `1e3`).
+As in Lua, leading zeros do not make an octal number: `0740` is `740`; only
+`0x` starts a base other than ten. The same holds for [`tonumber`](#basic-functions)
+and [`X.load`](#x).
 A dot belongs to a number only before a digit, such that `t@0.x` is the field
 `x` of `t@0`, and `5.` is not a number.
 
@@ -4158,7 +4161,8 @@ there is no `require`.
   `string`, `table`, `function`, `task`, `xtask`, `tasks`, or `native`
 - `tostring(v)`: converts `v` to a string
 - `tonumber(v)`: converts `v` to a number, or evaluates to `nil` if `v` is
-  neither a number nor a string with a number
+  neither a number nor a string with a number, written as a
+  [literal](#literals) (`tonumber("0740")` is `740`)
 - `assert(v [, msg])`: raises an error with `msg` if `v` is falsy, and
   evaluates to its arguments otherwise
 - `next(t [, k])`: the key and value that follow the key `k` in the table

@@ -82,7 +82,7 @@ static AStatus std_tonumber (AFunc* self, int argc, AVal* argv) {
     if (strpbrk(s, hex ? ".pP" : ".eEnN") == NULL) {
         // as a literal: a decimal that does not fit the integer is a
         // float, a hexadecimal wraps
-        uint64_t u = strtoull(d, &end, 0);
+        uint64_t u = strtoull(d, &end, hex ? 16 : 10);
         if (hex || u<=(uint64_t)A_INT_MAX) {
             ret = a_int((AInt)((*s == '-') ? 0 - u : u));
         } else {

@@ -615,7 +615,7 @@ static void gen_args (Unit* u, List* es, const char* n) {
 static const char* gen_num (const char* str) {
     int hex = (str[0]=='0' && (str[1]=='x' || str[1]=='X'));
     if (strpbrk(str, hex ? ".pP" : ".eE") == NULL) {
-        unsigned long long v = strtoull(str, NULL, 0);
+        unsigned long long v = strtoull(str, NULL, hex ? 16 : 10);
         unsigned long long max = OPT_INT32 ?
             2147483647ULL : 9223372036854775807ULL;
         if (hex || (strlen(str)<=19 && v<=max)) {
