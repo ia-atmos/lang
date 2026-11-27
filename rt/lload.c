@@ -252,7 +252,7 @@ static AStatus number (Load* l, int neg, AVal* dst) {
 
     char* stop;
     if (!real) {
-        unsigned long long v = strtoull(buf, &stop, 0);
+        unsigned long long v = strtoull(buf, &stop, hex ? 16 : 10);
         if (*stop != '\0') {
             return fail(l, "invalid number");
         }

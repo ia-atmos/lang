@@ -1,0 +1,7 @@
+;; an integer with leading zeros is decimal, as in Lua (not octal, as
+;; in C), in a literal, in tonumber and in X.load; only 0x is hexadecimal
+print(0740, 007, 08, 0x10)                          ;; --> 740 7 8 16
+print(tonumber("0740"), tonumber("-0740"), tonumber("08"), tonumber("0x1F"))
+                                                    ;; --> 740 -740 8 31
+val t = X.load("[a=0740, b=0x10, c=-012]")
+print(t.a, t.b, t.c)                                ;; --> 740 16 -12
