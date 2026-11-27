@@ -3,7 +3,7 @@ func g (x) { x * 2 }
 val t = [x=10]
 print(g 3)
 print(g t.x)
-print(g 3 + 1)
+print((g 3) + 1)
 print(f(g 1, g 2))
 val a, b = g 10, g 20
 print(a, b)

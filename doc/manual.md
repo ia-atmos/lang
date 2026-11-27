@@ -435,8 +435,9 @@ Atmos borrows much from Lua, and some differences are worth mentioning:
     - Lua: `f "s"` and `f {...}`, a single string or table
     - Atmos: also a tag, a lambda, a clock, a number, `nil`, `true`, `false`,
       and a name with fields and indexes: `f x`, `f t.x`, `f 10`
-        - As in Lua, there is a single argument, which binds tighter than
-          any operator.
+        - As in Lua, there is a single argument; unlike Lua, a call with no
+          parenthesis cannot be the left operand of an operator:
+          `f x + 1` is an error, written `f(x) + 1` or `f(x + 1)`.
 - Method call:
     - Lua: `o:f()`, with the methods found through a metatable
     - Atmos: none, as it has no metatables: `m.f(o)` with a function of a
@@ -2661,8 +2662,12 @@ An atom is a [constructor](#types--values) (a string, tag, table, lambda,
 clock, or native literal), a number, `nil`, `true`, `false`, or a name, which
 may carry fields and indexes, but not a call: `f t.x` is `f(t.x)`.
 
-The argument starts in the same line of the function, and binds tighter than
-any operator: `f x + 1` is `f(x) + 1`.
+The argument starts in the same line of the function.
+A call with no parenthesis cannot be the left operand of a binary operator:
+`f x + 1` is an error (`invalid call : use parentheses to disambiguate`),
+since it would read as `f(x) + 1` and is easily meant as `f(x + 1)`.
+Write `f(x) + 1` or `f(x + 1)`. The same holds for an
+[await](#await) with no parenthesis: `await x * 1ms` is an error.
 There is a single argument, with no commas: in `[a = f x, b = 1]` and in
 `g(f x, 1)`, the comma belongs to the enclosing list.
 Anything else requires the parenthesis: an operation (`f(x + 1)`, `f(-x)`,
@@ -2714,7 +2719,7 @@ print t.x       ;; same as print(t.x)
 See [Ambiguities](#ambiguities):
     `f` ⏎ `(x)` reads as two statements `f ; (x)` (not `f(x)`);
     `f :X []` reads as `f(:X [])` (not `f(:X) []`);
-    `f x + 1` reads as `f(x) + 1` (not `f(x + 1)`); and
+    `f x + 1` is an error (write `f(x) + 1` or `f(x + 1)`); and
     `f -x` reads as `f - x` (not `f(-x)`).
 
 [lua-call]: https://www.lua.org/manual/5.4/manual.html#3.4.10
@@ -3363,6 +3368,9 @@ predicate:
 Like the [argument of a call](#calls) with no parenthesis, the bare pattern is
 an atom: `await t` and `await t.x` await the task in a name, like `await(t)`.
 Any other expression requires the value form `await(e)`.
+As a call with no parenthesis, a bare await cannot be the left operand of a
+binary operator: `await t.ms * 1ms` is an error, written `await(t.ms * 1ms)`
+or `(await t.ms) * 1ms`.
 
 A predicate is an expression over the event, which is bound to `it`, or a
 function that receives the event.
@@ -4646,14 +4654,14 @@ may surprise a naive reading:
 
 | #                 | case                  | what it is              | what it is **not**       |
 |-------------------|-----------------------|-------------------------|--------------------------|
-| [await](#await)   | `await 20min + 1s`    | `(await 20min) + 1s`    | `await(20min + 1s)`      |
+| [await](#await)   | `await 20min + 1s`    | error: use parenthesis  | `(await 20min) + 1s`, `await(20min + 1s)` |
 | [await](#await)   | `await P` ⏎ `until c` | `await P ; until c`     | `await<P until c>`       |
 | [await](#await)   | `<P until a > b>`     | error: use parenthesis  | `<P until (a > b)>`      |
 | [await](#await)   | `<P until a \|\| Q>`  | error: use parenthesis  | `<<P until a> \|\| Q>`   |
 | [table](#table)   | `:X` ⏎ `[]`           | `:X ; []`               | `:X []`                  |
 | [calls](#calls)   | `f` ⏎ `(x)`           | `f ; (x)`               | `f(x)`                   |
 | [calls](#calls)   | `f :X []`             | `f(:X [])`              | `f(:X) []`               |
-| [calls](#calls)   | `f x + 1`             | `f(x) + 1`              | `f(x + 1)`               |
+| [calls](#calls)   | `f x + 1`             | error: use parenthesis  | `f(x) + 1`, `f(x + 1)`   |
 | [calls](#calls)   | `f t.x`               | `f(t.x)`                | `f(t).x`                 |
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |

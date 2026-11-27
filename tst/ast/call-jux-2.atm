@@ -1,5 +1,3 @@
-f "a" ++ s
-type [] == :table
 f "a" "b"
 f :X [1]
 f
