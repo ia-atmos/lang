@@ -1,0 +1,21 @@
+;; The pub of a task of a pool is pinned with the pool. When the task
+;; ends and nobody refers to it, it is freed, but a place written with
+;; `set :out` still refers to its pub: the pub ends with the pool, and
+;; the place goes back to nil then.
+task Enemy (name) {
+    set pub = [name = name]
+    await :die
+    print("enemy dies")
+}
+pin h = [e = nil]
+do {
+    pin ens = tasks()
+    spawn @ens Enemy("goblin")
+    loop _, t in ens {
+        set :out h.e = t.pub
+    }
+    print(h.e.name)
+    emit :die
+    print(h.e.name)
+}
+print(h.e)
