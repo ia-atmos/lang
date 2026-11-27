@@ -40,7 +40,8 @@ static const char* OPS[] = {
 
 static const char* KEYS[] = {
     "abort", "await", "break", "catch", "context", "defer", "do", "else",
-    "emit", "escape", "false", "func", "if", "ifs", "in", "include", "loop",
+    "emit", "escape", "false", "func", "if", "ifs", "import", "in", "include",
+    "loop",
     "match", "mute", "nil", "on", "par", "pin", "return", "set", "skip",
     "solo", "spawn", "stage", "task", "tasks", "test", "thread", "throw",
     "true", "until", "val", "var", "watching", "where", "with", "while",

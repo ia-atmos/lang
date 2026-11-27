@@ -1,0 +1,6 @@
+val name = "b"
+func fb (n) {
+    if n == 0 => "b" => fa(n-1)     ;; `fa` is declared later
+}
+func b_name () { name }
+print("b", "loaded")

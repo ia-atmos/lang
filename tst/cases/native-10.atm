@@ -1,6 +1,6 @@
 ;; C that the program calls may emit into the program: the native literal
 ;; takes the status of the emit, with the abortion of the task that called
-```:prelude
+```:prelude.c
 #include <stdio.h>
 static AStatus engine_frame (void) {
     AStatus st = A_OK;

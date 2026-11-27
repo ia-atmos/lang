@@ -1,6 +1,6 @@
 ;; an environment emits to one task: the exit of the task goes to who
 ;; holds it, as in a broadcast, and not back to the environment
-```:prelude
+```:prelude.c
 #include <stdio.h>
 static AVal ENV_WHO[4];
 static int  ENV_N = 0;

@@ -710,9 +710,27 @@ typedef struct ANat {
 // New box (owned). The finalizer may be NULL.
 AVal a_nat (void* ptr, void (*fin)(void*), const char* kind);
 
-// The value is a box of the given kind.
+// The value is a box of the given kind. The kinds are compared by
+// address first and then by text: the same literal may have two
+// addresses (C does not promise one), as when the C compiler splits the
+// program in partitions (`-flto`) and does not merge the literals
+// (`-fsanitize=address`).
 static inline int a_nat_is (AVal v, const char* kind) {
-    return v.type==A_NAT && A_NAT_OF(v)->kind==kind;
+    if (v.type != A_NAT) {
+        return 0;
+    }
+    const char* k = A_NAT_OF(v)->kind;
+    if (k == kind) {
+        return 1;
+    }
+    if (k==NULL || kind==NULL) {
+        return 0;
+    }
+    while (*k!='\0' && *k==*kind) {
+        k++;
+        kind++;
+    }
+    return *k == *kind;
 }
 
 // The pointer of a box, or NULL once it is closed.
@@ -959,6 +977,9 @@ typedef struct ATask {
     int      depth;
     // depth of the deepest pinned argument: the task cannot leave it
     int      mindepth;
+    // the body of a module (`import`): ends with the block of its
+    // import, after what started later
+    int      mod;
     AVal     pub;
     AVal     ret;
     // pool it was spawned in, for identification only
@@ -1008,6 +1029,9 @@ AStatus a_spawn (AVal* dst, AVal proto, AVal pool, int base);
 // is pinned from birth, so that it owns what it stores in its `pub`
 // already in its first run.
 AStatus a_spawn_pin (AVal* dst, AVal proto, int base);
+
+// Starts the body of a module, pinned to the block of its import.
+AStatus a_spawn_mod (AVal* dst, AVal proto, int base);
 
 // The same, for a spawn whose task goes to a field of the table `h`:
 // if the table is pinned, the task is pinned with it from birth.

@@ -260,6 +260,11 @@ void ast_dump (Expr* e) {
             dump_list(&e->u.spawn.args);
             printf(")");
             break;
+        case E_IMPORT:
+            printf("(import ");
+            ast_dump(e->u.import.blk);
+            printf(")");
+            break;
         case E_SPAWN_BLK:
             printf("(spawn ");
             ast_dump(e->u.sblk.blk);

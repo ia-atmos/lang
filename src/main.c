@@ -2,6 +2,7 @@
 //
 //   atmos f.atm [args]     compiles, builds, and runs
 //   atmos -c f.atm         emits C only (to stdout)
+//   atmos -c -o dir f.atm  emits C only, one file per module in `dir`
 //   atmos -o out f.atm     builds only
 //   atmos -t f.atm         enables `test` blocks
 //   atmos -e env.atm f.atm includes the file of an environment before
@@ -23,9 +24,11 @@
 //   ATMOS_INTEGER  if `32`, an integer has 32 bits (default `64`)
 //   ATMOS_CLOCK    if `ms`, a clock is in milliseconds (default `us`)
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -155,11 +158,8 @@ static void opts_num (void) {
     }
 }
 
-// Builds the C source into an executable. Returns 0 on success.
-static int build (const char* c, const char* exe) {
-    const char* home = home_dir();
-    int asan = (getenv("ATMOS_ASAN") != NULL);
-    // the runtime of the configuration
+// The runtime of the configuration, or NULL if it cannot be built.
+static const char* runtime (const char* home, int asan) {
     char* rel = xfmt("build/libatmos%s%s%s%s%s.a",
         OPT_F32     ? "-f32" : "",
         OPT_INT32   ? "-i32" : "",
@@ -183,13 +183,16 @@ static int build (const char* c, const char* exe) {
             }
             fprintf(stderr, ATMOS_NAME " : runtime not found : %s\n"
                 "    build it with : make -C %s %s\n", lib, home, rel);
-            return 1;
+            return NULL;
         }
     }
-    // the flags of the environment of a dedicated compiler, then those
-    // of the user
-    char* cmd = xfmt(
-        "%s %s %s %s %s %s %s %s -w -I%s/rt %s %s -lm %s %s -o %s",
+    return lib;
+}
+
+// The C compiler with its flags: those of the environment of a
+// dedicated compiler, then those of the user.
+static const char* cc_flags (const char* home, int asan) {
+    return xfmt("%s %s %s %s %s %s %s %s -w -I%s/rt",
         env("ATMOS_CC", "cc"),
         env("ATMOS_CFLAGS", "-O1"),
         ATMOS_ENV_CFLAGS,
@@ -198,7 +201,19 @@ static int build (const char* c, const char* exe) {
         OPT_INT32   ? "-DATM_INTEGER_32"     : "",
         OPT_TIME_MS ? "-DATM_CLOCK_MS"    : "",
         (OPT_PIN_OFF==1) ? "-DATM_PIN_OFF" : (OPT_PIN_OFF==2) ? "-DATM_PIN_UNCHECKED" : "",
-        home, c, lib,
+        home);
+}
+
+// Builds the C source into an executable. Returns 0 on success.
+static int build (const char* c, const char* exe) {
+    const char* home = home_dir();
+    int asan = (getenv("ATMOS_ASAN") != NULL);
+    const char* lib = runtime(home, asan);
+    if (lib == NULL) {
+        return 1;
+    }
+    char* cmd = xfmt("%s %s %s -lm %s %s -o %s",
+        cc_flags(home, asan), c, lib,
         ATMOS_ENV_LDFLAGS,
         env("ATMOS_LDFLAGS", ""),
         exe
@@ -206,15 +221,228 @@ static int build (const char* c, const char* exe) {
     return system(cmd);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// A program with modules (`import`): one C unit per module, each
+// compiled to an object that is kept in a cache, so that only the units
+// whose C changed are compiled again, at the same time.
+///////////////////////////////////////////////////////////////////////////////
+
+// Where the C and the objects of the modules are kept: the option
+// `--build`, or `build` in the current directory.
+static const char* OPT_BUILD = NULL;
+
+// The file has exactly the text.
+static int file_is (const char* path, const char* txt) {
+    FILE* f = fopen(path, "rb");
+    if (f == NULL) {
+        return 0;
+    }
+    size_t n = strlen(txt);
+    char* buf = xalloc(n + 2);
+    size_t m = fread(buf, 1, n+1, f);
+    fclose(f);
+    return m==n && !memcmp(buf,txt,n);
+}
+
+// Writes the file aside and renames it, so that another build never
+// reads half of it.
+static int file_put (const char* path, const char* txt) {
+    char* tmp = xfmt("%s.%d", path, (int)getpid());
+    FILE* f = fopen(tmp, "w");
+    if (f == NULL) {
+        return 0;
+    }
+    fputs(txt, f);
+    fclose(f);
+    return rename(tmp, path) == 0;
+}
+
+// The directory of the build, or NULL if it cannot be written (then
+// nothing is kept). Each way of compiling (the command of the C
+// compiler, and the test blocks, which change the C) has a directory
+// of its own inside it, named by a hash, with the command in the file
+// `cmd`: a build with other flags does not take the place of this one.
+static const char* build_dir (const char* cc) {
+    const char* cmd = xfmt("%s%s", cc, OPT_TEST ? " (-t)" : "");
+    unsigned int h = 2166136261u;
+    for (const char* c=cmd; *c!='\0'; c++) {
+        h = (h ^ (unsigned char)*c) * 16777619u;
+    }
+    const char* dir = xfmt("%s/%08x",
+        (OPT_BUILD != NULL) ? OPT_BUILD : "build", h);
+    if (system(xfmt("mkdir -p '%s' 2>/dev/null", dir))!=0 ||
+        access(dir, W_OK)!=0)
+    {
+        return NULL;
+    }
+    const char* file = xfmt("%s/cmd", dir);
+    if (!file_is(file, cmd)) {
+        file_put(file, cmd);
+    }
+    return dir;
+}
+
+// The name of the files of the program itself in the build: its path,
+// as the name of a module, so that two programs of a directory do not
+// take the place of each other.
+static const char* main_name (const char* inp) {
+    char* name = xfmt("%s", inp);
+    for (char* c=name; *c!='\0'; c++) {
+        if (!isalnum((unsigned char)*c)) {
+            *c = '_';
+        }
+    }
+    return name;
+}
+
+static int mtime (const char* path, struct timespec* t) {
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return 0;
+    }
+    *t = st.st_mtim;
+    return 1;
+}
+
+// An object of the build is good if no file that its C included (the
+// list that the C compiler left in `dep`, in the format of make) is
+// newer than it. The C itself is not checked here: it comes first in
+// the list.
+static int cache_ok (const char* obj, const char* dep) {
+    struct timespec to;
+    if (!mtime(obj, &to)) {
+        return 0;
+    }
+    FILE* f = fopen(dep, "r");
+    if (f == NULL) {
+        return 0;
+    }
+    int ok = 1;
+    int n = 0;
+    char w[4096];
+    while (ok && fscanf(f, "%4095s", w)==1) {
+        // the continuations, the target, and the C itself, which comes
+        // first and was in a temporary directory
+        if (!strcmp(w,"\\") || n++<2) {
+            continue;
+        }
+        struct timespec td;
+        ok = mtime(w, &td) && (td.tv_sec < to.tv_sec ||
+            (td.tv_sec==to.tv_sec && td.tv_nsec<=to.tv_nsec));
+    }
+    fclose(f);
+    return ok;
+}
+
+// Runs the commands, at most as many at the same time as there are
+// processors. Returns 0 if all succeed.
+static int run_all (char** cmds, int n) {
+    long max = sysconf(_SC_NPROCESSORS_ONLN);
+    if (max < 1) {
+        max = 1;
+    }
+    int fail = 0;
+    int live = 0;
+    int i = 0;
+    while (i<n || live>0) {
+        if (i<n && live<max && !fail) {
+            pid_t pid = fork();
+            if (pid == 0) {
+                execl("/bin/sh", "sh", "-c", cmds[i], (char*)NULL);
+                _exit(127);
+            }
+            if (pid < 0) {
+                fail = 1;
+            } else {
+                live++;
+            }
+            i++;
+        } else if (live > 0) {
+            int status = 0;
+            if (wait(&status) > 0) {
+                live--;
+                fail = fail || !WIFEXITED(status) || WEXITSTATUS(status)!=0;
+            }
+        } else {
+            break;
+        }
+    }
+    return fail;
+}
+
+// Builds the C units into an executable. The C and the object of each
+// unit stay in the directory of the build, under the name of its
+// module: a unit is compiled again only if its C changed, or a file
+// that its C includes.
+// If the directory cannot be written, all is built in the temporary
+// directory `tmp`, and removed.
+static int build_units (CUnit* us, int n, const char* inp, const char* tmp,
+                        const char* exe)
+{
+    const char* home = home_dir();
+    int asan = (getenv("ATMOS_ASAN") != NULL);
+    const char* lib = runtime(home, asan);
+    if (lib == NULL) {
+        return 1;
+    }
+    const char* cc = cc_flags(home, asan);
+    const char* dir = build_dir(cc);
+    int keep = (dir != NULL);
+    if (!keep) {
+        dir = tmp;
+    }
+
+    char** cmds = xalloc(n * sizeof(char*));
+    int ncmds = 0;
+    char* objs = xfmt("%s", "");
+    for (int i=0; i<n; i++) {
+        const char* name = (i == 0) ? main_name(inp) : us[i].name;
+        char* src = xfmt("%s/%s.c", dir, name);
+        char* obj = xfmt("%s/%s.o", dir, name);
+        char* dep = xfmt("%s/%s.d", dir, name);
+        objs = xfmt("%s %s", objs, obj);
+        if (keep && file_is(src,us[i].c) && cache_ok(obj,dep)) {
+            continue;
+        }
+        unlink(obj);
+        if (!file_put(src,us[i].c)) {
+            fprintf(stderr, ATMOS_NAME " : cannot write '%s'\n", src);
+            return 1;
+        }
+        cmds[ncmds++] = xfmt(
+            "%s -MD -MF %s.%d -c %s -o %s.%d && "
+            "mv %s.%d %s && mv %s.%d %s",
+            cc, dep, (int)getpid(), src, obj, (int)getpid(),
+            dep, (int)getpid(), dep, obj, (int)getpid(), obj);
+    }
+    int ret = run_all(cmds, ncmds);
+    if (ret == 0) {
+        ret = system(xfmt("%s%s %s -lm %s %s -o %s",
+            cc, objs, lib, ATMOS_ENV_LDFLAGS, env("ATMOS_LDFLAGS",""), exe));
+    }
+    if (!keep) {
+        for (int i=0; i<n; i++) {
+            const char* name = (i == 0) ? main_name(inp) : us[i].name;
+            unlink(xfmt("%s/%s.c", dir, name));
+            unlink(xfmt("%s/%s.o", dir, name));
+            unlink(xfmt("%s/%s.d", dir, name));
+        }
+    }
+    return ret;
+}
+
 static void usage (void) {
     fprintf(stderr,
-        "Usage: " ATMOS_NAME " [-c] [-o <out>] [-t] [-e <env>] <input> [<args>] ...\n"
+        "Usage: " ATMOS_NAME " [-c] [-o <out>] [-t] [-e <env>] [--build <dir>] <input> [<args>] ...\n"
         "\n"
         "Options:\n"
-        "   -c          Emit C only (to the standard output).\n"
+        "   -c          Emit C only (to the standard output, or, with -o <dir>,\n"
+        "               one file per module in the directory).\n"
         "   -o <out>    Build only.\n"
         "   -t          Enable test blocks.\n"
         "   -e <env>    Include the file of an environment first.\n"
+        "   --build <dir>   Keep the C and the objects of the modules in the\n"
+        "               directory (default: build).\n"
     );
     if (ATMOS_ENV != NULL) {
         fprintf(stderr, "\nEnvironment: %s\n", (const char*)ATMOS_ENV);
@@ -240,6 +468,10 @@ int main (int argc, char** argv) {
             only = 1;
         } else if (!strcmp(argv[i], "-t")) {
             OPT_TEST = 1;
+        } else if (!strcmp(argv[i], "--build") && i+1<argc) {
+            OPT_BUILD = argv[++i];
+        } else if (!strncmp(argv[i], "--build=", 8) && argv[i][8]!='\0') {
+            OPT_BUILD = argv[i] + 8;
         } else if (!strcmp(argv[i], "-o") && i+1<argc) {
             exe = argv[++i];
         } else if (!strcmp(argv[i], "-e") && i+1<argc) {
@@ -280,12 +512,40 @@ int main (int argc, char** argv) {
     }
 
     int nglobals;
-    Var** globals = resolver_main(prog, &nglobals);
+    resolver_main(prog, &nglobals);
 
-    char* c = coder_main(prog, globals, nglobals);
+    CUnit* units;
+    int nunits = coder_main(prog, &units);
+    char* c = units[0].c;
 
     if (only) {
-        fputs(c, stdout);
+        // the C only: to the standard output, or, with `-o <dir>`, one
+        // file per unit in the directory, whose paths are printed (what
+        // another build needs to compile them)
+        if (exe == NULL) {
+            if (nunits > 1) {
+                fprintf(stderr, ATMOS_NAME " : a program with modules has "
+                    "one C file per module : give a directory with -o\n");
+                return 1;
+            }
+            fputs(c, stdout);
+            return 0;
+        }
+        if (system(xfmt("mkdir -p '%s'", exe)) != 0) {
+            fprintf(stderr, ATMOS_NAME " : cannot create '%s'\n", exe);
+            return 1;
+        }
+        for (int j=0; j<nunits; j++) {
+            char* path = xfmt("%s/%s.c", exe, units[j].name);
+            FILE* f = fopen(path, "w");
+            if (f == NULL) {
+                fprintf(stderr, ATMOS_NAME " : cannot write '%s'\n", path);
+                return 1;
+            }
+            fputs(units[j].c, f);
+            fclose(f);
+            printf("%s\n", path);
+        }
         return 0;
     }
 
@@ -298,11 +558,15 @@ int main (int argc, char** argv) {
     char* cfile = xfmt("%s/main.c", dir);
     char* xfile = (exe != NULL) ? (char*)exe : xfmt("%s/main", dir);
 
-    FILE* f = fopen(cfile, "w");
-    fputs(c, f);
-    fclose(f);
-
-    int ret = build(cfile, xfile);
+    int ret;
+    if (nunits > 1) {
+        ret = build_units(units, nunits, inp, dir, xfile);
+    } else {
+        FILE* f = fopen(cfile, "w");
+        fputs(c, f);
+        fclose(f);
+        ret = build(cfile, xfile);
+    }
     if (ret != 0) {
         fprintf(stderr, ATMOS_NAME " : C compilation failed\n");
         ret = 1;
