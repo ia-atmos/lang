@@ -713,8 +713,11 @@ static Opnd gen_logic (Unit* u, Expr* e) {
     return d;
 }
 
-// Applies a binary operator to two operands, consuming them.
-static Opnd gen_binop (Unit* u, Tk tk, const char* op, Opnd x, Opnd y) {
+// Applies a binary operator to two operands, consuming them. The
+// result goes to the place `to`, or to a temporary if it is NULL.
+static Opnd gen_binop_to (Unit* u, Tk tk, const char* op, Opnd x, Opnd y,
+                          const char* to)
+{
     // operator, runtime function, swapped operands
     static const char* OPS[][3] = {
         { "+",  "a_add",  "" }, { "-",  "a_sub", ""  },
@@ -738,7 +741,7 @@ static Opnd gen_binop (Unit* u, Tk tk, const char* op, Opnd x, Opnd y) {
         { NULL, NULL }
     };
 
-    Opnd d = opnd_tmp(u);
+    Opnd d = (to == NULL) ? opnd_tmp(u) : opnd_c(to);
     int done = 0;
     for (int i=0; PREDS[i][0]!=NULL; i++) {
         if (!strcmp(PREDS[i][0], op)) {
@@ -769,17 +772,42 @@ static Opnd gen_binop (Unit* u, Tk tk, const char* op, Opnd x, Opnd y) {
     return d;
 }
 
-static Opnd gen_bin (Unit* u, Expr* e) {
+static Opnd gen_binop (Unit* u, Tk tk, const char* op, Opnd x, Opnd y) {
+    return gen_binop_to(u, tk, op, x, y, NULL);
+}
+
+static Opnd gen_bin_to (Unit* u, Expr* e, const char* to) {
     const char* op = e->tk.str;
-    if (!strcmp(op,"&&") || !strcmp(op,"||")) {
-        return gen_logic(u, e);
-    }
     // the second operand is consumed at once; the first, if the
     // second runs no code of the program
     Opnd x = is_quiet(e->u.bin.e2) ?
         gen_now(u, e->u.bin.e1) : gen_expr(u, e->u.bin.e1);
     Opnd y = gen_now(u, e->u.bin.e2);
-    return gen_binop(u, e->tk, op, x, y);
+    return gen_binop_to(u, e->tk, op, x, y, to);
+}
+
+static Opnd gen_bin (Unit* u, Expr* e) {
+    const char* op = e->tk.str;
+    if (!strcmp(op,"&&") || !strcmp(op,"||")) {
+        return gen_logic(u, e);
+    }
+    return gen_bin_to(u, e, NULL);
+}
+
+static int op_scalar (const char* op);
+
+// The value of an operator that never gives an object (a number or a
+// boolean) goes straight to the variable in `to`, with no temporary:
+// the operator reads its operands before it writes, writes only if it
+// does not raise, and there is nothing to name or to check. Returns
+// whether `e` is such an operator, and was compiled.
+static int gen_scalar_to (Unit* u, Expr* e, const char* to) {
+    e = unparens(e);
+    if (e->tag==E_BIN && op_scalar(e->tk.str)) {
+        gen_bin_to(u, e, to);
+        return 1;
+    }
+    return 0;
 }
 
 // A spawn that is the value of a field of the table `holder` is pinned
@@ -1422,6 +1450,11 @@ static void gen_dcl (Unit* u, Expr* e) {
         if (born) {
             u->born = tab;
         }
+        if (!born && e->vars[0]->kind!=V_PIN && !e->vars[0]->boxed &&
+            gen_scalar_to(u, e->u.dcl.set, var_c(u,e->vars[0])))
+        {
+            return;
+        }
         Opnd o = gen_expr(u, e->u.dcl.set);
         // the initialization may span lines: an error of the
         // declaration is in its own line
@@ -1574,9 +1607,19 @@ static Opnd gen_read (Unit* u, Loc l) {
 
 // set x += e: the destination is evaluated once.
 // `&&=` and `||=` only evaluate and assign if needed.
+static int is_place (Expr* dst);
+
 static void gen_set_op (Unit* u, Expr* e) {
     const char* op = e->u.set.op;
-    Loc l = gen_loc(u, e->u.set.dsts.v[0]);
+    Expr* dst = e->u.set.dsts.v[0];
+    if (is_place(dst) && op_scalar(op) && is_quiet(e->u.set.src)) {
+        // set x += e: computed in place, since `e` cannot assign `x`
+        const char* x = var_c(u, dst->var);
+        Opnd v = gen_now(u, e->u.set.src);
+        gen_binop_to(u, e->tk, op, opnd_c(x), v, x);
+        return;
+    }
+    Loc l = gen_loc(u, dst);
     Opnd cur = gen_read(u, l);
 
     if (!strcmp(op,"&&") || !strcmp(op,"||")) {
@@ -1627,6 +1670,12 @@ static void gen_set_op (Unit* u, Expr* e) {
     u->scalar = op_scalar(op);
     gen_assign(u, l, r);
     u->scalar = 0;
+}
+
+// A variable that an operator may write in place: not a pin, which
+// owns its value.
+static int is_place (Expr* dst) {
+    return dst->tag==E_ACC && dst->var->kind!=V_PIN;
 }
 
 // set x = e  |  set t@k, y = e
@@ -1707,6 +1756,11 @@ static void gen_set (Unit* u, Expr* e) {
         return;
     }
     int k = e->u.set.dsts.n;
+    if (k==1 && is_place(e->u.set.dsts.v[0]) &&
+        gen_scalar_to(u, e->u.set.src, var_c(u,e->u.set.dsts.v[0]->var)))
+    {
+        return;
+    }
     Loc* ls = xalloc(k * sizeof(Loc));
     for (int i=0; i<k; i++) {
         ls[i] = gen_loc(u, e->u.set.dsts.v[i]);
@@ -2516,11 +2570,13 @@ static void gen_spawn (Unit* u, Expr* e, Dst d) {
 // function that shares the slots of the task.
 //
 // As a branch of a `par :any`, its values are raised as a join for
-// the par identified by slot `key`. Otherwise, its first value is the
-// result of the block, which also goes to `ret`, if given. Any other
-// exit crosses to the parent unchanged.
+// the par identified by slot `key`. As a branch of a `watching`
+// (`flag` is 0 or 1, otherwise -1), the boolean `flag` goes before the
+// values. Otherwise, its first value is the result of the block, which
+// also goes to `ret`, if given. Any other exit crosses to the parent
+// unchanged.
 static void gen_tra (Unit* up, int id, List* body, ParMode mode, int key,
-                     const char* ret, int lin, DKind want)
+                     const char* ret, int lin, DKind want, int flag)
 {
     Unit u;
     memset(&u, 0, sizeof(u));
@@ -2539,7 +2595,18 @@ static void gen_tra (Unit* up, int id, List* body, ParMode mode, int key,
         if (want == D_MULTI) {
             Dst m = dst_multi(&u);
             gen_block(&u, body, m);
-            out(&u, "a_pay_pull(%s);", m.n);
+            if (flag >= 0) {
+                out(&u, "a_open(%s, 1);", m.n);
+                out(&u, "a_putc(a_top-%s-1, a_bool(%d));", m.n, flag);
+                out(&u, "a_pay_pull(%s + 1);", m.n);
+            } else {
+                out(&u, "a_pay_pull(%s);", m.n);
+            }
+        } else if (want==D_SLOT && flag>=0) {
+            // the single value taken is the boolean
+            gen_block(&u, body, dst_none());
+            out(&u, "a_push(a_bool(%d));", flag);
+            out(&u, "a_pay_pull(1);");
         } else if (want == D_SLOT) {
             Opnd r = opnd_tmp(&u);
             gen_block(&u, body, dst_slot(r.c));
@@ -2587,9 +2654,9 @@ static int gen_trail (Unit* u) {
 
 // Starts a transparent block as the trail `id`.
 static void gen_spawn_tra (Unit* u, int id, Expr* blk, ParMode mode, int key,
-                           const char* ret, DKind want)
+                           const char* ret, DKind want, int flag)
 {
-    gen_tra(u, id, &blk->u.block.es, mode, key, ret, blk->tk.lin, want);
+    gen_tra(u, id, &blk->u.block.es, mode, key, ret, blk->tk.lin, want, flag);
     out(u, "a_lin = %d;", lin_of(blk->tk));
     out_try(u, "a_trail_spawn(t, %d)", id);
 }
@@ -2630,7 +2697,8 @@ static void gen_par (Unit* u, Expr* e, Dst d) {
     }
     for (int i=0; i<k; i++) {
         gen_spawn_tra(u, lo+i, e->u.par.blks.v[i], mode, h.joink,
-            (mode == PAR_ALL) ? rs[i].c : NULL, d.kind);
+            (mode == PAR_ALL) ? rs[i].c : NULL, d.kind,
+            e->u.par.watch ? (i != 0) : -1);
     }
     if (mode == PAR_ALL) {
         out(u, "st = a_await_trails(tr, %d, %d);", lo, k);
@@ -2874,7 +2942,7 @@ static void gen_mute_on (Unit* u, Expr* e, Dst d) {
     Blk b = blk_open(u);
     int id = gen_trail(u);
     gen_trail_end(u, id);
-    gen_spawn_tra(u, id, e->u.mute_on.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.mute_on.blk, PAR_NONE, 0, r.c, D_NONE, -1);
 
     int n;
     Patt** fs = mute_filt(e->u.mute_on.fs, e->u.mute_on.nf);
@@ -2910,7 +2978,7 @@ static void gen_solo (Unit* u, Expr* e, Dst d) {
     for (int i=0; i<n; i++) {
         opnd_rel(u, os[i]);
     }
-    gen_spawn_tra(u, id, e->u.solo.blk, PAR_NONE, 0, r.c, D_NONE);
+    gen_spawn_tra(u, id, e->u.solo.blk, PAR_NONE, 0, r.c, D_NONE, -1);
 
     out(u, "st = a_await_trails(tr, %d, 1);", id);
     gen_suspend(u, dst_none());
@@ -2929,7 +2997,7 @@ static void gen_context (Unit* u, Expr* e, Dst d) {
     e->u.context.id = id;
     gen_trail_end(u, id);
     Expr* blk = e->u.context.blk;
-    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE);
+    gen_tra(u, id, &blk->u.block.es, PAR_NONE, 0, r.c, blk->tk.lin, D_NONE, -1);
     out(u, "a_lin = %d;", lin_of(e->tk));
     if (pair != NULL) {
         out_try(u, "a_trail_context_val(t, %d, %s, %s)", id, pr.c, ctx_keys());
@@ -3172,7 +3240,7 @@ static void gen (Unit* u, Expr* e, Dst d) {
             // ends with the enclosing block
             int id = gen_trail(u);
             gen_trail_end(u, id);
-            gen_spawn_tra(u, id, e->u.sblk.blk, PAR_NONE, 0, NULL, D_NONE);
+            gen_spawn_tra(u, id, e->u.sblk.blk, PAR_NONE, 0, NULL, D_NONE, -1);
             store_void(u, d);
             break;
         }

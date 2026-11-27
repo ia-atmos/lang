@@ -286,6 +286,15 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
   why it is bad and what would make it better.
 - Each session keeps a `.claude/plans/TODO.md` (2026-11-13).
 - The events of an environment have no prefix (2026-11-13).
+- **Idioms of Atmos** (2026-11-26, the author in `atmos`: "crie";
+  `atmos#29`): every session reads `.claude/plans/IDIOMS.md` before
+  writing Atmos; a rule that comes out of the author's corrections is
+  sent to `atmos` (source `session#N`, before and after), which adds it.
+  The author, the same day: "Nao mande para as sessoes. Espere acumular
+  e me pergunte. Nos envios, peca que as sessoes te mandem novos idioms
+  se for o caso." So `atmos` adds new rules to the file without telling
+  the sessions; when enough have gathered, it asks him before sending
+  them; each sending asks the sessions to send new idioms.
 - **A plain index needs no parentheses** (2026-11-26, said in
   `sdl-snxkx`: "peca a sessao atmos para trocar todos"; `atmos#23`):
   write `t@k`, `t@0`, `t@:x`; keep `t@(e)` only for an expression

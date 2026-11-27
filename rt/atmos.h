@@ -293,10 +293,21 @@ static inline void a_dec (AVal v) {
     }
 }
 
+// Stores a value into a place, with no release, field by field: a
+// value is built by two stores (its type and its payload), and a load
+// of the whole value right after them (as a compiler does for the copy
+// of a struct) cannot be forwarded from the stores, and stalls.
+static inline void a_put (AVal* dst, AVal v) {
+    dst->type = v.type;
+    dst->u    = v.u;
+}
+
 // Stores an owned value into a slot, releasing the old one.
 static inline void a_set (AVal* dst, AVal v) {
-    AVal old = *dst;
-    *dst = v;
+    AVal old;
+    old.type = dst->type;
+    old.u    = dst->u;
+    a_put(dst, v);
     a_dec(old);
 }
 
@@ -356,7 +367,7 @@ static inline void a_push (AVal v) {
     if (a_top >= A_STK_MAX) {
         a_stk_overflow();
     }
-    a_stk[a_top++] = v;
+    a_put(&a_stk[a_top++], v);
 }
 
 // Pushes a borrowed value.
@@ -412,7 +423,7 @@ static inline void a_open (int n, int k) {
         a_stk_overflow();
     }
     for (int i=a_top-1; i>=a_top-n; i--) {
-        a_stk[i+k] = a_stk[i];
+        a_put(&a_stk[i+k], a_stk[i]);
     }
     for (int i=a_top-n; i<a_top-n+k; i++) {
         a_stk[i] = a_nil();
@@ -428,7 +439,7 @@ static inline void a_putc (int i, AVal v) {
 
 // Fills an opened position with the value of a slot, emptying it.
 static inline void a_putm (int i, AVal* src) {
-    a_stk[i] = *src;
+    a_put(&a_stk[i], *src);
     *src = a_nil();
 }
 
@@ -575,10 +586,14 @@ int a_tab_next (ATab* t, uint32_t* pos, AVal* k, AVal* v);
 int a_tab_after (ATab* t, AVal k, uint32_t* pos);
 
 // t@k
-AStatus a_index (AVal* dst, AVal t, AVal k);
+static inline AStatus a_index (AVal* dst, AVal t, AVal k);
+// The general case of `a_index`.
+AStatus a_index_x (AVal* dst, AVal t, AVal k);
 
 // set t@k = v
-AStatus a_setindex (AVal t, AVal k, AVal v);
+static inline AStatus a_setindex (AVal t, AVal k, AVal v);
+// The general case of `a_setindex`.
+AStatus a_setindex_x (AVal t, AVal k, AVal v);
 
 // #v
 AStatus a_len (AVal* dst, AVal v);
@@ -1366,6 +1381,52 @@ static inline AStatus a_chk_tab (ATab* t, AVal v) {
     (void) t; (void) v; return A_OK;
 #endif
     return (v.type < A_TAB) ? A_OK : a_hold(&t->hdr, v);
+}
+
+// The place of a key that exists in a table, found with no search: an
+// integer inside the array part, or a string that is the first of its
+// chain in the hash part (strings are interned: the same contents are
+// the same object). NULL otherwise: the general case decides.
+static inline AVal* a_tab_place (ATab* t, AVal k) {
+    if (k.type == A_INT) {
+        if ((AUInt)k.u.i < t->an) {
+            return &t->arr[k.u.i];
+        }
+    } else if (k.type==A_STR && t->elive>0) {
+        int32_t e = t->idx[A_STR_OF(k)->hash & (t->icap - 1)];
+        // the key "tag" is never an entry, and a removed entry has a
+        // nil key
+        if (e>=0 && t->ents[e].k.type==A_STR && t->ents[e].k.u.o==k.u.o) {
+            return &t->ents[e].v;
+        }
+    }
+    return NULL;
+}
+
+// t[k]: a table and a key that has a place are read here.
+static inline AStatus a_index (AVal* dst, AVal t, AVal k) {
+    if (t.type==A_TAB && !a_is_fin(t)) {
+        AVal* p = a_tab_place(A_TAB_OF(t), k);
+        if (p != NULL) {
+            a_cpy(dst, *p);
+            return A_OK;
+        }
+    }
+    return a_index_x(dst, t, k);
+}
+
+// t[k] = v: a number or a boolean that replaces a value that is not a
+// table or a task is written here: there is nothing to check, to hold
+// or to retire, and the shape of the table does not change.
+static inline AStatus a_setindex (AVal t, AVal k, AVal v) {
+    if (t.type==A_TAB && v.type>=A_BOOL && v.type<A_STR && !a_is_fin(t)) {
+        AVal* p = a_tab_place(A_TAB_OF(t), k);
+        if (p!=NULL && p->type<A_TAB) {
+            a_set(p, v);
+            return A_OK;
+        }
+    }
+    return a_setindex_x(t, k, v);
 }
 
 // Birth: an unpinned value that is being constructed takes its floor from

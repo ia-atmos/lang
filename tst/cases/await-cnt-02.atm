@@ -16,7 +16,7 @@ spawn {
     }
     ;; the predicate is part of what is counted
     val n = 2
-    val e = watching (n), :tic until it.n > 100 {
+    val _, e = watching (n), :tic until it.n > 100 {
         await(false)
     }
     print(:out3, e.n)

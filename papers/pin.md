@@ -333,21 +333,27 @@ case studies from six ports of libraries and games to Atmos.
     - space: bits per value
     - comparison with a GC and with plain RC
 - Experiment: the Computer Language Benchmark Game (CLBG)
-  (`papers/pin-bench/`: `summary.md` on `9ea77e1`, 2026-11-26;
-  `summary-1175264.md`, the first run, 2026-11-25)
+  (`papers/pin-bench/`: `summary.md` on `ce8e8da`, 2026-11-26, fourth run;
+  `summary-306f7e9.md`, `summary-9ea77e1.md`, `summary-1175264.md`, the
+  earlier runs)
     - the 7 programs of Câmara (2024), written anew with the same algorithm
       and output in C, Lua (5.4 and LuaJIT unchanged), and Atmos; compiled
-      once, only the run timed, best of 5 (a shared, noisy machine)
-    - Atmos with `pin` against `ATMOS_PIN=off`: +2% to +15%; `unchecked`
-      as fast as `off` (except n-body): the cost is in the checks
+      once, only the run measured, best of 10 in CPU time (a shared machine)
+    - Atmos with `pin` against `ATMOS_PIN=off`: 0% to +16%, in the checks
+      (`unchecked` as fast as `off`, except on binary-trees)
     - the first run gave +19% to +33%, and fib, with no allocation, paid
       30%: inline tests of type at names, stores, returns and block ends;
       atmos-pin#32 removed most of them
-    - Atmos is 1.1 to 3.5 times slower than Lua 5.4, with or without checks
-      (was 1.3 to 5.4): the generated C is dynamically typed, variables live
-      in the heap frame of the task; paper-pin#16 removed part of the gap
+    - Atmos is 1.0 to 2.3 times Lua 5.4, with or without checks (was 1.3
+      to 5.4): compiling removes only the dispatch; every value is still a
+      16-byte tagged cell that goes through memory at each operation, no
+      variable stays in a register, and counting has a cost per copy
+      (`micro/`, paper-pin#17)
+    - three rounds of fixes to the generator came out of the measurements
+      (paper-pin#16, #17); what remains: calls, chains of operations
+      through temporaries, numeric variables in registers
     - peak memory equal in the three builds of Atmos; binary-trees 53 MB,
-      Lua 5.4 57 MB, LuaJIT 75 MB, C 10 MB
+      Lua 5.4 57 MB, LuaJIT 81 MB, C 10 MB
 - Two ends of expressiveness
     - CLBG: algorithms translated from Lua with no change (dyn-lex, 2024)
     - the ports: games with tasks, registries, module state; about 240 rewrites

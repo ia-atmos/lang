@@ -113,7 +113,7 @@ void a_escape_vals (void) {
     if (a_pay_n > 1) {
         a_dec(a_pay[0]);
         for (int i=1; i<a_pay_n; i++) {
-            a_pay[i-1] = a_pay[i];
+            a_put(&a_pay[i-1], a_pay[i]);
         }
         a_pay_n--;
     }
@@ -123,7 +123,7 @@ AStatus a_escape_err (void) {
     // keeps the line of the escape
     a_pay_add(a_nil());
     for (int i=a_pay_n-1; i>0; i--) {
-        a_pay[i] = a_pay[i-1];
+        a_put(&a_pay[i], a_pay[i-1]);
     }
     a_pay[0] = a_strz("invalid escape : no matching block");
     return A_ERROR;
@@ -271,7 +271,7 @@ void a_pay_add (AVal v) {
         PAY_CAP = (PAY_CAP == 0) ? 8 : PAY_CAP*2;
         a_pay = realloc(a_pay, PAY_CAP * sizeof(AVal));
     }
-    a_pay[a_pay_n++] = v;
+    a_put(&a_pay[a_pay_n++], v);
 }
 
 void a_pay_take (AVal* dst, int i) {
@@ -558,7 +558,7 @@ AStatus a_call (AVal f, int base) {
         a_dec(a_stk[base+i]);
     }
     for (int i=0; i<nret; i++) {
-        a_stk[base+i] = a_stk[base+argc+i];
+        a_put(&a_stk[base+i], a_stk[base+argc+i]);
     }
     a_top = base + nret;
     return A_OK;

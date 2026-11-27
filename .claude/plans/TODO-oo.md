@@ -7,6 +7,10 @@ the session `atmos` (session_011eECohhJbc4GMpAj3yyeEo); measurements on
 the ports and merges into main stay with `atmos-lang`
 (`.claude/plans/261124-atmos.md`).
 
+Idioms (2026-11-26, relayed by `atmos` as its #29, not checked in its
+transcript): read `.claude/plans/IDIOMS.md` before writing Atmos; a
+general rule that comes out of a review by the author goes to `atmos`.
+
 ## Index of items
 
 Items are `#N` (standing rule in `TODO.md`); from other sessions,
