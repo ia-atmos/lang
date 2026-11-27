@@ -182,7 +182,7 @@ of the sessions still have the old names.
 
 ## Session ids
 
-To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`, `atmos-pool`).
+To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `atmos-blocks`, `atmos-loadx`, `env-esp32`, `atmos-ppp`, `atmos-float`, `atmos-grab`, `atmos-iter`, `atmos-pool`, `atmos-context`).
 
 | Session | Id | Topic |
 |---|---|---|
@@ -191,7 +191,7 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `atmos-pool` | session_011eECoj2p8VQMfaFidx4Nfx | awaits and emits over pools (archived 2026-11-26 by `atmos`, on the author's words there: "Ok peca pra arquivar entao", after `pool` 39a273b reached `main` in a8c56dc; branches `pool-find`, `pool-grid`, `pool` left for him; `atmos#25`) |
 | `atmos-envs` | session_011eECofYWTNPACTtUjHN4p6 | the API of environments |
 | `atmos-grab` | session_011eECohuNsFwANSFccPJ1vr | `grab` and `grabbable` (archived 2026-11-26 by `atmos`, on the author's words in `atmos`: "arquivar atmos-grab entao"; no open items, `atmos#20`) |
-| `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` |
+| `atmos-context` | session_011eECofmJeKkrNWJ2M57peX | `context` (archived 2026-11-27 by `atmos`, on the author's words there: "Avise a atmos e que ele deve me arquivar"; all items closed, `#16` moved to `atmos-lang`; questions on `context` go to `atmos-lang`; `atmos#34`) |
 | `atmos-oo` | session_011eECoewYWvj9UCiBWahwfQ | functions by tag |
 | `atmos-float` | session_011eECog5kQDX9i1eN1gKzDJ | the numeric options of a build (archived 2026-11-26 by `atmos`, on the author's words there: "ok. Acho que pode pedir pra sessao pai atmos arquivar aqui?"; all on `main`, index `TODO-float.md`; `atmos-float#12` and `#8` carried by `atmos`, `atmos#19`) |
 | `atmos-loadx` | session_011eECoiJyx2tmrJg6HgoknZ | `X.loadx` |
