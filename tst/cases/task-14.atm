@@ -10,6 +10,6 @@ task P () {
 }
 pin p = spawn P()
 abort(p)
-print(atmos.status(p))
+print(type(p))
 emit(:X)
 print(:end)

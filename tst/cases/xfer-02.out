@@ -13,14 +13,14 @@ dead	d
 dead	1
 false	invalid escape : task pinned at xfer-02.atm:44
 false	invalid escape : task pinned at xfer-02.atm:52
-dead
+xtask.dead
 5
-1	suspended
+1	xtask.suspended
 dead	e
 6
 dead	f
 false	invalid escape : pool pinned at xfer-02.atm:79
-1	suspended
+1	xtask.suspended
 dead	g
 7
 1

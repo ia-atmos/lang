@@ -14,10 +14,10 @@ pin u = spawn U()
 spawn {
     await(:Kill)
     abort(u)
-    print("after abort", atmos.status(u))
+    print("after abort", type(u))
 }
 emit(:X)
-print("end", atmos.status(u))
+print("end", type(u))
 
 ;; par :any, with the last and the first branches running below
 spawn {

@@ -18,7 +18,7 @@ task U () {
 }
 pin u = spawn U()
 emit(:X)
-print(atmos.status(u))
+print(type(u))
 
 ;; the block gives values while it waits
 task V () {

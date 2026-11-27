@@ -3,7 +3,7 @@ defer U 2
 defer d
 defer C
 defer U 1
-dead
+xtask.dead
 defer c
 V goes on	10	20
 V ends

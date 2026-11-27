@@ -47,7 +47,7 @@ static AStatus std_print (AFunc* self, int argc, AVal* argv) {
 // type(v): the name of the type as a tag.
 static AStatus std_type (AFunc* self, int argc, AVal* argv) {
     (void) self;
-    a_push(a_strz(a_typename(arg(argc,argv,0))));
+    a_push(a_strz(a_typename_sub(arg(argc,argv,0))));
     return A_OK;
 }
 
@@ -1038,21 +1038,6 @@ static AStatus x_nin (AFunc* self, int argc, AVal* argv) {
 // ATMOS
 ///////////////////////////////////////////////////////////////////////////////
 
-// atmos.status(t): :running, :suspended, or :dead.
-static AStatus atmos_status (AFunc* self, int argc, AVal* argv) {
-    (void) self;
-    AVal t = arg(argc, argv, 0);
-    if (t.type != A_XTASK) {
-        return a_error("invalid status : expected task");
-    }
-    switch (A_TASK_OF(t)->status) {
-        case T_RUNNING:   a_push(a_strz("running"));   break;
-        case T_SUSPENDED: a_push(a_strz("suspended")); break;
-        default:          a_push(a_strz("dead"));      break;
-    }
-    return A_OK;
-}
-
 // atmos.env(e): registers an environment, a table with `step` and `quit`
 // (functions, optional) and `mode` (`[primary=true, secondary=true]`).
 // The first one registered is the primary, and must support it; every
@@ -1512,7 +1497,6 @@ void atm_std_init (void) {
     konst(atm_g_math, "pi",   a_num(3.14159265358979323846));
 
     atm_g_atmos = a_tab();
-    field(atm_g_atmos, "status", atmos_status);
     field(atm_g_atmos, "next",   atmos_next);
     field(atm_g_atmos, "env",    atmos_env);
 

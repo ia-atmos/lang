@@ -61,7 +61,7 @@ func done () {
     spawn U()
 }
 pin dn = done()
-print(atmos.status(dn))
+print(type(dn))
 print(:5)
 ;; tasks held by data leave with it, and are pinned with it again
 func held () {
@@ -71,7 +71,7 @@ func held () {
 }
 do {
     pin h = held()
-    print(#h, atmos.status(h@0))
+    print(#h, type(h@0))
 }
 print(:6)
 ;; but not a task of a pool that stays
@@ -89,7 +89,7 @@ func held3 () {
 }
 do {
     pin h = held3()
-    print(#h@0, atmos.status(h@1))
+    print(#h@0, type(h@1))
 }
 print(:7)
 ;; a pool held by data

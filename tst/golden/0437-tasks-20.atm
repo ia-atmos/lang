@@ -4,5 +4,5 @@
         val ok1 = spawn @ts T()
         emit @ts (:)
         val ok2 = spawn @ts T()
-        print(atmos.status(ok1), atmos.status(ok2))
+        print(type(ok1), type(ok2))
     

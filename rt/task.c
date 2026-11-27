@@ -808,9 +808,6 @@ static void node_sweep (ANode* n) {
 // A child died: it leaves now, or when the traversals end.
 static void node_died (ANode* n) {
     n->dead = 1;
-    if (a_nouts > 0) {
-        a_out_ended(&n->hdr);
-    }
     ANode* up = n->up;
     if (up != NULL) {
         up->dirty = 1;
@@ -2810,7 +2807,7 @@ AStatus a_pub_set (ATask* t, AVal v) {
             return a_error("invalid pub : expected enclosing task");
         }
     }
-    // the pub is visible wherever the task is
+    // the pub is visible wherever the task is, and lasts as long
     int d = node_adepth(&t->node);
     if (a_chk_store(v, d) != A_OK) {
         return A_ERROR;
@@ -3020,159 +3017,34 @@ static void ceil_up (AVal v, int d, uint32_t lin) {
     o->ceil = 0;
 }
 
-// The places written with `set :out` that wait for the end of a value.
-// The entries of a value are chained, and found through a hash of the
-// values: a value that ends (most have no entry) is looked up at once.
-typedef struct OutE {
-    AObj* v;        // not counted: the entry goes when the value ends
-    AVal  t;        // a table and a key (counted), or
-    AVal  k;
-    AVal* slot;     // a variable, with its box (counted) if captured
-    AVal  box;
-    int   next;     // the next entry of the same value, or free (-1: none)
-} OutE;
-
-static OutE* OUTS   = NULL;
-static int   OUTS_C = 0;
-static int   OUTS_F = -1;   // free entries
-int a_nouts = 0;            // entries in use
-
-// value -> first entry (open addressing; empty: NULL)
-typedef struct OutH {
-    AObj* v;
-    int   e;
-} OutH;
-static OutH* OUTH   = NULL;
-static int   OUTH_C = 0;    // a power of 2
-static int   OUTH_N = 0;    // keys in use, with tombstones
-#define OUTH_DEL ((AObj*)1)
-
-static uint32_t outh_hash (AObj* o) {
-    uintptr_t x = (uintptr_t) o;
-    x ^= x >> 17;
-    x *= 0x9E3779B1u;
-    return (uint32_t) (x ^ (x >> 15));
+// set :out place = v: only a task or a pool may be referred to from an
+// outer place. The place keeps it with no check of an escape and no
+// adoption; when its block ends it is dead, and the reference stays
+// valid.
+AStatus a_out_chk (AVal v) {
+    if (v.type!=A_XTASK && v.type!=A_TASKS) {
+        return a_error("invalid set :out : expected task or pool : got %s",
+            a_typename(v));
+    }
+    // a block must own it (a pin, a pool, a spawn statement): the scope
+    // that the place refers into. An unpinned one is a plain value, and
+    // goes to the place with a plain `set`.
+    if (v.u.o->pinned==0 && !(v.type==A_XTASK && A_TASK_OF(v)->pool!=NULL)) {
+        return a_error("invalid set :out : expected pinned %s",
+            (v.type == A_XTASK) ? "task" : "pool");
+    }
+    return A_OK;
 }
 
-// The slot of `o`, or of an empty key where it would go.
-static int outh_find (AObj* o) {
-    uint32_t m = OUTH_C - 1;
-    uint32_t i = outh_hash(o) & m;
-    int del = -1;
-    while (OUTH[i].v != NULL) {
-        if (OUTH[i].v == o) {
-            return i;
-        }
-        if (OUTH[i].v==OUTH_DEL && del<0) {
-            del = i;
-        }
-        i = (i + 1) & m;
-    }
-    return (del >= 0) ? del : (int)i;
-}
-
-static void outh_grow (void) {
-    OutH* old = OUTH;
-    int   n   = OUTH_C;
-    OUTH_C = (n == 0) ? 64 : n*2;
-    OUTH   = calloc(OUTH_C, sizeof(OutH));
-    OUTH_N = 0;
-    for (int i=0; i<n; i++) {
-        if (old[i].v!=NULL && old[i].v!=OUTH_DEL) {
-            int j = outh_find(old[i].v);
-            OUTH[j] = old[i];
-            OUTH_N++;
-        }
-    }
-    free(old);
-}
-
-static int out_ends (AVal v) {
-    if (v.type < A_TAB) {
-        return 0;
-    }
-    if (v.type==A_XTASK || v.type==A_TASKS) {
-        return !((ANode*)v.u.o)->dead;
-    }
-    return v.u.o->pinned!=0 && v.u.o->pinned!=A_FIN;
-}
-
-static int out_same (OutE* x, OutE* e) {
-    if (e->slot != NULL) {
-        return x->slot == e->slot;
-    }
-    return x->slot==NULL && a_same(x->t, e->t) && a_same(x->k, e->k);
-}
-
-// Adds the entry, unless the value already has one for the same place.
-// Returns 0 if it had (the counted fields of `e` are not taken).
-static int out_add (OutE e) {
-    if ((OUTH_N+1)*2 > OUTH_C) {
-        outh_grow();
-    }
-    int h = outh_find(e.v);
-    if (OUTH[h].v == e.v) {
-        for (int i=OUTH[h].e; i>=0; i=OUTS[i].next) {
-            if (out_same(&OUTS[i], &e)) {
-                return 0;
-            }
-        }
-    } else {
-        if (OUTH[h].v == NULL) {
-            OUTH_N++;
-        }
-        OUTH[h].v = e.v;
-        OUTH[h].e = -1;
-    }
-    if (OUTS_F < 0) {
-        int n = OUTS_C;
-        OUTS_C = (n == 0) ? 16 : n*2;
-        OUTS = realloc(OUTS, OUTS_C * sizeof(OutE));
-        for (int i=OUTS_C-1; i>=n; i--) {
-            OUTS[i].next = OUTS_F;
-            OUTS_F = i;
-        }
-    }
-    int i = OUTS_F;
-    OUTS_F = OUTS[i].next;
-    e.next = OUTH[h].e;
-    OUTS[i] = e;
-    OUTH[h].e = i;
-    a_nouts++;
-    return 1;
-}
-
-int a_out_reg_tab (AVal t, AVal k, AVal v) {
-    if (!out_ends(v)) {
-        return 0;
-    }
-    if (out_add((OutE) { v.u.o, t, k, NULL, a_nil(), -1 })) {
-        a_inc(t);
-        a_inc(k);
-    }
-    return 1;
-}
-
-int a_out_reg_var (AVal* slot, AVal box, AVal v, int d) {
-    if (!out_ends(v) || d>a_pdepth(v)) {
-        return 0;
-    }
-    if (out_add((OutE) { v.u.o, a_nil(), a_nil(), slot, box, -1 })) {
-        a_inc(box);
-    }
-    return 1;
-}
-
-// set :out pub = v: the pub of the running task refers to `v`, with no
-// check and no adoption, until `v` ends (registered: `*reg` false), or
-// until the block of the `set` ends. `*task` gets the task, counted, the
-// holder of the place.
-AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
+// set :out pub = v: the pub of the running task.
+AStatus a_out_pub (AVal v) {
     ATask* t = a_cur;
     if (t == NULL) {
         return a_error("invalid pub : expected enclosing task");
     }
-    a_cpy(task, a_obj(&t->node.hdr));
+    if (a_out_chk(v) != A_OK) {
+        return A_ERROR;
+    }
     AVal old = t->pub;
     a_inc(v);
     t->pub = v;
@@ -3184,45 +3056,7 @@ AStatus a_out_pub (AVal* task, AVal v, AVal* reg) {
     } else {
         a_dec(old);
     }
-    a_set(reg, a_bool(!a_out_reg_var(&t->pub, *task, v, d)));
     return A_OK;
-}
-
-void a_out_ended (AObj* o) {
-    if (OUTH_C == 0) {
-        return;
-    }
-    int h = outh_find(o);
-    if (OUTH[h].v != o) {
-        return;
-    }
-    // the chain leaves the index first: a release here may end other
-    // values, and change the index
-    int i = OUTH[h].e;
-    OUTH[h].v = OUTH_DEL;
-    AVal v = a_obj(o);
-    while (i >= 0) {
-        OutE e = OUTS[i];
-        OUTS[i].next = OUTS_F;
-        OUTS_F = i;
-        a_nouts--;
-        i = e.next;
-        // the place goes back to nil, if it still refers to the value
-        if (e.slot != NULL) {
-            if (a_same(*e.slot, v)) {
-                a_clr(e.slot);
-            }
-            a_dec(e.box);
-        } else {
-            if (e.t.type==A_TAB && !a_is_fin(e.t) &&
-                a_same(a_tab_get(A_TAB_OF(e.t),e.k), v))
-            {
-                a_tab_set(A_TAB_OF(e.t), e.k, a_nil());
-            }
-            a_dec(e.t);
-            a_dec(e.k);
-        }
-    }
 }
 
 void a_unname_x (AVal* vs, int n, int d) {
@@ -4226,6 +4060,8 @@ static void clr_deep (AVal v, uint32_t d);
 
 // What a task that ended holds: its `pub` and its final value.
 static void clr_task (ATask* t, uint32_t d) {
+    // the task leaves its scope: its pub and final value go
+    t->gone = 1;
     if (NRETS > 0) {
         a_ret_end(&t->node.hdr);
     }
@@ -4252,9 +4088,6 @@ static void clr_deep (AVal v, uint32_t d) {
     } else {
         o->pinned = A_FIN;
         o->depth  = 0;
-    }
-    if (a_nouts > 0) {
-        a_out_ended(o);
     }
     switch (v.type) {
         case A_TAB: {

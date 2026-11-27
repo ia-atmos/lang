@@ -16,4 +16,4 @@ task Victim () {
 pin v = spawn Victim()
 spawn Killer(v)
 emit(:X)
-print(atmos.status(v))
+print(type(v))

@@ -92,9 +92,9 @@ AStatus a_err_fin (AVal v) {
                        (v.type == A_TASKS) ? "pool" : a_typename(v);
     uint32_t lin = v.u.o->lin;
     if (lin == 0) {
-        return a_error("invalid access : finalized %s", type);
+        return a_error("invalid access : dead %s", type);
     }
-    return a_error("invalid access : finalized %s pinned at %s:%d",
+    return a_error("invalid access : dead %s pinned at %s:%d",
         type, atm_files[A_LIN_FILE(lin)], (int)A_LIN_LINE(lin));
 }
 
@@ -368,9 +368,6 @@ void a_node_free (ANode* n);
 
 void a_free (AObj* o) {
     // no place written with `set :out` keeps a freed value
-    if (a_nouts>0 && o->type>=A_TAB) {
-        a_out_ended(o);
-    }
     // what left this holder and is still alive is no longer its
     if (a_nrets>0 && o->type>=A_TAB) {
         a_ret_forget(o);
@@ -584,6 +581,51 @@ const char* a_typename (AVal v) {
         case A_BOX:   return "box";
     }
     return "?";
+}
+
+// A value whose block ended: a task that left its scope, a pool that
+// its block ended, data that its block finalized. The reference stays
+// valid, and a use of its content is an error.
+int a_is_dead (AVal v) {
+    if (v.type < A_TAB) {
+        return 0;
+    }
+    switch (v.type) {
+        case A_XTASK:
+            // a task that terminated keeps its pub and its final value
+            // while it is in scope
+            return A_TASK_OF(v)->gone;
+        case A_TASKS:
+            return ((ANode*)v.u.o)->dead || v.u.o->pinned==3;
+        default:
+            return v.u.o->pinned == A_FIN;
+    }
+}
+
+// The name of the type with its subtype: the state of a task
+// (`xtask.running`, `xtask.suspended`, `xtask.dead` when it terminated,
+// `xtask.dead.gone` when it also left its scope), and `.dead` for any
+// other value whose block ended.
+const char* a_typename_sub (AVal v) {
+    if (v.type == A_XTASK) {
+        switch (A_TASK_OF(v)->status) {
+            case T_RUNNING:   return "xtask.running";
+            case T_SUSPENDED: return "xtask.suspended";
+            default:
+                return A_TASK_OF(v)->gone ? "xtask.dead.gone" : "xtask.dead";
+        }
+    }
+    if (!a_is_dead(v)) {
+        return a_typename(v);
+    }
+    switch (v.type) {
+        case A_TAB:   return "table.dead";
+        case A_FUNC:  return "function.dead";
+        case A_TASK:  return "task.dead";
+        case A_TASKS: return "tasks.dead";
+        case A_NAT:   return "native.dead";
+        default:      return a_typename(v);
+    }
 }
 
 static const char* ARITH[] = { "+", "-", "*", "/", "//", "%" };

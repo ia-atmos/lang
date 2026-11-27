@@ -5,4 +5,4 @@ outside reacts
 defer inner
 defer a
 defer U
-dead
+xtask.dead

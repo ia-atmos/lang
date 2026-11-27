@@ -1,43 +1,44 @@
-;; set :out: a place of an outer block refers to a value of this block until
-;; the block ends, when it goes back to nil. A name outside that still refers
-;; to the value may not use it: it is finalized.
-pin play = []
-var atual
-
-task Enemy (id) {
-    defer { print(:enemy, id, :aborted) }
-    await(false)
+;; set :out place = t: a place of an outer block refers to a task or a
+;; pool of an inner block. The place is never reset: when the block ends,
+;; the task is out of scope (`xtask.dead.gone`), and the reference stays
+;; valid. A use of what it held (its pub, its final value; an iteration of
+;; or a spawn into a pool) is an error.
+task T (n) {
+    set pub = [n=n]
+    await :go
+    n * 10
 }
-
-func count () {
-    var n = 0
-    loop _, t in play.enemies { set n = n + 1 }
-    n
+pin g = [t=nil, v=[]]
+var x
+do {
+    pin a = spawn T(1)
+    pin b = spawn T(2)
+    pin ts = tasks()
+    spawn @ts T(3)
+    set :out g.t = a                ;; a field
+    set :out x = b                  ;; a variable
+    set :out g.v@+ = a              ;; the next index
+    set :out g.v@+ = ts             ;; a pool
+    print(g.t.pub.n, x.pub.n, #g.v, type(g.t), type(g.v@1))
+    print(catch true { set g.u = a })       ;; with no :out: an escape
 }
+print(type(g.t), type(x), type(g.v@1))
+print(g.t ?? :xtask, g.t ?? :xtask.dead, g.t ?? :xtask.dead.gone)
+print(g.v@1 ?? :tasks, g.v@1 ?? :tasks.dead)
+print(g.t == g.v@0, g.t == x)
+print(catch true { g.t.pub })
+print(catch true { g.t.ret })
+print(catch true { loop _, t in g.v@1 { print(t) } })
+print(catch true { spawn @(g.v@1) T(4) })
+print(await g.t)                    ;; at once
 
-task Hero () {
-    await(:look)
-    val cfg = play.cfg
-    print(:hero, cfg.hp, play.enemies != nil, atual != nil)
-    await(:later)
-    print(:hero, play.enemies == nil, play.cfg == nil, atual == nil)
-    val ok, e = catch true { cfg.hp }
-    print(ok, e)
+;; a task that terminates while in scope is dead, and keeps its pub and
+;; its final value until it leaves its scope
+var y
+do {
+    pin c = spawn T(5)
+    set :out y = c
+    emit :go
+    print(type(y), y ?? :xtask.dead.gone, y.pub.n, y.ret, await y)
 }
-pin h = spawn Hero()
-
-do {                                ;; the map
-    pin ts  = tasks()
-    pin cfg = [hp=10]
-    set :out play.enemies = ts
-    set :out play.cfg     = cfg
-    set :out atual        = cfg
-    spawn @ts Enemy(1)
-    spawn @ts Enemy(2)
-    print(:count, count())
-    emit :look
-    print(:map, :ends)
-}
-print(:after, play.enemies, play.cfg, atual)
-emit :later
-print(:end)
+print(type(y), catch true { y.pub })

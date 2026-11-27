@@ -1,11 +1,8 @@
 ;; A `pin var` with no initial value owns what it gets later: it is
-;; finalized at the end of its block, and a place written with `set :out`
-;; goes back to nil then.
-var y
+;; finalized at the end of its block. Here, a function that refers to its
+;; own variable: a cycle, which would leak if the block did not end it.
 do {
-    pin var t
-    set t = [10]
-    set :out y = t
-    print(y@0)
+    pin var g
+    set g = func (n) { if n > 0 { g(n - 1) } else { :ok } }
+    print(g(2))
 }
-print(y)

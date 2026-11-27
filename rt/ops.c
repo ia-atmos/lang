@@ -63,8 +63,11 @@ int a_is (AVal v, AVal x) {
         return 0;
     }
     AStr* sx = A_STR_OF(x);
-    const char* type = a_typename(v);
-    if (type[0]==sx->s[0] && !strcmp(type,sx->s)) {
+    // the type, or a prefix of it up to a dot (`:xtask` of `xtask.dead`)
+    const char* type = a_typename_sub(v);
+    if (type[0]==sx->s[0] && !strncmp(type,sx->s,sx->len) &&
+        (type[sx->len]=='\0' || type[sx->len]=='.'))
+    {
         return 1;
     }
     if (v.type == A_STR) {
@@ -258,6 +261,9 @@ AStatus a_next_slow (AVal it, AVal lim, AVal step, AVal* pos, AVal* k, AVal* v) 
         }
         case A_TASKS: {
             // index among the live tasks, and the task
+            if (a_is_dead(it)) {
+                return a_err_fin(it);
+            }
             int64_t i = p;
             ATask* x = a_tasks_iter(A_TASKS_OF(it), &i);
             int64_t n = (k->type == A_INT) ? k->u.i + 1 : 0;

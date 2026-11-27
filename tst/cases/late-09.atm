@@ -25,7 +25,7 @@ task U (id, late) {
 print("-- orphan suspended")
 pin a = spawn U(:A, false)
 emit(:Y)
-print(atmos.status(a))
+print(type(a))
 print("-- orphan running")
 pin b = spawn U(:B, true)
 spawn {
@@ -33,7 +33,7 @@ spawn {
     print("B terminated")
 }
 emit(:X)
-print(atmos.status(b))
+print(type(b))
 
 ;; one that nobody refers to is aborted at once
 start(:M, false)

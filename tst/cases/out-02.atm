@@ -1,66 +1,38 @@
-;; set :out: two trails on the same place; names that outlive the block (a
-;; function, a table, a pool); an unpinned value; a place overwritten by hand
-pin play = []
-task T (id) { defer { print(:t, id, :end) } ; await(false) }
-
-;; two trails write the same field
-par :all {
-    pin a = [n=1]
-    set :out play.x = a
-    await(:one)
-    print(:A, play.x.n)
-} with {
-    pin b = [n=2]
-    set :out play.x = b
-    await(:two)
-    print(:B, play.x && play.x.n)
-} with {
-    emit :one                  ;; A ends: the field is b's, and stays
-    print(:mid, play.x.n)
-    emit :two
-}
-print(:x, play.x)
-
-;; names that outlive the block: a pool, a function, a table
-task Keeper () {
-    await(:look)
-    val es = play.es
-    val f  = play.f
-    val t  = play.u
-    await(:later)
-    print(catch true { f() })
-    print(catch true { #t })
-    print(catch true { t@0 })
-    print(catch true { set t@0 = 1 })
-    print(catch true { loop _, x in t { } })
-    print(catch true { spawn @es T(2) })
-    print(catch true { #es })
-}
-pin kp = spawn Keeper()
+;; set :out only takes a task or a pool: data must be in a task, which has
+;; a dead state and an event of its end.
+pin g = []
+task T () { await false }
 do {
-    pin ts = tasks()
-    pin g  = func () { 1 }
-    pin u  = [1]
-    set :out play.es = ts
-    set :out play.f  = g
-    set :out play.u  = u
-    spawn @ts T(1)
-    emit :look
+    pin t = [1]
+    pin f = func () { 1 }
+    print(catch true { set :out g.a = t })
+    print(catch true { set :out g.b = f })
+    print(catch true { set :out g.c = 10 })
+    print(catch true { set :out g.d = nil })
+    print(catch true { set :out g.e = T })
+    var x
+    print(catch true { set :out x = [2] })
 }
-emit :later
+print(#g, g.a)
 
-;; an unpinned value: only the reset
+;; a block must own the task or the pool: an unpinned one is a plain value,
+;; which goes to the place with a plain set
 do {
-    val w = [5]
-    set :out play.w = w
-    print(play.w@0)
+    val t = spawn T()
+    val ts = tasks()
+    print(catch true { set :out g.t = t })
+    print(catch true { set :out g.ts = ts })
 }
-print(play.w)
-
-;; overwritten by hand: it stays
+;; a spawn statement and a pool own their tasks
+task U () { set pub = [2] ; set :out g.u = task ; await false }
 do {
-    pin v = [6]
-    set :out play.v = v
-    set play.v = 7
+    spawn U()
+    print(type(g.u), g.u.pub@0)
 }
-print(play.v)
+print(type(g.u))
+do {
+    pin ps = tasks()
+    spawn @ps U()
+    print(type(g.u), g.u.pub@0)
+}
+print(type(g.u))
