@@ -1,8 +1,7 @@
 # `set :out` only for tasks (atmos-pin#35, proposal)
 
-Proposal under discussion with the author (2026-11-27, in `atmos-pin`).
-Nothing here is implemented. Decided by him so far: items 1, 2 and 3
-below, with 3.2 preferred. Everything marked "to decide" is open.
+Proposal agreed with the author (2026-11-27, in `atmos-pin`). Nothing
+here is implemented, and the implementation waits for his go.
 
 ## Why
 
@@ -12,10 +11,31 @@ A task has two things that data does not have:
 - an event: who refers to it may `await t` or `watching t` and react.
 
 So a place of an outer block that refers to a task of an inner block
-needs no reset to `nil` and no error on use: the task dies with its
-block, and the reference says so.
+needs no reset to `nil`: the task dies with its block, and the reference
+says so.
 
-## The rules
+## The one rule of a dead value
+
+A reference to a value that ended stays valid. What ends is its content,
+and a use of the content is an error. This holds for a task, a pool, and
+pinned data, with no special case:
+
+- on the reference, always valid: `==`, `??`, `type`, printing, storing
+  it, passing it, `await t` and `watching t` (which return at once, with
+  the final value of the task, which left it when it returned);
+- on the content, an error (`invalid access : dead task`, `dead pool`,
+  `dead table`): the `pub` of a dead task (read or write), a field, an
+  index, a length or an iteration of finalized data, an iteration of or
+  a `spawn` into a dead pool.
+
+Every value that ended has the subtype `.dead` of its type:
+`:xtask.dead`, `:tasks.dead`, `:table.dead` (and so for a function and
+a native). So one test serves all: `x ?? :table.dead`. This is what a
+finalized table already does today (`==` and `type` work, an index
+raises); the rule extends it to the task and to the pool. It closes
+atmos-pin#33 (the test of a dead value).
+
+## The rules of `set :out`
 
 1. `set :out place = v` accepts only a task or a pool. Any other value is
    an error (`invalid set :out : expected task or pool`). Decided.
@@ -24,39 +44,31 @@ block, and the reference says so.
 3. The place is never reset: it keeps the task. When the block of the
    task ends, the task is aborted and is dead; the reference stays valid.
    Decided ("nem seria necessário o set nil").
-4. The `pub` of a task that ended is `nil` (3.2). The data pinned with
-   the task is finalized with it, as today, and the `pub` no longer
-   refers to it. So every task may leave with `:out`: its `pub` never
-   outlives it. The final value of the task stays readable: it already
-   obeys the rules, since only a value that may leave is returned.
-   Preferred by the author; prototype below.
-5. To decide: a plain `set pub.x = v` accepts data pinned in the body
-   block of the task itself, since both end together. Today this needs
-   `set :out pub.x = v`, which rule 1 removes. Data of an inner block of
-   the task stays an `invalid escape`.
-6. To decide: a dead pool. Iterating it gives nothing (no error). A
-   `spawn` into it is an error, since the new task would have no block.
-7. To decide: `invalid access : finalized ...`. A dead task raises
-   nothing: `t.pub` is `nil`, and its state says it is dead. The error
-   can then only come from data read through a `pub` and kept in a name
-   (`val es = t.pub.enemies`, used after `t` ended). Options: (a) keep
-   the error for that case, recommended, since an emptied table that
-   reads as empty hides the bug; (b) remove it: the table reads as
-   empty, a pool as empty, a closed native as closed. Memory is safe
-   either way (the counts keep the husk).
-8. To decide: how to test the state of a task. Today
-   `atmos.status(t) == :dead`. The author's idea: a subtype of the type,
-   `t ?? :xtask.dead` (also `.running`, `.suspended`). This replaces
-   atmos-pin#33 (the test of a dead value). Assessed by `atmos-lang`
-   (2026-11-27): feasible and cheap, no new field. One rule changes:
-   the type rule of `??` is an exact comparison today, and becomes a dot
-   prefix, as for tags, so that `t ?? :xtask` stays true (`match` and
-   `catch` follow). Error messages and `tostring` keep the base name.
-   The states are three (running, suspended, dead); muted is a flag,
-   not a state. It recommends removing `atmos.status` (one use in the
-   ports, sdl-tux, and 9 cases). It would give no subtype to pools,
-   since a finalized pool is an error today; with item 6 a dead pool is
-   valid, so `:tasks.dead` would be needed.
+4. The `pub` ends with its task: the data pinned with the task is
+   finalized, the `pub` is released, and a use of the `pub` of a dead
+   task is an error, by the rule above. The program never sees a `nil`
+   there. So every task may leave with `:out`: its `pub` never outlives
+   it. Decided (#35c, #35e; it was "3.2, the pub is nil").
+5. A plain `set pub.x = v` accepts data pinned in the body block of the
+   task itself, since both end together. The capability is the one of
+   today's `set :out pub.x = v`, which rule 1 removes; only the writing
+   changes. Data of an inner block of the task stays an
+   `invalid escape`. Decided (#35a).
+6. A dead pool raises an error on any use of its content (iteration,
+   `spawn`), as a finalized pool does today. Decided (#35b).
+7. `invalid access : finalized ...` stays, as `invalid access : dead
+   ...`, for data too: the case left is data read through a `pub` and
+   kept in a name (`val es = t.pub.enemies`, used after `t` ended).
+   Decided (#35c).
+8. The state of a task is a subtype of its type: `:xtask.running`,
+   `:xtask.suspended`, `:xtask.dead`. Decided (#35d). Assessed by
+   `atmos-lang` (2026-11-27): feasible and cheap, no new field. One rule
+   changes: the type rule of `??` is an exact comparison today, and
+   becomes a dot prefix, as for tags, so that `t ?? :xtask` stays true
+   (`match` and `catch` follow). Error messages and `tostring` keep the
+   base name. Muted is a flag, not a state. It recommends removing
+   `atmos.status` (one use in the ports, sdl-tux, and 9 cases): to
+   confirm with the author.
 
 ## What it removes from the runtime
 
@@ -65,10 +77,9 @@ block, and the reference says so.
 - The hole in a vector when a value ends (#22).
 - The `pub` of a dead task kept until its pool ends (#27), and the
   retire of the `pub` of a freed task into its pool (#34).
-- The question of a test of a dead value (#33), by item 8.
-- If 7b: the mark of finalized data (`A_FIN`) and its test at each use.
+- The question of a test of a dead value (#33), by the subtype `.dead`.
 
-## Prototype of 3.2
+## Prototype of the `pub` that ends with its task
 
 Local, not committed (2026-11-27, main 02f2ca7): the `pub` is cleared
 where a task ends (4 lines in `rt/task.c`). 560 of 563 cases unchanged.
@@ -100,7 +111,7 @@ set :out hud.enemy = e              ;; before: e is the pub of the enemy
 if hud.enemy { draw(hud.enemy.hp) }
 
 set :out hud.enemy = t              ;; after: t is the task of the enemy
-if hud.enemy && hud.enemy.pub { draw(hud.enemy.pub.hp) }
+if hud.enemy && !(hud.enemy ?? :xtask.dead) { draw(hud.enemy.pub.hp) }
 ```
 
 ```
@@ -120,14 +131,15 @@ other places are single fields that are overwritten.
 
 ## Costs
 
-- A reader tests two levels: the place may be empty, and the `pub` of a
-  dead task is `nil`.
+- A reader tests before it uses: the place may be empty, and the task
+  may be dead (`t ?? :xtask.dead`), or it waits with `watching t`.
 - A place that is never overwritten keeps a dead task in memory (its
   header and final value) while it refers to it.
 - 44 of the 66 uses change, most by one level of indirection.
 
 ## Next
 
-After the author decides 5, 6, 7 and 8: implement on `pin`, migrate the
-ports with their sessions, and ask `paper-pin` to rewrite the section on
-`set :out`.
+With the author's go: implement on `pin` (with `atmos-lang` for the
+subtype and the prefix rule of `??`), migrate the ports with their
+sessions, and ask `paper-pin` to rewrite the section on `set :out`.
+Open with the author: whether `atmos.status` is removed.
