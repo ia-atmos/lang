@@ -17,7 +17,7 @@ thread meets in `rt/` (by the session, to be confirmed).
 |---|---|---|
 | #1 | What threads are for | decided by the author, 2026-11-26: computation. "É um bloco restrito sem a semântica de concorrência estruturada, sem pin, etc. Basicamente pra cálculo mesmo, mas com a semântica quase toda da parte não concorrente de atmos" (the middle way of `261125-threads-runtime.md`) |
 | #2 | How values of the task enter the block and the result leaves it | decided by the author, 2026-11-26 ("#2.1"): deep copy in at the start, deep copy out at the end, the block's own heap freed when it ends (as Lua Lanes: one `lua_State` per lane, arguments, upvalues and results copied, strings interned per state; only "deep userdata" is shared, with its own lock). Nothing to implement for now (author: "Nao vamos implementar nada agora") |
-| #3 | A shareable type between the program and a computation block (as the "deep userdata" of Lanes) | to explore, asked by the author 2026-11-26 ("Vamos explorar isso. Me acorde na quarta que vem"); wake-up scheduled for 2026-12-02 10:00 (Sao Paulo) |
+| #3 | A shareable type between the program and a computation block (as the "deep userdata" of Lanes) | to explore, asked by the author 2026-11-26 ("Vamos explorar isso. Me acorde na quarta que vem"); wake-up scheduled for 2026-12-02 10:00 (Sao Paulo). Author, 2026-11-27: "Acho que esse novo tipo precisaria usar um lock v {} em volta sem concorrencia dentro" (he asked for no comment) |
 
 ## Facts (2026-11-22)
 
