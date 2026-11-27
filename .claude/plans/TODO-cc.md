@@ -356,3 +356,15 @@ the merge.
 
 Not started, of the author's request: `--verbose` (his point 2), C flags
 on the command line (his point 3).
+
+## Merged (2026-11-27)
+
+`cc` is on `main` as `eb2c350`, by `atmos-lang`. On a clean copy: suite
+with ASAN (lex 33, ast 97, cases 561, golden 443, env 1, guide 21) and
+48 configurations pass. The ports are not told (`#7`). Effect measured
+by `atmos-lang` on the clones of the ports: 167 of 2308 files stop at
+`invalid native : expected ':prelude.h' or ':prelude.c'` (env-sdl,
+env-esp32, env-ray, env-uv, env-iup, and the ports that include them,
+chiefly through `rnd.atm` and `os/unix/os.atm` in pico-1oom and tux);
+one only changes its message by the normalized path
+(`snxkx/main.atm`); no other diagnostic changes.
