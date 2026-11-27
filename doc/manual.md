@@ -437,7 +437,7 @@ Atmos borrows much from Lua, and some differences are worth mentioning:
       and a name with fields and indexes: `f x`, `f t.x`, `f 10`
         - As in Lua, there is a single argument; unlike Lua, a call with no
           parenthesis cannot be the left operand of an operator:
-          `f x + 1` is an error, written `f(x) + 1` or `f(x + 1)`.
+          `f x + 1` is an error, written `(f x) + 1` or `f(x + 1)`.
 - Method call:
     - Lua: `o:f()`, with the methods found through a metatable
     - Atmos: none, as it has no metatables: `m.f(o)` with a function of a
@@ -2750,7 +2750,8 @@ The argument starts in the same line of the function.
 A call with no parenthesis cannot be the left operand of a binary operator:
 `f x + 1` is an error (`invalid call : use parentheses to disambiguate`),
 since it would read as `f(x) + 1` and is easily meant as `f(x + 1)`.
-Write `f(x) + 1` or `f(x + 1)`. The same holds for an
+Write `(f x) + 1`, which keeps the call with no parenthesis, or
+`f(x + 1)`. The same holds for an
 [await](#await) with no parenthesis: `await x * 1ms` is an error.
 There is a single argument, with no commas: in `[a = f x, b = 1]` and in
 `g(f x, 1)`, the comma belongs to the enclosing list.
@@ -2803,7 +2804,7 @@ print t.x       ;; same as print(t.x)
 See [Ambiguities](#ambiguities):
     `f` ⏎ `(x)` reads as two statements `f ; (x)` (not `f(x)`);
     `f :X []` reads as `f(:X [])` (not `f(:X) []`);
-    `f x + 1` is an error (write `f(x) + 1` or `f(x + 1)`); and
+    `f x + 1` is an error (write `(f x) + 1` or `f(x + 1)`); and
     `f -x` reads as `f - x` (not `f(-x)`).
 
 [lua-call]: https://www.lua.org/manual/5.4/manual.html#3.4.10
@@ -4745,7 +4746,7 @@ may surprise a naive reading:
 | [table](#table)   | `:X` ⏎ `[]`           | `:X ; []`               | `:X []`                  |
 | [calls](#calls)   | `f` ⏎ `(x)`           | `f ; (x)`               | `f(x)`                   |
 | [calls](#calls)   | `f :X []`             | `f(:X [])`              | `f(:X) []`               |
-| [calls](#calls)   | `f x + 1`             | error: use parenthesis  | `f(x) + 1`, `f(x + 1)`   |
+| [calls](#calls)   | `f x + 1`             | error: use parenthesis  | `(f x) + 1`, `f(x + 1)`  |
 | [calls](#calls)   | `f t.x`               | `f(t.x)`                | `f(t).x`                 |
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |
