@@ -209,3 +209,34 @@ e.status.double
 
 The same thing has one name everywhere: the buttons are `left`,
 `middle`, `right` both in `e.but` and in `e.status`.
+
+## Traps
+
+Behaviours of the language that broke a program with no diagnostic and
+were caught only by its tests. Not style: know them when writing.
+
+### A task spawned inside an `if` dies with the `if` (pico-frescogo#35)
+
+`if RADAR != nil { spawn Leitor() }` is refused (`invalid spawn : task
+aborted at end of block`): the task belongs to the block of the `if`.
+What works today: spawn it unconditionally, and let the task wait
+forever when it has nothing to do.
+
+```
+spawn Leitor()          ;; and inside Leitor: if RADAR == nil { await false }
+```
+
+### A plain `emit` inside a named task stays in that task (pico-frescogo#36)
+
+The default target is the running named task. A reader task that emits
+its hits with `emit e` never reaches the code that spawned it (it did
+while it was a transparent `spawn { }`). Name the target:
+
+```
+emit @:parent e
+```
+
+(Two other traps of `pico-frescogo` are gone: `await X * 1ms` is now an
+error, see the rule above, and `tonumber("0740")` no longer reads octal,
+lang cb316fd.)
+
