@@ -336,7 +336,7 @@ A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
 The one exception is explicit: a place written with [`set :out`](#pin)
 refers to a task or a pool of an inner block.
-When that block terminates, the task is dead: the reference remains
+When that block terminates, the task is out of scope: the reference remains
 valid, and a use of what the task held is an error.
 
 The counts remain in use for what has no block, or ends before its block:
@@ -1427,7 +1427,6 @@ task T (n) {
         set pub = n*2   ;; refers to owner's `pub`
     }
     print(pub)          ;; --> 20
-    await false         ;; the `pub` ends with the task
 }
 pin t = spawn T(10)
 print(t.pub)            ;; --> 20
@@ -1436,18 +1435,14 @@ print(t.pub)            ;; --> 20
 A task also has the field `ret`, which can only be read, and holds the value
 that the task terminated with.
 
-A task owns what it keeps in `pub` and in `ret`: an unpinned value that is
-stored there is [pinned](#pin) with the task.
-The `pub` ends with its task: when the task terminates, what it held through
-the `pub` is finalized, and a use of the `pub` of a dead task is an error
-(`invalid access : dead task pinned at prog.atm:10`).
-So the `pub` may hold, with a plain assignment, a value that is pinned in the
-body block of the task, since both end together.
-A value that is pinned in an inner block of the body ends before the `pub`,
-and cannot be stored there.
-The final value `ret` remains while the block of the task lasts.
-A task usually creates what it publishes in the `pub` itself, and refers to
-it:
+A task owns what it keeps in `pub` and in `ret`: an unpinned value that is stored
+there is [pinned](#pin) with the task, in the block that the task is attached
+to, and is reclaimed with the task.
+Both remain after the task terminates, for as long as the task is in scope:
+they end with the block that the task is attached to.
+Since the `pub` is visible wherever the task is, and lasts as long, it cannot
+hold a value that is pinned in the body of the task.
+A task creates what it publishes in the `pub` itself, and refers to it:
 
 ```
 task Ship () {
@@ -2173,7 +2168,7 @@ do {                                ;; a map
     pin e = spawn Enemy()           ;; the map owns its enemy
     set :out hud.enemy = e          ;; a table outside refers to it
     <...>
-}                                   ;; the enemy is aborted: it is dead
+}                                   ;; the enemy is aborted, and out of scope
 print(hud.enemy ?? :xtask.dead)     ;; --> true
 ```
 
@@ -2183,12 +2178,14 @@ the running task.
 The assignment has no check of an escape, and the place does not adopt the
 task, which still belongs to its block.
 The place is never reset: when the block of the task terminates, the task
-is aborted, and the place refers to a dead task.
+is aborted, and the place refers to a task that is out of scope.
 
 Only a task or a pool may be referred to in this way
-(`invalid set :out : expected task or pool : got table`).
-A task has what such a reference needs: a state that tells it is dead, and
-an event of its end.
+(`invalid set :out : expected task or pool : got table`), and a block must
+own it: a `pin`, a pool, or a `spawn` statement
+(`invalid set :out : expected pinned task`).
+A task has what such a reference needs: a state that tells that it ended,
+and an event of its end.
 Data that code outside needs is kept in the `pub` of a task:
 
 ```
@@ -2208,31 +2205,39 @@ spawn {
 
 #### Dead Values
 
-A dynamic value ends before the last reference to it goes when its block
-terminates: a task or a pool is aborted, and pinned data is finalized.
-The value is then dead.
-A reference to a dead value remains valid, and what the value held is gone:
+A task ends in two steps:
+
+- It terminates: its body ends, or it is aborted.
+  The task is dead (`t ?? :xtask.dead`).
+  While it is in scope, its `pub` and its final value remain:
+  `t.pub`, `t.ret`, and `await t`, which returns at once.
+- It leaves its scope: the block that the task is attached to terminates.
+  Its `pub` and its final value are gone (`t ?? :xtask.dead.gone`), and
+  only a place written with `set :out` may still refer to it.
+
+A pool and pinned data have the second step only: when their block
+terminates, a pool is aborted, and data is finalized
+(`ts ?? :tasks.dead`, `x ?? :table.dead`).
+
+A reference to a value whose block terminated remains valid, and what the
+value held is gone:
 
 - The reference may be compared with `==`, tested with `??`, stored,
   passed, and printed.
-  A dead task may be awaited (`await t`, `watching t`), which returns at
-  once.
+  A task may be awaited (`await t`, `watching t`), which returns at once.
 - A use of what the value held raises an error, such as
   `invalid access : dead table pinned at prog.atm:10`, with the line of the
-  pin: the `pub` of a dead task, an index, an assignment to a field, a
-  length or an iteration of a dead table, a call of a dead function, and an
-  iteration of or a spawn into a dead pool.
-
-The type of a dead value has the subtype `dead`, which the
-[equivalence operator](#equivalence) tests: `t ?? :xtask.dead`,
-`ts ?? :tasks.dead`, `x ?? :table.dead`.
+  pin: the `pub` and the final value of a task that is out of scope, an
+  index, an assignment to a field, a length or an iteration of a dead
+  table, a call of a dead function, and an iteration of or a spawn into a
+  dead pool.
 
 A name may refer to data of a task that it read through the `pub`.
-If the task terminates, the name refers to a dead value:
+If the task leaves its scope, the name refers to a dead value:
 
 ```
-val bag = hud.enemy.pub.bag         ;; a table that the enemy pins
-await hud.enemy                     ;; the enemy terminates
+val bag = hud.enemy.pub.bag         ;; a table that the enemy owns
+await :next_map                     ;; the map of the enemy terminates
 print(bag ?? :table.dead)           ;; --> true
 print(#bag)                         ;; ERROR: invalid access : dead table ...
 ```
@@ -4181,7 +4186,8 @@ there is no `require`.
 - `type(v)`: the type of `v` as a string: `nil`, `boolean`, `number`,
   `string`, `table`, `function`, `task`, `xtask`, `tasks`, or `native`.
   The type of a spawned task has its state as a subtype: `xtask.running`,
-  `xtask.suspended`, or `xtask.dead`.
+  `xtask.suspended`, `xtask.dead` when it terminated, and
+  `xtask.dead.gone` when it also left its scope.
   The type of any other [dead value](#dead-values) has the subtype `dead`,
   as `table.dead` and `tasks.dead`.
   A type is tested with `??`, which accepts the subtypes: `v ?? :xtask`

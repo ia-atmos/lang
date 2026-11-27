@@ -1,13 +1,8 @@
 ;; A `pin var` with no initial value owns what it gets later: it is
-;; finalized at the end of its block.
-task T () {
-    pin var t
-    set t = [10]
-    set pub = [t=t]
-    await :x
+;; finalized at the end of its block. Here, a function that refers to its
+;; own variable: a cycle, which would leak if the block did not end it.
+do {
+    pin var g
+    set g = func (n) { if n > 0 { g(n - 1) } else { :ok } }
+    print(g(2))
 }
-pin a = spawn T()
-val k = a.pub.t
-print(k@0, type(k))
-emit :x
-print(type(k))

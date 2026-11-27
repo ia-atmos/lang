@@ -1,5 +1,4 @@
         pin T = task () {
-            await(false)
         }
         pin t = spawn T()
         do {

@@ -5,3 +5,9 @@ false	invalid set :out : expected task or pool : got nil
 false	invalid set :out : expected task or pool : got task
 false	invalid set :out : expected task or pool : got table
 0	nil
+false	invalid set :out : expected pinned task
+false	invalid set :out : expected pinned pool
+xtask.suspended	2
+xtask.dead.gone
+xtask.suspended	2
+xtask.dead.gone

@@ -1552,17 +1552,6 @@ static AStatus trail_end (ATask* t, ATrail* tr, AStatus st) {
         // the task itself: the frame goes, the header stays
         t->status = T_DONE;
         frame_free(t);
-        // its pub ends with it: what was pinned with the task through
-        // the pub is finalized, and the pub is released
-        if (a_nrets > 0) {
-            a_ret_end(&t->node.hdr);
-        }
-        if (t->pub.type>=A_TAB && t->pub.type!=A_XTASK &&
-            t->pub.type!=A_TASKS && t->pub.u.o->pinned==2)
-        {
-            clr_deep(t->pub, t->pub.u.o->depth);
-        }
-        a_clr(&t->pub);
         // its final value is kept by the task: pinned with it, if unpinned
         {
             ANode* o = (t->pool != NULL) ? &t->pool->node : &t->node;
@@ -2812,19 +2801,14 @@ AStatus a_pub (AVal** ref) {
 }
 
 AStatus a_pub_set (ATask* t, AVal v) {
-    // the pub ends with its task: written by the task itself, it may
-    // hold what is pinned in the body block of the task; written from
-    // outside, what lives wherever the task is
-    int d;
     if (t == NULL) {
         t = a_cur;
         if (t == NULL) {
             return a_error("invalid pub : expected enclosing task");
         }
-        d = t->depth;
-    } else {
-        d = node_adepth(&t->node);
     }
+    // the pub is visible wherever the task is, and lasts as long
+    int d = node_adepth(&t->node);
     if (a_chk_store(v, d) != A_OK) {
         return A_ERROR;
     }
@@ -3042,6 +3026,13 @@ AStatus a_out_chk (AVal v) {
         return a_error("invalid set :out : expected task or pool : got %s",
             a_typename(v));
     }
+    // a block must own it (a pin, a pool, a spawn statement): the scope
+    // that the place refers into. An unpinned one is a plain value, and
+    // goes to the place with a plain `set`.
+    if (v.u.o->pinned==0 && !(v.type==A_XTASK && A_TASK_OF(v)->pool!=NULL)) {
+        return a_error("invalid set :out : expected pinned %s",
+            (v.type == A_XTASK) ? "task" : "pool");
+    }
     return A_OK;
 }
 
@@ -3057,7 +3048,7 @@ AStatus a_out_pub (AVal v) {
     AVal old = t->pub;
     a_inc(v);
     t->pub = v;
-    int d = t->depth;
+    int d = node_adepth(&t->node);
     if (old.type>=A_TAB && old.u.o->pinned==2 && (int)old.u.o->depth==d &&
         !(old.type==v.type && old.u.o==v.u.o))
     {
@@ -4069,6 +4060,8 @@ static void clr_deep (AVal v, uint32_t d);
 
 // What a task that ended holds: its `pub` and its final value.
 static void clr_task (ATask* t, uint32_t d) {
+    // the task leaves its scope: its pub and final value go
+    t->gone = 1;
     if (NRETS > 0) {
         a_ret_end(&t->node.hdr);
     }

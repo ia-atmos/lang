@@ -973,6 +973,9 @@ typedef struct ATask {
     ATrail*  trs;
     // of the body
     uint8_t  status;
+    // the block that owns the task ended (it is out of scope): its pub
+    // and its final value are gone
+    uint8_t  gone;
     // depth of the body block
     int      depth;
     // depth of the deepest pinned argument: the task cannot leave it

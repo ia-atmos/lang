@@ -5,19 +5,12 @@ implementation ("Sim") and the removal of `atmos.status`. Implemented on
 branch `pin` (c37c7ce and the commits after it); the merge into `main`
 waits for his approval. For the ports: `261127-out-migration.md`.
 
-Found while implementing, for the author:
+Found while implementing:
 
-- Reading the `pub` of a task that ended was a common idiom in the
-  golden suite (6 cases), as a way to publish a result. They now keep
-  the task alive, or read before the end.
 - `type(x) == 'xtask'` (3 golden cases) is false now: `x ?? :xtask`.
-- The final value of a task lasts while the block of the task lasts,
-  as before, and not after it: "the final value stays" below holds
-  only inside that block.
-- `return(pub)` gives a dead table: the table of the `pub` ends with
-  the task.
 - The C functions of the standard library (`X.print`, `X.copy`) see a
   dead table as empty, with no error, as before for a finalized one.
+- `spawn { ... }` is transparent: `task` inside it is the enclosing task.
 
 ## Why
 
@@ -30,77 +23,67 @@ So a place of an outer block that refers to a task of an inner block
 needs no reset to `nil`: the task dies with its block, and the reference
 says so.
 
+## The two steps of the end of a task
+
+Decided by the author on 2026-11-27, after the first implementation
+broke env-sdl `exs/rocks` (a loop that reads the `pub` of tasks that
+terminated along the way) and 6 golden cases:
+
+- A task terminates: it is dead (`:xtask.dead`). While it is in scope,
+  its `pub` and its final value (`t.ret`, `await t`) remain.
+- A task leaves its scope: the block it is attached to ends. Its `pub`
+  and final value are gone (`:xtask.dead.gone`), and only a place of
+  `set :out` may still refer to it.
+
+By the prefix rule, `t ?? :xtask.dead` holds in both, and
+`t ?? :xtask.dead.gone` only in the second. A pool and pinned data have
+the second step only (`:tasks.dead`, `:table.dead`).
+
 ## The one rule of a dead value
 
-A reference to a value that ended stays valid. What ends is its content,
-and a use of the content is an error. This holds for a task, a pool, and
-pinned data, with no special case:
+A reference to a value whose block ended stays valid. What ends is its
+content, and a use of the content is an error. This holds for a task, a
+pool, and pinned data, with no special case:
 
 - on the reference, always valid: `==`, `??`, `type`, printing, storing
-  it, passing it, `await t` and `watching t` (which return at once, with
-  the final value of the task, which left it when it returned);
+  it, passing it, `await t` and `watching t` (which return at once);
 - on the content, an error (`invalid access : dead task`, `dead pool`,
-  `dead table`): the `pub` of a dead task (read or write), a field, an
-  index, a length or an iteration of finalized data, an iteration of or
-  a `spawn` into a dead pool.
-
-Every value that ended has the subtype `.dead` of its type:
-`:xtask.dead`, `:tasks.dead`, `:table.dead` (and so for a function and
-a native). So one test serves all: `x ?? :table.dead`. This is what a
-finalized table already does today (`==` and `type` work, an index
-raises); the rule extends it to the task and to the pool. It closes
-atmos-pin#33 (the test of a dead value).
+  `dead table`): the `pub` and the final value of a task that is out of
+  scope, a field, an index, a length or an iteration of finalized data,
+  an iteration of or a `spawn` into a dead pool.
 
 ## The rules of `set :out`
 
-1. `set :out place = v` accepts only a task or a pool. Any other value is
-   an error (`invalid set :out : expected task or pool`). Decided.
+1. `set :out place = v` accepts only a task or a pool
+   (`invalid set :out : expected task or pool`), and a block must own it:
+   a `pin`, a pool, or a `spawn` statement
+   (`invalid set :out : expected pinned task`). An unpinned task, held
+   only by names, is a plain value: it goes to the place with a plain
+   `set`, which adopts it.
 2. `:out` stays mandatory: a plain `set` of a task of an inner block into
-   an outer place is still `invalid escape`. Decided.
+   an outer place is still `invalid escape`.
 3. The place is never reset: it keeps the task. When the block of the
-   task ends, the task is aborted and is dead; the reference stays valid.
-   Decided ("nem seria necessário o set nil").
-4. The `pub` ends with its task: the data pinned with the task is
-   finalized, the `pub` is released, and a use of the `pub` of a dead
-   task is an error, by the rule above. The program never sees a `nil`
-   there. So every task may leave with `:out`: its `pub` never outlives
-   it. Decided (#35c, #35e; it was "3.2, the pub is nil").
-5. A plain `set pub.x = v` accepts data pinned in the body block of the
-   task itself, since both end together. The capability is the one of
-   today's `set :out pub.x = v`, which rule 1 removes; only the writing
-   changes. Data of an inner block of the task stays an
-   `invalid escape`. Decided (#35a).
-6. A dead pool raises an error on any use of its content (iteration,
-   `spawn`), as a finalized pool does today. Decided (#35b).
-7. `invalid access : finalized ...` stays, as `invalid access : dead
-   ...`, for data too: the case left is data read through a `pub` and
-   kept in a name (`val es = t.pub.enemies`, used after `t` ended).
-   Decided (#35c).
-8. The state of a task is a subtype of its type: `:xtask.running`,
-   `:xtask.suspended`, `:xtask.dead`. Decided (#35d). Assessed by
-   `atmos-lang` (2026-11-27): feasible and cheap, no new field. One rule
-   changes: the type rule of `??` is an exact comparison today, and
-   becomes a dot prefix, as for tags, so that `t ?? :xtask` stays true
-   (`match` and `catch` follow). Error messages and `tostring` keep the
-   base name. Muted is a flag, not a state. It recommends removing
-   `atmos.status` (one use in the ports, sdl-tux, and 9 cases): to
-   confirm with the author.
+   task ends, the task is aborted and out of scope; the reference stays
+   valid.
+4. The `pub` and the final value last while the task is in scope, as
+   before this change. So the `pub` cannot hold what is pinned in the
+   body of the task (withdrawn: #35a, a plain `set` of body data into
+   `pub`): a task creates what it publishes in the `pub` itself.
+   `set :out pub.x = data` no longer exists.
+5. A dead pool raises an error on any use of its content (#35b).
+6. `invalid access : finalized ...` is now `invalid access : dead ...`,
+   and stays for data (#35c): the case left is data read through a `pub`
+   and kept in a name, used after the task left its scope.
+7. The state of a task is a subtype of its type (#35d): `:xtask.running`,
+   `:xtask.suspended`, `:xtask.dead`, `:xtask.dead.gone`. The type rule
+   of `??` accepts a dot prefix. `atmos.status` is removed.
 
 ## What it removes from the runtime
 
 - The registry of `set :out` (`OUTS`, `a_out_reg_*`, `a_out_ended`, the
   hash of #30), and the finalizer that each `set :out` adds to its block.
 - The hole in a vector when a value ends (#22).
-- The `pub` of a dead task kept until its pool ends (#27), and the
-  retire of the `pub` of a freed task into its pool (#34).
 - The question of a test of a dead value (#33), by the subtype `.dead`.
-
-## Prototype of the `pub` that ends with its task
-
-Local, not committed (2026-11-27, main 02f2ca7): the `pub` is cleared
-where a task ends (4 lines in `rt/task.c`). 560 of 563 cases unchanged.
-The 3 that change read the `pub` after the end on purpose: `out-03` and
-`out-pub-02` (written for the behavior of #27) and `task-03`.
 
 ## The uses in the ports
 
@@ -111,7 +94,7 @@ clones on 2026-11-27, no session asked):
 |---|---|---|---|
 | A task or a pool | 22 | sdl-snkrx: `A.w.objs@(b).task = task` (18); sdl-flare: `hud.ens`, `hud.npcs`; ray-lessmilk: the pools `pub.tw` (2) | Unchanged |
 | The `pub` of a task | 8 | sdl-flare: `hud.enemy`, `hz.src` (3), `sp.summoner`, `combat.last_enemy`, `hp.cursor_enemy`, `loot.dropping` | The place gets the task; readers use `t.pub.x` |
-| A table of a screen or game that is a task | 30 | ray-lessmilk: `Physics.scr` (14), `Trace.q` (11); env-ray: `game` (4); sdl-flare: `hud.events` | The place gets the task of the screen (`me`); the data goes to its `pub` |
+| A table of a screen or game that is a task | 30 | ray-lessmilk: `Physics.scr` (14), `Trace.q` (11); env-ray: `game` (4); sdl-flare: `hud.events` | The place gets the task of the screen (`task`); the data goes to its `pub` |
 | Loose data | 6 | sdl-snkrx: springs in `owner.pub.springs@id` (3); ray-lessmilk: the tables `r.tw`, `e.tw`, `s.tw` | The place gets the task that owns the datum, or the datum moves into a task |
 
 Per port: sdl-snkrx 21 (18 unchanged), ray-lessmilk 30 (2 unchanged),
@@ -127,7 +110,7 @@ set :out hud.enemy = e              ;; before: e is the pub of the enemy
 if hud.enemy { draw(hud.enemy.hp) }
 
 set :out hud.enemy = t              ;; after: t is the task of the enemy
-if hud.enemy && !(hud.enemy ?? :xtask.dead) { draw(hud.enemy.pub.hp) }
+if hud.enemy && !(hud.enemy ?? :xtask.dead.gone) { draw(hud.enemy.pub.hp) }
 ```
 
 ```
@@ -136,7 +119,7 @@ pin phys = Physics_screen()         ;; before
 set :out Physics.scr = phys
 
 set pub = [phys = Physics_screen()] ;; after, in the task of the screen
-set :out Physics.scr = me           ;; readers: Physics.scr.pub.phys
+set :out Physics.scr = task         ;; readers: Physics.scr.pub.phys
 ```
 
 Checked: in sdl-flare a dead enemy is a corpse whose task is still
@@ -148,7 +131,8 @@ other places are single fields that are overwritten.
 ## Costs
 
 - A reader tests before it uses: the place may be empty, and the task
-  may be dead (`t ?? :xtask.dead`), or it waits with `watching t`.
+  may be out of scope (`t ?? :xtask.dead.gone`), or it waits with
+  `watching t`.
 - A place that is never overwritten keeps a dead task in memory (its
   header and final value) while it refers to it.
 - 44 of the 66 uses change, most by one level of indirection.

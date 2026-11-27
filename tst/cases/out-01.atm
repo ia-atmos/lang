@@ -1,7 +1,8 @@
 ;; set :out place = t: a place of an outer block refers to a task or a
 ;; pool of an inner block. The place is never reset: when the block ends,
-;; the task is dead, and the reference stays valid. A use of its content
-;; (its pub; an iteration of or a spawn into a pool) is an error.
+;; the task is out of scope (`xtask.dead.gone`), and the reference stays
+;; valid. A use of what it held (its pub, its final value; an iteration of
+;; or a spawn into a pool) is an error.
 task T (n) {
     set pub = [n=n]
     await :go
@@ -22,20 +23,22 @@ do {
     print(catch true { set g.u = a })       ;; with no :out: an escape
 }
 print(type(g.t), type(x), type(g.v@1))
-print(g.t ?? :xtask, g.t ?? :xtask.dead, g.v@1 ?? :tasks, g.v@1 ?? :tasks.dead)
+print(g.t ?? :xtask, g.t ?? :xtask.dead, g.t ?? :xtask.dead.gone)
+print(g.v@1 ?? :tasks, g.v@1 ?? :tasks.dead)
 print(g.t == g.v@0, g.t == x)
 print(catch true { g.t.pub })
+print(catch true { g.t.ret })
 print(catch true { loop _, t in g.v@1 { print(t) } })
 print(catch true { spawn @(g.v@1) T(4) })
-print(await g.t)                    ;; at once: it was aborted, no final value
+print(await g.t)                    ;; at once
 
-;; a task that ends by itself: its final value stays while its block
-;; lasts, and ends with the block
+;; a task that terminates while in scope is dead, and keeps its pub and
+;; its final value until it leaves its scope
 var y
 do {
     pin c = spawn T(5)
     set :out y = c
     emit :go
-    print(type(y), await y)
+    print(type(y), y ?? :xtask.dead.gone, y.pub.n, y.ret, await y)
 }
-print(type(y), await y)
+print(type(y), catch true { y.pub })

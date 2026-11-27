@@ -1,26 +1,32 @@
-;; The pub ends with its task. Written by the task, it may hold what is
-;; pinned in the body block of the task, with a plain set; data of an
-;; inner block is an escape. The pub may also refer to another task, with
-;; set :out. A name that kept data read through a pub refers to a dead
-;; value after the task ends.
+;; The pub lasts as long as its task is in scope, so it cannot hold what
+;; is pinned in the body of the task: the task creates what it publishes
+;; in the pub itself, and refers to it. The pub may refer to another task,
+;; with set :out. A task of a pool that terminates keeps its pub while the
+;; pool lasts.
 task Widget () {
-    set pub = []
-    pin spring = [k=10]
-    set pub.spring = spring         ;; ok: both end with the task
+    set pub = [spring=[k=10]]
+    val spring = pub.spring         ;; an alias of what it publishes
+    pin mine = [k=20]
+    print(catch true { set pub.mine = mine })
     do {
-        pin inner = [k=20]
-        print(catch true { set pub.inner = inner })
         pin sub = spawn { await false }
         set :out pub.sub = sub      ;; a task of an inner block
         print(type(pub.sub))
     }
     print(type(pub.sub))
     await :end
+    spring.k
 }
-pin w = spawn Widget()
-val s = w.pub.spring                ;; a name of data of the task
-print(s.k, type(s), type(w.pub))
-emit :end
-print(type(w), type(s))
-print(catch true { s.k })
-print(catch true { w.pub })
+pin h = [w=nil]
+do {
+    pin ws = tasks()
+    spawn @ws Widget()
+    loop _, w in ws {
+        set :out h.w = w
+    }
+    val s = h.w.pub.spring          ;; a name of data of the task
+    emit :end
+    print(type(h.w), h.w.pub.spring.k, s.k, h.w.ret)
+}
+print(type(h.w))
+print(catch true { h.w.pub })

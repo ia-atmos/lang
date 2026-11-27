@@ -304,7 +304,7 @@ static int is_pub (AVal t, AVal k) {
 
 AStatus a_index_x (AVal* dst, AVal t, AVal k) {
     if (is_pub(t, k)) {
-        // the pub ends with its task
+        // the pub ends when its task leaves its scope
         if (a_is_dead(t)) {
             return a_err_fin(t);
         }
@@ -315,6 +315,9 @@ AStatus a_index_x (AVal* dst, AVal t, AVal k) {
     // it is often inspected as an event, like a table
     if (t.type == A_XTASK) {
         if (k.type==A_STR && !strcmp(A_STR_OF(k)->s,"ret")) {
+            if (a_is_dead(t)) {
+                return a_err_fin(t);
+            }
             a_cpy(dst, A_TASK_OF(t)->ret);
         } else {
             a_clr(dst);

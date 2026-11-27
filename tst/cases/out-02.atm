@@ -14,3 +14,25 @@ do {
     print(catch true { set :out x = [2] })
 }
 print(#g, g.a)
+
+;; a block must own the task or the pool: an unpinned one is a plain value,
+;; which goes to the place with a plain set
+do {
+    val t = spawn T()
+    val ts = tasks()
+    print(catch true { set :out g.t = t })
+    print(catch true { set :out g.ts = ts })
+}
+;; a spawn statement and a pool own their tasks
+task U () { set pub = [2] ; set :out g.u = task ; await false }
+do {
+    spawn U()
+    print(type(g.u), g.u.pub@0)
+}
+print(type(g.u))
+do {
+    pin ps = tasks()
+    spawn @ps U()
+    print(type(g.u), g.u.pub@0)
+}
+print(type(g.u))

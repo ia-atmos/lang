@@ -583,16 +583,18 @@ const char* a_typename (AVal v) {
     return "?";
 }
 
-// A value that ended: a task that terminated, a pool that its block
-// ended, data that its block finalized. The reference stays valid, and a
-// use of its content is an error.
+// A value whose block ended: a task that left its scope, a pool that
+// its block ended, data that its block finalized. The reference stays
+// valid, and a use of its content is an error.
 int a_is_dead (AVal v) {
     if (v.type < A_TAB) {
         return 0;
     }
     switch (v.type) {
         case A_XTASK:
-            return A_TASK_OF(v)->status == T_DONE;
+            // a task that terminated keeps its pub and its final value
+            // while it is in scope
+            return A_TASK_OF(v)->gone;
         case A_TASKS:
             return ((ANode*)v.u.o)->dead || v.u.o->pinned==3;
         default:
@@ -601,14 +603,16 @@ int a_is_dead (AVal v) {
 }
 
 // The name of the type with its subtype: the state of a task
-// (`xtask.running`, `xtask.suspended`, `xtask.dead`), and `.dead` for
-// any other value that ended.
+// (`xtask.running`, `xtask.suspended`, `xtask.dead` when it terminated,
+// `xtask.dead.gone` when it also left its scope), and `.dead` for any
+// other value whose block ended.
 const char* a_typename_sub (AVal v) {
     if (v.type == A_XTASK) {
         switch (A_TASK_OF(v)->status) {
             case T_RUNNING:   return "xtask.running";
             case T_SUSPENDED: return "xtask.suspended";
-            default:          return "xtask.dead";
+            default:
+                return A_TASK_OF(v)->gone ? "xtask.dead.gone" : "xtask.dead";
         }
     }
     if (!a_is_dead(v)) {

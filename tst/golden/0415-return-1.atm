@@ -5,5 +5,5 @@
         } )()
         X.print(type(t), t.pub)
         emit(:)
-        X.print(type(t), t.ret)
+        X.print(type(t), t.pub, t.ret)
     

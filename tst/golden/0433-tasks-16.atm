@@ -6,8 +6,8 @@
         spawn @ts T()
         loop _,t in ts {
             var x = t.pub
-            X.print(x)
             emit @t (:nil)
+            X.print(x)
         }
         print(999)
     
