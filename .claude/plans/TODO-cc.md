@@ -17,6 +17,7 @@ Last update: 2026-11-27.
 | #4a | `:prelude` with no suffix | Decided 2026-11-26 ("Sempre"): always an error (`invalid native : expected ':prelude.h' or ':prelude.c'`). On `cc`; every environment and port must migrate before a merge |
 | #5 | `-c` with modules | Decided 2026-11-26 ("Recomendado"): one C file per module in a directory. On `cc` as `-c -o <dir>` (the paths are printed); `-c` alone refuses a program with modules; with no `import`, the standard output as before. The final spelling (`--emit-c=DIR`) is of `atmos-cli` |
 | #6 | Where the C and the objects of the modules are kept | Decided 2026-11-26 ("#6 build/ então"): `build/` in the current directory, or `--build <dir>`; the files stay, under the names of the modules, one directory per command inside it. He first asked for the files directly in the current directory; the costs were put to him. On `cc` |
+| #7 | Merge `cc` now, or after `--verbose` and the C flags | Decided 2026-11-27 ("Merge agora"), with: "Mas nao é pra avisar a todos da mudanca. Deixa eles precisarem de uma versao nova". Sent to `atmos-lang` for the merge, and to `atmos` not to relay; the ports are not told |
 
 ## Measurements (2026-11-23, this container, 4 cores, gcc 13.3)
 
