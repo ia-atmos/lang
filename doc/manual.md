@@ -436,8 +436,9 @@ Atmos borrows much from Lua, and some differences are worth mentioning:
     - Atmos: also a tag, a lambda, a clock, a number, `nil`, `true`, `false`,
       and a name with fields and indexes: `f x`, `f t.x`, `f 10`
         - As in Lua, there is a single argument; unlike Lua, a call with no
-          parenthesis cannot be the left operand of an operator:
-          `f x + 1` is an error, written `(f x) + 1` or `f(x + 1)`.
+          parenthesis cannot be an operand of an operator:
+          `f x + 1` and `1 + f x` are errors, written `(f x) + 1` and
+          `1 + (f x)`.
 - Method call:
     - Lua: `o:f()`, with the methods found through a metatable
     - Atmos: none, as it has no metatables: `m.f(o)` with a function of a
@@ -2747,12 +2748,14 @@ clock, or native literal), a number, `nil`, `true`, `false`, or a name, which
 may carry fields and indexes, but not a call: `f t.x` is `f(t.x)`.
 
 The argument starts in the same line of the function.
-A call with no parenthesis cannot be the left operand of a binary operator:
+A call with no parenthesis cannot be an operand of a binary operator:
 `f x + 1` is an error (`invalid call : use parentheses to disambiguate`),
-since it would read as `f(x) + 1` and is easily meant as `f(x + 1)`.
-Write `(f x) + 1`, which keeps the call with no parenthesis, or
-`f(x + 1)`. The same holds for an
-[await](#await) with no parenthesis: `await x * 1ms` is an error.
+since it would read as `f(x) + 1` and is easily meant as `f(x + 1)`;
+`1 + f x` is also an error, for symmetry.
+Write `(f x) + 1` and `1 + (f x)`, which keep the call with no parenthesis,
+or `f(x + 1)`. The same holds for an
+[await](#await) with no parenthesis: `await x * 1ms` and `1 + await x` are
+errors.
 There is a single argument, with no commas: in `[a = f x, b = 1]` and in
 `g(f x, 1)`, the comma belongs to the enclosing list.
 Anything else requires the parenthesis: an operation (`f(x + 1)`, `f(-x)`,
@@ -3453,9 +3456,9 @@ predicate:
 Like the [argument of a call](#calls) with no parenthesis, the bare pattern is
 an atom: `await t` and `await t.x` await the task in a name, like `await(t)`.
 Any other expression requires the value form `await(e)`.
-As a call with no parenthesis, a bare await cannot be the left operand of a
+As a call with no parenthesis, a bare await cannot be an operand of a
 binary operator: `await t.ms * 1ms` is an error, written `await(t.ms * 1ms)`
-or `(await t.ms) * 1ms`.
+or `(await t.ms) * 1ms`; and `"x" ++ await e` is written `"x" ++ (await e)`.
 
 A predicate is an expression over the event, which is bound to `it`, or a
 function that receives the event.
@@ -4747,6 +4750,7 @@ may surprise a naive reading:
 | [calls](#calls)   | `f` ⏎ `(x)`           | `f ; (x)`               | `f(x)`                   |
 | [calls](#calls)   | `f :X []`             | `f(:X [])`              | `f(:X) []`               |
 | [calls](#calls)   | `f x + 1`             | error: use parenthesis  | `(f x) + 1`, `f(x + 1)`  |
+| [calls](#calls)   | `1 + f x`             | error: use parenthesis  | `1 + (f x)`              |
 | [calls](#calls)   | `f t.x`               | `f(t.x)`                | `f(t).x`                 |
 | [calls](#calls)   | `f -x`                | `f - x`                 | `f(-x)`                  |
 | [calls](#calls)   | `f x, y`              | `f(x), y`               | `f(x, y)`                |
