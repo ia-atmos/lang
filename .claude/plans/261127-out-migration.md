@@ -43,6 +43,11 @@ merge. The design is in `261127-out-tasks.md`.
 
 ## To watch
 
+- A loop over a snapshot of tasks in which some die along the way
+  (found by `atmos-lang` in env-sdl `exs/rocks/battle.atm`, the same in
+  env-pico): `emit @t1 :collided` kills `t1`, and a later pair reads
+  `t1.pub`, which now raises `invalid access : dead task`. Test before
+  the read: `if t1 ?? :xtask.dead { skip }`.
 - A task that publishes a result in `pub` and terminates: the result is
   gone. Return it as the final value instead.
 - `return(pub)`: the table of the `pub` is pinned with the task and ends
