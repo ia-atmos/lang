@@ -1,1 +1,1 @@
-call-jux-err-4.atm : line 1 : near 'x' : invalid call : expected parentheses
+call-jux-err-4.atm : line 1 : near 'f' : invalid call : use parentheses to disambiguate

@@ -2023,7 +2023,7 @@ static Expr* parser_5_lvl (int lvl, Expr* pre) {
     Expr* e1 = parser_5_lvl(lvl+1, pre);
     while (check_level(lvl)) {
         // f x + 1 and await x + 1 read as f(x) + 1 and (await x) + 1:
-        // the parentheses must say it
+        // the parentheses must say it, (f x) + 1
         if (e1->bare != NULL) {
             err(TK1, xfmt("invalid %s : use parentheses to disambiguate",
                 e1->bare));
@@ -2031,7 +2031,13 @@ static Expr* parser_5_lvl (int lvl, Expr* pre) {
         next();
         Expr* e = mk(E_BIN, TK0);
         e->u.bin.e1 = e1;
+        Tk tk2 = TK1;
         e->u.bin.e2 = parser_5_lvl(lvl+1, NULL);
+        // 1 + f x and 1 + await x: the same, for symmetry
+        if (e->u.bin.e2->bare != NULL) {
+            err(tk2, xfmt("invalid %s : use parentheses to disambiguate",
+                e->u.bin.e2->bare));
+        }
         e1 = e;
     }
     return e1;
