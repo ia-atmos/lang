@@ -46,8 +46,17 @@ block, and the reference says so.
    either way (the counts keep the husk).
 8. To decide: how to test the state of a task. Today
    `atmos.status(t) == :dead`. The author's idea: a subtype of the type,
-   `t ?? :xtask.dead` (also `.running`, `.suspended`). Asked to
-   `atmos-lang`. This replaces atmos-pin#33 (the test of a dead value).
+   `t ?? :xtask.dead` (also `.running`, `.suspended`). This replaces
+   atmos-pin#33 (the test of a dead value). Assessed by `atmos-lang`
+   (2026-11-27): feasible and cheap, no new field. One rule changes:
+   the type rule of `??` is an exact comparison today, and becomes a dot
+   prefix, as for tags, so that `t ?? :xtask` stays true (`match` and
+   `catch` follow). Error messages and `tostring` keep the base name.
+   The states are three (running, suspended, dead); muted is a flag,
+   not a state. It recommends removing `atmos.status` (one use in the
+   ports, sdl-tux, and 9 cases). It would give no subtype to pools,
+   since a finalized pool is an error today; with item 6 a dead pool is
+   valid, so `:tasks.dead` would be needed.
 
 ## What it removes from the runtime
 
