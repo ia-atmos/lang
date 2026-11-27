@@ -25,6 +25,7 @@
 //   ATMOS_CLOCK    if `ms`, a clock is in milliseconds (default `us`)
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -549,10 +550,14 @@ int main (int argc, char** argv) {
         return 0;
     }
 
-    // builds in a temporary directory, removed at the end
-    char dir[] = "/tmp/atmos-XXXXXX";
+    // builds in a temporary directory, removed at the end: in TMPDIR, as
+    // is the convention, or /tmp (a host may mount /tmp with no right to
+    // execute: TMPDIR then points elsewhere)
+    const char* tmp = getenv("TMPDIR");
+    char* dir = xfmt("%s/atmos-XXXXXX", (tmp!=NULL && tmp[0]!='\0') ? tmp : "/tmp");
     if (mkdtemp(dir) == NULL) {
-        fprintf(stderr, ATMOS_NAME " : cannot create temporary directory\n");
+        fprintf(stderr, ATMOS_NAME " : cannot create temporary directory : %s : %s\n",
+            dir, strerror(errno));
         return 1;
     }
     char* cfile = xfmt("%s/main.c", dir);
@@ -576,7 +581,11 @@ int main (int argc, char** argv) {
         if (pid == 0) {
             argv[i-1] = xfile;
             execv(xfile, &argv[i-1]);
-            _exit(127);
+            // as a shell: 126 for a file that cannot run (a directory
+            // with no right to execute, as a /tmp mounted noexec)
+            fprintf(stderr, ATMOS_NAME " : cannot run %s : %s\n",
+                xfile, strerror(errno));
+            _exit(errno==ENOENT ? 127 : 126);
         }
         int status = 0;
         waitpid(pid, &status, 0);
