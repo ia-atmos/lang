@@ -593,6 +593,50 @@ static AStatus std_values (AFunc* self, int argc, AVal* argv) {
     return iter_of("values", values_next, argc, argv);
 }
 
+// The iterator of `iter.fields`: as `iter_step`, but it skips the
+// keys that are numbers, and gives the key and the value.
+static AStatus fields_next (AFunc* self, int argc, AVal* argv) {
+    (void) argc;
+    (void) argv;
+    AVal* c = self->caps;
+    AVal k = a_nil(), v = a_nil();
+    a_cpy(&k, c[2]);
+    while (1) {
+        AStatus st = a_next(c[0], a_nil(), a_nil(), &c[1], &k, &v);
+        if (st != A_OK) {
+            a_clr(&k);
+            a_clr(&v);
+            return st;
+        }
+        if (k.type!=A_INT && k.type!=A_NUM) {
+            break;
+        }
+    }
+    a_cpy(&c[2], k);
+    if (k.type == A_NIL) {
+        a_push(a_nil());
+    } else {
+        a_pushc(k);
+        a_pushc(v);
+    }
+    a_clr(&k);
+    a_clr(&v);
+    return A_OK;
+}
+
+// iter.fields(t): an iterator over the fields of the table `t` whose
+// keys are not numbers, in the order of the walk, with their values:
+// `loop k, v in iter.fields(t) {...}`.
+static AStatus std_fields (AFunc* self, int argc, AVal* argv) {
+    (void) self;
+    AVal t = arg(argc, argv, 0);
+    if (t.type != A_TAB) {
+        return a_error("invalid argument to 'fields' : expected table : got %s",
+            a_typename(t));
+    }
+    return iter_of("fields", fields_next, argc, argv);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // MATH
 ///////////////////////////////////////////////////////////////////////////////
@@ -1474,6 +1518,7 @@ void atm_std_init (void) {
     field(atm_g_iter, "zip",    std_zip);
     field(atm_g_iter, "keys",   std_keys);
     field(atm_g_iter, "values", std_values);
+    field(atm_g_iter, "fields", std_fields);
 
     atm_g_X = a_tab();
     field(atm_g_X, "tostring", x_tostring);

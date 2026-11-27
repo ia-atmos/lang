@@ -1,0 +1,9 @@
+color	red
+w	10
+0	a
+1	b
+x
+y
+z
+w
+false	invalid argument to 'fields' : expected table : got number

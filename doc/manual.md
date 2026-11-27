@@ -4253,6 +4253,10 @@ Functions:
   order of the walk: `loop k in iter.keys(t) {...}`
 - `iter.values(xs)`: an iterator over the values of the table or pool `xs`, in
   the order of the walk: `loop v in iter.values(t) {...}`
+- `iter.fields(t)`: an iterator over the fields of the table `t` whose keys
+  are not numbers, with their values, in the order of the walk:
+  `loop k, v in iter.fields(t) {...}` skips the positional items (for those
+  alone, `loop i in #t {...}`)
 - `iter.zip(xs, ys)`: an iterator over the members of `xs` and `ys` side by
   side, until the shorter ends: `loop a, b in iter.zip(xs, ys) {...}`
 

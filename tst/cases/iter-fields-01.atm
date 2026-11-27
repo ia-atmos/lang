@@ -1,0 +1,36 @@
+;; iter.fields(t): the fields whose keys are not numbers, with their
+;; values, in the order of the walk
+val n = :Box ["a", "b", color=:red, w=10]
+loop k, v in iter.fields(n) {
+    print(k, v)                 ;; --> color red, w 10
+}
+
+;; the positional items alone
+loop i in #n {
+    print(i, n@i)               ;; --> 0 a, 1 b
+}
+
+;; a number key out of the vector part is a number: skipped
+val t = [1, x=2]
+set t@(10) = 3
+set t@(:y) = 4
+loop k in iter.fields(t) {
+    print(k)                    ;; --> x, y
+}
+
+;; a vector, an empty table: no fields
+loop k in iter.fields([1, 2]) { print(:never) }
+loop k in iter.fields([]) { print(:never) }
+
+;; the tag is not a field
+loop k in iter.fields(:T [z=1]) {
+    print(k)                    ;; --> z
+}
+
+;; with the other functions of iter (the first value of each call is
+;; the member, the second its key)
+print(iter.filter(iter.fields(n), \{ it == :w })@0)    ;; --> w
+
+;; not a table
+val ok, e = catch true { iter.fields(10) }
+print(ok, e)
