@@ -255,6 +255,9 @@ struct Expr {
     Tk   tk;
     // pipe or where operator that built this node (to reject mixes)
     const char* out;
+    // a call or an await whose argument has no parentheses (`f x`,
+    // `await x`): it cannot be the left operand of a binary operator
+    const char* bare;
     // resolver: variable of an access
     Var*  var;
     // resolver: variables of a declaration, loop, or prototype

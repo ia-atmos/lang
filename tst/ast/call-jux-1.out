@@ -5,7 +5,6 @@
 (call f (@ t "x"))
 (call f (@ (@ t i) "y"))
 (call (@ t "f") x)
-(+ (call f x) 1)
 (- f x)
 (* (call f (+ a 1)) 2)
 (call f x y)

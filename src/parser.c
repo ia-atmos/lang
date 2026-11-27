@@ -1640,7 +1640,11 @@ static Expr* parser_1_prim (void) {
     // await P
     } else if (accept_str("await")) {
         Expr* e = mk(E_AWAIT, TK0);
+        int bare = !check_str("(") && !check_str("<") && !check_str("<<");
         e->u.await.p = parser_await();
+        if (bare) {
+            e->bare = "await";
+        }
         return e;
 
     // stage [P] {...}  |  solo [P] {...}
@@ -1872,6 +1876,9 @@ static Expr* parser_2_suf (Expr* pre) {
             check_str("@") || check_str(".")
         );
         if (!ok) {
+            if (jux != 0) {
+                e->bare = "call";
+            }
             return e;
         }
 
@@ -1914,6 +1921,9 @@ static Expr* parser_2_suf (Expr* pre) {
             list_add(&ret->u.call.es, arg);
             jux = 2;
         } else {
+            if (jux != 0) {
+                e->bare = "call";
+            }
             return e;
         }
         e = ret;
@@ -2012,6 +2022,12 @@ static Expr* parser_5_lvl (int lvl, Expr* pre) {
     }
     Expr* e1 = parser_5_lvl(lvl+1, pre);
     while (check_level(lvl)) {
+        // f x + 1 and await x + 1 read as f(x) + 1 and (await x) + 1:
+        // the parentheses must say it
+        if (e1->bare != NULL) {
+            err(TK1, xfmt("invalid %s : use parentheses to disambiguate",
+                e1->bare));
+        }
         next();
         Expr* e = mk(E_BIN, TK0);
         e->u.bin.e1 = e1;

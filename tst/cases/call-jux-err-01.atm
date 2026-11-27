@@ -1,0 +1,14 @@
+;; a call or an await with no parentheses cannot be the left operand
+;; of a binary operator: the parentheses say which is meant
+func g (x) { x * 2 }
+print((g 3) + 1)        ;; --> 7
+print(g(3 + 1))         ;; --> 8
+spawn {
+    val t = [ms=2]
+    val v = await(t.ms * 1ms)
+    print(v)            ;; --> 1000: the time past 2ms, after 3ms
+    val e = (await :X) ?? :X
+    print(e)            ;; --> true
+}
+emit @:global 3ms
+emit :X
