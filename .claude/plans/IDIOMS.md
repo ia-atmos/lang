@@ -210,6 +210,64 @@ e.status.double
 The same thing has one name everywhere: the buttons are `left`,
 `middle`, `right` both in `e.but` and in `e.status`.
 
+### What is visible while something lives is a task spawned by it (pico-frescogo#38)
+
+The lifetime of the task is the visibility: the `if`s over the mode or
+the state leave the drawing.
+
+```
+;; not
+if G.modo == :esquenta {
+    texto("AQUECIMENTO", ...)
+} else {
+    disco(...) ; texto(jogo_quedas(), ...)
+}
+
+;; but
+task Esquenta () {
+    spawn Pisca("AQUECIMENTO")      ;; drawn while the warm-up lives
+    ...
+}
+task Apresentacao () {
+    spawn Quedas()                  ;; drawn while the presentation lives
+    ...
+}
+```
+
+### A change of state is a new task, not a flag (pico-frescogo#39)
+
+```
+;; not
+val fim = (ESTADO == :fim)
+caixa(..., (if fim => VERMELHO => PRETO))
+
+;; but
+watching :key.dn until ctrl(it, "S") {
+    spawn Relogio(\{ max(0, J.mostra) }, false)
+    await Jogo()
+}
+spawn Relogio(\{ max(0, J.mostra) }, true)      ;; red, at the end
+```
+
+### A rhythm in time is `watching`/`await`, not arithmetic over the clock (pico-frescogo#40)
+
+```
+;; not
+if (NOW % 1000) < 500 {
+    texto(txt, ...)
+}
+
+;; but
+task Pisca (txt) {
+    loop {
+        watching 500ms {
+            loop on :tela.frente { texto(txt, ...) }
+        }
+        await 500ms
+    }
+}
+```
+
 ## Traps
 
 Behaviours of the language that broke a program with no diagnostic and
@@ -235,6 +293,15 @@ while it was a transparent `spawn { }`). Name the target:
 ```
 emit @:parent e
 ```
+
+The same from inside a presentation task towards the drawing tasks of
+the whole program: `emit @:global e` (pico-frescogo, bccb8b9).
+
+### A pattern takes the subtypes (pico-frescogo, bccb8b9)
+
+Layers of drawing as `:desenho` and `:desenho.base` do not separate:
+`await :desenho` also takes `:desenho.base`. Make the layers siblings:
+`:tela.fundo`, `:tela.frente`.
 
 (Two other traps of `pico-frescogo` are gone: `await X * 1ms` is now an
 error, see the rule above, and `tonumber("0740")` no longer reads octal,
