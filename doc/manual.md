@@ -335,8 +335,9 @@ it terminates.
 A value may only be stored where its block lasts at least as long as the
 place that stores it, so that no reference outlives the value it refers to.
 The one exception is explicit: a place written with [`set :out`](#pin)
-refers to a value of an inner block until that block terminates, and a
-name that kept the value by then may not use it.
+refers to a task or a pool of an inner block.
+When that block terminates, the task is dead: the reference remains
+valid, and a use of what the task held is an error.
 
 The counts remain in use for what has no block, or ends before its block:
 an unpinned value that is dropped is reclaimed at once; an event that is emitted
@@ -1423,6 +1424,7 @@ task T (n) {
         set pub = n*2   ;; refers to owner's `pub`
     }
     print(pub)          ;; --> 20
+    await false         ;; the `pub` ends with the task
 }
 pin t = spawn T(10)
 print(t.pub)            ;; --> 20
@@ -1431,12 +1433,18 @@ print(t.pub)            ;; --> 20
 A task also has the field `ret`, which can only be read, and holds the value
 that the task terminated with.
 
-A task owns what it keeps in `pub` and in `ret`: an unpinned value that is stored
-there is [pinned](#pin) with the task, in the block that the task is attached
-to, and is reclaimed with the task.
-Since the `pub` is visible wherever the task is, it cannot hold a value that
-is pinned in the body of the task.
-A task creates what it publishes in the `pub` itself, and refers to it:
+A task owns what it keeps in `pub` and in `ret`: an unpinned value that is
+stored there is [pinned](#pin) with the task.
+The `pub` ends with its task: when the task terminates, what it held through
+the `pub` is finalized, and a use of the `pub` of a dead task is an error
+(`invalid access : dead task pinned at prog.atm:10`).
+So the `pub` may hold, with a plain assignment, a value that is pinned in the
+body block of the task, since both end together.
+A value that is pinned in an inner block of the body ends before the `pub`,
+and cannot be stored there.
+The final value `ret` remains while the block of the task lasts.
+A task usually creates what it publishes in the `pub` itself, and refers to
+it:
 
 ```
 task Ship () {
@@ -1906,7 +1914,7 @@ func f (o) {
     do {
         pin x = o       ;; ERROR: invalid pin : table named at ...
     }
-    print(o@0)          ;; the name `o` would see a finalized table
+    print(o@0)          ;; the name `o` would see a dead table
 }
 f([7])
 ```
@@ -2153,66 +2161,78 @@ func f (pin u) {            ;; a function may pin what it receives
 f([1, 2, 3])
 ```
 
-A place of an outer block may refer to a value of an inner one, for as long
-as the value lasts, with `set :out`:
+A place of an outer block may refer to a task or a pool of an inner one,
+with `set :out`:
 
 ```
-pin play = []                       ;; lives for the whole program
+pin hud = [enemy=nil]               ;; lives for the whole program
 do {                                ;; a map
-    pin es = tasks()                ;; the map owns its enemies
-    set :out play.enemies = es      ;; a table outside refers to them
-    <...>                           ;; `play.enemies` is visible everywhere
-}                                   ;; `play.enemies` is nil again
+    pin e = spawn Enemy()           ;; the map owns its enemy
+    set :out hud.enemy = e          ;; a table outside refers to it
+    <...>
+}                                   ;; the enemy is aborted: it is dead
+print(hud.enemy ?? :xtask.dead)     ;; --> true
 ```
 
 The place may be a field or an index of a table, the next index of a
-vector (`set :out v@+ = x`, the index `#v` at the time of the `set`), a
-variable of an outer block, or the `pub` of the running task.
-A place in a vector that goes back to `nil` leaves a hole if it is not
-the last element.
+vector (`set :out v@+ = t`), a variable of an outer block, or the `pub` of
+the running task.
 The assignment has no check of an escape, and the place does not adopt the
-value, which still belongs to its block.
-The place goes back to `nil`, if it still refers to the value, when the
-value ends: pinned data, when its block finalizes it; a task, when it
-terminates; a pool, when it is aborted.
-So a place never refers to a value that was finalized, wherever the
-`set :out` is written: in the block that owns the value, in a nested block
-such as the branch of an `if`, or in a function that this block calls.
-A value with no end of its own (unpinned data) leaves the place when the
-block of the `set :out` terminates.
+task, which still belongs to its block.
+The place is never reset: when the block of the task terminates, the task
+is aborted, and the place refers to a dead task.
 
-The same form shows, in the `pub` of a task, a value that the body of the
-task pins, which a plain assignment refuses, since the `pub` is visible
-wherever the task is:
+Only a task or a pool may be referred to in this way
+(`invalid set :out : expected task or pool : got table`).
+A task has what such a reference needs: a state that tells it is dead, and
+an event of its end.
+Data that code outside needs is kept in the `pub` of a task:
 
 ```
-task Widget () {
-    set pub = []
-    pin spring = [k=10]
-    set pub.spring = spring         ;; ERROR: invalid escape : table pinned at ...
-    set :out pub.spring = spring    ;; ok: until `spring` ends
+task Enemy () {
+    set pub = [hp=10]
     <...>
 }
-```
-
-The whole `pub` may also refer to such a value, as `set :out pub = spring`.
-
-Code outside the block may read the place while the value lasts.
-If it keeps the value in a name and the block terminates, the name refers
-to a finalized value, and any use of it raises an error:
-
-```
-task Hero () {
-    val es = play.enemies           ;; a name outside the map
-    await(:later)                   ;; the map terminates meanwhile
-    spawn @es Enemy()               ;; ERROR: invalid access : finalized pool ...
+spawn {
+    await :focus
+    watching hud.enemy {            ;; until the enemy terminates
+        every :draw {
+            draw(hud.enemy.pub.hp)
+        }
+    }
 }
 ```
 
-The error `invalid access : finalized table pinned at prog.atm:10`, with
-the line of the pin, is raised by an index, an assignment to a field, a
-length, an iteration, a call of a function, and a spawn into a pool.
-A reference to a task that terminated remains valid, as usual: it is dead.
+#### Dead Values
+
+A dynamic value ends before the last reference to it goes when its block
+terminates: a task or a pool is aborted, and pinned data is finalized.
+The value is then dead.
+A reference to a dead value remains valid, and what the value held is gone:
+
+- The reference may be compared with `==`, tested with `??`, stored,
+  passed, and printed.
+  A dead task may be awaited (`await t`, `watching t`), which returns at
+  once.
+- A use of what the value held raises an error, such as
+  `invalid access : dead table pinned at prog.atm:10`, with the line of the
+  pin: the `pub` of a dead task, an index, an assignment to a field, a
+  length or an iteration of a dead table, a call of a dead function, and an
+  iteration of or a spawn into a dead pool.
+
+The type of a dead value has the subtype `dead`, which the
+[equivalence operator](#equivalence) tests: `t ?? :xtask.dead`,
+`ts ?? :tasks.dead`, `x ?? :table.dead`.
+
+A name may refer to data of a task that it read through the `pub`.
+If the task terminates, the name refers to a dead value:
+
+```
+val bag = hud.enemy.pub.bag         ;; a table that the enemy pins
+await hud.enemy                     ;; the enemy terminates
+print(bag ?? :table.dead)           ;; --> true
+print(#bag)                         ;; ERROR: invalid access : dead table ...
+```
 
 #### Where
 
@@ -2475,8 +2495,8 @@ and `x` may be a name that cannot be reassigned, such as a `pin`.
 On a string or a number, `++=` builds a new value, as the other operators.
 
 The third format, `set :out`, makes a location of an outer block refer to a
-value of the current block until the block terminates, when the location
-goes back to `nil` (see [pin](#pin)).
+task or a pool of an inner block, with no check of an escape (see
+[pin](#pin)).
 
 Examples:
 
@@ -2572,7 +2592,8 @@ their operands.
 If any of the following conditions are met, then `a ?? b` is true:
 
 - `a == b` (e.g., `10 ?? 10`)
-- `type(a) == b` (e.g., `[] ?? :table`)
+- `b` is `type(a)`, or a "dot prefix" of it (e.g., `[] ?? :table`, and
+  `t ?? :xtask` for a task `t` of type `xtask.dead`)
 - `b` is "dot prefix" of `a` (e.g., `'x.y.z' ?? 'x.y'`)
 - `b` is "dot prefix" of `a.tag` (e.g., `:X.Y [] ?? :X`)
 - `a` and `b` are tables, and every field `k=v` of `b` has a field in `a` such
@@ -4155,7 +4176,12 @@ there is no `require`.
 
 - `print(...)`: prints its arguments, separated by tabs
 - `type(v)`: the type of `v` as a string: `nil`, `boolean`, `number`,
-  `string`, `table`, `function`, `task`, `xtask`, `tasks`, or `native`
+  `string`, `table`, `function`, `task`, `xtask`, `tasks`, or `native`.
+  The type of a spawned task has its state as a subtype: `xtask.running`,
+  `xtask.suspended`, or `xtask.dead`.
+  The type of any other [dead value](#dead-values) has the subtype `dead`,
+  as `table.dead` and `tasks.dead`.
+  A type is tested with `??`, which accepts the subtypes: `v ?? :xtask`
 - `tostring(v)`: converts `v` to a string
 - `tonumber(v)`: converts `v` to a number, or evaluates to `nil` if `v` is
   neither a number nor a string with a number
@@ -4607,8 +4633,6 @@ X.eq(\{}, \{})                  ;; --> false (func refs are not `==`)
 
 ## Atmos
 
-- `atmos.status(t)`: the state of the task `t`: `running`, `suspended`, or
-  `dead`
 - `atmos.next()`: the time until the nearest [timer](#await) expires, in
   microseconds, or `nil` if there are no timers
 
@@ -4641,7 +4665,7 @@ Expr  : `do´[TAG]  Block                            ;; explicit block
 
       | `set´ Expr* `=´ Expr+                       ;; assignment
       | `set´ Expr OP`=´ Expr                       ;; compound assignment
-      | `set´ `:out´ Expr `=´ Expr                  ;; until the block ends
+      | `set´ `:out´ Expr `=´ Expr                  ;; a task of an inner block
 
       | `nil´ | `false´ | `true´                    ;; literals
       | TAG | NUM | STR | CLK | NAT

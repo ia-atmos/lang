@@ -1,7 +1,23 @@
 # `set :out` only for tasks (atmos-pin#35, proposal)
 
-Proposal agreed with the author (2026-11-27, in `atmos-pin`). Nothing
-here is implemented, and the implementation waits for his go.
+Agreed with the author (2026-11-27, in `atmos-pin`), who approved the
+implementation ("Sim") and the removal of `atmos.status`. Implemented on
+branch `pin` (c37c7ce and the commits after it); the merge into `main`
+waits for his approval. For the ports: `261127-out-migration.md`.
+
+Found while implementing, for the author:
+
+- Reading the `pub` of a task that ended was a common idiom in the
+  golden suite (6 cases), as a way to publish a result. They now keep
+  the task alive, or read before the end.
+- `type(x) == 'xtask'` (3 golden cases) is false now: `x ?? :xtask`.
+- The final value of a task lasts while the block of the task lasts,
+  as before, and not after it: "the final value stays" below holds
+  only inside that block.
+- `return(pub)` gives a dead table: the table of the `pub` ends with
+  the task.
+- The C functions of the standard library (`X.print`, `X.copy`) see a
+  dead table as empty, with no error, as before for a finalized one.
 
 ## Why
 
@@ -139,7 +155,6 @@ other places are single fields that are overwritten.
 
 ## Next
 
-With the author's go: implement on `pin` (with `atmos-lang` for the
-subtype and the prefix rule of `??`), migrate the ports with their
-sessions, and ask `paper-pin` to rewrite the section on `set :out`.
-Open with the author: whether `atmos.status` is removed.
+The merge into `main` (the author's approval, then `atmos-lang`), the
+migration of the ports with their sessions, and `paper-pin` for the
+section on `set :out`.
