@@ -28,6 +28,7 @@ are not mapped yet: in scope only if the author says so.
 | 5 | The commit of `main` that his merge in progress started from (to set the bases; until then the bases are the first versions, so the status lists every automatic commit) | asked 2026-11-28 |
 | 6 | Three states per document: pending (his version differs from the "compared" commit, the commit of `main` he compared against; not "seen", his correction), new (`git diff <compared>..main`), done | in discussion 2026-11-28, step by step; `etc/docs.sh` to be adapted once settled |
 | 7 | The reference (base) of `README.md` | decided 2026-11-28: atmos-lang/atmos@5977b07:README.md ("a"), not a7d4a61 (one line, `# ceu-atmos`) |
+| 9 | The reference of every document is the `main` of atmos-lang/atmos (the author: the "truth"), today a06998a. 5977b07 is 4 commits ahead of it on the branch `ccr-438e7160-xrby3i`, with changes only in plans: `doc/` and `README.md` are identical in both | reported 2026-11-28 |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
