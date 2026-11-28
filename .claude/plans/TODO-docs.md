@@ -35,7 +35,7 @@ are not mapped yet: in scope only if the author says so.
 | 13 | `papers/` to leave the repository root too | done by #15 |
 | 14 | "Sem scripts" (the author in `atmos-lang`) also for `.claude/bin/docs.sh` | decided 2026-11-28 ("#14a"): deleted; raw git commands only |
 | 15 | `papers/` moves to `fsantanna/papers`, private, with its history | decided 2026-11-28 ("#15a. Já criei"); done: `git subtree split` of the 78 commits pushed as `main` of `fsantanna/papers` (e135414 = lang c1dd8b6), `papers/` removed from lang. The paper sessions are told through `atmos`; their TODOs stay in `.claude/plans/` of lang until they move them |
-| 16 | The landing page of the site (`env-web/site/index.html`): the section "Academic papers" becomes "Research", the keywords of the example in bold, a "print" of the example | draft shown 2026-11-28; waiting for him on what "print" is |
+| 16 | The landing page of the site (`env-web/site/index.html`): the section "Academic papers" becomes "Research", the keywords of the example in bold, a "print" of the example | moved to `env-web` 2026-11-28 (the author: "Mande pra env-web. Mais nada aqui"); closed here |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | settled 2026-11-28 by the author in `atmos-lang` ("O ideal seria passar tudo por lá. Sem scripts"): sessions send the text here, see "Incoming" |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
@@ -65,4 +65,4 @@ text and where it goes, and do not edit those files.
 |---|---|---|
 | `atmos-lang` | Last edits to `doc/manual.md` before the rule, already on `main`: `watching` with two values (80ed120), `loop x on ... until` naming the event (9d4561a), `val e = await ... until e` (82560da), a tag pattern matching a string (82d6653), calls and awaits with no parentheses as operands (0e270fa, 1cac84e, 659d7b2), leading zeros decimal (cb316fd), TMPDIR in "Execution" (9ed7439) | on `main`; part of the "pos" of the manual |
 | `atmos-lang` | A line for `iter.fields(t)` in the list of `iter` (branch `fields`, not merged) | to come when the author merges it |
-| `paper-web` | The author's request for the landing page of the site (`ia-atmos/env-web`, `site/index.html`): "Academic papers -> Research"; "bold para keywords do exemplo. Incluir print"; "Go ahead" (2026-11-28) | #16, draft shown to him 2026-11-28; the "print" to clarify (the example already has `imgs/atmos-hello.gif`) |
+| `paper-web` | The author's request for the landing page of the site (`ia-atmos/env-web`, `site/index.html`): "Academic papers -> Research"; "bold para keywords do exemplo. Incluir print"; "Go ahead" (2026-11-28) | sent to `env-web` (#16); nothing more here |
