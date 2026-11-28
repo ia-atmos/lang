@@ -233,8 +233,8 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 - **What only sessions maintain goes under `.claude/`, not in the
   documentation** (the author, atmos-docs#12a, 2026-11-28). Notes on
   tests, layout and differences from the Lua implementation go to
-  `.claude/development.md`, not to `README.md`; the script of the
-  documents is `.claude/bin/docs.sh`. `README.md`, `doc/` and the
+  `.claude/development.md`, not to `README.md` (no script tracks the
+  documents: atmos-docs#14a). `README.md`, `doc/` and the
   landing pages are edited by the author by hand (session `atmos-docs`).
 - **No session edits `README.md`, `doc/` (manual, guide) or the landing
   pages, by hand or by script; it sends the text to `atmos-docs`**
