@@ -24,6 +24,22 @@ are not mapped yet: in scope only if the author says so.
 | # | Item | State |
 |---|------|-------|
 | 1 | Map of the documents (above) | reported 2026-11-28 |
-| 2 | Tracking scheme: a base commit per document, a status command, three files for meld | proposed 2026-11-28, waiting for the author |
+| 2 | Tracking scheme: a base commit per document, a status command, three files for meld | approved 2026-11-28 ("a"); built: `etc/docs.sh`, the table "Bases" below |
+| 5 | The commit of `main` that his merge in progress started from (to set the bases; until then the bases are the first versions, so the status lists every automatic commit) | asked 2026-11-28 |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
+
+## Bases
+
+Read by `etc/docs.sh` (atmos-docs#2). The base is the last commit of
+`main` whose version the author has taken into his merge; a trailer
+`Docs-Base: <doc> <sha>` in a commit of his overrides it when newer. The
+pass is `first` until his first merge of the document (meld then shows
+the reference, his version, and `main`), then `next` (the base, his
+version, and `main`). This session updates the table on his word.
+
+| Document | Base | Reference | Pass |
+|---|---|---|---|
+| `doc/manual.md` | a31920b | a31920b | first |
+| `doc/guide.md` | 5d5ad76 | https://github.com/atmos-lang/atmos@5977b076d1adee4263c6cd6b3879d0c73da2d26c:doc/guide.md | first |
+| `README.md` | a7d4a61 | https://github.com/atmos-lang/atmos@5977b076d1adee4263c6cd6b3879d0c73da2d26c:README.md | first |
