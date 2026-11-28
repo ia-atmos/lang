@@ -236,6 +236,12 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
   `.claude/development.md`, not to `README.md`; the script of the
   documents is `.claude/bin/docs.sh`. `README.md`, `doc/` and the
   landing pages are edited by the author by hand (session `atmos-docs`).
+- **No session edits `README.md`, `doc/` (manual, guide) or the landing
+  pages, by hand or by script; it sends the text to `atmos-docs`**
+  (session_011eECoh8uS3u1pvCaT9KGML), which brings it to the author
+  (the author in `atmos-lang`, 2026-11-28: "O ideal seria passar tudo
+  por lá. Sem scripts"). A change of the compiler goes with its tests;
+  its text for the manual goes to `atmos-docs`.
 
 - Commit and push straight to `main`, in fine-grained commits.
 - **Items are `#N`** (2026-11-18, `#71`). Everything a session puts to
