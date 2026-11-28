@@ -230,6 +230,10 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 
 ## Standing rules from the author, for all sessions
 
+- **The papers live in github.com/fsantanna/papers** (private), not in
+  lang (the author, atmos-docs#15a, 2026-11-28; `papers/` removed from
+  lang in 92c47761). A paper session adds that repository with push access.
+
 - **What only sessions maintain goes under `.claude/`, not in the
   documentation** (the author, atmos-docs#12a, 2026-11-28). Notes on
   tests, layout and differences from the Lua implementation go to
