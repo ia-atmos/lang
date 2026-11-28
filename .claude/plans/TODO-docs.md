@@ -33,12 +33,13 @@ are not mapped yet: in scope only if the author says so.
 | 11 | Move `src/` and `rt/` under `src/` (`src/compiler/`, `src/runtime/`), done by `atmos-lang` with every dependent repository updated at once | decided 2026-11-28 ("#11b, mas nao hoje"): not today; remind him on Wednesday 2026-12-02 (a reminder is scheduled in this session) |
 | 12 | Instead of `ia/`, `.claude/` holds what only sessions maintain: the section "Development" of the README (Test, Layout, Differences) as `.claude/development.md`, `etc/docs.sh` as `.claude/bin/docs.sh` | decided 2026-11-28 ("#12a"); done (744fee70); the section removed from `README.md` too, at his word ("pode mexer em README.md tb"), in 77c96766 |
 | 13 | `papers/` to leave the repository root too | the author, 2026-11-28: "em algum momento ... nao agora" |
+| 14 | "Sem scripts" (the author in `atmos-lang`) also for `.claude/bin/docs.sh` | decided 2026-11-28 ("#14a"): deleted; raw git commands only |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
 ## Bases
 
-Read by `.claude/bin/docs.sh` (atmos-docs#2). The base is the last commit of
+Was read by `.claude/bin/docs.sh` (atmos-docs#2), deleted by #14; kept as the record of the bases. The base is the last commit of
 `main` whose version the author has taken into his merge; a trailer
 `Docs-Base: <doc> <sha>` in a commit of his overrides it when newer. The
 pass is `first` until his first merge of the document (meld then shows
