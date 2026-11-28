@@ -1,7 +1,8 @@
 # TODO of the paper on the web
 
 Everything pending in the `paper-web` session, which writes
-`papers/web.md` and `papers/web-*`: explicit, unanswered, or
+`web.md` and `web-*` in `fsantanna/papers` (in `papers/` of this
+repository until 2026-11-28, see `#17`): explicit, unanswered, or
 unacknowledged. Kept current by that session. The material is
 `261126-paper-web.md` (the plan of `env-web`; nothing in it is decided).
 
@@ -47,6 +48,7 @@ States: **open** (waits for the author), **work** (known, not done),
 | 14 | Read the papers whose text was not read: HipHop 2011 and 2018, Elm PLDI 2013, Flapjax, Arrowlets, Céu TECS 2017, Pendulum's evaluation in detail | done (2026-11-26, `web-related.md` section 9); not obtained: Edwards 2009, Myers 1991, Kambona 2013 |
 | 15 | HipHop.js has no public 7GUIs, except the Timer in its paper of SAC 2018: who writes the other versions for the comparison | open (recommended: the Timer of their paper as it is, with its suspend button, in both; we write the Circle Drawer in HipHop.js and say so in the threats; to ask after `#1`) |
 | 16 | Lwt_js_events (js_of_ocaml), redux-saga, Concur and Pendulum are nearer to us than the plan knew: they go into the comparison of preemption | done in the outline (2026-11-26, the table of Section 7); the code of each case is `#8` |
+| 17 | The papers moved to `fsantanna/papers`, private (the author in `atmos-docs`, 2026-11-28: "O que faremos com os papers? Talvez mover para fsantanna novo repo papers?", then "#15a. Já criei"; read in its transcript). `papers/web.md` and `papers/web-related.md` are there, at its root, as of lang c1dd8b6. This session has no access to it: `add_repo` with push was refused by the permission check of the session (2026-11-28) | open: the author adds the repository to this session, or says another way; until then nothing of the paper is written |
 
 ## A. Decisions waiting for the author
 
