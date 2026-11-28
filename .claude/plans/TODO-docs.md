@@ -50,3 +50,15 @@ version, and `main`). This session updates the table on his word.
 | `doc/manual.md` | a31920b | a31920b | first |
 | `doc/guide.md` | 5d5ad76 | https://github.com/atmos-lang/atmos@5977b076d1adee4263c6cd6b3879d0c73da2d26c:doc/guide.md | first |
 | `README.md` | a7d4a61 | https://github.com/atmos-lang/atmos@5977b076d1adee4263c6cd6b3879d0c73da2d26c:README.md | first |
+
+## Incoming
+
+Since 2026-11-28 changes to `doc/manual.md`, `doc/guide.md` and
+`README.md` go through this session (the author, in `atmos-lang`: "O
+ideal seria passar tudo por lá. Sem scripts"): other sessions send the
+text and where it goes, and do not edit those files.
+
+| From | What | State |
+|---|---|---|
+| `atmos-lang` | Last edits to `doc/manual.md` before the rule, already on `main`: `watching` with two values (80ed120), `loop x on ... until` naming the event (9d4561a), `val e = await ... until e` (82560da), a tag pattern matching a string (82d6653), calls and awaits with no parentheses as operands (0e270fa, 1cac84e, 659d7b2), leading zeros decimal (cb316fd), TMPDIR in "Execution" (9ed7439) | on `main`; part of the "pos" of the manual |
+| `atmos-lang` | A line for `iter.fields(t)` in the list of `iter` (branch `fields`, not merged) | to come when the author merges it |
