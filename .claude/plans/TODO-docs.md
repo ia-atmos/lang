@@ -32,9 +32,10 @@ are not mapped yet: in scope only if the author says so.
 | 10 | An `ia/` directory for material that only sessions maintain: the section "Development" of the README as `ia/development.md`, `etc/docs.sh` as `ia/docs.sh`; `.claude/plans/`, `tst/`, `src/`, `rt/`, `doc/` stay | replaced by #12 |
 | 11 | Move `src/` and `rt/` under `src/` (`src/compiler/`, `src/runtime/`), done by `atmos-lang` with every dependent repository updated at once | decided 2026-11-28 ("#11b, mas nao hoje"): not today; remind him on Wednesday 2026-12-02 (a reminder is scheduled in this session) |
 | 12 | Instead of `ia/`, `.claude/` holds what only sessions maintain: the section "Development" of the README (Test, Layout, Differences) as `.claude/development.md`, `etc/docs.sh` as `.claude/bin/docs.sh` | decided 2026-11-28 ("#12a"); done (744fee70); the section removed from `README.md` too, at his word ("pode mexer em README.md tb"), in 77c96766 |
-| 13 | `papers/` to leave the repository root too | the author, 2026-11-28: "em algum momento ... nao agora" |
+| 13 | `papers/` to leave the repository root too | done by #15 |
 | 14 | "Sem scripts" (the author in `atmos-lang`) also for `.claude/bin/docs.sh` | decided 2026-11-28 ("#14a"): deleted; raw git commands only |
-| 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
+| 15 | `papers/` moves to `fsantanna/papers`, private, with its history | decided 2026-11-28 ("#15a. Já criei"); done: `git subtree split` of the 78 commits pushed as `main` of `fsantanna/papers` (e135414 = lang c1dd8b6), `papers/` removed from lang. The paper sessions are told through `atmos`; their TODOs stay in `.claude/plans/` of lang until they move them |
+| 3 | After his version: automatic sessions edit directly, or write to a pending list | settled 2026-11-28 by the author in `atmos-lang` ("O ideal seria passar tudo por lá. Sem scripts"): sessions send the text here, see "Incoming" |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
 ## Bases
