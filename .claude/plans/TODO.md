@@ -230,6 +230,13 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 
 ## Standing rules from the author, for all sessions
 
+- **What only sessions maintain goes under `.claude/`, not in the
+  documentation** (the author, atmos-docs#12a, 2026-11-28). Notes on
+  tests, layout and differences from the Lua implementation go to
+  `.claude/development.md`, not to `README.md`; the script of the
+  documents is `.claude/bin/docs.sh`. `README.md`, `doc/` and the
+  landing pages are edited by the author by hand (session `atmos-docs`).
+
 - Commit and push straight to `main`, in fine-grained commits.
 - **Items are `#N`** (2026-11-18, `#71`). Everything a session puts to
   the author has a number: a decision, a question, a remark, a defect, a
