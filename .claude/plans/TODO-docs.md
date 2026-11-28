@@ -26,6 +26,8 @@ are not mapped yet: in scope only if the author says so.
 | 1 | Map of the documents (above) | reported 2026-11-28 |
 | 2 | Tracking scheme: a base commit per document, a status command, three files for meld | approved 2026-11-28 ("a"); built: `etc/docs.sh`, the table "Bases" below |
 | 5 | The commit of `main` that his merge in progress started from (to set the bases; until then the bases are the first versions, so the status lists every automatic commit) | asked 2026-11-28 |
+| 6 | Three states per document: pending (his version differs from the "compared" commit, the commit of `main` he compared against; not "seen", his correction), new (`git diff <compared>..main`), done | in discussion 2026-11-28, step by step; `etc/docs.sh` to be adapted once settled |
+| 7 | The reference (base) of `README.md` | decided 2026-11-28: atmos-lang/atmos@5977b07:README.md ("a"), not a7d4a61 (one line, `# ceu-atmos`) |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
