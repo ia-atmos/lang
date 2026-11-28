@@ -93,3 +93,33 @@ no flash", `#7`).
 - **The 32-bit options themselves** (the author's "if the architecture
   has no big int, why would it have float?"): the measured reason is
   the size of the value, which needs both at 32 bits; keep, or revisit.
+
+## 6. The author's positions (2026-11-28, to discuss on Wednesday)
+
+**Autor:**
+> 1. Tamanho ser int mas configurável, fazendo ms ainda relevante?
+> 2. Não aceitar fração nem na espera nem na emissão. Remover isso da
+>    linguagem
+
+Read by `atmos-lang` (to confirm on Wednesday):
+1. Time is an integer of the language, of the configured size
+   (`ATMOS_INTEGER=64|32`), and the unit stays configurable
+   (`ATMOS_CLOCK=us|ms`): with 32-bit integers, `ms` keeps 24 days
+   before it wraps, where `us` keeps 35 min. So `#3a` stays.
+2. A fraction of the unit is refused, in an await and in an emit: it
+   reverses `#9a` (a clock with a fraction is a float).
+
+What it would touch, counted on the clones on 2026-11-28 (by grep,
+approximate):
+
+| Where | Count | Effect |
+|---|---|---|
+| clock literals with a fraction in code (`2.5s`) | 0 (about 50 in comments of sdl-snxkx) | none; a literal with a fraction becomes a compile error (`500us` under `ms` too) |
+| durations computed with a float (`await (dt * 1ms)`, `secs * 1s`) | about 58: sdl-snxkx 48, env-pico 6, env-sdl 2, iup 1, pico-frescogo 1 | a run-time error when the product has a fraction (`0.1 * 1s` is `100000.00000000001`); each needs a rounding (`math.floor`), or the language rounds |
+| environments that emit time | env-sdl, env-pico, env-ray, env-uv, env-esp32, env-web already emit integers (`a_int(...)`) | none |
+| the default environment `rt/main.c` | emits `a_num(dt)` with the fractions of `clock_gettime` | must emit whole units and keep the fraction itself |
+| `emit @:global <float>` in programs and tests | to count on Wednesday | an error |
+
+Open for Wednesday: whether a computed duration with a fraction is an
+error (as 2 says) or is rounded by the language; with an error, the 58
+places of the ports must round.
