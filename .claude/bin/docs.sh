@@ -2,9 +2,9 @@
 # Tracking of the documentation that the author edits by hand
 # (session atmos-docs, atmos-docs#2).
 #
-#   etc/docs.sh status [doc...]       what is new on main for each document
-#   etc/docs.sh meld <doc> [mine]     the files for meld, then meld itself
-#   etc/docs.sh files <doc>           only write the files and print their paths
+#   .claude/bin/docs.sh status [doc...]       what is new on main for each document
+#   .claude/bin/docs.sh meld <doc> [mine]     the files for meld, then meld itself
+#   .claude/bin/docs.sh files <doc>           only write the files and print their paths
 #
 # Each document has a reference (the original version) and a base: the
 # last commit of main whose version of the document the author has taken
