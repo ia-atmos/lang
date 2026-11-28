@@ -29,6 +29,8 @@ are not mapped yet: in scope only if the author says so.
 | 6 | Three states per document: pending (his version differs from the "compared" commit, the commit of `main` he compared against; not "seen", his correction), new (`git diff <compared>..main`), done | in discussion 2026-11-28, step by step; `etc/docs.sh` to be adapted once settled |
 | 7 | The reference (base) of `README.md` | decided 2026-11-28: atmos-lang/atmos@5977b07:README.md ("a"), not a7d4a61 (one line, `# ceu-atmos`) |
 | 9 | The reference of every document is the `main` of atmos-lang/atmos (the author: the "truth"), today a06998a. 5977b07 is 4 commits ahead of it on the branch `ccr-438e7160-xrby3i`, with changes only in plans: `doc/` and `README.md` are identical in both | reported 2026-11-28 |
+| 10 | An `ia/` directory for material that only sessions maintain: the section "Development" of the README as `ia/development.md`, `etc/docs.sh` as `ia/docs.sh`; `.claude/plans/`, `tst/`, `src/`, `rt/`, `doc/` stay | proposed 2026-11-28, waiting for the author (a: Differences goes too; b: Differences stays in the README; c: no `ia/`) |
+| 11 | Move `src/` and `rt/` under `src/` (`src/compiler/`, `src/runtime/`), done by `atmos-lang` with every dependent repository updated at once | decided 2026-11-28 ("#11b, mas nao hoje"): not today; remind him on Wednesday 2026-12-02 (a reminder is scheduled in this session) |
 | 3 | After his version: automatic sessions edit directly, or write to a pending list | to ask after #2 |
 | 4 | Landing pages in other repositories: which are in scope | to ask after #3 |
 
