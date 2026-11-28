@@ -217,6 +217,7 @@ To message a session with `send_message` (archived: `atmos-args`, `atmos-tag`, `
 | `pico-slides` | session_011eECogEdSaHMwZpk7NGmgk | presentations over pico |
 | `env-sdl` | session_011eECogZjerUUUp2BmsSRgW | environment: SDL |
 | `env-pico` | session_011eECoikzsmBiPNXNF7ffpf | environment: pico-sdl |
+| `atmos-docs` | session_011eECoh8uS3u1pvCaT9KGML | created 2026-11-28 (the author: "crie uma sessao nova atmos-docs"): supports his manual edits of landing pages, manuals and guides (meld of the reference, the automatic edits and his version); tracks what is new on `main` since his base (atmos#42) |
 | `env-ray` | session_011eECohyySVpgZiuUF17qc2 | environment: raylib, with its classics |
 | `env-iup` | session_011eECoiJLW3LfTrKdHtNFvg | environment: IUP |
 | `env-uv` | session_011eECoeuP2uc6Uge65NF8uL | environment: libuv |
