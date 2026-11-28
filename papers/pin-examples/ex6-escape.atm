@@ -1,6 +1,0 @@
-;; Example 6: an escape caught when the program runs
-var keep = nil
-do {
-    pin t = [1, 2, 3]
-    set keep = t                    ;; ERROR: an outer place, an inner value
-}

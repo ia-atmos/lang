@@ -1,6 +1,0 @@
-;; Example 2: a native resource, closed at the end of its block
-do {
-    pin f = io.open("/tmp/pin-ex2.txt", "w")
-    io.write(f, "hello\n")
-}                           ;; the file is closed here, and flushed
-print(io.read(io.open("/tmp/pin-ex2.txt"), :all))

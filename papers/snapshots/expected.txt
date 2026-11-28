@@ -1,8 +1,0 @@
-final	[seq=9, next=5, notes=[@(2)=[x=60, y=60], @(3)=[x=30, y=20], @(4)=[x=40, y=40]]]
-journal	9	snapshots	4
-resume	ok
-instant	ok
-spawn	ok
-alive	[2, 3, 4]
-hidden	ok
-hidden state detected	true
