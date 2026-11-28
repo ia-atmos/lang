@@ -23,6 +23,12 @@ static uint32_t TIME = 1;
 static double CLK_MIN  = INFINITY;
 static double CLK_LATE = 0;
 
+// The fraction of a unit of time that the ticks have not given yet:
+// time advances by whole units, so that timers count down exactly, and
+// two timers that expire at the same instant do so in the same piece of
+// a tick, whatever the pieces an environment emits.
+static double CLK_CARRY = 0;
+
 // Main chunk, and the program arguments.
 static ATask* MAIN = NULL;
 static int    ARGC = 0;
@@ -391,8 +397,9 @@ static AStatus leaf_start1 (ARoot* r, int* done) {
             break;
 
         case PK_CLK:
-            // a timer counts down from its full duration
-            r->u.clk = a_dbl(r->v);
+            // a timer counts down from its full duration, in whole units
+            // (a fraction is rounded up: it never expires early)
+            r->u.clk = ceil(a_dbl(r->v));
             leaf_clk(r, done);
             break;
 
@@ -2263,6 +2270,11 @@ static AStatus emit_to (ANode** ret, AVal to, int* anc) {
 static AStatus emit_tick (double us) {
     AStatus st = A_OK;
     double late = CLK_LATE;
+    // whole units, and the fraction for the next tick
+    us += CLK_CARRY;
+    double whole = floor(us);
+    CLK_CARRY = us - whole;
+    us = whole;
     do {
         double d = (CLK_MIN < us) ? CLK_MIN : us;
         us -= d;
@@ -4506,6 +4518,7 @@ AStatus a_main (const AProto* p) {
     TIME = 1;
     CLK_MIN  = INFINITY;
     CLK_LATE = 0;
+    CLK_CARRY = 0;
 
     // the program arguments are the `...` of the main chunk
     AVal proto = a_task(p, 0);

@@ -1,0 +1,29 @@
+;; timers that expire at the same instant do so together, whatever the
+;; pieces of time the environment emits: time advances by whole units,
+;; and a fraction waits for the next tick (env-web#77)
+;; a fraction is kept for the next tick, and a timer counts whole units
+spawn {
+    val late = await(2)
+    print(:late, late)      ;; --> late 0 (2.2 emitted: 2 given, 0.2 kept)
+}
+emit @:global 0.6
+emit @:global 0.6
+emit @:global 0.6
+print(:three)               ;; --> three: 1.8 emitted, 1 given
+emit @:global 0.4
+
+var lost = 0
+spawn {
+    loop in 3 {
+        watching 5s {
+            loop i {
+                if i == 5 { set lost = lost + 1 }
+                await 1s
+            }
+        }
+    }
+}
+loop in 46 {
+    emit @:global 333333.3333333333
+}
+print(lost)                 ;; --> 0: the watching wins every tie
